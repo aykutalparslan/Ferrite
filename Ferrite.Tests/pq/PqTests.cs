@@ -20,6 +20,7 @@ using System.Numerics;
 using Ferrite.Utils;
 using System.Reflection;
 using DotNext.IO;
+using DotNext.Buffers;
 
 namespace Ferrite.Tests.pq;
 
@@ -150,7 +151,18 @@ public class PqTests
     [Fact]
     public void ReqPqMulti_ShouldModifyTLExecutionContext()
     {
-        IContainer container = BuildContainer();
+        var tl = Assembly.Load("Ferrite.TL");
+        var builder = new ContainerBuilder();
+        builder.RegisterType<MockRandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<MockKeyPairProvider>().As<IKeyProvider>();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
+            .AsSelf();
+        builder.RegisterType<Int128>();
+        builder.RegisterType<Int256>();
+        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        var container = builder.Build();
 
         var reqpq = container.Resolve<ReqPqMulti>();
         reqpq.Nonce = (Int128)nonce;
@@ -169,8 +181,8 @@ public class PqTests
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
-        builder.RegisterType<MockRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<MockKeyPairProvider>().As<IKeyProvider>();
+        builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -258,7 +270,7 @@ public class PqTests
         Assert.Equal(serverDhInnerData.G, (int)context.SessionBag["g"]);
         Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionBag["g_a"]);
         Assert.Equal(serverDhInnerData.DhPrime, dhPrime);
-        Assert.True(gs.Contains(serverDhInnerData.G));
+        Assert.Contains(serverDhInnerData.G, gs);
     }
     [Fact]
     public void ReqDhParamsTemp_ShouldReturnServerDhParams()
@@ -309,7 +321,7 @@ public class PqTests
         Assert.Equal(serverDhInnerData.G, (int)context.SessionBag["g"]);
         Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionBag["g_a"]);
         Assert.Equal(serverDhInnerData.DhPrime, dhPrime);
-        Assert.True(gs.Contains(serverDhInnerData.G));
+        Assert.Contains(serverDhInnerData.G, gs);
     }
 
     [Fact]
@@ -334,11 +346,65 @@ public class PqTests
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
         context.SessionBag.Add("g", (int)g);
         context.SessionBag.Add("g_a", g_a.ToByteArray(true, true));
-        context.SessionBag.Add("new_nonce", RandomNumberGenerator.GetBytes(32));
+        byte[] newNonce = RandomNumberGenerator.GetBytes(32);
+        context.SessionBag.Add("new_nonce", newNonce);
 
-        var setClientDhParams = container.Resolve<SetClientDhParams>();
+
+        BigInteger b = new BigInteger(aBytes, true, true);
+        while (b < prime)
+        {
+            aBytes = RandomNumberGenerator.GetBytes(2048);
+            b = new BigInteger(aBytes, true, true);
+        }
+        BigInteger g_b = BigInteger.ModPow(g, b, prime);
+
+        var clientDhInnerData = container.Resolve<ClientDhInnerData>();
+        clientDhInnerData.GB = g_b.ToByteArray(true, true);
+        clientDhInnerData.Nonce = (Int128)nonce;
+        clientDhInnerData.ServerNonce = (Int128)server_nonce;
+        clientDhInnerData.RetryId = 0;
+
+        var buff = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+        buff.Write(SHA1.HashData(clientDhInnerData.TLBytes.ToArray()));
+        buff.Write(clientDhInnerData.TLBytes.ToArray());
+        if (buff.WrittenCount % 16 != 0)
+        {
+            for (int i = 0; i < 16 - buff.WrittenCount % 16; i++)
+            {
+                buff.Write((byte)0);
+            }
+        }
+
+        var newNonceServerNonce = SHA1.HashData(newNonce.Concat(server_nonce).ToArray());
+        var serverNonceNewNonce = SHA1.HashData(server_nonce.Concat(newNonce).ToArray());
+        var newNonceNewNonce = SHA1.HashData(newNonce.Concat(newNonce).ToArray());
+        var tmpAesKey = newNonceServerNonce
+            .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
+        var tmpAesIV = serverNonceNewNonce.Skip(12)
+            .Concat(newNonceNewNonce).Concat(newNonce).SkipLast(28).ToArray();
+
+        Aes aes = Aes.Create();
+        aes.Key = tmpAesKey;
+        byte[] encrypted = new byte[buff.WrittenCount];
+        aes.EncryptIge(buff.ToReadOnlySequence().ToArray(), tmpAesIV, encrypted);
+        ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
+
+        var setClientDhParams = factory.Resolve<SetClientDhParams>();
         setClientDhParams.Nonce = (Int128)nonce;
         setClientDhParams.ServerNonce = (Int128)server_nonce;
+        setClientDhParams.EncryptedData = encrypted;
+        var result = (DhGenOk)setClientDhParams.Execute(context);
+        
+        var authKey = BigInteger.ModPow(g_a, b, prime).ToByteArray(true, true);
+        var authKeySHA1 = SHA1.HashData(authKey);
+        var authKeyHash = authKeySHA1.Skip(12).ToArray();
+        var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
+
+        var newNonceHash1 = SHA1.HashData(newNonce.Concat(new byte[1])
+            .Concat(authKeyAuxHash).ToArray()).Skip(4).ToArray();
+
+        Assert.Equal(authKey, (byte[])context.SessionBag["auth_key"]);
+        Assert.Equal(newNonceHash1, result.NewNonceHash1);
     }
 
     private void ProcessReqDhParams(IContainer container, TLExecutionContext context, ReqDhParams reqDhParams, PQInnerDataDc pQInnerDataDc, out byte[] sha1Received, out int constructor, out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual)
