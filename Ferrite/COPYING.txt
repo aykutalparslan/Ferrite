@@ -1,0 +1,10 @@
+﻿Project Ferrite
+Copyright 2022 Aykut Alparslan KOÇ
+
+Project Ferrite is proprietary and confidential.
+Copying without express written permission is strictly prohibited.
+
+
+This project contains a modified portion of ASP.NET Core
+which is licensed under The MIT License (LICENSE.aspnetcore)
+  - https://github.com/dotnet/aspnetcore/

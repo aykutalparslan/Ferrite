@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="DotNext" />
+    <None Remove="DotNext.IO" />
+    <None Remove="DotNext.Unsafe" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DotNext" Version="4.2.0" />
+    <PackageReference Include="DotNext.IO" Version="4.2.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
+    <ProjectReference Include="..\Ferrite.Transport\Ferrite.Transport.csproj" />
+    <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+    <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
+  </ItemGroup>
+</Project>

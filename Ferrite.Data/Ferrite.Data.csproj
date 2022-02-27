@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="RocksDB" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="RocksDB" Version="6.28.2.25302" />
+  </ItemGroup>
+</Project>

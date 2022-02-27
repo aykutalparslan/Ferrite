@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <WarningLevel>4</WarningLevel>
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="DotNext.IO" />
+    <None Remove="DotNext.Unsafe" />
+    <None Remove="mtproto\" />
+    <None Remove="Exceptions\" />
+    <None Remove="Autofac" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DotNext.IO" Version="4.2.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.2.0" />
+    <PackageReference Include="Autofac" Version="6.3.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="mtproto\" />
+    <Folder Include="Exceptions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
+    <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+  </ItemGroup>
+</Project>

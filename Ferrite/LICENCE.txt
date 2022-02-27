@@ -1,0 +1,4 @@
+Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
+
+Project Ferrite is proprietary and confidential.
+Copying without express written permission is strictly prohibited.

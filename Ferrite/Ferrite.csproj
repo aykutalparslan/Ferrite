@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="BouncyCastle" />
+    <None Remove="RocksDB" />
+    <None Remove="DotNext" />
+    <None Remove="DotNext.IO" />
+    <None Remove="DotNext.Unsafe" />
+    <None Remove="Microsoft.AspNetCore.Server.Kestrel" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="RocksDB" Version="6.28.2.25302" />
+    <PackageReference Include="DotNext" Version="4.2.0" />
+    <PackageReference Include="DotNext.IO" Version="4.2.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="TL\mtproto\T4Template.hhh">
+      <DependentUpon>T4Template.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="TL\mtproto\T4Template.txt">
+      <DependentUpon>T4Template.tt</DependentUpon>
+    </Compile>
+    <Compile Update="TL\tl\MTProto.cs">
+      <DependentUpon>MTProto.tt</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
+    <ProjectReference Include="..\Ferrite.Transport\Ferrite.Transport.csproj" />
+    <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
+    <ProjectReference Include="..\Ferrite.Core\Ferrite.Core.csproj" />
+    <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+  </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <StandardHeader IncludeInNewFiles="True" Text="&#xA; Copyright ${Year}  ${CopyrightHolder}&#xA;&#xA;   Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);&#xA;   you may not use this file except in compliance with the License.&#xA;   You may obtain a copy of the License at&#xA;&#xA;       http://www.apache.org/licenses/LICENSE-2.0&#xA;&#xA;   Unless required by applicable law or agreed to in writing, software&#xA;   distributed under the License is distributed on an &quot;AS IS&quot; BASIS,&#xA;   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.&#xA;   See the License for the specific language governing permissions and&#xA;   limitations under the License." />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
+</Project>

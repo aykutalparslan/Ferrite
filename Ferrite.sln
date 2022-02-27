@@ -1,0 +1,88 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 25.0.1700.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite", "Ferrite\Ferrite.csproj", "{B428F202-1F08-4E6E-A3E8-CD30D82DB55A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Tests", "Ferrite.Tests\Ferrite.Tests.csproj", "{91472E42-D5C5-4DBE-8712-CB677A9F24EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TL", "Ferrite.TL\Ferrite.TL.csproj", "{6E7F8291-C798-4A08-A993-1EE002D0B104}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TL.Compiler", "Ferrite.TL.Compiler\Ferrite.TL.Compiler.csproj", "{86AFBB6B-232E-4201-A3DE-6A5A50F06945}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Crypto", "Ferrite.Crypto\Ferrite.Crypto.csproj", "{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Core", "Ferrite.Core\Ferrite.Core.csproj", "{18258047-DFF7-4162-A431-95128BDC7B11}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Transport", "Ferrite.Transport\Ferrite.Transport.csproj", "{EE653E8F-D574-4545-92B4-12CD62FFA558}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Utils", "Ferrite.Utils\Ferrite.Utils.csproj", "{8717E205-114C-464F-885E-7A066C117679}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Data", "Ferrite.Data\Ferrite.Data.csproj", "{D7CCB3AB-58D0-44B3-B82F-AD6CCCD31EF6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B428F202-1F08-4E6E-A3E8-CD30D82DB55A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B428F202-1F08-4E6E-A3E8-CD30D82DB55A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B428F202-1F08-4E6E-A3E8-CD30D82DB55A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B428F202-1F08-4E6E-A3E8-CD30D82DB55A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{91472E42-D5C5-4DBE-8712-CB677A9F24EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{91472E42-D5C5-4DBE-8712-CB677A9F24EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{91472E42-D5C5-4DBE-8712-CB677A9F24EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{91472E42-D5C5-4DBE-8712-CB677A9F24EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18258047-DFF7-4162-A431-95128BDC7B11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18258047-DFF7-4162-A431-95128BDC7B11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18258047-DFF7-4162-A431-95128BDC7B11}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18258047-DFF7-4162-A431-95128BDC7B11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE653E8F-D574-4545-92B4-12CD62FFA558}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE653E8F-D574-4545-92B4-12CD62FFA558}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE653E8F-D574-4545-92B4-12CD62FFA558}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE653E8F-D574-4545-92B4-12CD62FFA558}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8717E205-114C-464F-885E-7A066C117679}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8717E205-114C-464F-885E-7A066C117679}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8717E205-114C-464F-885E-7A066C117679}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8717E205-114C-464F-885E-7A066C117679}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7CCB3AB-58D0-44B3-B82F-AD6CCCD31EF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7CCB3AB-58D0-44B3-B82F-AD6CCCD31EF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7CCB3AB-58D0-44B3-B82F-AD6CCCD31EF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7CCB3AB-58D0-44B3-B82F-AD6CCCD31EF6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1C5A3FAA-8152-4EA0-80DB-CB39B982782D}
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		Policies = $0
+		$0.StandardHeader = $1
+		$1.Text = @/*\r\n *    Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n *    This file is a part of Project Ferrite\r\n *\r\n *    Proprietary and confidential.\r\n *    Copying without express written permission is strictly prohibited.\r\n */
+		$0.TextStylePolicy = $2
+		$2.FileWidth = 80
+		$2.TabsToSpaces = True
+		$2.scope = text/x-csharp
+		$0.CSharpFormattingPolicy = $3
+		$3.scope = text/x-csharp
+		$0.TextStylePolicy = $4
+		$4.FileWidth = 80
+		$4.TabsToSpaces = True
+		$4.scope = text/plain
+	EndGlobalSection
+EndGlobal
