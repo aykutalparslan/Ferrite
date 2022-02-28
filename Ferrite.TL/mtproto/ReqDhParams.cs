@@ -199,6 +199,8 @@ public class ReqDhParams : ITLObject
                 .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
             var tmpAesIV = serverNonceNewNonce.Skip(12)
                 .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).SkipLast(28)).ToArray();
+            ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
             byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             serverDhParamsOk.EncryptedAnswer = answer;
 
@@ -227,6 +229,8 @@ public class ReqDhParams : ITLObject
                 .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
             var tmpAesIV = serverNonceNewNonce.Skip(12)
                 .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).SkipLast(28)).ToArray();
+            ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
             byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             serverDhParamsOk.EncryptedAnswer = answer;
             ctx.SessionBag.Add("valid_until", DateTime.Now.AddSeconds(obj.ExpiresIn));
@@ -261,6 +265,7 @@ public class ReqDhParams : ITLObject
         serverDhInnerData.ServerTime = (int)new TimeSpan(DateTime.Now.Ticks).TotalSeconds;
 
         ctx.SessionBag.Add("g", serverDhInnerData.G);
+        ctx.SessionBag.Add("a", a.ToByteArray(true,true));
         ctx.SessionBag.Add("g_a", serverDhInnerData.GA);
 
         var buff = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);

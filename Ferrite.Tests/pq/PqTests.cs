@@ -21,6 +21,7 @@ using Ferrite.Utils;
 using System.Reflection;
 using DotNext.IO;
 using DotNext.Buffers;
+using Ferrite.Data;
 
 namespace Ferrite.Tests.pq;
 
@@ -189,6 +190,8 @@ public class PqTests
         builder.RegisterType<Int128>();
         builder.RegisterType<Int256>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
+        builder.RegisterType<PersistentDataStore>().As<IPersistentStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         return container;
@@ -256,17 +259,22 @@ public class PqTests
         pQInnerDataDc.Q = qBytes;
         pQInnerDataDc.Nonce = (Int128)nonce;
         pQInnerDataDc.ServerNonce = (Int128)server_nonce;
-        var randomBytes = RandomNumberGenerator.GetBytes(32);
-        pQInnerDataDc.NewNonce = (Int256)randomBytes;
+        var newNonceBytes = RandomNumberGenerator.GetBytes(32);
+        pQInnerDataDc.NewNonce = (Int256)newNonceBytes;
         pQInnerDataDc.Dc = 1;
         byte[] sha1Received, sha1Actual;
         int constructor;
         ServerDhInnerData serverDhInnerData;
         ProcessReqDhParams(container, context, reqDhParams, pQInnerDataDc,
-            out sha1Received, out constructor, out serverDhInnerData, out sha1Actual);
+            out sha1Received, out constructor, out serverDhInnerData, out sha1Actual,
+            out var tempAesKey, out var tempAesIV);
 
+        Assert.True(context.SessionBag.ContainsKey("a"));
         Assert.Equal((int)TLConstructor.ServerDhInnerData, constructor);
         Assert.Equal(sha1Actual, sha1Received);
+        Assert.Equal(newNonceBytes, (byte[])context.SessionBag["new_nonce"]);
+        Assert.Equal(tempAesKey, (byte[])context.SessionBag["temp_aes_key"]);
+        Assert.Equal(tempAesIV, (byte[])context.SessionBag["temp_aes_iv"]);
         Assert.Equal(serverDhInnerData.G, (int)context.SessionBag["g"]);
         Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionBag["g_a"]);
         Assert.Equal(serverDhInnerData.DhPrime, dhPrime);
@@ -306,18 +314,23 @@ public class PqTests
         pQInnerDataDc.Q = qBytes;
         pQInnerDataDc.Nonce = (Int128)nonce;
         pQInnerDataDc.ServerNonce = (Int128)server_nonce;
-        var randomBytes = RandomNumberGenerator.GetBytes(32);
-        pQInnerDataDc.NewNonce = (Int256)randomBytes;
+        var newNonceBytes = RandomNumberGenerator.GetBytes(32);
+        pQInnerDataDc.NewNonce = (Int256)newNonceBytes;
         pQInnerDataDc.Dc = 1;
         pQInnerDataDc.ExpiresIn = 1000;
         byte[] sha1Received, sha1Actual;
         int constructor;
         ServerDhInnerData serverDhInnerData;
         ProcessReqDhParams2(container, context, reqDhParams, pQInnerDataDc,
-            out sha1Received, out constructor, out serverDhInnerData, out sha1Actual);
+            out sha1Received, out constructor, out serverDhInnerData, out sha1Actual,
+            out var tempAesKey, out var tempAesIV);
         Assert.True(context.SessionBag.ContainsKey("valid_until"));
-        Assert.Equal((int)TLConstructor.ServerDhInnerData, constructor);
+        Assert.True(context.SessionBag.ContainsKey("a"));
         Assert.Equal(sha1Actual, sha1Received);
+        Assert.Equal((int)TLConstructor.ServerDhInnerData, constructor);
+        Assert.Equal(newNonceBytes, (byte[])context.SessionBag["new_nonce"]);
+        Assert.Equal(tempAesKey, (byte[])context.SessionBag["temp_aes_key"]);
+        Assert.Equal(tempAesIV, (byte[])context.SessionBag["temp_aes_iv"]);
         Assert.Equal(serverDhInnerData.G, (int)context.SessionBag["g"]);
         Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionBag["g_a"]);
         Assert.Equal(serverDhInnerData.DhPrime, dhPrime);
@@ -346,9 +359,9 @@ public class PqTests
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
         context.SessionBag.Add("g", (int)g);
         context.SessionBag.Add("g_a", g_a.ToByteArray(true, true));
+        context.SessionBag.Add("a", a.ToByteArray(true, true));
         byte[] newNonce = RandomNumberGenerator.GetBytes(32);
         context.SessionBag.Add("new_nonce", newNonce);
-
 
         BigInteger b = new BigInteger(aBytes, true, true);
         while (b < prime)
@@ -369,7 +382,8 @@ public class PqTests
         buff.Write(clientDhInnerData.TLBytes.ToArray());
         if (buff.WrittenCount % 16 != 0)
         {
-            for (int i = 0; i < 16 - buff.WrittenCount % 16; i++)
+            int pad = (int)(16 - buff.WrittenCount % 16);
+            for (int i = 0; i < pad; i++)
             {
                 buff.Write((byte)0);
             }
@@ -382,7 +396,8 @@ public class PqTests
             .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
         var tmpAesIV = serverNonceNewNonce.Skip(12)
             .Concat(newNonceNewNonce).Concat(newNonce).SkipLast(28).ToArray();
-
+        context.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
+        context.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
         Aes aes = Aes.Create();
         aes.Key = tmpAesKey;
         byte[] encrypted = new byte[buff.WrittenCount];
@@ -400,14 +415,18 @@ public class PqTests
         var authKeyHash = authKeySHA1.Skip(12).ToArray();
         var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
 
-        var newNonceHash1 = SHA1.HashData(newNonce.Concat(new byte[1])
+        var newNonceHash1 = SHA1.HashData(newNonce.Concat(new byte[1] {1})
             .Concat(authKeyAuxHash).ToArray()).Skip(4).ToArray();
 
         Assert.Equal(authKey, (byte[])context.SessionBag["auth_key"]);
         Assert.Equal(newNonceHash1, result.NewNonceHash1);
     }
 
-    private void ProcessReqDhParams(IContainer container, TLExecutionContext context, ReqDhParams reqDhParams, PQInnerDataDc pQInnerDataDc, out byte[] sha1Received, out int constructor, out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual)
+    private void ProcessReqDhParams(IContainer container, TLExecutionContext context,
+        ReqDhParams reqDhParams, PQInnerDataDc pQInnerDataDc,
+        out byte[] sha1Received, out int constructor,
+        out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual,
+        out byte[] tempAesKey, out byte[] tempAesIV)
     {
         byte[] data = pQInnerDataDc.TLBytes.ToArray();
         byte[] paddingBytes = RandomNumberGenerator.GetBytes(192 - data.Length);
@@ -444,6 +463,8 @@ public class PqTests
             .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
         var tmpAesIV = serverNonceNewNonce.Skip(12)
             .Concat(newNonceNewNonce).Concat(((byte[])pQInnerDataDc.NewNonce).SkipLast(28)).ToArray();
+        tempAesKey = tmpAesKey.ToArray();
+        tempAesIV = tmpAesIV.ToArray();
 
         Aes aes = Aes.Create();
         aes.Key = tmpAesKey;
@@ -456,7 +477,11 @@ public class PqTests
         serverDhInnerData = (ServerDhInnerData)factory.Read(constructor, ref reader);
         sha1Actual = SHA1.HashData(serverDhInnerData.TLBytes.ToArray());
     }
-    private void ProcessReqDhParams2(IContainer container, TLExecutionContext context, ReqDhParams reqDhParams, PQInnerDataTempDc pQInnerDataDc, out byte[] sha1Received, out int constructor, out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual)
+    private void ProcessReqDhParams2(IContainer container, TLExecutionContext context,
+        ReqDhParams reqDhParams, PQInnerDataTempDc pQInnerDataDc,
+        out byte[] sha1Received, out int constructor,
+        out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual,
+        out byte[] tempAesKey, out byte[] tempAesIV)
     {
         byte[] data = pQInnerDataDc.TLBytes.ToArray();
         byte[] paddingBytes = RandomNumberGenerator.GetBytes(192 - data.Length);
@@ -493,6 +518,8 @@ public class PqTests
             .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
         var tmpAesIV = serverNonceNewNonce.Skip(12)
             .Concat(newNonceNewNonce).Concat(((byte[])pQInnerDataDc.NewNonce).SkipLast(28)).ToArray();
+        tempAesKey = tmpAesKey.ToArray();
+        tempAesIV = tmpAesIV.ToArray();
 
         Aes aes = Aes.Create();
         aes.Key = tmpAesKey;

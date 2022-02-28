@@ -46,6 +46,5 @@ public class RocksDBKVStore:IKVStore
         }
         db.Remove(key);
     }
-
 }
 
