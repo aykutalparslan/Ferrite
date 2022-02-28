@@ -61,6 +61,11 @@ class MockRandomGenerator : IRandomGenerator
             return primes[1];
         }
     }
+
+    public BigInteger GetRandomInteger(BigInteger min, BigInteger max)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 class MockKeyPairProvider : IKeyProvider
@@ -341,6 +346,7 @@ public class PqTests
     public void SetClientDhParams_ShouldReturnSetClientDhParamsAnswer()
     {
         IContainer container = BuildContainer();
+        var random = container.Resolve<IRandomGenerator>();
 
         TLExecutionContext context = new TLExecutionContext();
         context.SessionBag.Add("nonce", nonce);
@@ -348,28 +354,30 @@ public class PqTests
         context.SessionBag.Add("p", 0x494C553B);
         context.SessionBag.Add("q", 0x53911073);
         BigInteger prime = new BigInteger(dhPrime, true, true);
-        var aBytes = RandomNumberGenerator.GetBytes(2048);
-        BigInteger a = new BigInteger(aBytes, true, true);
-        while (a < prime)
-        {
-            aBytes = RandomNumberGenerator.GetBytes(2048);
-            a = new BigInteger(aBytes, true, true);
-        }
-        BigInteger g = new BigInteger(gs[RandomNumberGenerator.GetInt32(6)]);
+        BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
+        BigInteger max = prime - min;
+        BigInteger a = random.GetRandomInteger(2, prime - 2);
+        BigInteger g = new BigInteger(gs[random.GetRandomNumber(6)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
+        while (g_a <= min || g_a >= max)
+        {
+            a = random.GetRandomInteger(2, prime - 2);
+            g_a = BigInteger.ModPow(g, a, prime);
+        }
+
         context.SessionBag.Add("g", (int)g);
         context.SessionBag.Add("g_a", g_a.ToByteArray(true, true));
         context.SessionBag.Add("a", a.ToByteArray(true, true));
         byte[] newNonce = RandomNumberGenerator.GetBytes(32);
         context.SessionBag.Add("new_nonce", newNonce);
 
-        BigInteger b = new BigInteger(aBytes, true, true);
-        while (b < prime)
-        {
-            aBytes = RandomNumberGenerator.GetBytes(2048);
-            b = new BigInteger(aBytes, true, true);
-        }
+        BigInteger b = random.GetRandomInteger(2, prime - 2);
         BigInteger g_b = BigInteger.ModPow(g, b, prime);
+        while (g_a <= min || g_a >= max)
+        {
+            b = random.GetRandomInteger(2, prime - 2);
+            g_b = BigInteger.ModPow(g, b, prime);
+        }
 
         var clientDhInnerData = container.Resolve<ClientDhInnerData>();
         clientDhInnerData.GB = g_b.ToByteArray(true, true);

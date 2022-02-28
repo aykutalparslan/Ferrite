@@ -152,6 +152,16 @@ public class SetClientDhParams : ITLObject
             var newNonceHash3 = SHA1.HashData(((byte[])ctx.SessionBag["new_nonce"])
                     .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
                     .Skip(4).ToArray();
+            BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
+            BigInteger max = prime - min;
+            if(g_b <=min || g_b >= max)
+            {
+                var dhGenFail = factory.Resolve<DhGenFail>();
+                dhGenFail.Nonce = sessionNonce;
+                dhGenFail.ServerNonce = sessionServerNonce;
+                dhGenFail.NewNonceHash3 = (Int128)newNonceHash3;
+                return dhGenFail;
+            }
             if (dataStore.GetAuthKey(authKeyHash) == null)
             {
                 dataStore.SaveAuthKey(authKeyHash, authKey);

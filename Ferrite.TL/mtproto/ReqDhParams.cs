@@ -247,15 +247,16 @@ public class ReqDhParams : ITLObject
 
         var serverDhInnerData = factory.Resolve<ServerDhInnerData>();
         BigInteger prime = new BigInteger(dhPrime, true, true);
-        var aBytes = random.GetRandomBytes(2048);
-        BigInteger a = new BigInteger(aBytes, true, true);
-        while (a < prime)
-        {
-            aBytes = random.GetRandomBytes(2048);
-            a = new BigInteger(aBytes, true, true);
-        }
+        BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
+        BigInteger max = prime - min;
+        BigInteger a = random.GetRandomInteger(2, prime - 2);
         BigInteger g = new BigInteger(gs[random.GetRandomNumber(6)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
+        while (g_a <= min || g_a >= max)
+        {
+            a = random.GetRandomInteger(2, prime - 2);
+            g_a = BigInteger.ModPow(g, a, prime);
+        }
 
         serverDhInnerData.Nonce = sessionNonce;
         serverDhInnerData.ServerNonce = sessionServerNonce;

@@ -7,6 +7,8 @@
  */
 
 using System;
+using System.Numerics;
+
 namespace Ferrite.Crypto
 {
     public interface IRandomGenerator
@@ -15,6 +17,7 @@ namespace Ferrite.Crypto
         public int GetRandomNumber(int toExclusive);
         public int GetRandomNumber(int fromInclusive, int toExclusive);
         public byte[] GetRandomBytes(int count);
+        public BigInteger GetRandomInteger(BigInteger min, BigInteger max);
     }
 }
 
