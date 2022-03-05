@@ -10,6 +10,6 @@
     <None Remove="RocksDB" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RocksDB" Version="6.28.2.25302" />
+    <PackageReference Include="RocksDB" Version="6.29.3.26014" />
   </ItemGroup>
 </Project>
