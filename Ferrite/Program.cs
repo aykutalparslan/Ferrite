@@ -24,9 +24,9 @@ using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 using Ferrite.TL;
 using System.Reflection;
+using Ferrite.Data;
 
 namespace Ferrite;
-
 
 public class Program
 {
@@ -34,22 +34,24 @@ public class Program
     public static int Main(String[] args)
     {
         var tl = Assembly.Load("Ferrite.TL");
-
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
-        builder.RegisterType<ReqDhParams>();
-        builder.RegisterType<PQInnerDataDc>();
-        builder.RegisterType<PQInnerDataTempDc>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
+        builder.RegisterType<Int128>();
+        builder.RegisterType<Int256>();
+        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
+        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
+        builder.RegisterType<PersistentDataStore>().As<IPersistentStore>();
+        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
 
         Container = container;
 
-        SocketListener socketListener = new SocketListener(new IPEndPoint(IPAddress.Loopback, 12345));
+        SocketListener socketListener = new SocketListener(new IPEndPoint(IPAddress.Loopback, 5222));
         socketListener.Bind();
         StartAccept(socketListener);
         while (true)
@@ -68,10 +70,18 @@ public class Program
             if(connection != null)
             {
                 connection.Start();
+                var scope = Container.BeginLifetimeScope();
                 MTProtoConnection mtProtoConnection = new MTProtoConnection(connection,
-                    Container.BeginLifetimeScope().Resolve<ITLObjectFactory>());
+                    scope.Resolve<ITLObjectFactory>(), scope.Resolve<ITransportDetector>());
+                mtProtoConnection.MessageReceived += MtProtoConnection_MessageReceived;
                 mtProtoConnection.Start();
             }
         }
+    }
+
+    private static void MtProtoConnection_MessageReceived(object? sender, MTProtoAsyncEventArgs e)
+    {
+        var connection = (MTProtoConnection)sender;
+        connection.SendUnencrypted(e.Message.Execute(new TLExecutionContext()));
     }
 }

@@ -16,9 +16,9 @@
     <None Remove="BouncyCastle.NetCore" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="4.2.0" />
-    <PackageReference Include="DotNext.IO" Version="4.2.0" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.2.0" />
+    <PackageReference Include="DotNext" Version="4.3.0" />
+    <PackageReference Include="DotNext.IO" Version="4.3.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.3.0" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
   </ItemGroup>
   <ItemGroup>

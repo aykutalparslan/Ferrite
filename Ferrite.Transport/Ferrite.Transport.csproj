@@ -12,8 +12,8 @@
     <None Remove="DotNext.Unsafe" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="4.2.0" />
-    <PackageReference Include="DotNext.IO" Version="4.2.0" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.2.0" />
+    <PackageReference Include="DotNext" Version="4.3.0" />
+    <PackageReference Include="DotNext.IO" Version="4.3.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.3.0" />
   </ItemGroup>
 </Project>

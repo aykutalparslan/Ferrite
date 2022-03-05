@@ -13,32 +13,32 @@ using DotNext.Buffers;
 using Ferrite.Crypto;
 using Ferrite.Transport;
 using Ferrite.TL;
+using System.Security.Cryptography;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace Ferrite.Core;
 
 public class MTProtoConnection
 {
     public MTProtoTransport TransportType { get; private set; }
-
-    const byte Abridged = 0xef;
-    const int AbridgedInt = unchecked((int)0xefefefef);
-    const int Intermediate = unchecked((int)0xeeeeeeee);
-    const int PaddedIntermediate = unchecked((int)0xdddddddd);
-    const int Full = unchecked((int)0xdddddddd);
-    private readonly byte[] _lengthBytesAbridged = new byte[4];
-    private int _sequenceTcpFull;
+    private readonly ITransportDetector transportDetector;
+    private IFrameDecoder decoder;
+    private IFrameEncoder encoder;
     private long _authKeyId;
     private ISocketConnection socketConnection;
     private Task? receiveTask;
     //private Task? sendTask;
-    private ITLObjectFactory factory;
+    private readonly ITLObjectFactory factory;
+    
 
-
-    public MTProtoConnection(ISocketConnection connection, ITLObjectFactory objectFactory)
+    public MTProtoConnection(ISocketConnection connection, ITLObjectFactory objectFactory, ITransportDetector detector)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
         factory = objectFactory;
+        transportDetector = detector;
     }
 
     public void Start()
@@ -64,11 +64,13 @@ public class MTProtoConnection
         }
     }
 
-    private async Task SendUnencrypted(ITLObject message)
+    public async Task SendUnencrypted(ITLObject message)
     {
         try
         {
-            socketConnection.Transport.Output.Write(message.TLBytes);
+            var data = message.TLBytes;
+
+            socketConnection.Transport.Output.Write(encoder.Encode(data));
             _ = await socketConnection.Transport.Output.FlushAsync();
         }
         catch (Exception ex)
@@ -92,37 +94,42 @@ public class MTProtoConnection
         }
     }
     */
+
+    public event EventHandler<MTProtoAsyncEventArgs> MessageReceived;
+
+    protected virtual void OnMessageReceived(MTProtoAsyncEventArgs e)
+    {
+        EventHandler<MTProtoAsyncEventArgs> raiseEvent = MessageReceived;
+
+        if (raiseEvent != null)
+        {
+            raiseEvent(this, e);
+        }
+    }
+
     private SequencePosition Process(in ReadOnlySequence<byte> buffer)
     {
         SequenceReader<byte> reader = new SequenceReader<byte>(buffer);
         if (TransportType == MTProtoTransport.Unknown)
         {
-            DetectTransport(ref reader);
+            TransportType = transportDetector.DetectTransport(ref reader,
+                out decoder, out encoder);
         }
 
         bool hasMore = false;
         do
         {
-            if (TransportType == MTProtoTransport.Abridged)
+            hasMore = decoder.Decode(ref reader, out var frame);
+            if (frame.Length > 0)
             {
-                hasMore = ReadFrameAbridged(ref reader);
-            }
-            else if (TransportType == MTProtoTransport.Intermediate)
-            {
-                hasMore = ReadFrameIntermediate(ref reader);
-            }
-            else if (TransportType == MTProtoTransport.PaddedIntermediate)
-            {
-                hasMore = ReadFramePaddedIntermediate(ref reader);
-            }
-            else if (TransportType == MTProtoTransport.Full)
-            {
-                hasMore = ReadFrameFull(ref reader);
+                ProcessFrame(frame);
             }
         } while (hasMore);
         
         return reader.Position;
     }
+
+    
 
     private void ProcessEncryptedMessage(ReadOnlySequence<byte> bytes)
     {
@@ -132,12 +139,12 @@ public class MTProtoConnection
     private void ProcessUnencryptedMessage(ReadOnlySequence<byte> bytes)
     {
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        long messageId  = reader.ReadInt64(true);
+        long msgId  = reader.ReadInt64(true);
         int messageDataLength = reader.ReadInt32(true);
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);
+        OnMessageReceived(new MTProtoAsyncEventArgs(msg, messageId:msgId));
     }
-
 
     private void ProcessFrame(ReadOnlySequence<byte> bytes)
     {
@@ -155,181 +162,6 @@ public class MTProtoConnection
         else
         {
             ProcessEncryptedMessage(bytes.Slice(8));
-        }
-    }
-
-    private bool ReadFrameAbridged(ref SequenceReader<byte> reader)
-    {
-        if(reader.Remaining == 0)
-        {
-            return false;
-        }
-        long len = 0;
-        reader.TryRead(out var firstbyte);
-        if(firstbyte < 127)
-        {
-            len = firstbyte * 4;
-        }
-        else if(firstbyte == 127)
-        {
-            if (reader.Remaining < 3)
-            {
-                return false;
-            }
-            if (reader.TryCopyTo(_lengthBytesAbridged))
-            {
-                var tmp = new SpanReader<byte>(_lengthBytesAbridged);
-                len = tmp.ReadInt32(true) * 4;              
-            }
-            if (reader.Remaining < len)
-            {
-                return false;
-            }
-            ReadOnlySequence<byte> frame = reader.UnreadSequence.Slice(0, len);
-            reader.Advance(len);
-            ProcessFrame(frame);
-            if(reader.Remaining != 0)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private bool ReadFrameIntermediate(ref SequenceReader<byte> reader)
-    {
-        if (reader.Remaining < 4)
-        {
-            return false;
-        }
-        reader.TryReadLittleEndian(out int len);
-        if(reader.Remaining < len)
-        {
-            return false;
-        }
-        ReadOnlySequence<byte> frame = reader.UnreadSequence.Slice(0, len);
-        reader.Advance(len);
-        ProcessFrame(frame);
-        if (reader.Remaining != 0)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    private bool ReadFramePaddedIntermediate(ref SequenceReader<byte> reader)
-    {
-        if (reader.Remaining < 4)
-        {
-            return false;
-        }
-        reader.TryReadLittleEndian(out int len);
-        if (reader.Remaining < len)
-        {
-            return false;
-        }
-        ReadOnlySequence<byte> frame = reader.UnreadSequence.Slice(0, len);
-        reader.Advance(len);
-        ProcessFrame(frame);
-        if (reader.Remaining != 0)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    private bool ReadFrameFull(ref SequenceReader<byte> reader)
-    {
-        if (reader.Remaining < 4)
-        {
-            return false;
-        }
-        reader.TryReadLittleEndian(out int len);
-        if (reader.Remaining < len)
-        {
-            return false;
-        }
-        reader.Rewind(4);
-        uint crc32 = reader.UnreadSequence.Slice(0,len).GetCrc32();
-        reader.Advance(4);
-        reader.TryReadLittleEndian(out int seq);
-        _sequenceTcpFull = seq;
-        ReadOnlySequence<byte> frame = reader.Sequence.Slice(reader.Position, len-12);
-        reader.Advance(len-12);
-        reader.TryReadLittleEndian(out int checksum);
-        if(crc32 == (uint)checksum)
-        {
-            ProcessFrame(frame);
-        }
-        if (reader.Remaining != 0)
-        {
-            return true;
-        }
-        return false;
-    }
-
-    private void DetectTransport(ref SequenceReader<byte> reader)
-    {
-        if(reader.Remaining > 0)
-        {
-            reader.TryPeek(out var firstbyte);
-            if(firstbyte == Abridged)
-            {
-                TransportType = MTProtoTransport.Abridged;
-                reader.Advance(1);
-                return;
-            }
-        }
-
-        if (reader.Remaining > 3)
-        {
-            reader.TryReadLittleEndian(out int firstint);
-            if (firstint == Intermediate)
-            {
-                TransportType = MTProtoTransport.Intermediate;
-                return;
-            } else if (firstint == PaddedIntermediate)
-            {
-                TransportType = MTProtoTransport.PaddedIntermediate;
-                return;
-            } 
-        }
-
-        if (reader.Remaining > 7)
-        {
-            reader.TryReadLittleEndian(out int secondint);
-            if (secondint == Full)
-            {
-                TransportType = MTProtoTransport.Full;
-                reader.Rewind(8);
-                return;
-            }
-        }
-        if(reader.Remaining > 63)
-        {
-            reader.Advance(48);
-            reader.TryReadLittleEndian(out int identifier);
-            if (identifier == AbridgedInt)
-            {
-                TransportType = MTProtoTransport.Abridged;
-                reader.Advance(4);
-                return;
-            } else if(identifier == Intermediate)
-            {
-                TransportType = MTProtoTransport.Intermediate;
-                reader.Advance(4);
-                return;
-            } else if (identifier == PaddedIntermediate)
-            {
-                TransportType = MTProtoTransport.PaddedIntermediate;
-                reader.Advance(4);
-                return;
-            } else
-            {
-                TransportType = MTProtoTransport.Full;
-                reader.Advance(4);
-                return;
-            }
         }
     }
 }
