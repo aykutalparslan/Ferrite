@@ -27,7 +27,7 @@ public class IntermediateFrameEncoder : IFrameEncoder
 
     public ReadOnlySequence<byte> Encode(in ReadOnlySequence<byte> input)
     {
-        writer.Write(input.Length);
+        writer.WriteInt32((int)input.Length, true);
         writer.Write(input, false);
         var frame = writer.ToReadOnlySequence();
         writer.Clear();

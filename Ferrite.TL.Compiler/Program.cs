@@ -517,7 +517,8 @@ class Compiler
                         .Replace("vector<", "VectorBare<");
     }
 
-    private static ClassDeclarationSyntax AddField(ClassDeclarationSyntax cls, string typeName, string fieldname, string fieldValue)
+    private static ClassDeclarationSyntax AddField(ClassDeclarationSyntax cls, string typeName,
+        string fieldname, string fieldValue)
     {
         cls = cls.AddMembers(SyntaxFactory
                         .FieldDeclaration(SyntaxFactory
@@ -531,16 +532,22 @@ class Compiler
         return cls;
     }
 
-    private static ClassDeclarationSyntax AddField(ClassDeclarationSyntax cls, string typeName, string fieldname)
+    private static ClassDeclarationSyntax AddField(ClassDeclarationSyntax cls,
+        string typeName, string fieldname, bool readOnly=false)
     {
-        cls = cls.AddMembers(SyntaxFactory
+        var field = SyntaxFactory
                         .FieldDeclaration(SyntaxFactory
                             .VariableDeclaration(SyntaxFactory
                             .ParseTypeName(typeName))
                             .AddVariables(SyntaxFactory
                             .VariableDeclarator(fieldname)))
                         .AddModifiers(SyntaxFactory
-                            .Token(SyntaxKind.PrivateKeyword)));
+                            .Token(SyntaxKind.PrivateKeyword));
+        if (readOnly)
+        {
+            field = field.AddModifiers(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+        }
+        cls = cls.AddMembers(field);
         return cls;
     }
 

@@ -8,6 +8,7 @@
 
 using System;
 using System.Buffers;
+using System.Globalization;
 using System.Numerics;
 using System.Security.Cryptography;
 using DotNext.Buffers;
@@ -26,33 +27,10 @@ public class ReqDhParams : ITLObject
     private IKeyProvider keyProvider;
     private ILogger log;
     private IRandomGenerator random;
-    private readonly int[] gs = new int[] { 2, 3, 4, 5, 6, 7 };
+    //private readonly int[] gs = new int[] { 2, 3, 4, 5, 6, 7 };
+    private readonly int[] gs = new int[] { 3, 4, 7 };
     //TODO: Maybe change the DH_PRIME
-    private readonly byte[] dhPrime = new byte[]
-    {
-        0xC7, 0x1C, 0xAE, 0xB9, 0xC6, 0xB1, 0xC9, 0x04, 0x8E, 0x6C, 0x52, 0x2F,
-        0x70, 0xF1, 0x3F, 0x73, 0x98, 0x0D, 0x40, 0x23, 0x8E, 0x3E, 0x21, 0xC1,
-        0x49, 0x34, 0xD0, 0x37, 0x56, 0x3D, 0x93, 0x0F, 0x48, 0x19, 0x8A, 0x0A,
-        0xA7, 0xC1, 0x40, 0x58, 0x22, 0x94, 0x93, 0xD2, 0x25, 0x30, 0xF4, 0xDB,
-        0xFA, 0x33, 0x6F, 0x6E, 0x0A, 0xC9, 0x25, 0x13, 0x95, 0x43, 0xAE, 0xD4,
-        0x4C, 0xCE, 0x7C, 0x37, 0x20, 0xFD, 0x51, 0xF6, 0x94, 0x58, 0x70, 0x5A,
-        0xC6, 0x8C, 0xD4, 0xFE, 0x6B, 0x6B, 0x13, 0xAB, 0xDC, 0x97, 0x46, 0x51,
-        0x29, 0x69, 0x32, 0x84, 0x54, 0xF1, 0x8F, 0xAF, 0x8C, 0x59, 0x5F, 0x64,
-        0x24, 0x77, 0xFE, 0x96, 0xBB, 0x2A, 0x94, 0x1D, 0x5B, 0xCD, 0x1D, 0x4A,
-        0xC8, 0xCC, 0x49, 0x88, 0x07, 0x08, 0xFA, 0x9B, 0x37, 0x8E, 0x3C, 0x4F,
-        0x3A, 0x90, 0x60, 0xBE, 0xE6, 0x7C, 0xF9, 0xA4, 0xA4, 0xA6, 0x95, 0x81,
-        0x10, 0x51, 0x90, 0x7E, 0x16, 0x27, 0x53, 0xB5, 0x6B, 0x0F, 0x6B, 0x41,
-        0x0D, 0xBA, 0x74, 0xD8, 0xA8, 0x4B, 0x2A, 0x14, 0xB3, 0x14, 0x4E, 0x0E,
-        0xF1, 0x28, 0x47, 0x54, 0xFD, 0x17, 0xED, 0x95, 0x0D, 0x59, 0x65, 0xB4,
-        0xB9, 0xDD, 0x46, 0x58, 0x2D, 0xB1, 0x17, 0x8D, 0x16, 0x9C, 0x6B, 0xC4,
-        0x65, 0xB0, 0xD6, 0xFF, 0x9C, 0xA3, 0x92, 0x8F, 0xEF, 0x5B, 0x9A, 0xE4,
-        0xE4, 0x18, 0xFC, 0x15, 0xE8, 0x3E, 0xBE, 0xA0, 0xF8, 0x7F, 0xA9, 0xFF,
-        0x5E, 0xED, 0x70, 0x05, 0x0D, 0xED, 0x28, 0x49, 0xF4, 0x7B, 0xF9, 0x59,
-        0xD9, 0x56, 0x85, 0x0C, 0xE9, 0x29, 0x85, 0x1F, 0x0D, 0x81, 0x15, 0xF6,
-        0x35, 0xB1, 0x05, 0xEE, 0x2E, 0x4E, 0x15, 0xD0, 0x4B, 0x24, 0x54, 0xBF,
-        0x6F, 0x4F, 0xAD, 0xF0, 0x34, 0xB1, 0x04, 0x03, 0x11, 0x9C, 0xD8, 0xE3,
-        0xB9, 0x2F, 0xCC, 0x5B
-    };
+    private const string dhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
     public ReqDhParams(ITLObjectFactory objectFactory, IKeyProvider provider,
         IRandomGenerator generator, ILogger logger)
     {
@@ -174,8 +152,8 @@ public class ReqDhParams : ITLObject
         SequenceReader reader = IAsyncBinaryReader.Create(data.Slice(32, 192));
 
         int constructor = reader.ReadInt32(true);
-        var sessionNonce = (Int128)(byte[])ctx.SessionBag["nonce"];
-        var sessionServerNonce = (Int128)(byte[])ctx.SessionBag["server_nonce"];
+        var sessionNonce = (Int128)ctx.SessionBag["nonce"];
+        var sessionServerNonce = (Int128)ctx.SessionBag["server_nonce"];
         if (constructor == (int)TLConstructor.PQInnerDataDc)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
@@ -228,7 +206,7 @@ public class ReqDhParams : ITLObject
             var tmpAesKey = newNonceServerNonce
                 .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
             var tmpAesIV = serverNonceNewNonce.Skip(12)
-                .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).SkipLast(28)).ToArray();
+                .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).Take(4)).ToArray();
             ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
             ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
             byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
@@ -239,32 +217,32 @@ public class ReqDhParams : ITLObject
 
         return serverDhParamsOk;
     }
-
+    
     private byte[] GenerateEncryptedAnswer(TLExecutionContext ctx, ServerDhParamsOk serverDhParamsOk, Int128 sessionNonce, Int128 sessionServerNonce, byte[] tmpAesKey, byte[] tmpAesIV)
     {
         serverDhParamsOk.Nonce = sessionNonce;
         serverDhParamsOk.ServerNonce = sessionServerNonce;
 
         var serverDhInnerData = factory.Resolve<ServerDhInnerData>();
-        BigInteger prime = new BigInteger(dhPrime, true, true);
+        BigInteger prime = BigInteger.Parse("0"+dhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
         BigInteger max = prime - min;
         BigInteger a = random.GetRandomInteger(2, prime - 2);
-        BigInteger g = new BigInteger(gs[random.GetRandomNumber(6)]);
+        BigInteger g = new BigInteger(gs[random.GetRandomNumber(gs.Length)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
         while (g_a <= min || g_a >= max)
         {
             a = random.GetRandomInteger(2, prime - 2);
             g_a = BigInteger.ModPow(g, a, prime);
         }
-
+        
         serverDhInnerData.Nonce = sessionNonce;
         serverDhInnerData.ServerNonce = sessionServerNonce;
-        serverDhInnerData.DhPrime = prime.ToByteArray(true, true);
+        serverDhInnerData.DhPrime = prime.ToByteArray(true,true);
         serverDhInnerData.G = (int)g;
         serverDhInnerData.GA = g_a.ToByteArray(true, true);
-        serverDhInnerData.ServerTime = (int)new TimeSpan(DateTime.Now.Ticks).TotalSeconds;
-
+        serverDhInnerData.ServerTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        
         ctx.SessionBag.Add("g", serverDhInnerData.G);
         ctx.SessionBag.Add("a", a.ToByteArray(true,true));
         ctx.SessionBag.Add("g_a", serverDhInnerData.GA);
@@ -275,10 +253,8 @@ public class ReqDhParams : ITLObject
         buff.Write(serverDhInnerData.TLBytes, false);
         if (buff.WrittenCount % 16 != 0)
         {
-            for (int i = 0; i < 16 - buff.WrittenCount % 16; i++)
-            {
-                buff.Write((byte)0);
-            }
+            int rem = 16 - ((int)buff.WrittenCount % 16);
+            buff.Write(random.GetRandomBytes(rem));
         }
 
         Aes aes = Aes.Create();

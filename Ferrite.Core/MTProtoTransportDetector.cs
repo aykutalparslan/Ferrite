@@ -82,11 +82,9 @@ public class MTProtoTransportDetector : ITransportDetector
             var payload = reader.Sequence.Slice(0, 64);
             var decryptionKey = payload.Slice(8, 32).ToArray();
             var decryptionIV = payload.Slice(40, 16).ToArray();
-            var encryptionKey = payload.Slice(24, 32).ToArray();
-            Array.Reverse(encryptionKey);
-            var encryptionIV = payload.Slice(8, 16).ToArray();
-            Array.Reverse(encryptionIV);
-
+            var encryptionKey = payload.ToArray().Reverse().ToArray().AsSpan().Slice(8, 32).ToArray();
+            var encryptionIV = payload.ToArray().Reverse().ToArray().AsSpan().Slice(40, 16).ToArray();
+            
             Aes256Ctr decryptor = new Aes256Ctr(decryptionKey, decryptionIV);
             Aes256Ctr encryptor = new Aes256Ctr(encryptionKey, encryptionIV);
 

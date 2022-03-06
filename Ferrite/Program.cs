@@ -54,6 +54,7 @@ public class Program
         SocketListener socketListener = new SocketListener(new IPEndPoint(IPAddress.Loopback, 5222));
         socketListener.Bind();
         StartAccept(socketListener);
+        Console.WriteLine("Server is listening...");
         while (true)
         {
             Console.ReadLine();
@@ -82,6 +83,9 @@ public class Program
     private static void MtProtoConnection_MessageReceived(object? sender, MTProtoAsyncEventArgs e)
     {
         var connection = (MTProtoConnection)sender;
-        connection.SendUnencrypted(e.Message.Execute(new TLExecutionContext()));
+        Console.WriteLine(e.Message.ToString());
+        var result = e.Message.Execute(e.ExecutionContext);
+        Console.WriteLine("-->"+result.ToString());
+        connection.Send(result);
     }
 }

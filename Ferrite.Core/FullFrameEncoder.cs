@@ -28,7 +28,7 @@ public class FullFrameEncoder : IFrameEncoder
 
     public ReadOnlySequence<byte> Encode(in ReadOnlySequence<byte> input)
     {
-        writer.Write(input.Length);
+        writer.WriteInt32((int)input.Length, true);
         writer.WriteInt32(_sequence++, true);
         writer.Write(input, false);
         writer.WriteInt32((int)writer.ToReadOnlySequence().GetCrc32(), true);

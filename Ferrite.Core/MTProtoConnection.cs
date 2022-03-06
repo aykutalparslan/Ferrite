@@ -17,6 +17,8 @@ using System.Security.Cryptography;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Parameters;
+using System.Collections.Concurrent;
+using System.Threading.Channels;
 
 namespace Ferrite.Core;
 
@@ -29,8 +31,12 @@ public class MTProtoConnection
     private long _authKeyId;
     private ISocketConnection socketConnection;
     private Task? receiveTask;
-    //private Task? sendTask;
+    private Channel<ITLObject> _outgoing = Channel.CreateUnbounded<ITLObject>();
+    private Task? sendTask;
     private readonly ITLObjectFactory factory;
+    private long _lastMessageId;
+    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private TLExecutionContext _context = new TLExecutionContext();
     
 
     public MTProtoConnection(ISocketConnection connection, ITLObjectFactory objectFactory, ITransportDetector detector)
@@ -44,7 +50,7 @@ public class MTProtoConnection
     public void Start()
     {
         receiveTask = Receive();
-        //sendTask = Send();
+        sendTask = Send();
     }
 
     private async Task Receive()
@@ -54,8 +60,11 @@ public class MTProtoConnection
             while (true)
             {
                 var result = await socketConnection.Transport.Input.ReadAsync();
-                var position = Process(result.Buffer);
-                socketConnection.Transport.Input.AdvanceTo(position);
+                if (result.Buffer.Length > 0)
+                {
+                    var position = Process(result.Buffer);
+                    socketConnection.Transport.Input.AdvanceTo(position);
+                }
             }
         }
         catch (Exception ex)
@@ -64,28 +73,39 @@ public class MTProtoConnection
         }
     }
 
-    public async Task SendUnencrypted(ITLObject message)
+    public async Task Send(ITLObject message)
     {
-        try
+        if (message != null)
         {
-            var data = message.TLBytes;
-
-            socketConnection.Transport.Output.Write(encoder.Encode(data));
-            _ = await socketConnection.Transport.Output.FlushAsync();
-        }
-        catch (Exception ex)
-        {
-
+            await _outgoing.Writer.WriteAsync(message);
         }
     }
-    /*
+    
     private async Task Send()
     {
         try
         {
             while (true)
             {
+                try
+                {
+                    var msg = await _outgoing.Reader.ReadAsync();
+                    if (msg != null)
+                    {
+                        var data = msg.TLBytes;
+                        writer.Clear();
+                        writer.WriteInt64(0, true);
+                        writer.WriteInt64(GenerateMessageId(true), true);
+                        writer.WriteInt32((int)data.Length, true);
+                        writer.Write(data, false);
+                        socketConnection.Transport.Output.Write(encoder.Encode(writer.ToReadOnlySequence()));
+                        _ = await socketConnection.Transport.Output.FlushAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
 
+                }
             }
         }
         catch (Exception ex)
@@ -93,7 +113,7 @@ public class MTProtoConnection
 
         }
     }
-    */
+    
 
     public event EventHandler<MTProtoAsyncEventArgs> MessageReceived;
 
@@ -143,7 +163,7 @@ public class MTProtoConnection
         int messageDataLength = reader.ReadInt32(true);
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);
-        OnMessageReceived(new MTProtoAsyncEventArgs(msg, messageId:msgId));
+        OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId:msgId));
     }
 
     private void ProcessFrame(ReadOnlySequence<byte> bytes)
@@ -163,6 +183,31 @@ public class MTProtoConnection
         {
             ProcessEncryptedMessage(bytes.Slice(8));
         }
+    }
+    private long GenerateMessageId(bool response)
+    {
+        long id = (long)new TimeSpan(DateTime.Now.Ticks).TotalSeconds;
+        id *= 4294967296L;
+        if (id <= _lastMessageId)
+        {
+            id = ++_lastMessageId;
+        }
+        if (response)
+        {
+            while (id % 4 != 1)
+            {
+                id++;
+            }
+        }
+        else
+        {
+            while (id % 4 != 3)
+            {
+                id++;
+            }
+        }
+        _lastMessageId = id;
+        return id;
     }
 }
 

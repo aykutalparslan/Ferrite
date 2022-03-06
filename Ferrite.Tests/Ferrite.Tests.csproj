@@ -30,8 +30,17 @@
   <ItemGroup>
     <None Remove="pq\" />
     <None Remove="Autofac" />
+    <None Remove="transport\" />
+    <None Remove="testdata\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="pq\" />
+    <Folder Include="transport\" />
+    <Folder Include="testdata\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="testdata\obfuscatedIntermediate.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

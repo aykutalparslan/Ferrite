@@ -39,7 +39,6 @@ public class AbridgedFrameEncoder : IFrameEncoder
             writer.Write((byte)((len >> 8) & 0xFF));
             writer.Write((byte)((len >> 16) & 0xFF));
         }
-        writer.Write(input.Length);
         writer.Write(input, false);
         var frame = writer.ToReadOnlySequence();
         writer.Clear();
