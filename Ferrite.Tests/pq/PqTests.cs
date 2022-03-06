@@ -161,6 +161,40 @@ public class PqTests
         Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
     }
 
+    [Fact]
+    public void ReqPqMulti_ShouldNotModifyTLExecutionContext()
+    {
+        var tl = Assembly.Load("Ferrite.TL");
+        var builder = new ContainerBuilder();
+        builder.RegisterType<MockRandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<MockKeyPairProvider>().As<IKeyProvider>();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
+            .AsSelf();
+        builder.RegisterType<Int128>();
+        builder.RegisterType<Int256>();
+        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        var container = builder.Build();
+
+        var reqpq = container.Resolve<ReqPqMulti>();
+        reqpq.Nonce = (Int128)nonce;
+
+        TLExecutionContext context = new TLExecutionContext();
+        var respq = reqpq.Execute(context);
+
+        Assert.Equal(0x494C553B, (int)context.SessionBag["p"]);
+        Assert.Equal(0x53911073, (int)context.SessionBag["q"]);
+
+        Assert.Equal(nonce, (Int128)context.SessionBag["nonce"]);
+        Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
+
+        var reqpqNew = container.Resolve<ReqPqMulti>();
+        reqpqNew.Nonce = (Int128)nonce;
+        var respqNew = reqpqNew.Execute(context);
+        Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
+    }
+
     private static IContainer BuildContainer()
     {
         var tl = Assembly.Load("Ferrite.TL");

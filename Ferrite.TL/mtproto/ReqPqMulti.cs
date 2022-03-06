@@ -57,11 +57,28 @@ public class ReqPqMulti : ITLObject
     public bool IsMethod => true;
     public ITLObject Execute(TLExecutionContext ctx)
     {
-        ctx.SessionBag.Add("nonce", nonce);
         Respq respq = factory.Resolve<Respq>();
+        if (!ctx.SessionBag.ContainsKey("nonce") ||
+            (Int128)ctx.SessionBag["nonce"] != nonce)
+        {
+            ctx.SessionBag.Add("nonce", nonce);
+            respq.ServerNonce = (Int128)randomGenerator.GetRandomBytes(16);
+            ctx.SessionBag.Add("server_nonce", respq.ServerNonce);
+        }
+        else
+        {
+            respq.ServerNonce = (Int128)(Int128)ctx.SessionBag["server_nonce"];
+        }
         respq.Nonce = nonce;
-        respq.ServerNonce = (Int128)randomGenerator.GetRandomBytes(16);
-        ctx.SessionBag.Add("server_nonce", respq.ServerNonce);
+        if (ctx.SessionBag.ContainsKey("p"))
+        {
+            ctx.SessionBag.Remove("p");
+        }
+        if (ctx.SessionBag.ContainsKey("q"))
+        {
+            ctx.SessionBag.Remove("q");
+        }
+
         int a = randomGenerator.GetRandomPrime();
         int b = randomGenerator.GetRandomPrime();
         BigInteger pq = new BigInteger(a) * b;
@@ -76,7 +93,8 @@ public class ReqPqMulti : ITLObject
             ctx.SessionBag.Add("q", a);
         }
 
-        respq.Pq = pq.ToByteArray(isBigEndian:true);
+        respq.Pq = pq.ToByteArray(isBigEndian: true);
+
         //ctx.SessionBag.Add("pq", respq.Pq);
         VectorOfLong fingerprints = new VectorOfLong();
         
