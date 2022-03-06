@@ -13,9 +13,9 @@ namespace Ferrite.Data;
 public interface IKVStore
 {
 	void Init(string path);
-	void Put(byte[] key, byte[] value);
-	byte[] Get(byte[] key);
-	void Remove(byte[] key);
+	void Put(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value);
+	byte[] Get(ReadOnlySpan<byte> key);
+	void Remove(ReadOnlySpan<byte> key);
 }
 
 

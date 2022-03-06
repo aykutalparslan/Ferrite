@@ -26,6 +26,19 @@ using System.Globalization;
 
 namespace Ferrite.Tests.pq;
 
+class MockDataStore : IPersistentStore
+{
+    public byte[] GetAuthKey(ReadOnlySpan<byte> authKeyId)
+    {
+        return RandomNumberGenerator.GetBytes(192);
+    }
+
+    public void SaveAuthKey(ReadOnlySpan<byte> authKeyId, ReadOnlySpan<byte> authKey)
+    {
+        
+    }
+}
+
 class MockRandomGenerator : IRandomGenerator
 {
     byte[] random = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
@@ -440,9 +453,124 @@ public class PqTests
         Assert.Equal(serverDhInnerData.DhPrime, StringToByteArray(dhPrime));
         Assert.Contains(serverDhInnerData.G, gs);
     }
+    
 
     [Fact]
-    public void SetClientDhParams_ShouldReturnSetClientDhParamsAnswer()
+    public void SetClientDhParams_ShouldReturnDhGenRetry()
+    {
+        var tl = Assembly.Load("Ferrite.TL");
+        var builder = new ContainerBuilder();
+        builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
+            .AsSelf();
+        builder.RegisterType<Int128>();
+        builder.RegisterType<Int256>();
+        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
+        builder.RegisterType<MockDataStore>().As<IPersistentStore>();
+        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        var container = builder.Build();
+        
+        var random = container.Resolve<IRandomGenerator>();
+        byte[] n = new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
+            0x66, 0xB3, 0x01, 0xA4, 0x8F, 0xEC, 0xE2, 0xFC };
+        byte[] sn = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
+            0x77, 0xBA, 0x4A, 0xA5, 0x73, 0x90, 0x73, 0x30 };
+        byte[] nn = new byte[] { 0x31, 0x1C, 0x85, 0xDB, 0x23, 0x4A, 0xA2, 0x64,
+            0x0A, 0xFC, 0x4A, 0x76, 0xA7, 0x35, 0xCF, 0x5B,
+            0x1F, 0x0F, 0xD6, 0x8B, 0xD1, 0x7F, 0xA1, 0x81,
+            0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
+
+        TLExecutionContext context = new TLExecutionContext();
+        context.SessionBag.Add("nonce", (Int128)n);
+        context.SessionBag.Add("server_nonce", (Int128)sn);
+        context.SessionBag.Add("p", 0x494C553B);
+        context.SessionBag.Add("q", 0x53911073);
+        BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
+        BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
+        BigInteger max = prime - min;
+        BigInteger a = random.GetRandomInteger(2, prime - 2);
+        BigInteger g = new BigInteger(gs[random.GetRandomNumber(gs.Length)]);
+        BigInteger g_a = BigInteger.ModPow(g, a, prime);
+        while (g_a <= min || g_a >= max)
+        {
+            a = random.GetRandomInteger(2, prime - 2);
+            g_a = BigInteger.ModPow(g, a, prime);
+        }
+
+        context.SessionBag.Add("g", (int)g);
+        context.SessionBag.Add("g_a", g_a.ToByteArray(true, true));
+        context.SessionBag.Add("a", a.ToByteArray(true, true));
+        byte[] newNonce = RandomNumberGenerator.GetBytes(32);
+        context.SessionBag.Add("new_nonce", nn);
+
+        BigInteger b = random.GetRandomInteger(2, prime - 2);
+        BigInteger g_b = BigInteger.ModPow(g, b, prime);
+        while (g_a <= min || g_a >= max)
+        {
+            b = random.GetRandomInteger(2, prime - 2);
+            g_b = BigInteger.ModPow(g, b, prime);
+        }
+
+        var clientDhInnerData = container.Resolve<ClientDhInnerData>();
+        clientDhInnerData.GB = g_b.ToByteArray(true, true);
+        clientDhInnerData.Nonce = (Int128)n;
+        clientDhInnerData.ServerNonce = (Int128)sn;
+        clientDhInnerData.RetryId = 0;
+
+        var buff = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+        buff.Write(SHA1.HashData(clientDhInnerData.TLBytes.ToArray()));
+        buff.Write(clientDhInnerData.TLBytes.ToArray());
+        if (buff.WrittenCount % 16 != 0)
+        {
+            int pad = (int)(16 - buff.WrittenCount % 16);
+            for (int i = 0; i < pad; i++)
+            {
+                buff.Write((byte)0);
+            }
+        }
+
+        var newNonceServerNonce = SHA1.HashData(nn.Concat(sn).ToArray());
+        var serverNonceNewNonce = SHA1.HashData(sn.Concat(nn).ToArray());
+        var newNonceNewNonce = SHA1.HashData(nn.Concat(nn).ToArray());
+        var tmpAesKey = newNonceServerNonce
+            .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
+        var tmpAesIV = serverNonceNewNonce.Skip(12)
+            .Concat(newNonceNewNonce).Concat(newNonce).SkipLast(28).ToArray();
+        context.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
+        context.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+        Aes aes = Aes.Create();
+        aes.Key = tmpAesKey;
+        byte[] encrypted = new byte[buff.WrittenCount];
+        aes.EncryptIge(buff.ToReadOnlySequence().ToArray(), tmpAesIV, encrypted);
+        ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
+
+        var setClientDhParams = factory.Resolve<SetClientDhParams>();
+        setClientDhParams.Nonce = (Int128)n;
+        setClientDhParams.ServerNonce = (Int128)sn;
+        setClientDhParams.EncryptedData = encrypted;
+        var result = (DhGenRetry)setClientDhParams.Execute(context);
+
+        var authKey = BigInteger.ModPow(g_a, b, prime).ToByteArray(true, true);
+        var authKeySHA1 = SHA1.HashData(authKey);
+        var authKeyHash = authKeySHA1.Skip(12).ToArray();
+        var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
+
+        var str = nn.Concat(new byte[1] { (byte)2 })
+            .Concat(authKeyAuxHash).ToArray();
+        var newNonceHash2 = SHA1.HashData(str).Skip(4).ToArray();
+
+
+
+        Assert.Equal(authKey, (byte[])context.SessionBag["auth_key"]);
+        Assert.Equal(newNonceHash2, result.NewNonceHash2);
+    }
+
+
+    [Fact]
+    public void SetClientDhParams_ShouldReturnDhGenOk()
     {
         IContainer container = BuildContainer();
         var random = container.Resolve<IRandomGenerator>();

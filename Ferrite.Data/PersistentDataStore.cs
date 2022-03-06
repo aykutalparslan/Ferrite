@@ -18,12 +18,12 @@ public class PersistentDataStore : IPersistentStore
         store.Init("data.rocks");
     }
 
-    public byte[] GetAuthKey(byte[] authKeyId)
+    public byte[] GetAuthKey(ReadOnlySpan<byte> authKeyId)
     {
         return kVStore.Get(authKeyId);
     }
 
-    public void SaveAuthKey(byte[] authKeyId, byte[] authKey)
+    public void SaveAuthKey(ReadOnlySpan<byte> authKeyId, ReadOnlySpan<byte> authKey)
     {
         kVStore.Put(authKeyId, authKey);
     }

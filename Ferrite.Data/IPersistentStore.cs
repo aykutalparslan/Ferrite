@@ -10,7 +10,7 @@ using System;
 namespace Ferrite.Data;
 public interface IPersistentStore
 {
-    public void SaveAuthKey(byte[] authKeyId, byte[] authKey);
-    public byte[] GetAuthKey(byte[] authKeyId);
+    public void SaveAuthKey(ReadOnlySpan<byte> authKeyId, ReadOnlySpan<byte> authKey);
+    public byte[] GetAuthKey(ReadOnlySpan<byte> authKeyId);
 }
 

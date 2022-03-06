@@ -85,15 +85,12 @@ public class SetClientDhParams : ITLObject
     public bool IsMethod => true;
     public ITLObject Execute(TLExecutionContext ctx)
     {
+        bool failed = false;
         var sessionNonce = (Int128)ctx.SessionBag["nonce"];
         var sessionServerNonce = (Int128)ctx.SessionBag["server_nonce"];
         if (nonce != sessionNonce || serverNonce != sessionServerNonce)
         {
-            var dhGenFail = factory.Resolve<DhGenFail>();
-            dhGenFail.Nonce = sessionNonce;
-            dhGenFail.ServerNonce = sessionServerNonce;
-            dhGenFail.NewNonceHash3 = new Int128();
-            return dhGenFail;
+            failed = true;
         }
         Aes aes = Aes.Create();
         aes.Key = (byte[])ctx.SessionBag["temp_aes_key"];
@@ -113,7 +110,7 @@ public class SetClientDhParams : ITLObject
                 sessionNonce != clientDhInnerData.Nonce ||
                 sessionServerNonce != clientDhInnerData.ServerNonce)
             {
-                return null;
+                failed = true;
             }
             BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
             BigInteger g_b = new BigInteger(clientDhInnerData.GB, true, true);
@@ -131,7 +128,7 @@ public class SetClientDhParams : ITLObject
                     .Skip(4).ToArray();
             BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
             BigInteger max = prime - min;
-            if(g_b <=min || g_b >= max)
+            if(g_b <=min || g_b >= max || failed)
             {
                 var dhGenFail = factory.Resolve<DhGenFail>();
                 dhGenFail.Nonce = sessionNonce;
@@ -141,7 +138,7 @@ public class SetClientDhParams : ITLObject
             }
             if (dataStore.GetAuthKey(authKeyHash) == null)
             {
-                dataStore.SaveAuthKey(authKeyHash, authKey);
+                dataStore.SaveAuthKey(authKeyHash, authKey.AsSpan().Slice(0, 192));
                 var dhGenOk = factory.Resolve<DhGenOk>();
                 dhGenOk.Nonce = sessionNonce;
                 dhGenOk.ServerNonce = sessionServerNonce;

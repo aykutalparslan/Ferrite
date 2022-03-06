@@ -19,7 +19,7 @@ public class RocksDBKVStore:IKVStore
     {
         db = RocksDb.Open(new DbOptions().SetCreateIfMissing(), path);
     }
-    public void Put(byte[] key, byte[] value)
+    public void Put(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {
         if(db == null)
         {
@@ -28,7 +28,7 @@ public class RocksDBKVStore:IKVStore
         }
         db.Put(key, value);
     }
-    public byte[] Get(byte[] key)
+    public byte[] Get(ReadOnlySpan<byte> key)
     {
         if (db == null)
         {
@@ -37,7 +37,7 @@ public class RocksDBKVStore:IKVStore
         }
         return db.Get(key);
     }
-    public void Remove(byte[] key)
+    public void Remove(ReadOnlySpan<byte> key)
     {
         if (db == null)
         {
