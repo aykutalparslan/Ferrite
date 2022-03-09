@@ -19,6 +19,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Autofac" Version="6.3.0" />
+    <PackageReference Include="DotNext" Version="4.3.0" />
+    <PackageReference Include="DotNext.IO" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +34,8 @@
     <None Remove="Autofac" />
     <None Remove="transport\" />
     <None Remove="testdata\" />
+    <None Remove="DotNext" />
+    <None Remove="DotNext.IO" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="pq\" />
@@ -41,6 +45,9 @@
   <ItemGroup>
     <None Update="testdata\obfuscatedIntermediate.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\obfuscatedIntermediateSession.bin">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 </Project>
