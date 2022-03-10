@@ -7,17 +7,10 @@
  */
 
 using System.Buffers;
-using System.Text;
 using DotNext.IO;
 using DotNext.Buffers;
-using Ferrite.Crypto;
 using Ferrite.Transport;
 using Ferrite.TL;
-using System.Security.Cryptography;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Crypto.Parameters;
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace Ferrite.Core;

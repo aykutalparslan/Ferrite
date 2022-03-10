@@ -6,3 +6,34 @@ services:
     build:
       context: .
       dockerfile: Ferrite/Dockerfile
+  redis:
+    image: redis
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - data-redis:/data
+    ports:
+      - 6379:6379
+  cassandra:
+    image: cassandra
+    environment:
+      - CASSANDRA_CLUSTER_NAME=ferrite-cluster
+    volumes:
+      - data-cassandra:/var/lib/cassandra
+    ports:
+      - 9042:9042
+  minio:
+    image: quay.io/minio/minio
+    command: server --console-address ":9001" /data
+    volumes:
+      - data-minio:/data
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+       MINIO_ROOT_USER: minioadmin
+       MINIO_ROOT_PASSWORD: minioadmin
+       MINIO_REGION: us-east-1
+volumes:
+  data-cassandra:
+  data-redis:
+  data-minio:
