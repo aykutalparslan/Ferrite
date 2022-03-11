@@ -8,8 +8,10 @@
 
   <ItemGroup>
     <None Remove="RocksDB" />
+    <None Remove="StackExchange.Redis" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="RocksDB" Version="6.29.3.26014" />
+    <PackageReference Include="StackExchange.Redis" Version="2.5.43" />
   </ItemGroup>
 </Project>
