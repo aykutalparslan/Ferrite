@@ -1,9 +1,19 @@
 ﻿/*
- *    Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
- *    This file is a part of Project Ferrite
+ *   Project Ferrite is an Implementation Telegram Server API
+ *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
- *    Proprietary and confidential.
- *    Copying without express written permission is strictly prohibited.
+ *   This program is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU Affero General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU Affero General Public License for more details.
+ *
+ *   You should have received a copy of the GNU Affero General Public License
+ *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 using System.Globalization;
@@ -20,12 +30,22 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                " *    Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
-                " *    This file is a part of Project Ferrite\r\n" +
-                " *\r\n" +
-                " *    Proprietary and confidential.\r\n" +
-                " *    Copying without express written permission is strictly prohibited.\r\n" +
-                " */\r\n")),
+                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
+                  " *\r\n" +
+                  " *   This program is free software: you can redistribute it and/or modify\r\n" +
+                  " *   it under the terms of the GNU Affero General Public License as published by\r\n" +
+                  " *   the Free Software Foundation, either version 3 of the License, or\r\n" +
+                  " *   (at your option) any later version.\r\n" +
+                  " *\r\n" +
+                  " *   This program is distributed in the hope that it will be useful,\r\n" +
+                  " *   but WITHOUT ANY WARRANTY; without even the implied warranty of\r\n" +
+                  " *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\r\n" +
+                  " *   GNU Affero General Public License for more details.\r\n" +
+                  " *\r\n" +
+                  " *   You should have received a copy of the GNU Affero General Public License\r\n" +
+                  " *   along with this program.  If not, see <https://www.gnu.org/licenses/>.\r\n" +
+                  " */\r\n")),
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Buffers")),
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("DotNext.Buffers")),
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("DotNext.IO")),
@@ -249,12 +269,22 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                " *    Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
-                " *    This file is a part of Project Ferrite\r\n" +
-                " *\r\n" +
-                " *    Proprietary and confidential.\r\n" +
-                " *    Copying without express written permission is strictly prohibited.\r\n" +
-                " */\r\n")),
+                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
+                  " *\r\n" +
+                  " *   This program is free software: you can redistribute it and/or modify\r\n" +
+                  " *   it under the terms of the GNU Affero General Public License as published by\r\n" +
+                  " *   the Free Software Foundation, either version 3 of the License, or\r\n" +
+                  " *   (at your option) any later version.\r\n" +
+                  " *\r\n" +
+                  " *   This program is distributed in the hope that it will be useful,\r\n" +
+                  " *   but WITHOUT ANY WARRANTY; without even the implied warranty of\r\n" +
+                  " *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\r\n" +
+                  " *   GNU Affero General Public License for more details.\r\n" +
+                  " *\r\n" +
+                  " *   You should have received a copy of the GNU Affero General Public License\r\n" +
+                  " *   along with this program.  If not, see <https://www.gnu.org/licenses/>.\r\n" +
+                  " */\r\n")),
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Buffers")),
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("DotNext.Buffers")),
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("DotNext.IO")),
@@ -556,12 +586,22 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                " *    Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
-                " *    This file is a part of Project Ferrite\r\n" +
-                " *\r\n" +
-                " *    Proprietary and confidential.\r\n" +
-                " *    Copying without express written permission is strictly prohibited.\r\n" +
-                " */\r\n"))
+                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
+                  " *\r\n" +
+                  " *   This program is free software: you can redistribute it and/or modify\r\n" +
+                  " *   it under the terms of the GNU Affero General Public License as published by\r\n" +
+                  " *   the Free Software Foundation, either version 3 of the License, or\r\n" +
+                  " *   (at your option) any later version.\r\n" +
+                  " *\r\n" +
+                  " *   This program is distributed in the hope that it will be useful,\r\n" +
+                  " *   but WITHOUT ANY WARRANTY; without even the implied warranty of\r\n" +
+                  " *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\r\n" +
+                  " *   GNU Affero General Public License for more details.\r\n" +
+                  " *\r\n" +
+                  " *   You should have received a copy of the GNU Affero General Public License\r\n" +
+                  " *   along with this program.  If not, see <https://www.gnu.org/licenses/>.\r\n" +
+                  " */\r\n"))
             )
             .AddMembers(SyntaxFactory.FileScopedNamespaceDeclaration(
                 SyntaxFactory.ParseName("Ferrite.TL")));
