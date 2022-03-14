@@ -30,6 +30,7 @@ public class MTProtoTransportDetector : ITransportDetector
     const int Intermediate = unchecked((int)0xeeeeeeee);
     const int PaddedIntermediate = unchecked((int)0xdddddddd);
     const int Full = unchecked((int)0xdddddddd);
+    const int WebSocketGet = 542393671;
 
     public MTProtoTransport DetectTransport(ref SequenceReader<byte> reader,
         out IFrameDecoder decoder, out IFrameEncoder encoder)

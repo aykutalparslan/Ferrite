@@ -11,7 +11,7 @@
     <None Remove="StackExchange.Redis" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RocksDB" Version="6.29.3.26014" />
+    <PackageReference Include="RocksDB" Version="7.0.1.26543" />
     <PackageReference Include="StackExchange.Redis" Version="2.5.43" />
   </ItemGroup>
 </Project>

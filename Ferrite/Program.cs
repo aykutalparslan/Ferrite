@@ -61,8 +61,7 @@ public class Program
 
         Container = container;
 
-        SocketListener socketListener = new SocketListener(new IPEndPoint(IPAddress.Loopback, 5222));
-        socketListener.Bind();
+        IConnectionListener socketListener = new SocketConnectionListener(new IPEndPoint(IPAddress.Loopback, 5222));
         StartAccept(socketListener);
         Console.WriteLine("Server is listening...");
         while (true)
@@ -72,11 +71,11 @@ public class Program
     }
 
 
-    internal static async void StartAccept(SocketListener socketListener)
+    internal static async void StartAccept(IConnectionListener socketListener)
     {
         while (true)
         {
-            SocketConnection? connection = await socketListener.AcceptAsync();
+            ISocketConnection? connection = await socketListener.AcceptAsync();
             
             if(connection != null)
             {
