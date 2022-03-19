@@ -18,6 +18,8 @@ public interface IConnectionListener : IAsyncDisposable
     /// </summary>
     EndPoint EndPoint { get; }
 
+    void Bind(EndPoint localEndPoint);
+
     /// <summary>
     /// Begins an asynchronous operation to accept an incoming connection.
     /// </summary>

@@ -11,7 +11,7 @@ namespace Ferrite.Transport;
 /// <summary>
 /// Represents a wrapper for RequestHeaders and ResponseHeaders.
 /// </summary>
-public class HeaderDictionary : IHeaderDictionary
+public partial class HeaderDictionary : IHeaderDictionary
 {
     private static readonly string[] EmptyKeys = Array.Empty<string>();
     private static readonly StringValues[] EmptyValues = Array.Empty<StringValues>();

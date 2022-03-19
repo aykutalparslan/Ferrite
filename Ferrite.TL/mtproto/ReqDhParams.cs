@@ -164,7 +164,37 @@ public class ReqDhParams : ITLObject
         int constructor = reader.ReadInt32(true);
         var sessionNonce = (Int128)ctx.SessionBag["nonce"];
         var sessionServerNonce = (Int128)ctx.SessionBag["server_nonce"];
-        if (constructor == (int)TLConstructor.PQInnerDataDc)
+        if (constructor == (int)TLConstructor.PQInnerData)
+        {
+            var obj = factory.Read<PQInnerDataDc>(ref reader);
+            ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
+            if (nonce != obj.Nonce ||
+                nonce != sessionNonce ||
+                serverNonce != obj.ServerNonce ||
+                serverNonce != sessionServerNonce)
+            {
+                rpcError = factory.Resolve<RpcError>();
+                rpcError.ErrorCode = -404;
+                return rpcError;
+            }
+            var newNonceServerNonce = SHA1.HashData(((byte[])obj.NewNonce)
+                .Concat((byte[])sessionServerNonce).ToArray());
+            var serverNonceNewNonce = SHA1.HashData(((byte[])sessionServerNonce)
+                .Concat((byte[])obj.NewNonce).ToArray());
+            var newNonceNewNonce = SHA1.HashData(((byte[])obj.NewNonce)
+                .Concat((byte[])obj.NewNonce).ToArray());
+            var tmpAesKey = newNonceServerNonce
+                .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
+            var tmpAesIV = serverNonceNewNonce.Skip(12)
+                .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).SkipLast(28)).ToArray();
+            ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+            byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
+            serverDhParamsOk.EncryptedAnswer = answer;
+
+            return serverDhParamsOk;
+        }
+        else if (constructor == (int)TLConstructor.PQInnerDataDc)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
             ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);

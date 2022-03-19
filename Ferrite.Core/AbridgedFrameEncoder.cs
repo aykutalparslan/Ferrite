@@ -45,7 +45,7 @@ public class AbridgedFrameEncoder : IFrameEncoder
         else
         {
             writer.Write((byte)0x7f);
-            writer.Write((byte)len & 0xff);
+            writer.Write((byte)(len & 0xff));
             writer.Write((byte)((len >> 8) & 0xFF));
             writer.Write((byte)((len >> 16) & 0xFF));
         }

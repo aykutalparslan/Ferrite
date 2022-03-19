@@ -15,16 +15,16 @@ public sealed class SocketConnectionListener : IConnectionListener
     private readonly SocketSenderPool _socketSenderPool;
     public EndPoint EndPoint { get; private set; }
 
-    public SocketConnectionListener(EndPoint endpoint)
+    public SocketConnectionListener()
     {
-        EndPoint = endpoint;
+        
         _pipeScheduler = new IOQueue();
         _socketSenderPool = new SocketSenderPool(_pipeScheduler);
-        Bind();
     }
 
-    private void Bind()
+    public void Bind(EndPoint endpoint)
     {
+        EndPoint = endpoint;
         if (_listenSocket != null)
         {
             throw new InvalidOperationException("Transport is already bound.");

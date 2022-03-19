@@ -23,6 +23,7 @@ using Ferrite.TL;
 using System.Threading.Channels;
 using Ferrite.Transport;
 using System.Text;
+using System.IO.Pipelines;
 
 namespace Ferrite.Core;
 
@@ -44,6 +45,7 @@ public class MTProtoConnection
     private const int WebSocketGet = 542393671;
     private byte[] CRLF = new byte[] { (byte)'\r', (byte)'\n' };
     private WebSocketHandler webSocketHandler;
+    private Pipe webSocketPipe;
 
     public MTProtoConnection(ISocketConnection connection, ITLObjectFactory objectFactory, ITransportDetector detector)
     {
@@ -66,10 +68,35 @@ public class MTProtoConnection
             while (true)
             {
                 var result = await socketConnection.Transport.Input.ReadAsync();
+                if (result.IsCanceled)
+                {
+                    break;
+                }
                 if (result.Buffer.Length > 0)
                 {
-                    var position = Process(result.Buffer);
-                    socketConnection.Transport.Input.AdvanceTo(position);
+                    if (webSocketHandler != null)
+                    {
+                        if (webSocketPipe == null)
+                        {
+                            webSocketPipe = new Pipe();
+                        }
+                        var position = webSocketHandler.DecodeTo(result.Buffer, webSocketPipe.Writer);
+                        _ = await webSocketPipe.Writer.FlushAsync();
+                        socketConnection.Transport.Input.AdvanceTo(position);
+
+                        var wsResult = await webSocketPipe.Reader.ReadAsync();
+                        var wsPosition = Process(wsResult.Buffer);
+                        webSocketPipe.Reader.AdvanceTo(wsPosition);
+                    }
+                    else
+                    {
+                        var position = Process(result.Buffer);
+                        socketConnection.Transport.Input.AdvanceTo(position);
+                    }
+                }
+                if (result.IsCompleted)
+                {
+                    break;
                 }
             }
         }
@@ -86,31 +113,35 @@ public class MTProtoConnection
             await _outgoing.Writer.WriteAsync(message);
         }
     }
-    
+
     private async Task Send()
     {
         try
         {
             while (true)
             {
-                try
+                var msg = await _outgoing.Reader.ReadAsync();
+                if (msg != null)
                 {
-                    var msg = await _outgoing.Reader.ReadAsync();
-                    if (msg != null)
+                    var data = msg.TLBytes;
+                    writer.Clear();
+                    writer.WriteInt64(0, true);
+                    writer.WriteInt64(GenerateMessageId(true), true);
+                    writer.WriteInt32((int)data.Length, true);
+                    writer.Write(data, false);
+                    var message = writer.ToReadOnlySequence();
+                    var encoded = encoder.Encode(message);
+                    if (webSocketHandler != null)
                     {
-                        var data = msg.TLBytes;
-                        writer.Clear();
-                        writer.WriteInt64(0, true);
-                        writer.WriteInt64(GenerateMessageId(true), true);
-                        writer.WriteInt32((int)data.Length, true);
-                        writer.Write(data, false);
-                        socketConnection.Transport.Output.Write(encoder.Encode(writer.ToReadOnlySequence()));
-                        _ = await socketConnection.Transport.Output.FlushAsync();
+                        webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
                     }
-                }
-                catch (Exception ex)
-                {
-
+                    socketConnection.Transport.Output.Write(encoded);
+                    var result = await socketConnection.Transport.Output.FlushAsync();
+                    if(result.IsCompleted ||
+                        result.IsCanceled)
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -138,13 +169,16 @@ public class MTProtoConnection
         SequenceReader<byte> reader = new SequenceReader<byte>(buffer);
         if (TransportType == MTProtoTransport.Unknown)
         {
-            if (reader.TryReadLittleEndian(out int firstInt) &&
-                firstInt == WebSocketGet)
+            if (reader.TryReadLittleEndian(out int firstInt))
             {
                 reader.Rewind(4);
-                ProcessWebSocketHandshake(ref reader);
-                return reader.Position;
+                if (firstInt == WebSocketGet)
+                {
+                    ProcessWebSocketHandshake(ref reader);
+                    return reader.Position;
+                }
             }
+
             TransportType = transportDetector.DetectTransport(ref reader,
             out decoder, out encoder);
         }
@@ -176,13 +210,12 @@ public class MTProtoConnection
         parser.ParseHeaders(webSocketHandler, ref reader);
         if (webSocketHandler.HeadersComplete )
         {
-            var resp = webSocketHandler.GetHandshakeResponse();
-            var data = Encoding.ASCII.GetBytes(resp);
-            Send(data);
+            webSocketHandler.WriteHandshakeResponseTo(socketConnection.Transport.Output);
+            socketConnection.Transport.Output.FlushAsync();
         }
     }
 
-    private async void Send(byte[] data)
+    private async void SendAsync(byte[] data)
     {
         socketConnection.Transport.Output.Write(data);
         _ = await socketConnection.Transport.Output.FlushAsync();

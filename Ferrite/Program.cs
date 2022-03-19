@@ -43,6 +43,21 @@ public class Program
     private static IContainer Container { get; set; }
     public static int Main(String[] args)
     {
+        BuildIoCContainer();
+
+        IConnectionListener socketListener = Container.BeginLifetimeScope()
+            .Resolve<IConnectionListener>();
+        socketListener.Bind(new IPEndPoint(IPAddress.Loopback, 5222));
+        StartAccept(socketListener);
+        Console.WriteLine("Server is listening...");
+        while (true)
+        {
+            Console.ReadLine();
+        }
+    }
+
+    private static void BuildIoCContainer()
+    {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -54,22 +69,15 @@ public class Program
         builder.RegisterType<Int256>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
+        builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
         builder.RegisterType<PersistentDataStore>().As<IPersistentStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+
         var container = builder.Build();
 
         Container = container;
-
-        IConnectionListener socketListener = new SocketConnectionListener(new IPEndPoint(IPAddress.Loopback, 5222));
-        StartAccept(socketListener);
-        Console.WriteLine("Server is listening...");
-        while (true)
-        {
-            Console.ReadLine();
-        }
     }
-
 
     internal static async void StartAccept(IConnectionListener socketListener)
     {
