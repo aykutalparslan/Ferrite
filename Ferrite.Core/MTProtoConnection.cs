@@ -43,7 +43,6 @@ public class MTProtoConnection
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private TLExecutionContext _context = new TLExecutionContext();
     private const int WebSocketGet = 542393671;
-    private byte[] CRLF = new byte[] { (byte)'\r', (byte)'\n' };
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
 
