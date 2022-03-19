@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.IO.Pipelines;
 using System.Security.Cryptography;
 using System.Text;
@@ -78,18 +79,6 @@ namespace Ferrite.Transport
             (byte)'P', (byte)'r',(byte)'o', (byte)'t', (byte)'o', (byte)'c', (byte)'o', (byte)'l'
         };
 
-        // Verify Method, Upgrade, Connection, version,  key, etc..
-        public static void GenerateResponseHeaders(string key, string? subProtocol, IHeaderDictionary headers)
-        {
-            headers.Connection = "upgrade";
-            headers.Upgrade = "websocket";
-            headers.SecWebSocketAccept = CreateResponseKey(key);
-
-            if (!string.IsNullOrWhiteSpace(subProtocol))
-            {
-                headers.SecWebSocketProtocol = subProtocol;
-            }
-        }
         /// <summary>
         /// Validates the Sec-WebSocket-Key request header
         /// </summary>
@@ -106,7 +95,8 @@ namespace Ferrite.Transport
             var success = Convert.TryFromBase64String(value, temp, out var written);
             return success && written == 16;
         }
-        public static string CreateResponseKey(string requestKey)
+        
+        public static void WriteResponseKeyTo(string requestKey, Span<byte> buff)
         {
             // "The value of this header field is constructed by concatenating /key/, defined above in step 4
             // in Section 4.2.2, with the string "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", taking the SHA-1 hash of
@@ -125,8 +115,7 @@ namespace Ferrite.Transport
             {
                 throw new InvalidOperationException("Could not compute the hash for the 'Sec-WebSocket-Accept' header.");
             }
-
-            return Convert.ToBase64String(hashedBytes);
+            Base64.EncodeToUtf8(hashedBytes, buff, out int c, out int w);
         }
         //---
 
@@ -158,7 +147,9 @@ namespace Ferrite.Transport
                     output.Write(UpgradeWebsocket);
                     output.Write(WebSocketAccept);
                     output.Write(Seperator);
-                    output.Write(Encoding.UTF8.GetBytes(CreateResponseKey(websocketKey)));
+                    Span<byte> responseKey = stackalloc byte[28];
+                    WriteResponseKeyTo(websocketKey, responseKey);
+                    output.Write(responseKey);
                     output.Write(CRLF);
                     if (!string.IsNullOrWhiteSpace(protocol))
                     {
