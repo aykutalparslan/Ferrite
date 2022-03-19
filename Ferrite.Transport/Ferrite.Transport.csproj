@@ -25,6 +25,5 @@
     <PackageReference Include="DotNext.IO" Version="4.3.0" />
     <PackageReference Include="DotNext.Unsafe" Version="4.3.0" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Net.Http.Headers" Version="2.2.8" />
   </ItemGroup>
 </Project>

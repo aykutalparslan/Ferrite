@@ -5,7 +5,6 @@ using System.Buffers.Text;
 using System.IO.Pipelines;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Net.Http.Headers;
 
 namespace Ferrite.Transport
 {

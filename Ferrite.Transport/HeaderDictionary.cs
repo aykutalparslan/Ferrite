@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Primitives;
-using Microsoft.Net.Http.Headers;
 
 namespace Ferrite.Transport;
 
@@ -102,36 +101,6 @@ public partial class HeaderDictionary : IHeaderDictionary
         {
             ThrowIfReadOnly();
             this[key] = value;
-        }
-    }
-
-    /// <inheritdoc />
-    public long? ContentLength
-    {
-        get
-        {
-            long value;
-            var rawValue = this[HeaderNames.ContentLength];
-            if (rawValue.Count == 1 &&
-                !string.IsNullOrEmpty(rawValue[0]) &&
-                HeaderUtilities.TryParseNonNegativeInt64(new StringSegment(rawValue[0]).Trim(), out value))
-            {
-                return value;
-            }
-
-            return null;
-        }
-        set
-        {
-            ThrowIfReadOnly();
-            if (value.HasValue)
-            {
-                this[HeaderNames.ContentLength] = HeaderUtilities.FormatNonNegativeInt64(value.GetValueOrDefault());
-            }
-            else
-            {
-                this.Remove(HeaderNames.ContentLength);
-            }
         }
     }
 
