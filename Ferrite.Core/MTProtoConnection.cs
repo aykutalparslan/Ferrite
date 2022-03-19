@@ -57,11 +57,11 @@ public class MTProtoConnection
 
     public void Start()
     {
-        receiveTask = Receive();
-        sendTask = Send();
+        receiveTask = DoReceive();
+        sendTask = DoSend();
     }
 
-    private async Task Receive()
+    private async Task DoReceive()
     {
         try
         {
@@ -106,7 +106,7 @@ public class MTProtoConnection
         }
     }
 
-    public async Task Send(ITLObject message)
+    public async Task SendAsync(ITLObject message)
     {
         if (message != null)
         {
@@ -114,7 +114,13 @@ public class MTProtoConnection
         }
     }
 
-    private async Task Send()
+    private async void SendAsync(byte[] data)
+    {
+        socketConnection.Transport.Output.Write(data);
+        _ = await socketConnection.Transport.Output.FlushAsync();
+    }
+
+    private async Task DoSend()
     {
         try
         {
@@ -213,12 +219,6 @@ public class MTProtoConnection
             webSocketHandler.WriteHandshakeResponseTo(socketConnection.Transport.Output);
             socketConnection.Transport.Output.FlushAsync();
         }
-    }
-
-    private async void SendAsync(byte[] data)
-    {
-        socketConnection.Transport.Output.Write(data);
-        _ = await socketConnection.Transport.Output.FlushAsync();
     }
 
     private void ProcessEncryptedMessage(in ReadOnlySequence<byte> bytes)

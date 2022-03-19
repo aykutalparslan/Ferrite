@@ -18,6 +18,7 @@
 
 using System;
 using System.Buffers;
+using System.IO.Pipelines;
 using System.Text;
 using Ferrite.Transport;
 using Xunit;
@@ -44,13 +45,16 @@ namespace Ferrite.Tests.transport
             WebSocketHandler handler = new();
             parser.ParseRequestLine(handler, ref reader);
             parser.ParseHeaders(handler, ref reader);
-            var actual = handler.GetHandshakeResponse();
+            Pipe p = new Pipe();
+            handler.WriteHandshakeResponseTo(p.Writer);
+            p.Writer.FlushAsync().AsTask().Wait();
+            var result = p.Reader.ReadAsync().GetAwaiter().GetResult();
             string expected = "HTTP/1.1 101 Switching Protocols\r\n" +
                               "Connection: upgrade\r\n" +
                               "Upgrade: websocket\r\n" +
                               "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n" +
                               "\r\n";
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, Encoding.UTF8.GetString(result.Buffer.ToArray()));
         }
         [Fact]
         public void ShouldCompleteHandshakeWithProtocol()
@@ -71,14 +75,17 @@ namespace Ferrite.Tests.transport
             WebSocketHandler handler = new();
             parser.ParseRequestLine(handler, ref reader);
             parser.ParseHeaders(handler, ref reader);
-            var actual = handler.GetHandshakeResponse();
+            Pipe p = new Pipe();
+            handler.WriteHandshakeResponseTo(p.Writer);
+            p.Writer.FlushAsync().AsTask().Wait();
+            var result = p.Reader.ReadAsync().GetAwaiter().GetResult();
             string expected = "HTTP/1.1 101 Switching Protocols\r\n" +
                               "Connection: upgrade\r\n" +
                               "Upgrade: websocket\r\n" +
                               "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n" +
                               "Sec-WebSocket-Protocol: chat, superchat\r\n" +
                               "\r\n";
-            Assert.Equal(expected, actual);
+            Assert.Equal(expected, Encoding.UTF8.GetString(result.Buffer.ToArray()));
         }
     }
 }

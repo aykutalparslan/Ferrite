@@ -103,6 +103,6 @@ public class Program
         Console.WriteLine(e.Message.ToString());
         var result = e.Message.Execute(e.ExecutionContext);
         Console.WriteLine("-->"+result.ToString());
-        connection.Send(result);
+        connection.SendAsync(result);
     }
 }
