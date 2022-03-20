@@ -49,7 +49,7 @@ public sealed class SocketConnectionListener : IConnectionListener
         _listenSocket = listenSocket;
     }
 
-    public async ValueTask<ISocketConnection?> AcceptAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<ITransportConnection?> AcceptAsync(CancellationToken cancellationToken = default)
     {
         while (true)
         {

@@ -34,7 +34,7 @@ public class MTProtoConnection
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
     private long _authKeyId;
-    private ISocketConnection socketConnection;
+    private ITransportConnection socketConnection;
     private Task? receiveTask;
     private Channel<ITLObject> _outgoing = Channel.CreateUnbounded<ITLObject>();
     private Task? sendTask;
@@ -46,7 +46,7 @@ public class MTProtoConnection
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
 
-    public MTProtoConnection(ISocketConnection connection, ITLObjectFactory objectFactory, ITransportDetector detector)
+    public MTProtoConnection(ITransportConnection connection, ITLObjectFactory objectFactory, ITransportDetector detector)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;

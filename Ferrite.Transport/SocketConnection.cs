@@ -9,7 +9,7 @@ using System.Net.Sockets;
 
 namespace Ferrite.Transport;
 
-public sealed class SocketConnection : ISocketConnection
+public sealed class SocketConnection : ITransportConnection
 {
     private static readonly int MinAllocBufferSize = 1024;
 

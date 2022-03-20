@@ -24,8 +24,8 @@ public interface IConnectionListener : IAsyncDisposable
     /// Begins an asynchronous operation to accept an incoming connection.
     /// </summary>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
-    /// <returns>A <see cref="ValueTask{ISocketConnection}"/> that completes when a connection is accepted, yielding the <see cref="ISocketConnection" /> representing the connection.</returns>
-    ValueTask<ISocketConnection?> AcceptAsync(CancellationToken cancellationToken = default);
+    /// <returns>A <see cref="ValueTask{ISocketConnection}"/> that completes when a connection is accepted, yielding the <see cref="ITransportConnection" /> representing the connection.</returns>
+    ValueTask<ITransportConnection?> AcceptAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stops listening for incoming connections.

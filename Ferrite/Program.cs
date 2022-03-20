@@ -83,7 +83,7 @@ public class Program
     {
         while (true)
         {
-            ISocketConnection? connection = await socketListener.AcceptAsync();
+            ITransportConnection? connection = await socketListener.AcceptAsync();
             
             if(connection != null)
             {
