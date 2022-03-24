@@ -130,7 +130,7 @@ public class VectorOfBytes : ITLObject, ICollection<byte[]>
         return list.AsEnumerable<byte[]>().GetEnumerator();
     }
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

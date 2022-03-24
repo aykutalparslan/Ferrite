@@ -6,6 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <ItemGroup>
     <None Remove="DotNext" />
     <None Remove="DotNext.IO" />
@@ -20,5 +26,6 @@
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
     <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
     <ProjectReference Include="..\Ferrite.Transport\Ferrite.Transport.csproj" />
+    <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
   </ItemGroup>
 </Project>

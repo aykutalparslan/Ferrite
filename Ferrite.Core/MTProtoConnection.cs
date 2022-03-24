@@ -156,15 +156,16 @@ public class MTProtoConnection
         }
     }
     
-
-    public event EventHandler<MTProtoAsyncEventArgs> MessageReceived;
+    public delegate Task AsyncEventHandler<MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
+    public event AsyncEventHandler<MTProtoAsyncEventArgs>? MessageReceived;
 
     protected virtual void OnMessageReceived(MTProtoAsyncEventArgs e)
     {
-        EventHandler<MTProtoAsyncEventArgs> raiseEvent = MessageReceived;
-
+        AsyncEventHandler<MTProtoAsyncEventArgs> raiseEvent = MessageReceived;
         if (raiseEvent != null)
         {
+            Console.WriteLine("***" + Thread.CurrentThread.ManagedThreadId);
+            
             raiseEvent(this, e);
         }
     }
@@ -227,11 +228,16 @@ public class MTProtoConnection
 
     private void ProcessUnencryptedMessage(in ReadOnlySequence<byte> bytes)
     {
+        if (bytes.Length < 16)
+        {
+            return;
+        }
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
         long msgId  = reader.ReadInt64(true);
         int messageDataLength = reader.ReadInt32(true);
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);
+        //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
         OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId:msgId));
     }
 

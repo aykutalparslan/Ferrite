@@ -39,6 +39,6 @@ public interface ITLObject
         get;
     }
 
-    public ITLObject Execute(TLExecutionContext ctx);
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx);
 }
 

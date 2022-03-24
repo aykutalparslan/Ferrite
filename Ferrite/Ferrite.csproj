@@ -17,7 +17,7 @@
     <None Remove="Microsoft.AspNetCore.Server.Kestrel" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RocksDB" Version="7.0.1.26543" />
+    <PackageReference Include="RocksDB" Version="7.0.2.26646" />
     <PackageReference Include="DotNext" Version="4.3.0" />
     <PackageReference Include="DotNext.IO" Version="4.3.0" />
     <PackageReference Include="DotNext.Unsafe" Version="4.3.0" />

@@ -59,8 +59,8 @@ class Compiler
 
         cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
 
-        cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)");
-        cls = AddField(cls, "ITLObjectFactory", "factory");
+        cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)",true);
+        cls = AddField(cls, "ITLObjectFactory", "factory", true);
         cls = AddField(cls, "bool", "serialized", "false");
         var constructorBlock = SyntaxFactory.ParseStatement("factory = objectFactory;");
         cls = cls.AddMembers(SyntaxFactory.ConstructorDeclaration(constructor.Predicate.ToPascalCase())
@@ -158,8 +158,9 @@ class Compiler
 
         cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public bool IsMethod => false;"));
         var throwBlock = SyntaxFactory.ParseStatement("throw new NotImplementedException();");
-        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("ITLObject"), "Execute")
+        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("Task<ITLObject>"), "ExecuteAsync")
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                 .WithParameterList(SyntaxFactory.ParseParameterList("(TLExecutionContext ctx)"))
                 .WithBody(SyntaxFactory.Block(throwBlock)));
 
@@ -316,8 +317,8 @@ class Compiler
         cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
 
 
-        cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)");
-        cls = AddField(cls, "ITLObjectFactory", "factory");
+        cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)",true);
+        cls = AddField(cls, "ITLObjectFactory", "factory", true);
         cls = AddField(cls, "bool", "serialized", "false");
         var constructorBlock = SyntaxFactory.ParseStatement("factory = objectFactory;");
         cls = cls.AddMembers(SyntaxFactory.ConstructorDeclaration(constructor.Method.ToPascalCase())
@@ -418,15 +419,17 @@ class Compiler
         var throwBlock = SyntaxFactory.ParseStatement("throw new NotImplementedException();");
         if (previousExecuteBody != null)
         {
-            cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("ITLObject"), "Execute")
+            cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("Task<ITLObject>"), "ExecuteAsync")
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                 .WithParameterList(SyntaxFactory.ParseParameterList("(TLExecutionContext ctx)"))
                 .WithBody(previousExecuteBody));
         }
         else
         {
-            cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("ITLObject"), "Execute")
+            cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("Task<ITLObject>"), "ExecuteAsync")
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                 .WithParameterList(SyntaxFactory.ParseParameterList("(TLExecutionContext ctx)"))
                 .WithBody(SyntaxFactory.Block(throwBlock)));
         }
@@ -548,9 +551,9 @@ class Compiler
     }
 
     private static ClassDeclarationSyntax AddField(ClassDeclarationSyntax cls, string typeName,
-        string fieldname, string fieldValue)
+        string fieldname, string fieldValue, bool readOnly = false)
     {
-        cls = cls.AddMembers(SyntaxFactory
+        var field =SyntaxFactory
                         .FieldDeclaration(SyntaxFactory
                             .VariableDeclaration(SyntaxFactory
                             .ParseTypeName(typeName))
@@ -558,7 +561,12 @@ class Compiler
                             .VariableDeclarator(fieldname).WithInitializer(
                                 SyntaxFactory.EqualsValueClause(SyntaxFactory.ParseExpression(fieldValue)))))
                         .AddModifiers(SyntaxFactory
-                            .Token(SyntaxKind.PrivateKeyword)));
+                            .Token(SyntaxKind.PrivateKeyword));
+        if (readOnly)
+        {
+            field = field.AddModifiers(SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+        }
+        cls = cls.AddMembers(field);
         return cls;
     }
 

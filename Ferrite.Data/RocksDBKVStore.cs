@@ -27,7 +27,7 @@ public class RocksDBKVStore:IKVStore
 
     public void Init(string path)
     {
-        db = RocksDb.Open(new DbOptions().SetCreateIfMissing(), path);
+        db = RocksDb.Open(new DbOptions().SetCreateIfMissing(), path+".rocks");
     }
     public void Put(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
     {

@@ -18,27 +18,64 @@
 
 using System;
 using System.Collections.Concurrent;
+using Ferrite.Data;
 
 namespace Ferrite.Core;
 
 public class SessionManager
 {
-    private readonly ConcurrentDictionary<long, MTPtotoSession> _sessions = new();
+    public Guid NodeId { get; private set; }
+    private readonly ConcurrentDictionary<long, MTPtotoSession> _localSessions = new();
+    private readonly IDistributedStore _store;
+    private Guid GetNodeId()
+    {
+        if (File.Exists("node.guid"))
+        {
+            var bytes = File.ReadAllBytes("node.guid");
+            return new Guid(bytes);
+        } else
+        {
+            var guid = Guid.NewGuid();
+            File.WriteAllBytes("node.guid", guid.ToByteArray());
+            return guid;
+        }
+    }
+    public SessionManager(IDistributedStore store)
+    {
+        NodeId = GetNodeId();
+        _store = store;
+    }
     public bool AddSession(long sessionId, MTPtotoSession session)
     {
-        return _sessions.TryAdd(sessionId, session);
+        return _localSessions.TryAdd(sessionId, session);
+        SessionState d = new SessionState();
+        d.SessionId = sessionId;
+        d.NodeId = NodeId;
+        _store.PutSessionAsync(BitConverter.GetBytes(sessionId), d.ToByteArray());
+    }
+    public bool TryGetSessionState(long sessionId, out SessionState? state)
+    {
+        var rawSession = _store.GetSession(BitConverter.GetBytes(sessionId));
+        if(rawSession != null)
+        {
+            state = new SessionState(ref rawSession[0]); ;
+            return true;
+        }
+        state = null;
+        return false;
     }
     public bool RemoveSession(long sessionId)
     {
-        return _sessions.TryRemove(sessionId, out var session);
+        _store.RemoveSessionAsync(BitConverter.GetBytes(sessionId));
+        return _localSessions.TryRemove(sessionId, out var session);
     }
-    public bool SessionExists(long sessionId)
+    public bool LocalSessionExists(long sessionId)
     {
-        return _sessions.ContainsKey(sessionId);
+        return _localSessions.ContainsKey(sessionId);
     }
-    public bool TryGetSession(long sessionId, out MTPtotoSession session)
+    public bool TryGetLocalSession(long sessionId, out MTPtotoSession session)
     {
-        return _sessions.TryGetValue(sessionId, out session);
+        return _localSessions.TryGetValue(sessionId, out session);
     }
 }
 

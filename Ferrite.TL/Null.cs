@@ -47,7 +47,7 @@ public class Null : ITLObject
         return new Null();
     }
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

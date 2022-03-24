@@ -19,13 +19,13 @@
 using System;
 namespace Ferrite.Data;
 
-public class PersistentDataStore : IPersistentStore
+public class KVDataStore : IPersistentStore
 {
     private IKVStore kVStore;
-    public PersistentDataStore(IKVStore store)
+    public KVDataStore(IKVStore store)
     {
         kVStore = store;
-        store.Init("data.rocks");
+        store.Init("ferrite-data");
     }
 
     public byte[] GetAuthKey(ReadOnlySpan<byte> authKeyId)

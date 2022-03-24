@@ -135,7 +135,7 @@ public class ReqDhParams : ITLObject
     }
 
     public bool IsMethod => true;
-    public ITLObject Execute(TLExecutionContext ctx)
+    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         RpcError rpcError;
         ServerDhParamsOk serverDhParamsOk = factory.Resolve<ServerDhParamsOk>();
@@ -148,10 +148,10 @@ public class ReqDhParams : ITLObject
             return rpcError;
         }
         Memory<byte> data;
-        Span<byte> sha256;
+        byte[] sha256;
         RSAPad(rsaKey, out data, out sha256);
 
-        if (!sha256.SequenceEqual(data.Slice(224).Span))
+        if (!sha256.SequenceEqual(data.Slice(224).ToArray()))
         {
             log.Debug("SHA256 did not match.");
             rpcError = factory.Resolve<RpcError>();
@@ -306,7 +306,7 @@ public class ReqDhParams : ITLObject
     }
 
     private void RSAPad(IRSAKey rsaKey, out Memory<byte> data,
-        out Span<byte> sha256)
+        out byte[] sha256)
     {
         data = rsaKey.DecryptBlock(encryptedData).AsMemory();
         // data: |-temp_key_xor(32)-|-|-aes_encrypted(224)-| 256 bytes
@@ -329,7 +329,7 @@ public class ReqDhParams : ITLObject
         dataPadReversed.Reverse();
         // data: |-temp_key(32)+data_pad(192)+
         //                   SHA256(temp_key+data_pad)(32)-| 256 bytes
-        sha256 = SHA256.HashData(data.Slice(0, 224).Span).AsSpan();
+        sha256 = SHA256.HashData(data.Slice(0, 224).Span);
     }
 
     public void Parse(ref SequenceReader buff)

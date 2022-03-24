@@ -19,73 +19,80 @@
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using DotNext.IO;
 using xxHash;
 
 namespace Ferrite.TL;
 
-public class Int128 : ITLObject, IEquatable<Int128>
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct Int128 : ITLObject, IEquatable<Int128>
 {
-    public Int128()
+    [FieldOffset(0)]
+    private fixed byte _value[16];
+    public Int128(ref byte val)
     {
-        value = new byte[16];
+        Unsafe.SkipInit(out this);
+        this = Unsafe.As<byte, Int128>(ref val);
     }
     public Int128(byte[] val)
     {
-        if(val.Length == 16)
+        if (val.Length == 16)
         {
-            value = val;
-        }
-        else if (val.Length<16)
-        {
-            for (int i = 0; i < val.Length; i++)
-            {
-                value[i] = val[i];
-            }
+            Unsafe.SkipInit(out this);
+            this = Unsafe.As<byte, Int128>(ref val[0]);
         }
         else
         {
-            for (int i = 0; i < 16; i++)
-            {
-                value[i] = val[i];
-            }
+            throw new ArgumentOutOfRangeException();
         }
     }
-    private byte[] value = new byte[16];
 
-    public static implicit operator byte[](Int128 i) => i.value;
+    public static implicit operator byte[](Int128 i)
+    {
+        byte[] buff = new byte[16];
+        Marshal.Copy((IntPtr)i._value, buff, 0, 16);
+        return buff;
+    }
     public static explicit operator Int128(byte[] b) => new Int128(b);
 
+    public readonly int Constructor => unchecked((int)0x84ccf7b7);
 
-    public int Constructor => unchecked((int)0x84ccf7b7);
+    public ReadOnlySequence<byte> TLBytes => new ReadOnlySequence<byte>((byte[])this);
 
-    public ReadOnlySequence<byte> TLBytes => new ReadOnlySequence<byte>(value);
+    public Span<byte> AsSpan()
+    {
+        fixed (byte* p = _value)
+        {
+            return new Span<byte>(p, 16);
+        }
+    }
 
-    public bool IsMethod => false;
+    public readonly bool IsMethod => false;
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
     {
-        buff.Read(value);
+        fixed (byte* p = _value)
+        {
+            buff.Read(new Span<byte>(p, 16));
+        }
     }
 
     public void WriteTo(Span<byte> buff)
     {
-        value.CopyTo(buff);
+        fixed (byte* p = _value)
+        fixed (byte* d = &MemoryMarshal.GetReference(buff))
+        {
+            Buffer.MemoryCopy(p, d, 16, 16);
+        }
     }
-    public override bool Equals([NotNullWhen(true)] object? obj)
-    {
-        return base.Equals(obj);
-    }
-    public bool Equals([NotNullWhen(true)] Int128? other)
-    {
-        return value.SequenceEqual(other.value);
-    }
-
+   
     public static bool operator ==(Int128 left, Int128 right)
     {
         return left.Equals(right);
@@ -98,7 +105,17 @@ public class Int128 : ITLObject, IEquatable<Int128>
 
     public override int GetHashCode()
     {
-        return (int)value.GetXxHash32();
+        return (int)this.AsSpan().GetXxHash32();
+    }
+
+    public bool Equals(Int128 other)
+    {
+        return this.AsSpan().SequenceEqual(other.AsSpan());
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Int128 && Equals((Int128)obj);
     }
 }
 

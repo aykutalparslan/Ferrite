@@ -33,6 +33,7 @@ using DotNext.IO;
 using DotNext.Buffers;
 using Ferrite.Data;
 using System.Globalization;
+using System.Threading.Tasks;
 
 namespace Ferrite.Tests.pq;
 
@@ -114,7 +115,7 @@ public class PqTests
     private const string dhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
 
     [Fact]
-    public void ReqPqMulti_ShouldReturnResPq()
+    public async Task ReqPqMulti_ShouldReturnResPqAsync()
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
@@ -123,8 +124,8 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
@@ -134,7 +135,7 @@ public class PqTests
             0x66, 0xB3, 0x01, 0xA4, 0x8F, 0xEC, 0xE2, 0xFC });
 
         TLExecutionContext context = new TLExecutionContext();
-        var respq = reqpq.Execute(context);
+        var respq = await reqpq.ExecuteAsync(context);
 
         byte[] expected = new byte[]
         {
@@ -165,8 +166,8 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
@@ -175,7 +176,7 @@ public class PqTests
         reqpq.Nonce = (Int128)nonce;
 
         TLExecutionContext context = new TLExecutionContext();
-        var respq = reqpq.Execute(context);
+        var respq = reqpq.ExecuteAsync(context);
 
         Assert.Equal(0x494C553B, (int)context.SessionBag["p"]);
         Assert.Equal(0x53911073, (int)context.SessionBag["q"]);
@@ -194,8 +195,8 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
@@ -204,7 +205,7 @@ public class PqTests
         reqpq.Nonce = (Int128)nonce;
 
         TLExecutionContext context = new TLExecutionContext();
-        var respq = reqpq.Execute(context);
+        var respq = reqpq.ExecuteAsync(context);
 
         Assert.Equal(0x494C553B, (int)context.SessionBag["p"]);
         Assert.Equal(0x53911073, (int)context.SessionBag["q"]);
@@ -214,7 +215,7 @@ public class PqTests
 
         var reqpqNew = container.Resolve<ReqPqMulti>();
         reqpqNew.Nonce = (Int128)nonce;
-        var respqNew = reqpqNew.Execute(context);
+        var respqNew = reqpqNew.ExecuteAsync(context);
         Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
     }
 
@@ -227,11 +228,11 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
-        builder.RegisterType<PersistentDataStore>().As<IPersistentStore>();
+        builder.RegisterType<KVDataStore>().As<IPersistentStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         return container;
@@ -274,7 +275,7 @@ public class PqTests
     }
 
     [Fact]
-    public void ReqDhParams_ShouldReturnServerDhParams()
+    public async Task ReqDhParams_ShouldReturnServerDhParamsAsync()
     {
         IContainer container = BuildContainer();
 
@@ -321,9 +322,58 @@ public class PqTests
         byte[] sha1Received, sha1Actual;
         int constructor;
         ServerDhInnerData serverDhInnerData;
-        ProcessReqDhParams(container, context, reqDhParams, pQInnerDataDc,
-            out sha1Received, out constructor, out serverDhInnerData, out sha1Actual,
-            out var tempAesKey, out var tempAesIV);
+        byte[] tempAesKey;
+        byte[] tempAesIV;
+
+        byte[] data = pQInnerDataDc.TLBytes.ToArray();
+        byte[] paddingBytes = RandomNumberGenerator.GetBytes(192 - data.Length);
+        byte[] dataWithPadding = data.Concat(paddingBytes).ToArray();
+        byte[] dataPadReversed = dataWithPadding.Reverse().ToArray();
+        byte[] keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
+
+        var keyProvider = container.Resolve<IKeyProvider>();
+        var key = keyProvider.GetKey(keyProvider.GetRSAFingerprints()[0]);
+        BigInteger modulus = new BigInteger(key.PublicKeyParameters.Modulus, true, true);
+        BigInteger numEncrypted = new BigInteger(keyAesEncrypted, true, true);
+        while (numEncrypted >= modulus)
+        {
+            keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
+            numEncrypted = new BigInteger(keyAesEncrypted, true, true);
+        }
+
+        byte[] rsaEncrypted = key.EncryptBlock(keyAesEncrypted);
+
+        reqDhParams.EncryptedData = rsaEncrypted;
+        reqDhParams.PublicKeyFingerprint = key.Fingerprint;
+
+        ServerDhParamsOk serverDhParamsOk = (ServerDhParamsOk)await reqDhParams.ExecuteAsync(context);
+        Assert.Equal(nonce, serverDhParamsOk.Nonce);
+        Assert.Equal(server_nonce, serverDhParamsOk.ServerNonce);
+
+        var newNonceServerNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
+                .Concat(server_nonce).ToArray());
+        var serverNonceNewNonce = SHA1.HashData(server_nonce
+            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
+        var newNonceNewNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
+            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
+        var tmpAesKey = newNonceServerNonce
+            .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
+        var tmpAesIV = serverNonceNewNonce.Skip(12)
+            .Concat(newNonceNewNonce).Concat(((byte[])pQInnerDataDc.NewNonce).SkipLast(28)).ToArray();
+        tempAesKey = tmpAesKey.ToArray();
+        tempAesIV = tmpAesIV.ToArray();
+        Assert.Equal(592, serverDhParamsOk.EncryptedAnswer.Length);
+
+        Aes aes = Aes.Create();
+        aes.Key = tmpAesKey;
+        aes.DecryptIge(serverDhParamsOk.EncryptedAnswer, tmpAesIV);
+        ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
+
+        sha1Received = serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(0, 20).ToArray();
+        SequenceReader reader = IAsyncBinaryReader.Create(serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(20).ToArray());
+        constructor = reader.ReadInt32(true);
+        serverDhInnerData = (ServerDhInnerData)factory.Read(constructor, ref reader);
+        sha1Actual = SHA1.HashData(serverDhInnerData.TLBytes.ToArray());
 
         Assert.Equal(tempAesKey,
             StringToByteArray("F011280887C7BB01DF0FC4E17830E0B91FBB8BE4B2267CB985AE25F33B527253"));
@@ -374,7 +424,7 @@ public class PqTests
         Assert.Contains(serverDhInnerData.G, gs);
     }
     [Fact]
-    public void ReqDhParamsTemp_ShouldReturnServerDhParams()
+    public async Task ReqDhParamsTemp_ShouldReturnServerDhParamsAsync()
     {
         IContainer container = BuildContainer();
 
@@ -414,9 +464,57 @@ public class PqTests
         byte[] sha1Received, sha1Actual;
         int constructor;
         ServerDhInnerData serverDhInnerData;
-        ProcessReqDhParams2(container, context, reqDhParams, pQInnerDataDc,
-            out sha1Received, out constructor, out serverDhInnerData, out sha1Actual,
-            out var tempAesKey, out var tempAesIV);
+        byte[] tempAesKey;
+        byte[] tempAesIV;
+
+        byte[] data = pQInnerDataDc.TLBytes.ToArray();
+        byte[] paddingBytes = RandomNumberGenerator.GetBytes(192 - data.Length);
+        byte[] dataWithPadding = data.Concat(paddingBytes).ToArray();
+        byte[] dataPadReversed = dataWithPadding.Reverse().ToArray();
+        byte[] keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
+
+        var keyProvider = container.Resolve<IKeyProvider>();
+        var key = keyProvider.GetKey(keyProvider.GetRSAFingerprints()[0]);
+        BigInteger modulus = new BigInteger(key.PublicKeyParameters.Modulus, true, true);
+        BigInteger numEncrypted = new BigInteger(keyAesEncrypted, true, true);
+        while (numEncrypted >= modulus)
+        {
+            keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
+            numEncrypted = new BigInteger(keyAesEncrypted, true, true);
+        }
+
+        byte[] rsaEncrypted = key.EncryptBlock(keyAesEncrypted);
+
+        reqDhParams.EncryptedData = rsaEncrypted;
+        reqDhParams.PublicKeyFingerprint = key.Fingerprint;
+
+        ServerDhParamsOk serverDhParamsOk = (ServerDhParamsOk)await reqDhParams.ExecuteAsync(context);
+        Assert.Equal(nonce, serverDhParamsOk.Nonce);
+        Assert.Equal(server_nonce, serverDhParamsOk.ServerNonce);
+
+        var newNonceServerNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
+                .Concat(server_nonce).ToArray());
+        var serverNonceNewNonce = SHA1.HashData(server_nonce
+            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
+        var newNonceNewNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
+            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
+        var tmpAesKey = newNonceServerNonce
+            .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
+        var tmpAesIV = serverNonceNewNonce.Skip(12)
+            .Concat(newNonceNewNonce).Concat(((byte[])pQInnerDataDc.NewNonce).SkipLast(28)).ToArray();
+        tempAesKey = tmpAesKey.ToArray();
+        tempAesIV = tmpAesIV.ToArray();
+
+        Aes aes = Aes.Create();
+        aes.Key = tmpAesKey;
+        aes.DecryptIge(serverDhParamsOk.EncryptedAnswer, tmpAesIV);
+        ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
+
+        sha1Received = serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(0, 20).ToArray();
+        SequenceReader reader = IAsyncBinaryReader.Create(serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(20).ToArray());
+        constructor = reader.ReadInt32(true);
+        serverDhInnerData = (ServerDhInnerData)factory.Read(constructor, ref reader);
+        sha1Actual = SHA1.HashData(serverDhInnerData.TLBytes.ToArray());
 
         Assert.True(context.SessionBag.ContainsKey("valid_until"));
         Assert.True(context.SessionBag.ContainsKey("a"));
@@ -466,7 +564,7 @@ public class PqTests
     
 
     [Fact]
-    public void SetClientDhParams_ShouldReturnDhGenRetry()
+    public async Task SetClientDhParams_ShouldReturnDhGenRetryAsync()
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
@@ -475,8 +573,8 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
         builder.RegisterType<MockDataStore>().As<IPersistentStore>();
@@ -561,7 +659,7 @@ public class PqTests
         setClientDhParams.Nonce = (Int128)n;
         setClientDhParams.ServerNonce = (Int128)sn;
         setClientDhParams.EncryptedData = encrypted;
-        var result = (DhGenRetry)setClientDhParams.Execute(context);
+        var result = (DhGenRetry) await setClientDhParams.ExecuteAsync(context);
 
         var authKey = BigInteger.ModPow(g_a, b, prime).ToByteArray(true, true);
         var authKeySHA1 = SHA1.HashData(authKey);
@@ -580,7 +678,7 @@ public class PqTests
 
 
     [Fact]
-    public void SetClientDhParams_ShouldReturnDhGenOk()
+    public async Task SetClientDhParams_ShouldReturnDhGenOkAsync()
     {
         IContainer container = BuildContainer();
         var random = container.Resolve<IRandomGenerator>();
@@ -661,7 +759,7 @@ public class PqTests
         setClientDhParams.Nonce = (Int128)n;
         setClientDhParams.ServerNonce = (Int128)sn;
         setClientDhParams.EncryptedData = encrypted;
-        var result = (DhGenOk)setClientDhParams.Execute(context);
+        var result = (DhGenOk) await setClientDhParams.ExecuteAsync(context);
         
         var authKey = BigInteger.ModPow(g_a, b, prime).ToByteArray(true, true);
         var authKeySHA1 = SHA1.HashData(authKey);
@@ -678,117 +776,7 @@ public class PqTests
         Assert.Equal(newNonceHash1, result.NewNonceHash1);
     }
 
-    private void ProcessReqDhParams(IContainer container, TLExecutionContext context,
-        ReqDhParams reqDhParams, PQInnerDataDc pQInnerDataDc,
-        out byte[] sha1Received, out int constructor,
-        out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual,
-        out byte[] tempAesKey, out byte[] tempAesIV)
-    {
-        byte[] data = pQInnerDataDc.TLBytes.ToArray();
-        byte[] paddingBytes = RandomNumberGenerator.GetBytes(192 - data.Length);
-        byte[] dataWithPadding = data.Concat(paddingBytes).ToArray();
-        byte[] dataPadReversed = dataWithPadding.Reverse().ToArray();
-        byte[] keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
-
-        var keyProvider = container.Resolve<IKeyProvider>();
-        var key = keyProvider.GetKey(keyProvider.GetRSAFingerprints()[0]);
-        BigInteger modulus = new BigInteger(key.PublicKeyParameters.Modulus, true, true);
-        BigInteger numEncrypted = new BigInteger(keyAesEncrypted, true, true);
-        while (numEncrypted >= modulus)
-        {
-            keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
-            numEncrypted = new BigInteger(keyAesEncrypted, true, true);
-        }
-
-        byte[] rsaEncrypted = key.EncryptBlock(keyAesEncrypted);
-
-        reqDhParams.EncryptedData = rsaEncrypted;
-        reqDhParams.PublicKeyFingerprint = key.Fingerprint;
-
-        ServerDhParamsOk serverDhParamsOk = (ServerDhParamsOk)reqDhParams.Execute(context);
-        Assert.Equal(nonce, serverDhParamsOk.Nonce);
-        Assert.Equal(server_nonce, serverDhParamsOk.ServerNonce);
-        
-        var newNonceServerNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
-                .Concat(server_nonce).ToArray());
-        var serverNonceNewNonce = SHA1.HashData(server_nonce
-            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
-        var newNonceNewNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
-            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
-        var tmpAesKey = newNonceServerNonce
-            .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
-        var tmpAesIV = serverNonceNewNonce.Skip(12)
-            .Concat(newNonceNewNonce).Concat(((byte[])pQInnerDataDc.NewNonce).SkipLast(28)).ToArray();
-        tempAesKey = tmpAesKey.ToArray();
-        tempAesIV = tmpAesIV.ToArray();
-        Assert.Equal(592, serverDhParamsOk.EncryptedAnswer.Length);
-
-        Aes aes = Aes.Create();
-        aes.Key = tmpAesKey;
-        aes.DecryptIge(serverDhParamsOk.EncryptedAnswer, tmpAesIV);
-        ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
-
-        sha1Received = serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(0, 20).ToArray();
-        SequenceReader reader = IAsyncBinaryReader.Create(serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(20).ToArray());
-        constructor = reader.ReadInt32(true);
-        serverDhInnerData = (ServerDhInnerData)factory.Read(constructor, ref reader);
-        sha1Actual = SHA1.HashData(serverDhInnerData.TLBytes.ToArray());
-    }
-    private void ProcessReqDhParams2(IContainer container, TLExecutionContext context,
-        ReqDhParams reqDhParams, PQInnerDataTempDc pQInnerDataDc,
-        out byte[] sha1Received, out int constructor,
-        out ServerDhInnerData serverDhInnerData, out byte[] sha1Actual,
-        out byte[] tempAesKey, out byte[] tempAesIV)
-    {
-        byte[] data = pQInnerDataDc.TLBytes.ToArray();
-        byte[] paddingBytes = RandomNumberGenerator.GetBytes(192 - data.Length);
-        byte[] dataWithPadding = data.Concat(paddingBytes).ToArray();
-        byte[] dataPadReversed = dataWithPadding.Reverse().ToArray();
-        byte[] keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
-
-        var keyProvider = container.Resolve<IKeyProvider>();
-        var key = keyProvider.GetKey(keyProvider.GetRSAFingerprints()[0]);
-        BigInteger modulus = new BigInteger(key.PublicKeyParameters.Modulus, true, true);
-        BigInteger numEncrypted = new BigInteger(keyAesEncrypted, true, true);
-        while (numEncrypted >= modulus)
-        {
-            keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
-            numEncrypted = new BigInteger(keyAesEncrypted, true, true);
-        }
-
-        byte[] rsaEncrypted = key.EncryptBlock(keyAesEncrypted);
-
-        reqDhParams.EncryptedData = rsaEncrypted;
-        reqDhParams.PublicKeyFingerprint = key.Fingerprint;
-
-        ServerDhParamsOk serverDhParamsOk = (ServerDhParamsOk)reqDhParams.Execute(context);
-        Assert.Equal(nonce, serverDhParamsOk.Nonce);
-        Assert.Equal(server_nonce, serverDhParamsOk.ServerNonce);
-
-        var newNonceServerNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
-                .Concat(server_nonce).ToArray());
-        var serverNonceNewNonce = SHA1.HashData(server_nonce
-            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
-        var newNonceNewNonce = SHA1.HashData(((byte[])pQInnerDataDc.NewNonce)
-            .Concat((byte[])pQInnerDataDc.NewNonce).ToArray());
-        var tmpAesKey = newNonceServerNonce
-            .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
-        var tmpAesIV = serverNonceNewNonce.Skip(12)
-            .Concat(newNonceNewNonce).Concat(((byte[])pQInnerDataDc.NewNonce).SkipLast(28)).ToArray();
-        tempAesKey = tmpAesKey.ToArray();
-        tempAesIV = tmpAesIV.ToArray();
-
-        Aes aes = Aes.Create();
-        aes.Key = tmpAesKey;
-        aes.DecryptIge(serverDhParamsOk.EncryptedAnswer, tmpAesIV);
-        ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
-
-        sha1Received = serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(0, 20).ToArray();
-        SequenceReader reader = IAsyncBinaryReader.Create(serverDhParamsOk.EncryptedAnswer.AsSpan().Slice(20).ToArray());
-        constructor = reader.ReadInt32(true);
-        serverDhInnerData = (ServerDhInnerData)factory.Read(constructor, ref reader);
-        sha1Actual = SHA1.HashData(serverDhInnerData.TLBytes.ToArray());
-    }
+    
 
     private static byte[] encrypt(byte[] dataWithPadding, byte[] dataPadReversed)
     {

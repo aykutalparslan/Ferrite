@@ -15,7 +15,6 @@
  *   You should have received a copy of the GNU Affero General Public License
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
 using System;
 using DotNext.IO;
 using Ferrite.TL.Exceptions;
@@ -37,6 +36,7 @@ public class TLObjectFactory : ITLObjectFactory
     public ITLObject Read(int constructor, ref SequenceReader buff) => constructor switch
     {
         85337187 => Read<Respq>(ref buff),
+        -2083955988 => Read<PQInnerData>(ref buff),
         -1443537003 => Read<PQInnerDataDc>(ref buff),
         1459478408 => Read<PQInnerDataTempDc>(ref buff),
         -790100132 => Read<ServerDhParamsOk>(ref buff),

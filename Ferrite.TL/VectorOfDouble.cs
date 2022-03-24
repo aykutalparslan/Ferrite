@@ -127,7 +127,7 @@ public class VectorOfDouble : ITLObject, ICollection<double>
         return list.AsEnumerable<double>().GetEnumerator();
     }
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

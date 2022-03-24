@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class RpcDropAnswer : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public RpcDropAnswer(ITLObjectFactory objectFactory)
     {
@@ -60,7 +60,7 @@ public class RpcDropAnswer : ITLObject
     }
 
     public bool IsMethod => true;
-    public ITLObject Execute(TLExecutionContext ctx)
+    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

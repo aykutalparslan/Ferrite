@@ -84,7 +84,7 @@ public class DhGenOk : ITLObject
     }
 
     public bool IsMethod => false;
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

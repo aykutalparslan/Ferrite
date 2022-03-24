@@ -128,7 +128,7 @@ public class VectorOfLong : ITLObject, ICollection<long>
         return list.AsEnumerable<long>().GetEnumerator();
     }
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

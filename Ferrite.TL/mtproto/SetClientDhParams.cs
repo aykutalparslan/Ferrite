@@ -93,7 +93,7 @@ public class SetClientDhParams : ITLObject
     }
 
     public bool IsMethod => true;
-    public ITLObject Execute(TLExecutionContext ctx)
+    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         bool failed = false;
         var sessionNonce = (Int128)ctx.SessionBag["nonce"];
@@ -105,16 +105,14 @@ public class SetClientDhParams : ITLObject
         Aes aes = Aes.Create();
         aes.Key = (byte[])ctx.SessionBag["temp_aes_key"];
         aes.DecryptIge(encryptedData, ((byte[])ctx.SessionBag["temp_aes_iv"]).ToArray());
-        var sha1Received = encryptedData.AsSpan().Slice(0, 20);
+        var sha1Received = encryptedData.AsSpan().Slice(0, 20).ToArray();
         var dataWithPadding = encryptedData.AsMemory().Slice(20);
         SequenceReader reader = IAsyncBinaryReader.Create(dataWithPadding);
         int constructor = reader.ReadInt32(true);
         if(constructor == (int)TLConstructor.ClientDhInnerData)
         {
             var clientDhInnerData = factory.Read<ClientDhInnerData>(ref reader);
-            //var sha1Actual = SHA1.HashData(encryptedData.AsSpan()
-            //    .Slice(20, (int)clientDhInnerData.TLBytes.Length)).AsSpan();
-            var sha1Actual = SHA1.HashData(clientDhInnerData.TLBytes.ToArray()).AsSpan();
+            var sha1Actual = SHA1.HashData(clientDhInnerData.TLBytes.ToArray());
             if (!sha1Actual.SequenceEqual(sha1Received) ||
                 sessionNonce != nonce || sessionServerNonce != serverNonce ||
                 sessionNonce != clientDhInnerData.Nonce ||

@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class MsgsAllInfo : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public MsgsAllInfo(ITLObjectFactory objectFactory)
     {
@@ -72,7 +72,7 @@ public class MsgsAllInfo : ITLObject
     }
 
     public bool IsMethod => false;
-    public ITLObject Execute(TLExecutionContext ctx)
+    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

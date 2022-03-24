@@ -130,7 +130,7 @@ public class VectorOfString : ITLObject, ICollection<string>
         return list.AsEnumerable<string>().GetEnumerator();
     }
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

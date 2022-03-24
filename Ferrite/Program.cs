@@ -35,6 +35,7 @@ using Ferrite.Utils;
 using Ferrite.TL;
 using System.Reflection;
 using Ferrite.Data;
+using StackExchange.Redis;
 
 namespace Ferrite;
 
@@ -65,14 +66,15 @@ public class Program
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
-        builder.RegisterType<PersistentDataStore>().As<IPersistentStore>();
+        builder.RegisterType<KVDataStore>().As<IPersistentStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        
 
         var container = builder.Build();
 
@@ -97,12 +99,12 @@ public class Program
         }
     }
 
-    private static void MtProtoConnection_MessageReceived(object? sender, MTProtoAsyncEventArgs e)
+    private static async Task MtProtoConnection_MessageReceived(object? sender, MTProtoAsyncEventArgs e)
     {
         var connection = (MTProtoConnection)sender;
         Console.WriteLine(e.Message.ToString());
-        var result = e.Message.Execute(e.ExecutionContext);
+        var result = await  e.Message.ExecuteAsync(e.ExecutionContext);
         Console.WriteLine("-->"+result.ToString());
-        connection.SendAsync(result);
+        await connection.SendAsync(result);
     }
 }

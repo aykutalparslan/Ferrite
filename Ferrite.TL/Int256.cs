@@ -19,72 +19,74 @@
 using System;
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using DotNext.IO;
 using xxHash;
 
 namespace Ferrite.TL;
 
-public class Int256 : ITLObject, IEquatable<Int256>
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct Int256 : ITLObject, IEquatable<Int256>
 {
-    public Int256()
-    {
-        value = new byte[32];
-    }
+    [FieldOffset(0)]
+    private fixed byte _value[32];
     public Int256(byte[] val)
     {
         if (val.Length == 32)
         {
-            value = val;
-        }
-        else if (val.Length <= 32)
-        {
-            for (int i = 0; i < val.Length; i++)
-            {
-                value[i] = val[i];
-            }
+            Unsafe.SkipInit(out this);
+            this = Unsafe.As<byte, Int256>(ref val[0]);
         }
         else
         {
-            for (int i = 0; i < 32; i++)
-            {
-                value[i] = val[i];
-            }
+            throw new ArgumentOutOfRangeException();
         }
     }
-    private byte[] value = new byte[32];
 
-    public int Constructor => unchecked((int)0x85d2fe54);
 
-    public static implicit operator byte[](Int256 i) =>i.value;
-    public static explicit operator Int256(byte[] i) => new Int256(i);
+    public static implicit operator byte[](Int256 i)
+    {
+        byte[] buff = new byte[32];
+        Marshal.Copy((IntPtr)i._value, buff, 0, 32);
+        return buff;
+    }
+    public static explicit operator Int256(byte[] b) => new Int256(b);
 
-    public ReadOnlySequence<byte> TLBytes => new ReadOnlySequence<byte>(value);
+    public readonly int Constructor => unchecked((int)0x84ccf7b7);
 
-    public bool IsMethod => false;
+    public readonly ReadOnlySequence<byte> TLBytes => new ReadOnlySequence<byte>((byte[])this);
 
-    public ITLObject Execute(TLExecutionContext ctx)
+    public Span<byte> AsSpan()
+    {
+        fixed (byte* p = _value)
+        {
+            return new Span<byte>(p, 32);
+        }
+    }
+
+    public readonly bool IsMethod => false;
+
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
     {
-        buff.Read(value);
+        fixed (byte* p = _value)
+        {
+            buff.Read(new Span<byte>(p, 32));
+        }
     }
 
     public void WriteTo(Span<byte> buff)
     {
-        value.CopyTo(buff);
-    }
-
-    public bool Equals([NotNullWhen(true)] Int256? other)
-    {
-        return value.SequenceEqual(other.value);
-    }
-
-    public override bool Equals([NotNullWhen(true)] object? obj)
-    {
-        return Equals(obj);
+        fixed (byte* p = _value)
+        fixed (byte* d = &MemoryMarshal.GetReference(buff))
+        {
+            Buffer.MemoryCopy(p, d, 32, 32);
+        }
     }
 
     public static bool operator ==(Int256 left, Int256 right)
@@ -99,7 +101,17 @@ public class Int256 : ITLObject, IEquatable<Int256>
 
     public override int GetHashCode()
     {
-        return (int)value.GetXxHash32();
+        return (int)this.AsSpan().GetXxHash32();
+    }
+
+    public bool Equals(Int256 other)
+    {
+        return this.AsSpan().SequenceEqual(other.AsSpan());
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is Int256 && Equals((Int256)obj);
     }
 }
 

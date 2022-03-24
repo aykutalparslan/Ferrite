@@ -9,9 +9,11 @@
   <ItemGroup>
     <None Remove="RocksDB" />
     <None Remove="StackExchange.Redis" />
+    <None Remove="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <None Remove="DotNext.Net.Cluster" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RocksDB" Version="7.0.1.26543" />
+    <PackageReference Include="RocksDB" Version="7.0.2.26646" />
     <PackageReference Include="StackExchange.Redis" Version="2.5.43" />
   </ItemGroup>
 </Project>

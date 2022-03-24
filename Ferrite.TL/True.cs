@@ -47,7 +47,7 @@ namespace Ferrite.TL
             return new True();
         }
 
-        public ITLObject Execute(TLExecutionContext ctx)
+        public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
         {
             throw new NotImplementedException();
         }
