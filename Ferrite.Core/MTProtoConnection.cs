@@ -259,6 +259,7 @@ public class MTProtoConnection
             ProcessEncryptedMessage(bytes.Slice(8));
         }
     }
+
     private long GenerateMessageId(bool response)
     {
         long id = (long)new TimeSpan(DateTime.Now.Ticks).TotalSeconds;

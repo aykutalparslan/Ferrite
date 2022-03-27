@@ -42,11 +42,14 @@ namespace Ferrite;
 public class Program
 {
     private static IContainer Container { get; set; }
+    private static SessionManager sessionManager;
+    private static IConnectionListener socketListener;
     public static int Main(String[] args)
     {
         BuildIoCContainer();
 
-        IConnectionListener socketListener = Container.BeginLifetimeScope()
+        sessionManager = Container.Resolve<SessionManager>();
+        socketListener = Container.BeginLifetimeScope()
             .Resolve<IConnectionListener>();
         socketListener.Bind(new IPEndPoint(IPAddress.Loopback, 5222));
         StartAccept(socketListener);
@@ -73,8 +76,11 @@ public class Program
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
         builder.RegisterType<KVDataStore>().As<IPersistentStore>();
+        builder.Register(_=> new RedisDataStore("redis:6379"))
+            .As<IDistributedStore>().SingleInstance();
+        builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        
+        builder.RegisterType<SessionManager>().SingleInstance();
 
         var container = builder.Build();
 
@@ -101,10 +107,13 @@ public class Program
 
     private static async Task MtProtoConnection_MessageReceived(object? sender, MTProtoAsyncEventArgs e)
     {
-        var connection = (MTProtoConnection)sender;
         Console.WriteLine(e.Message.ToString());
         var result = await  e.Message.ExecuteAsync(e.ExecutionContext);
         Console.WriteLine("-->"+result.ToString());
-        await connection.SendAsync(result);
+        if (sender != null)
+        {
+            var connection = (MTProtoConnection)sender;
+            await connection.SendAsync(result);
+        }
     }
 }

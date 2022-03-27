@@ -45,13 +45,13 @@ public class SessionManager
         NodeId = GetNodeId();
         _store = store;
     }
-    public bool AddSession(long sessionId, MTPtotoSession session)
+    public async Task<bool> AddSessionAsync(long sessionId, MTPtotoSession session)
     {
-        return _localSessions.TryAdd(sessionId, session);
         SessionState d = new SessionState();
         d.SessionId = sessionId;
         d.NodeId = NodeId;
-        _store.PutSessionAsync(BitConverter.GetBytes(sessionId), d.ToByteArray());
+        var remoteAdd = await _store.PutSessionAsync(BitConverter.GetBytes(sessionId), d.ToByteArray());
+        return remoteAdd && _localSessions.TryAdd(sessionId, session);
     }
     public bool TryGetSessionState(long sessionId, out SessionState? state)
     {
