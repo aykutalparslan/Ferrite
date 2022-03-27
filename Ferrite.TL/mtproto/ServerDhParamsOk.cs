@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class ServerDhParamsOk : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public int Constructor => -790100132;
     public ServerDhParamsOk(ITLObjectFactory objectFactory)
@@ -80,12 +80,6 @@ public class ServerDhParamsOk : ITLObject
             serialized = false;
             encryptedAnswer = value;
         }
-    }
-
-    public bool IsMethod => false;
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

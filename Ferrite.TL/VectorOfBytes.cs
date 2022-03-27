@@ -90,8 +90,6 @@ public class VectorOfBytes : ITLObject, ICollection<byte[]>
 
     public bool IsReadOnly => false;
 
-    public bool IsMethod => throw new NotImplementedException();
-
     public void Add(byte[] item)
     {
         serialized = false;
@@ -128,11 +126,6 @@ public class VectorOfBytes : ITLObject, ICollection<byte[]>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return list.AsEnumerable<byte[]>().GetEnumerator();
-    }
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 }
 

@@ -28,10 +28,10 @@ using Ferrite.TL.Exceptions;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
-public class ReqDhParams : ITLObject
+public class ReqDhParams : ITLObject, ITLMethod
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public int Constructor => -686627650;
     private IKeyProvider keyProvider;
@@ -133,8 +133,6 @@ public class ReqDhParams : ITLObject
             encryptedData = value;
         }
     }
-
-    public bool IsMethod => true;
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         RpcError rpcError;

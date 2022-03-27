@@ -88,8 +88,6 @@ public class VectorOfLong : ITLObject, ICollection<long>
 
     public bool IsReadOnly => false;
 
-    public bool IsMethod => throw new NotImplementedException();
-
     public void Add(long item)
     {
         serialized = false;
@@ -126,11 +124,6 @@ public class VectorOfLong : ITLObject, ICollection<long>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return list.AsEnumerable<long>().GetEnumerator();
-    }
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 }
 

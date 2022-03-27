@@ -69,13 +69,6 @@ public unsafe struct Int128 : ITLObject, IEquatable<Int128>
         }
     }
 
-    public readonly bool IsMethod => false;
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
-    }
-
     public void Parse(ref SequenceReader buff)
     {
         fixed (byte* p = _value)

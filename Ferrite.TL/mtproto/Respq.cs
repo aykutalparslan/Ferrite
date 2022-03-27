@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class Respq : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public int Constructor => 85337187;
     public Respq(ITLObjectFactory objectFactory)
@@ -92,12 +92,6 @@ public class Respq : ITLObject
             serialized = false;
             serverPublicKeyFingerprints = value;
         }
-    }
-
-    public bool IsMethod => false;
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

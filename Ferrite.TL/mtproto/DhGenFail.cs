@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class DhGenFail : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public DhGenFail(ITLObjectFactory objectFactory)
     {
@@ -83,7 +83,6 @@ public class DhGenFail : ITLObject
         }
     }
 
-    public bool IsMethod => false;
     public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         throw new NotImplementedException();

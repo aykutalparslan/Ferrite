@@ -40,16 +40,9 @@ public class Null : ITLObject
 
     public ReadOnlySequence<byte> TLBytes => value;
 
-    public bool IsMethod => throw new NotImplementedException();
-
     public static Null Read(int constructor, ref SequenceReader buff)
     {
         return new Null();
-    }
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

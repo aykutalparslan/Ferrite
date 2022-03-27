@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class ServerDhInnerData : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public ServerDhInnerData(ITLObjectFactory objectFactory)
     {
@@ -117,12 +117,6 @@ public class ServerDhInnerData : ITLObject
             serialized = false;
             serverTime = value;
         }
-    }
-
-    public bool IsMethod => false;
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

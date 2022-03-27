@@ -156,14 +156,7 @@ class Compiler
             ));
         }
 
-        cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public bool IsMethod => false;"));
-        var throwBlock = SyntaxFactory.ParseStatement("throw new NotImplementedException();");
-        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("Task<ITLObject>"), "ExecuteAsync")
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
-                .WithParameterList(SyntaxFactory.ParseParameterList("(TLExecutionContext ctx)"))
-                .WithBody(SyntaxFactory.Block(throwBlock)));
-
+        
         var parseBlock = SyntaxFactory.Block(SyntaxFactory.ParseStatement("serialized  = false;"));
         foreach (var item in constructor.Params)
         {
@@ -315,6 +308,7 @@ class Compiler
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
 
         cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
+        cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLMethod")));
 
 
         cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)",true);
@@ -415,7 +409,6 @@ class Compiler
             ));
         }
 
-        cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public bool IsMethod => true;"));
         var throwBlock = SyntaxFactory.ParseStatement("throw new NotImplementedException();");
         if (previousExecuteBody != null)
         {

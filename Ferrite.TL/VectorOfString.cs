@@ -90,8 +90,6 @@ public class VectorOfString : ITLObject, ICollection<string>
 
     public bool IsReadOnly => false;
 
-    public bool IsMethod => throw new NotImplementedException();
-
     public void Add(string item)
     {
         serialized = false;
@@ -128,11 +126,6 @@ public class VectorOfString : ITLObject, ICollection<string>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return list.AsEnumerable<string>().GetEnumerator();
-    }
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 }
 

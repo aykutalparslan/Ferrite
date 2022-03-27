@@ -22,16 +22,8 @@ using DotNext.IO;
 
 namespace Ferrite.TL;
 
-public interface ITLObject
+public interface ITLMethod
 {
-    public abstract int Constructor { get; }
-
-    public void Parse(ref SequenceReader buff);
-    public void WriteTo(Span<byte> buff);
-
-    public ReadOnlySequence<byte> TLBytes
-    {
-        get;
-    }
+    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx);
 }
 

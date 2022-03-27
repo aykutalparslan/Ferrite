@@ -25,8 +25,8 @@ using Ferrite.Utils;
 namespace Ferrite.TL.mtproto;
 public class PQInnerDataTempDc : ITLObject
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public int Constructor => 1459478408;
     public PQInnerDataTempDc(ITLObjectFactory objectFactory)
@@ -140,12 +140,6 @@ public class PQInnerDataTempDc : ITLObject
             serialized = false;
             expiresIn = value;
         }
-    }
-
-    public bool IsMethod => false;
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

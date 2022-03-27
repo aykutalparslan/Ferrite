@@ -108,12 +108,15 @@ public class Program
     private static async Task MtProtoConnection_MessageReceived(object? sender, MTProtoAsyncEventArgs e)
     {
         Console.WriteLine(e.Message.ToString());
-        var result = await  e.Message.ExecuteAsync(e.ExecutionContext);
-        Console.WriteLine("-->"+result.ToString());
-        if (sender != null)
+        if (e.Message is ITLMethod method)
         {
-            var connection = (MTProtoConnection)sender;
-            await connection.SendAsync(result);
+            var result = await method.ExecuteAsync(e.ExecutionContext);
+            Console.WriteLine("-->" + result.ToString());
+            if (sender != null)
+            {
+                var connection = (MTProtoConnection)sender;
+                await connection.SendAsync(result);
+            }
         }
     }
 }

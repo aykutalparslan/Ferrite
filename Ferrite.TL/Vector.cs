@@ -88,8 +88,6 @@ public class Vector<T> : ITLObject, ICollection<T>
 
     public bool IsReadOnly => false;
 
-    public bool IsMethod => throw new NotImplementedException();
-
     public void Add(T item)
     {
         serialized = false;
@@ -126,11 +124,6 @@ public class Vector<T> : ITLObject, ICollection<T>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return list.AsEnumerable<T>().GetEnumerator();
-    }
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 }
 

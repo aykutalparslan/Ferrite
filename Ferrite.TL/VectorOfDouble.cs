@@ -87,8 +87,6 @@ public class VectorOfDouble : ITLObject, ICollection<double>
 
     public bool IsReadOnly => false;
 
-    public bool IsMethod => throw new NotImplementedException();
-
     public void Add(double item)
     {
         serialized = false;
@@ -125,11 +123,6 @@ public class VectorOfDouble : ITLObject, ICollection<double>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return list.AsEnumerable<double>().GetEnumerator();
-    }
-
-    public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        throw new NotImplementedException();
     }
 }
 

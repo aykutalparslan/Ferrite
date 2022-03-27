@@ -24,10 +24,10 @@ using Ferrite.Crypto;
 using System.Numerics;
 
 namespace Ferrite.TL.mtproto;
-public class ReqPqMulti : ITLObject
+public class ReqPqMulti : ITLObject, ITLMethod
 {
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    ITLObjectFactory factory;
+    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ITLObjectFactory factory;
     private bool serialized = false;
     private IRandomGenerator randomGenerator;
     private IKeyProvider keyPairProvider;
@@ -63,8 +63,6 @@ public class ReqPqMulti : ITLObject
             nonce = value;
         }
     }
-
-    public bool IsMethod => true;
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         Respq respq = factory.Resolve<Respq>();

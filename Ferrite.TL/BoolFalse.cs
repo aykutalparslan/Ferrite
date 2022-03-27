@@ -40,16 +40,9 @@ namespace Ferrite.TL
 
         public ReadOnlySequence<byte> TLBytes => value;
 
-        public bool IsMethod => throw new NotImplementedException();
-
         public static BoolFalse Read(int constructor, ref SequenceReader buff)
         {
             return new BoolFalse();
-        }
-
-        public Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-        {
-            throw new NotImplementedException();
         }
 
         public void Parse(ref SequenceReader buff)
