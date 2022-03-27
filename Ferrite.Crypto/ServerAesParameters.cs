@@ -16,10 +16,11 @@ public readonly struct ServerAesParameters : AesParameters
 
     public ServerAesParameters(Span<byte> authKey, Span<byte> plaintext)
     {
+        var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        sha256.AppendData(authKey.Slice(96, 32));
+        sha256.AppendData(plaintext);
+        Span<byte> messageKeyLarge = sha256.GetCurrentHash();
         Span<byte> tmp = new byte[32+plaintext.Length];
-        authKey.Slice(96, 32).CopyTo(tmp);
-        plaintext.CopyTo(tmp.Slice(32));
-        Span<byte> messageKeyLarge = stackalloc byte[32];
         SHA256.HashData(tmp, messageKeyLarge);
         Span<byte> messageKey = messageKeyLarge.Slice(8);
         Span<byte> sha256a = stackalloc byte[32];
@@ -28,6 +29,7 @@ public readonly struct ServerAesParameters : AesParameters
         tmp.Clear();
         messageKey.CopyTo(tmp);
         authKey.Slice(8, 36).CopyTo(tmp.Slice(16));
+        
         SHA256.HashData(tmp, sha256a);
         tmp.Clear();
         authKey.Slice(48, 36).CopyTo(tmp);
