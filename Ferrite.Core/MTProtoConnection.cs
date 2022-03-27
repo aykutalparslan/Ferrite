@@ -164,8 +164,6 @@ public class MTProtoConnection
         AsyncEventHandler<MTProtoAsyncEventArgs> raiseEvent = MessageReceived;
         if (raiseEvent != null)
         {
-            Console.WriteLine("***" + Thread.CurrentThread.ManagedThreadId);
-            
             raiseEvent(this, e);
         }
     }
