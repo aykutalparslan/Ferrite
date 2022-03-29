@@ -108,7 +108,7 @@ public class SetClientDhParams : ITLObject, ITLMethod
         var dataWithPadding = encryptedData.AsMemory().Slice(20);
         SequenceReader reader = IAsyncBinaryReader.Create(dataWithPadding);
         int constructor = reader.ReadInt32(true);
-        if(constructor == (int)TLConstructor.ClientDhInnerData)
+        if(constructor == TLConstructor.ClientDhInnerData)
         {
             var clientDhInnerData = factory.Read<ClientDhInnerData>(ref reader);
             var sha1Actual = SHA1.HashData(clientDhInnerData.TLBytes.ToArray());

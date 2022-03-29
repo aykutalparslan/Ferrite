@@ -864,7 +864,7 @@ class Compiler
         return cls;
     }
 
-    public static string GenerateTLConstructorEnum(TLSchema schema)
+    public static string GenerateTLConstructorConstants(TLSchema schema, string namespaceName)
     {
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
@@ -887,20 +887,52 @@ class Compiler
                   " */\r\n"))
             )
             .AddMembers(SyntaxFactory.FileScopedNamespaceDeclaration(
-                SyntaxFactory.ParseName("Ferrite.TL")));
+                SyntaxFactory.ParseName("Ferrite.TL"+(namespaceName.Length>0?"."+namespaceName:""))));
 
-        var enm = SyntaxFactory.EnumDeclaration("TLConstructor")
+        var cls = SyntaxFactory.ClassDeclaration("TLConstructor")
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
 
         foreach (var item in schema.Constructors)
         {
-            enm = enm.AddMembers(SyntaxFactory.EnumMemberDeclaration(item.Predicate.ToPascalCase() + " = " + item.Id));
+            string[] n = item.Predicate.Split('.');
+            string fieldname = item.Predicate.ToPascalCase();
+            if (n.Length > 1)
+            {
+                fieldname = n[0].ToPascalCase()+"_" +n[1].ToPascalCase();
+            }
+            var field = SyntaxFactory
+                        .FieldDeclaration(SyntaxFactory
+                            .VariableDeclaration(SyntaxFactory
+                            .ParseTypeName("int"))
+                            .AddVariables(SyntaxFactory
+                            .VariableDeclarator(fieldname).WithInitializer(
+                                SyntaxFactory.EqualsValueClause(SyntaxFactory.ParseExpression(item.Id)))))
+                        .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                            SyntaxFactory.Token(SyntaxKind.StaticKeyword),
+                            SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+            cls = cls.AddMembers(field);
         }
         foreach (var item in schema.Methods)
         {
-            enm = enm.AddMembers(SyntaxFactory.EnumMemberDeclaration(item.Method.ToPascalCase() + " = " + item.Id));
+            string[] n = item.Method.Split('.');
+            string fieldname = item.Method.ToPascalCase();
+            if (n.Length > 1)
+            {
+                fieldname = n[0].ToPascalCase() + "_" + n[1].ToPascalCase();
+            }
+            var field = SyntaxFactory
+                        .FieldDeclaration(SyntaxFactory
+                            .VariableDeclaration(SyntaxFactory
+                            .ParseTypeName("int"))
+                            .AddVariables(SyntaxFactory
+                            .VariableDeclarator(fieldname).WithInitializer(
+                                SyntaxFactory.EqualsValueClause(SyntaxFactory.ParseExpression(item.Id)))))
+                        .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+                            SyntaxFactory.Token(SyntaxKind.StaticKeyword),
+                            SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+            cls = cls.AddMembers(field);
         }
-        syntax = syntax.AddMembers(enm);
+        syntax = syntax.AddMembers(cls);
         var code = syntax
             .NormalizeWhitespace()
             .ToFullString();
@@ -1074,6 +1106,48 @@ class Compiler
                             .WithLeadingTrivia(SyntaxFactory.Tab, SyntaxFactory.Tab)
                             .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
                     }
+                    foreach (var item in tlLayer139Schema.Constructors)
+                    {
+                        if (item.Predicate == "vector" ||
+                            item.Predicate == "boolTrue" ||
+                            item.Predicate == "boolFalse" ||
+                            item.Predicate == "error" ||
+                            item.Predicate == "true" ||
+                            item.Predicate == "null")
+                        {
+                            continue;
+                        }
+                        string[] arr = item.Predicate.Split('.');
+                        string fileName = item.Predicate.ToPascalCase();
+                        string nameSpaceName = "layer139";
+                        if (arr.Length > 1)
+                        {
+                            fileName = arr[1].ToPascalCase();
+                            nameSpaceName += "." + arr[0];
+                        }
+                        fileName += "Impl";
+                        arms = arms.Add(SyntaxFactory.SwitchExpressionArm(
+                            SyntaxFactory.ConstantPattern(SyntaxFactory.ParseExpression(item.Id)),
+                            SyntaxFactory.ParseExpression("Read<"+nameSpaceName+"." + fileName + ">(ref buff),"))
+                            .WithLeadingTrivia(SyntaxFactory.Tab, SyntaxFactory.Tab)
+                            .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
+                    }
+                    foreach (var item in tlLayer139Schema.Methods)
+                    {
+                        string[] arr = item.Method.Split('.');
+                        string fileName = item.Method.FirstLetterToUpperCase();
+                        string nameSpaceName = "layer139";
+                        if (arr.Length > 1)
+                        {
+                            fileName = arr[1].FirstLetterToUpperCase();
+                            nameSpaceName += "." + arr[0];
+                        }
+                        arms = arms.Add(SyntaxFactory.SwitchExpressionArm(
+                            SyntaxFactory.ConstantPattern(SyntaxFactory.ParseExpression(item.Id)),
+                            SyntaxFactory.ParseExpression("Read<" + nameSpaceName + "." + fileName + ">(ref buff),"))
+                            .WithLeadingTrivia(SyntaxFactory.Tab, SyntaxFactory.Tab)
+                            .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
+                    }
                     arms = arms.Add(SyntaxFactory.SwitchExpressionArm(
                             SyntaxFactory.ConstantPattern(SyntaxFactory.ParseExpression("_")),
                             SyntaxFactory.ParseExpression("throw new DeserializationException(\"Constructor \"+ string.Format(\"0x{ 0:X}\", constructor) + \" not found.\")"))
@@ -1091,7 +1165,11 @@ class Compiler
 
             using (var writer = new StreamWriter("../../../../Ferrite.TL/TLConstructor.cs", false))
             {
-                writer.Write(GenerateTLConstructorEnum(mtProtoSchema));
+                writer.Write(GenerateTLConstructorConstants(mtProtoSchema, ""));
+            }
+            using (var writer = new StreamWriter("../../../../Ferrite.TL/layer139/TLConstructor.cs", false))
+            {
+                writer.Write(GenerateTLConstructorConstants(tlLayer139Schema, "layer139"));
             }
         }
     }

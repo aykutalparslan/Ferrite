@@ -162,7 +162,7 @@ public class ReqDhParams : ITLObject, ITLMethod
         int constructor = reader.ReadInt32(true);
         var sessionNonce = (Int128)ctx.SessionBag["nonce"];
         var sessionServerNonce = (Int128)ctx.SessionBag["server_nonce"];
-        if (constructor == (int)TLConstructor.PQInnerData)
+        if (constructor == TLConstructor.PQInnerData)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
             ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
@@ -192,7 +192,7 @@ public class ReqDhParams : ITLObject, ITLMethod
 
             return serverDhParamsOk;
         }
-        else if (constructor == (int)TLConstructor.PQInnerDataDc)
+        else if (constructor == TLConstructor.PQInnerDataDc)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
             ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
@@ -222,7 +222,7 @@ public class ReqDhParams : ITLObject, ITLMethod
 
             return serverDhParamsOk;
         }
-        else if (constructor == (int)TLConstructor.PQInnerDataTempDc)
+        else if (constructor == TLConstructor.PQInnerDataTempDc)
         {
             var obj = factory.Read<PQInnerDataTempDc>(ref reader);
             ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
