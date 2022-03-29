@@ -627,27 +627,68 @@ class Compiler
 
     static void Main()
     {
-        var schema = TLSchema.Load("mtproto.json");
+        var mtProtoSchema = TLSchema.Load("mtproto.json");
+        var tlLayer139Schema = TLSchema.Load("schema.L139.json");
         if (!Directory.Exists("../../../../Ferrite.TL/mtproto/"))
         {
             Directory.CreateDirectory("../../../../Ferrite.TL/mtproto/");
         }
-        foreach (var item in schema.Constructors)
+        foreach (var item in mtProtoSchema.Constructors)
         {
-            if (item.Predicate == "vector")
+            if (item.Predicate == "vector" ||
+                item.Predicate == "boolTrue" ||
+                item.Predicate == "boolFalse" ||
+                item.Predicate == "error" ||
+                item.Predicate == "true" ||
+                item.Predicate == "null")
             {
                 continue;
             }
-
+            string fileName = item.Predicate.ToPascalCase();
+ 
             if (!File.Exists("../../../../Ferrite.TL/mtproto/" + item.Predicate.ToPascalCase() + ".cs"))
             {
-                using (var writer = new StreamWriter("../../../../Ferrite.TL/mtproto/" + item.Predicate.ToPascalCase() + ".cs", false))
+                using (var writer = new StreamWriter("../../../../Ferrite.TL/mtproto/" + fileName + ".cs", false))
                 {
                     writer.Write(CreateTLObjectClass(item, "mtproto"));
                 }
             }
         }
-        foreach (var item in schema.Methods)
+        foreach (var item in tlLayer139Schema.Constructors)
+        {
+            if (item.Predicate == "vector" ||
+                item.Predicate == "boolTrue" ||
+                item.Predicate == "boolFalse" ||
+                item.Predicate == "error" ||
+                item.Predicate == "true" ||
+                item.Predicate == "null")
+            {
+                continue;
+            }
+
+            string[] pre = item.Predicate.Split('.');
+            string fileName = item.Predicate.ToPascalCase();
+            string nameSpaceName = "";
+            if (pre.Length > 1)
+            {
+                fileName = pre[1].ToPascalCase();
+                nameSpaceName = pre[0].ToPascalCase();
+            }
+
+            if (!Directory.Exists("../../../../Ferrite.TL/" + nameSpaceName))
+            {
+                Directory.CreateDirectory("../../../../Ferrite.TL/" + nameSpaceName);
+            }
+
+            if (!File.Exists("../../../../Ferrite.TL/mtproto/" + item.Predicate.ToPascalCase() + ".cs"))
+            {
+                using (var writer = new StreamWriter("../../../../Ferrite.TL/mtproto/" + fileName + ".cs", false))
+                {
+                    writer.Write(CreateTLObjectClass(item, nameSpaceName));
+                }
+            }
+        }
+        foreach (var item in mtProtoSchema.Methods)
         {
             if (File.Exists("../../../../Ferrite.TL/mtproto/" + item.Method.ToPascalCase() + ".cs"))
             {/*
@@ -694,7 +735,7 @@ class Compiler
                 {
                     SwitchExpressionSyntax oldSyntax = (SwitchExpressionSyntax)method.ExpressionBody.Expression;
                     SeparatedSyntaxList<SwitchExpressionArmSyntax> arms = new SeparatedSyntaxList<SwitchExpressionArmSyntax>();
-                    foreach (var item in schema.Constructors)
+                    foreach (var item in mtProtoSchema.Constructors)
                     {
                         if(item.Predicate == "vector")
                         {
@@ -706,7 +747,7 @@ class Compiler
                             .WithLeadingTrivia(SyntaxFactory.Tab,SyntaxFactory.Tab)
                             .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
                     }
-                    foreach (var item in schema.Methods)
+                    foreach (var item in mtProtoSchema.Methods)
                     {
                         arms = arms.Add(SyntaxFactory.SwitchExpressionArm(
                             SyntaxFactory.ConstantPattern(SyntaxFactory.ParseExpression(item.Id)),
@@ -731,7 +772,7 @@ class Compiler
 
             using (var writer = new StreamWriter("../../../../Ferrite.TL/TLConstructor.cs", false))
             {
-                writer.Write(GenerateTLConstructorEnum(schema));
+                writer.Write(GenerateTLConstructorEnum(mtProtoSchema));
             }
         }
     }

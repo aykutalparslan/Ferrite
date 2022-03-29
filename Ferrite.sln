@@ -87,7 +87,7 @@ Global
 	GlobalSection(MonoDevelopProperties) = preSolution
 		Policies = $0
 		$0.StandardHeader = $1
-		$1.Text = @/*\n *   Project Ferrite is an Implementation Telegram Server API\n *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\n *\n *   This program is free software: you can redistribute it and/or modify\n *   it under the terms of the GNU Affero General Public License as published by\n *   the Free Software Foundation, either version 3 of the License, or\n *   (at your option) any later version.\n *\n *   This program is distributed in the hope that it will be useful,\n *   but WITHOUT ANY WARRANTY; without even the implied warranty of\n *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n *   GNU Affero General Public License for more details.\n *\n *   You should have received a copy of the GNU Affero General Public License\n *   along with this program.  If not, see <https://www.gnu.org/licenses/>.\n */
+		$1.Text = "@\n   Project Ferrite is an Implementation Telegram Server API\n   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\n\n   This program is free software: you can redistribute it and/or modify\n   it under the terms of the GNU Affero General Public License as published by\n   the Free Software Foundation, either version 3 of the License, or\n   (at your option) any later version.\n\n   This program is distributed in the hope that it will be useful,\n   but WITHOUT ANY WARRANTY; without even the implied warranty of\n   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n   GNU Affero General Public License for more details.\n\n   You should have received a copy of the GNU Affero General Public License\n   along with this program.  If not, see <https://www.gnu.org/licenses/>.\n "
 		$0.TextStylePolicy = $2
 		$2.FileWidth = 80
 		$2.TabsToSpaces = True
@@ -98,5 +98,17 @@ Global
 		$4.FileWidth = 80
 		$4.TabsToSpaces = True
 		$4.scope = text/plain
+		$0.TextStylePolicy = $5
+		$5.FileWidth = 80
+		$5.TabsToSpaces = True
+		$5.scope = text/x-json
+		$0.TextStylePolicy = $6
+		$6.FileWidth = 80
+		$6.TabsToSpaces = True
+		$6.scope = text/x-web
+		$0.TextStylePolicy = $7
+		$7.FileWidth = 80
+		$7.TabsToSpaces = True
+		$7.scope = text/x-vs
 	EndGlobalSection
 EndGlobal
