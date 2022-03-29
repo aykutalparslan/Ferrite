@@ -22,7 +22,7 @@ namespace Ferrite.TL;
 public enum TLConstructor
 {
     Vector = 481674261,
-    Respq = 85337187,
+    ResPQ = 85337187,
     PQInnerData = -2083955988,
     PQInnerDataDc = -1443537003,
     PQInnerDataTempDc = 1459478408,

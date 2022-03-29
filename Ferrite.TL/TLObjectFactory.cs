@@ -35,7 +35,7 @@ public class TLObjectFactory : ITLObjectFactory
 
     public ITLObject Read(int constructor, ref SequenceReader buff) => constructor switch
     {
-        85337187 => Read<Respq>(ref buff),
+        85337187 => Read<ResPQ>(ref buff),
         -2083955988 => Read<PQInnerData>(ref buff),
         -1443537003 => Read<PQInnerDataDc>(ref buff),
         1459478408 => Read<PQInnerDataTempDc>(ref buff),

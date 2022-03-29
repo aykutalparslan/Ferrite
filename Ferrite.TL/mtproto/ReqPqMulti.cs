@@ -65,7 +65,7 @@ public class ReqPqMulti : ITLObject, ITLMethod
     }
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        Respq respq = factory.Resolve<Respq>();
+        ResPQ respq = factory.Resolve<ResPQ>();
         if (!ctx.SessionBag.ContainsKey("nonce") ||
             (Int128)ctx.SessionBag["nonce"] != nonce)
         {

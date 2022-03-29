@@ -23,13 +23,13 @@ using DotNext.IO;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
-public class Respq : ITLObject
+public class ResPQ : ITLObject
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
     public int Constructor => 85337187;
-    public Respq(ITLObjectFactory objectFactory)
+    public ResPQ(ITLObjectFactory objectFactory)
     {
         factory = objectFactory;
     }

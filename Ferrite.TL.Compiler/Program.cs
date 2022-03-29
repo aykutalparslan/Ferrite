@@ -25,6 +25,69 @@ using Microsoft.CodeAnalysis.Formatting;
 
 class Compiler
 {
+    static string CreateAbstractClass(string className, string namespaceName)
+    {
+        var syntax = SyntaxFactory.CompilationUnit().AddUsings(
+                SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
+                .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
+                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
+                  " *\r\n" +
+                  " *   This program is free software: you can redistribute it and/or modify\r\n" +
+                  " *   it under the terms of the GNU Affero General Public License as published by\r\n" +
+                  " *   the Free Software Foundation, either version 3 of the License, or\r\n" +
+                  " *   (at your option) any later version.\r\n" +
+                  " *\r\n" +
+                  " *   This program is distributed in the hope that it will be useful,\r\n" +
+                  " *   but WITHOUT ANY WARRANTY; without even the implied warranty of\r\n" +
+                  " *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\r\n" +
+                  " *   GNU Affero General Public License for more details.\r\n" +
+                  " *\r\n" +
+                  " *   You should have received a copy of the GNU Affero General Public License\r\n" +
+                  " *   along with this program.  If not, see <https://www.gnu.org/licenses/>.\r\n" +
+                  " */\r\n")),
+                SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System.Buffers")),
+                SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("DotNext.Buffers")),
+                SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("DotNext.IO")),
+                SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("Ferrite.Utils"))
+            )
+            .AddMembers(SyntaxFactory.FileScopedNamespaceDeclaration(
+                SyntaxFactory.ParseName("Ferrite.TL" + (namespaceName.Length > 0 ? "." + namespaceName.Replace("/", ".") : ""))));
+        var cls = SyntaxFactory.ClassDeclaration(className.ToPascalCase())
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
+            SyntaxFactory.Token(SyntaxKind.AbstractKeyword));
+        cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
+
+        cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("int"), "Constructor")
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.VirtualKeyword))
+            .WithExpressionBody(SyntaxFactory.ArrowExpressionClause(SyntaxFactory.ParseExpression("throw new NotImplementedException();")))
+            );
+
+
+        cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("ReadOnlySequence<byte>"), "TLBytes")
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.VirtualKeyword))
+            .WithExpressionBody(SyntaxFactory.ArrowExpressionClause(SyntaxFactory.ParseExpression("throw new NotImplementedException();")))
+            );
+        var throwBlock = SyntaxFactory.ParseStatement("throw new NotImplementedException();");
+        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "Parse")
+                .WithParameterList(SyntaxFactory.ParseParameterList("(ref SequenceReader buff)"))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.VirtualKeyword))
+                .WithBody(SyntaxFactory.Block(throwBlock)));
+
+        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "WriteTo")
+                .WithParameterList(SyntaxFactory.ParseParameterList("(Span<byte> buff)"))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.VirtualKeyword))
+                .WithBody(SyntaxFactory.Block(throwBlock)));
+        syntax = syntax.AddMembers(cls);
+        var code = syntax
+            .NormalizeWhitespace()
+            .ToFullString();
+        return code;
+    }
     static string CreateTLObjectClass(TLConstructor constructor, string namespaceName)
     {
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
@@ -52,24 +115,38 @@ class Compiler
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("Ferrite.Utils"))
             )
             .AddMembers(SyntaxFactory.FileScopedNamespaceDeclaration(
-                SyntaxFactory.ParseName("Ferrite.TL" + (namespaceName.Length > 0 ? "." + namespaceName : ""))));
+                SyntaxFactory.ParseName("Ferrite.TL" + (namespaceName.Length > 0 ? "." + namespaceName.Replace("/", ".") : ""))));
 
-        var cls = SyntaxFactory.ClassDeclaration(constructor.Predicate.ToPascalCase())
+        string className = constructor.Predicate;
+        if (className.Contains("."))
+        {
+            className = className.Split('.')[1];
+        }
+        className += "Impl";
+
+        string baseClassName = constructor.Type;
+        if (baseClassName.Contains("."))
+        {
+            baseClassName = baseClassName.Split('.')[1];
+        }
+        var cls = SyntaxFactory.ClassDeclaration(className.ToPascalCase())
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
 
-        cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
+        cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName(baseClassName)));
+        //cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
 
-        cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)",true);
+        cls = AddField(cls, "SparseBufferWriter<byte>", "writer", "new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared)", true);
         cls = AddField(cls, "ITLObjectFactory", "factory", true);
         cls = AddField(cls, "bool", "serialized", "false");
         var constructorBlock = SyntaxFactory.ParseStatement("factory = objectFactory;");
-        cls = cls.AddMembers(SyntaxFactory.ConstructorDeclaration(constructor.Predicate.ToPascalCase())
+        cls = cls.AddMembers(SyntaxFactory.ConstructorDeclaration(className.ToPascalCase())
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
                 .WithParameterList(SyntaxFactory.ParseParameterList("(ITLObjectFactory objectFactory)"))
                 .WithBody(SyntaxFactory.Block(constructorBlock)));
 
         cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(SyntaxFactory.ParseTypeName("int"), "Constructor")
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.OverrideKeyword))
             .WithExpressionBody(SyntaxFactory.ArrowExpressionClause(SyntaxFactory.IdentifierName(constructor.Id + ";\r\n   ")))
             );
 
@@ -80,174 +157,16 @@ class Compiler
         var bytesBlock = SyntaxFactory.Block(
                        SyntaxFactory.IfStatement(SyntaxFactory.ParseExpression("serialized"), returnBytes),
                        clearWriter, writeConstructor);
-        foreach (var item in constructor.Params)
-        {
-            if (item.Type == "int")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteInt32(" + item.Name.ToCamelCase() + ", true);")
-                    );
-            }
-            else if (item.Type == "long")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteInt64(" + item.Name.ToCamelCase() + ", true);")
-                    );
-            }
-            else if (item.Type == "double")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteInt64(" + item.Name.ToCamelCase() + ", true);")
-                    );
-            }
-            else if (item.Type == "string")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteTLString(" + item.Name.ToCamelCase() + ");")
-                    );
-            }
-            else if (item.Type == "bytes")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteTLBytes(" + item.Name.ToCamelCase() + ");")
-                    );
-            }
-            else
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.Write(" + item.Name.ToCamelCase() + ".TLBytes, false);")
-                    );
-            }
-        }
-        bytesBlock = bytesBlock.AddStatements(setSerialized, returnBytes);
-        cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(
-            SyntaxFactory.ParseTypeName("ReadOnlySequence<byte>"), "TLBytes")
-            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddAccessorListAccessors(
-               SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-               .WithBody(bytesBlock)));
 
-
-        foreach (var p in constructor.Params)
-        {
-            string typeName = GetTypeName(p);
-            if (typeName.StartsWith("Vector<"))
-            {
-                var b = typeName.Replace("Vector<", "").Replace(">", "");
-                typeName = "Vector<" + b.ToPascalCase() + ">";
-            }
-            else if (typeName.StartsWith("VectorBare<"))
-            {
-                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
-                typeName = "VectorBare<" + b.ToPascalCase() + ">";
-            }
-
-            cls = cls.AddMembers(SyntaxFactory
-                .FieldDeclaration(SyntaxFactory
-                    .VariableDeclaration(SyntaxFactory
-                    .ParseTypeName(typeName))
-                    .AddVariables(SyntaxFactory
-                    .VariableDeclarator(p.Name.ToCamelCase())))
-                .AddModifiers(SyntaxFactory
-                    .Token(SyntaxKind.PrivateKeyword)));
-
-            cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public " + typeName + " " + p.Name.ToPascalCase() +
-    "{get => " + p.Name.ToCamelCase() + "; set {serialized = false; " + p.Name.ToCamelCase() + " = value;}}"
-            ));
-        }
-
-        
-        var parseBlock = SyntaxFactory.Block(SyntaxFactory.ParseStatement("serialized  = false;"));
-        foreach (var item in constructor.Params)
-        {
-            string typeName = GetTypeName(item);
-            if (typeName.StartsWith("Vector<"))
-            {
-                var b = typeName.Replace("Vector<", "").Replace(">", "");
-                typeName = "Vector<" + b.ToPascalCase() + ">";
-            }
-            else if (typeName.StartsWith("VectorBare<"))
-            {
-                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
-                typeName = "VectorBare<" + b.ToPascalCase() + ">";
-            }
-
-            if (item.Type == "int")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadInt32(true);")
-                    );
-            }
-            else if (item.Type == "long")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadInt64(true);")
-                    );
-            }
-            else if (item.Type == "double")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadInt64(true);")
-                    );
-            }
-            else if (item.Type == "string")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadTLString();")
-                    );
-            }
-            else if (item.Type == "bytes")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadTLBytes().ToArray();")
-                    );
-            }
-            else if (item.Type == "int128")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<Int128>(ref buff);")
-                    );
-            }
-            else if (item.Type == "int256")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<Int256>(ref buff);")
-                    );
-            }
-            else if (item.Type.StartsWith("vector<%"))
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);")
-                    );
-            }
-            else if (item.Type.StartsWith("VectorBare<"))
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<" + item.Type + ">(ref buff);")
-                    );
-            }
-            else if (item.Type == ("Object"))
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); ")
-                    );
-            }
-            else
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("buff.Skip(4); " + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref buff);")
-                    );
-            }
-        }
-        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "Parse")
-                .WithParameterList(SyntaxFactory.ParseParameterList("(ref SequenceReader buff)"))
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-                .WithBody(parseBlock));
+        SerializeBlock(constructor, ref cls, setSerialized, returnBytes, ref bytesBlock);
+        cls = FieldsBlock(constructor, cls);
+        cls = ParseBlock(constructor, cls);
 
         var writeToBlock = SyntaxFactory.ParseStatement("TLBytes.CopyTo(buff);");
         cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "WriteTo")
                 .WithParameterList(SyntaxFactory.ParseParameterList("(Span<byte> buff)"))
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.OverrideKeyword))
                 .WithBody(SyntaxFactory.Block(writeToBlock)));
 
         syntax = syntax.AddMembers(cls);
@@ -257,6 +176,261 @@ class Compiler
             .ToFullString();
         return code;
     }
+
+    private static ClassDeclarationSyntax ParseBlock(TLConstructor constructor, ClassDeclarationSyntax cls)
+    {
+        var parseBlock = SyntaxFactory.Block(SyntaxFactory.ParseStatement("serialized  = false;"));
+        foreach (var item in constructor.Params)
+        {
+            string typeName = GetTypeName(item);
+            bool conditional = false;
+            int bit = 0;
+            if (typeName.StartsWith("flags."))
+            {
+                string[] tmp = typeName.Split('?');
+                typeName = tmp[1];
+                conditional = true;
+                bit = int.Parse(tmp[0].Split('.')[1]);
+            }
+            string prefix = conditional ? "if(_flags[" + bit + "]){" : "";
+            string suffix = conditional ? "}" : "";
+            if (typeName.StartsWith("Vector<"))
+            {
+                var b = typeName.Replace("Vector<", "").Replace(">", "");
+                typeName = "Vector<" + b.ToPascalCase() + ">";
+            }
+            else if (typeName.StartsWith("VectorBare<"))
+            {
+                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
+                typeName = "VectorBare<" + b.ToPascalCase() + ">";
+            }
+
+            if (typeName == "int")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt32(true);" + suffix)
+                    );
+            }
+            else if (typeName == "bool")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = Bool.Read(ref buff); " + suffix)
+                    );
+            }
+            else if (typeName == "True")
+            {
+                //use the flags
+            }
+            else if (typeName == "Flags")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.Read<Flags>();" + suffix)
+                    );
+            }
+            else if (typeName == "long")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt64(true);" + suffix)
+                    );
+            }
+            else if (typeName == "double")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt64(true);" + suffix)
+                    );
+            }
+            else if (typeName == "string")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadTLString();" + suffix)
+                    );
+            }
+            else if (typeName == "bytes")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadTLBytes().ToArray();" + suffix)
+                    );
+            }
+            else if (typeName == "int128")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<Int128>(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName == "int256")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<Int256>(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName.StartsWith("vector<%"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName.StartsWith("VectorBare<"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<" + item.Type + ">(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName == ("Object"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
+                    );
+            }
+            else
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "buff.Skip(4); " + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref buff);" + suffix)
+                    );
+            }
+        }
+        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "Parse")
+                .WithParameterList(SyntaxFactory.ParseParameterList("(ref SequenceReader buff)"))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.OverrideKeyword))
+                .WithBody(parseBlock));
+        return cls;
+    }
+
+    private static ClassDeclarationSyntax FieldsBlock(TLConstructor constructor, ClassDeclarationSyntax cls)
+    {
+        foreach (var p in constructor.Params)
+        {
+            string typeName = GetTypeName(p);
+            bool conditional = false;
+            int bit = 0;
+            if (typeName.StartsWith("flags."))
+            {
+                string[] tmp = typeName.Split('?');
+                typeName = tmp[1];
+                conditional = true;
+                bit = int.Parse(tmp[0].Split('.')[1]);
+            }
+            string setFlag = conditional ? " _flags[" + bit + "] = true;" : "";
+            if (typeName.StartsWith("Vector<"))
+            {
+                var b = typeName.Replace("Vector<", "").Replace(">", "");
+                typeName = "Vector<" + b.ToPascalCase() + ">";
+            }
+            else if (typeName.StartsWith("VectorBare<"))
+            {
+                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
+                typeName = "VectorBare<" + b.ToPascalCase() + ">";
+            }
+            if (!typeName.Contains("Vector"))
+            {
+                typeName = typeName.Replace("bytes", "byte[]");
+            }
+            if (typeName == "True")
+            {
+                cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public bool " + p.Name.ToPascalCase() +
+        "{get => _flags[" + bit + "]; set {serialized = false; _flags[" + bit + "] = value;}}"
+                ));
+            }
+            else
+            {
+                cls = cls.AddMembers(SyntaxFactory
+                .FieldDeclaration(SyntaxFactory
+                    .VariableDeclaration(SyntaxFactory
+                    .ParseTypeName(typeName))
+                    .AddVariables(SyntaxFactory
+                    .VariableDeclarator(p.Name.ToCamelCase())))
+                .AddModifiers(SyntaxFactory
+                    .Token(SyntaxKind.PrivateKeyword)));
+
+                cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public " + typeName + " " + p.Name.ToPascalCase() +
+        "{get => " + p.Name.ToCamelCase() + "; set {serialized = false; " + setFlag + p.Name.ToCamelCase() + " = value;}}"
+                ));
+            }
+
+        }
+
+        return cls;
+    }
+
+    private static void SerializeBlock(TLConstructor constructor, ref ClassDeclarationSyntax cls, StatementSyntax setSerialized, StatementSyntax returnBytes, ref BlockSyntax bytesBlock)
+    {
+        foreach (var item in constructor.Params)
+        {
+            bool conditional = false;
+            int bit = 0;
+            string typeName = item.Type;
+            if (typeName.StartsWith("flags."))
+            {
+                string[] tmp = typeName.Split('?');
+                typeName = tmp[1];
+                conditional = true;
+                bit = int.Parse(tmp[0].Split('.')[1]);
+            }
+            string prefix = conditional ? "if(_flags[" + bit + "]){" : "";
+            string suffix = conditional ? "}" : "";
+            if (typeName == "int")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt32(" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    );
+            }
+            else if (typeName == "Bool")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt32(Bool.GetConstructor(" + item.Name.ToCamelCase() + "), true);" + suffix)
+                    );
+            }
+            else if (typeName == "true")
+            {
+                //use the flags
+            }
+            else if (typeName == "#")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.Write<Flags>(" + item.Name.ToCamelCase() + ");" + suffix)
+                    );
+            }
+            else if (typeName == "long")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt64(" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    );
+            }
+            else if (typeName == "double")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt64((long)" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    );
+            }
+            else if (typeName == "string")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteTLString(" + item.Name.ToCamelCase() + ");" + suffix)
+                    );
+            }
+            else if (typeName == "bytes")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteTLBytes(" + item.Name.ToCamelCase() + ");" + suffix)
+                    );
+            }
+            else
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.Write(" + item.Name.ToCamelCase() + ".TLBytes, false);" + suffix)
+                    );
+            }
+        }
+        bytesBlock = bytesBlock.AddStatements(setSerialized, returnBytes);
+        cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(
+            SyntaxFactory.ParseTypeName("ReadOnlySequence<byte>"), "TLBytes")
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.OverrideKeyword))
+            .AddAccessorListAccessors(
+               SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+               .WithBody(bytesBlock)));
+    }
+
     static string CreateTLMethod(TLMethod constructor, string namespaceName, BlockSyntax? previousExecuteBody = null,
         SyntaxList<UsingDirectiveSyntax>? usings = null)
     {
@@ -286,7 +460,8 @@ class Compiler
 
             )
             .AddMembers(SyntaxFactory.FileScopedNamespaceDeclaration(
-                SyntaxFactory.ParseName("Ferrite.TL" + (namespaceName.Length > 0 ? "." + namespaceName : ""))));
+                SyntaxFactory.ParseName("Ferrite.TL" + (namespaceName.Length > 0 ? "." + namespaceName.Replace("/", ".") : ""))));
+
         if (usings != null)
         {
             foreach (var item in usings)
@@ -302,9 +477,15 @@ class Compiler
                 }
             }
         }
-        
-        
-        var cls = SyntaxFactory.ClassDeclaration(constructor.Method.ToPascalCase())
+
+        string methodName = constructor.Method;
+        if (methodName.Contains("."))
+        {
+            methodName = methodName.Split('.')[1];
+        }
+        methodName = methodName.ToPascalCase();
+
+        var cls = SyntaxFactory.ClassDeclaration(methodName)
             .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword));
 
         cls = cls.AddBaseListTypes(SyntaxFactory.SimpleBaseType(SyntaxFactory.ParseTypeName("ITLObject")));
@@ -315,7 +496,7 @@ class Compiler
         cls = AddField(cls, "ITLObjectFactory", "factory", true);
         cls = AddField(cls, "bool", "serialized", "false");
         var constructorBlock = SyntaxFactory.ParseStatement("factory = objectFactory;");
-        cls = cls.AddMembers(SyntaxFactory.ConstructorDeclaration(constructor.Method.ToPascalCase())
+        cls = cls.AddMembers(SyntaxFactory.ConstructorDeclaration(methodName)
                 .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
                 .WithParameterList(SyntaxFactory.ParseParameterList("(ITLObjectFactory objectFactory)"))
                 .WithBody(SyntaxFactory.Block(constructorBlock)));
@@ -332,82 +513,10 @@ class Compiler
         var bytesBlock = SyntaxFactory.Block(
                        SyntaxFactory.IfStatement(SyntaxFactory.ParseExpression("serialized"), returnBytes),
                        clearWriter, writeConstructor);
-        foreach (var item in constructor.Params)
-        {
-            if (item.Type == "int")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteInt32(" + item.Name.ToCamelCase() + ", true);")
-                    );
-            }
-            else if (item.Type == "long")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteInt64(" + item.Name.ToCamelCase() + ", true);")
-                    );
-            }
-            else if (item.Type == "double")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteInt64(" + item.Name.ToCamelCase() + ", true);")
-                    );
-            }
-            else if (item.Type == "string")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteTLString(" + item.Name.ToCamelCase() + ");")
-                    );
-            }
-            else if (item.Type == "bytes")
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.WriteTLBytes(" + item.Name.ToCamelCase() + ");")
-                    );
-            }
-            else
-            {
-                bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("writer.Write(" + item.Name.ToCamelCase() + ".TLBytes, false);")
-                    );
-            }
-        }
-        bytesBlock = bytesBlock.AddStatements(setSerialized, returnBytes);
-        cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(
-            SyntaxFactory.ParseTypeName("ReadOnlySequence<byte>"), "TLBytes")
-            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-            .AddAccessorListAccessors(
-               SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-               .WithBody(bytesBlock)));
 
+        SerializeBlockMedhod(constructor, ref cls, setSerialized, returnBytes, ref bytesBlock);
 
-        foreach (var p in constructor.Params)
-        {
-            string typeName = GetTypeName(p);
-
-            if (typeName.StartsWith("Vector<"))
-            {
-                var b = typeName.Replace("Vector<", "").Replace(">", "");
-                typeName = "Vector<" + b.ToPascalCase() + ">";
-            }
-            else if (typeName.StartsWith("VectorBare<"))
-            {
-                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
-                typeName = "VectorBare<" + b.ToPascalCase() + ">";
-            }
-
-            cls = cls.AddMembers(SyntaxFactory
-                .FieldDeclaration(SyntaxFactory
-                    .VariableDeclaration(SyntaxFactory
-                    .ParseTypeName(typeName))
-                    .AddVariables(SyntaxFactory
-                    .VariableDeclarator(p.Name.ToCamelCase())))
-                .AddModifiers(SyntaxFactory
-                    .Token(SyntaxKind.PrivateKeyword)));
-
-            cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public " + typeName + " " + p.Name.ToPascalCase() +
-    "{get => " + p.Name.ToCamelCase() + "; set {serialized = false; " + p.Name.ToCamelCase() + " = value;}}"
-            ));
-        }
+        cls = FieldsBlockMethod(constructor, cls);
 
         var throwBlock = SyntaxFactory.ParseStatement("throw new NotImplementedException();");
         if (previousExecuteBody != null)
@@ -427,93 +536,7 @@ class Compiler
                 .WithBody(SyntaxFactory.Block(throwBlock)));
         }
 
-
-        var parseBlock = SyntaxFactory.Block(SyntaxFactory.ParseStatement("serialized  = false;"));
-        foreach (var item in constructor.Params)
-        {
-            string typeName = GetTypeName(item);
-            if (typeName.StartsWith("Vector<"))
-            {
-                var b = typeName.Replace("Vector<", "").Replace(">", "");
-                typeName = "Vector<" + b.ToPascalCase() + ">";
-            }
-            else if (typeName.StartsWith("VectorBare<"))
-            {
-                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
-                typeName = "VectorBare<" + b.ToPascalCase() + ">";
-            }
-
-            if (item.Type == "int")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadInt32(true);")
-                    );
-            }
-            else if (item.Type == "long")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadInt64(true);")
-                    );
-            }
-            else if (item.Type == "double")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadInt64(true);")
-                    );
-            }
-            else if (item.Type == "string")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadTLString();")
-                    );
-            }
-            else if (item.Type == "bytes")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = buff.ReadTLBytes().ToArray();")
-                    );
-            }
-            else if (item.Type == "int128")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<Int128>(ref buff);")
-                    );
-            }
-            else if (item.Type == "int256")
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<Int256>(ref buff);")
-                    );
-            }
-            else if (item.Type.StartsWith("vector<%"))
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);")
-                    );
-            }
-            else if (item.Type.StartsWith("VectorBare<"))
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read<" + item.Type + ">(ref buff);")
-                    );
-            }
-            else if (item.Type == ("Object"))
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); ")
-                    );
-            }
-            else
-            {
-                parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement("buff.Skip(4); " + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref buff);")
-                    );
-            }
-        }
-        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "Parse")
-                .WithParameterList(SyntaxFactory.ParseParameterList("(ref SequenceReader buff)"))
-                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
-                .WithBody(parseBlock));
+        cls = ParseBlockMethod(constructor, cls);
 
         var writeToBlock = SyntaxFactory.ParseStatement("TLBytes.CopyTo(buff);");
         cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "WriteTo")
@@ -528,12 +551,271 @@ class Compiler
         return code;
     }
 
+    private static ClassDeclarationSyntax ParseBlockMethod(TLMethod constructor, ClassDeclarationSyntax cls)
+    {
+        var parseBlock = SyntaxFactory.Block(SyntaxFactory.ParseStatement("serialized  = false;"));
+        foreach (var item in constructor.Params)
+        {
+            string typeName = GetTypeName(item);
+            bool conditional = false;
+            int bit = 0;
+            if (typeName.StartsWith("flags."))
+            {
+                string[] tmp = typeName.Split('?');
+                typeName = tmp[1];
+                conditional = true;
+                bit = int.Parse(tmp[0].Split('.')[1]);
+            }
+            string prefix = conditional ? "if(_flags[" + bit + "]){" : "";
+            string suffix = conditional ? "}" : "";
+            if (typeName.StartsWith("Vector<"))
+            {
+                var b = typeName.Replace("Vector<", "").Replace(">", "");
+                typeName = "Vector<" + b.ToPascalCase() + ">";
+            }
+            else if (typeName.StartsWith("VectorBare<"))
+            {
+                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
+                typeName = "VectorBare<" + b.ToPascalCase() + ">";
+            }
+
+            if (typeName == "int")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt32(true);" + suffix)
+                    );
+            }
+            else if (typeName == "bool")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = Bool.Read(ref buff); " + suffix)
+                    );
+            }
+            else if (typeName == "True")
+            {
+                //use the flags
+            }
+            else if (typeName == "Flags")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.Read<Flags>();" + suffix)
+                    );
+            }
+            else if (typeName == "long")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt64(true);" + suffix)
+                    );
+            }
+            else if (typeName == "double")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt64(true);" + suffix)
+                    );
+            }
+            else if (typeName == "string")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadTLString();" + suffix)
+                    );
+            }
+            else if (typeName == "bytes")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadTLBytes().ToArray();" + suffix)
+                    );
+            }
+            else if (typeName == "int128")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<Int128>(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName == "int256")
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<Int256>(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName.StartsWith("vector<%"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName.StartsWith("VectorBare<"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<" + item.Type + ">(ref buff);" + suffix)
+                    );
+            }
+            else if (typeName == ("Object"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
+                    );
+            }
+            else
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "buff.Skip(4); " + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref buff);" + suffix)
+                    );
+            }
+        }
+        cls = cls.AddMembers(SyntaxFactory.MethodDeclaration(SyntaxFactory.ParseTypeName("void"), "Parse")
+                .WithParameterList(SyntaxFactory.ParseParameterList("(ref SequenceReader buff)"))
+                .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+                .WithBody(parseBlock));
+        return cls;
+    }
+
+    private static ClassDeclarationSyntax FieldsBlockMethod(TLMethod constructor, ClassDeclarationSyntax cls)
+    {
+        foreach (var p in constructor.Params)
+        {
+            string typeName = GetTypeName(p);
+            bool conditional = false;
+            int bit = 0;
+            if (typeName.StartsWith("flags."))
+            {
+                string[] tmp = typeName.Split('?');
+                typeName = tmp[1];
+                conditional = true;
+                bit = int.Parse(tmp[0].Split('.')[1]);
+            }
+            string setFlag = conditional ? " _flags[" + bit + "] = true;" : "";
+            if (typeName.StartsWith("Vector<"))
+            {
+                var b = typeName.Replace("Vector<", "").Replace(">", "");
+                typeName = "Vector<" + b.ToPascalCase() + ">";
+            }
+            else if (typeName.StartsWith("VectorBare<"))
+            {
+                var b = typeName.Replace("VectorBare<", "").Replace("Vector<", "").Replace(">", "");
+                typeName = "VectorBare<" + b.ToPascalCase() + ">";
+            }
+            if (!typeName.Contains("Vector"))
+            {
+                typeName = typeName.Replace("bytes", "byte[]");
+            }
+            if (typeName == "True")
+            {
+                cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public bool " + p.Name.ToPascalCase() +
+        "{get => _flags[" + bit + "]; set {serialized = false; _flags[" + bit + "] = value;}}"
+                ));
+            }
+            else
+            {
+                cls = cls.AddMembers(SyntaxFactory
+                .FieldDeclaration(SyntaxFactory
+                    .VariableDeclaration(SyntaxFactory
+                    .ParseTypeName(typeName))
+                    .AddVariables(SyntaxFactory
+                    .VariableDeclarator(p.Name.ToCamelCase())))
+                .AddModifiers(SyntaxFactory
+                    .Token(SyntaxKind.PrivateKeyword)));
+
+                cls = cls.AddMembers(SyntaxFactory.ParseMemberDeclaration("public " + typeName + " " + p.Name.ToPascalCase() +
+        "{get => " + p.Name.ToCamelCase() + "; set {serialized = false; " + setFlag + p.Name.ToCamelCase() + " = value;}}"
+                ));
+            }
+
+        }
+
+        return cls;
+    }
+
+    private static void SerializeBlockMedhod(TLMethod constructor, ref ClassDeclarationSyntax cls, StatementSyntax setSerialized, StatementSyntax returnBytes, ref BlockSyntax bytesBlock)
+    {
+        foreach (var item in constructor.Params)
+        {
+            bool conditional = false;
+            int bit = 0;
+            string typeName = item.Type;
+            if (typeName.StartsWith("flags."))
+            {
+                string[] tmp = typeName.Split('?');
+                typeName = tmp[1];
+                conditional = true;
+                bit = int.Parse(tmp[0].Split('.')[1]);
+            }
+            string prefix = conditional ? "if(_flags[" + bit + "]){" : "";
+            string suffix = conditional ? "}" : "";
+            if (typeName == "int")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt32(" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    );
+            }
+            else if (typeName == "Bool")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt32(Bool.GetConstructor(" + item.Name.ToCamelCase() + "), true);" + suffix)
+                    );
+            }
+            else if (typeName == "true")
+            {
+                //use the flags
+            }
+            else if (typeName == "#")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.Write<Flags>(" + item.Name.ToCamelCase() + ");" + suffix)
+                    );
+            }
+            else if (typeName == "long")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt64(" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    );
+            }
+            else if (typeName == "double")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt64((long)" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    );
+            }
+            else if (typeName == "string")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteTLString(" + item.Name.ToCamelCase() + ");" + suffix)
+                    );
+            }
+            else if (typeName == "bytes")
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.WriteTLBytes(" + item.Name.ToCamelCase() + ");" + suffix)
+                    );
+            }
+            else
+            {
+                bytesBlock = bytesBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + "writer.Write(" + item.Name.ToCamelCase() + ".TLBytes, false);" + suffix)
+                    );
+            }
+        }
+        bytesBlock = bytesBlock.AddStatements(setSerialized, returnBytes);
+        cls = cls.AddMembers(SyntaxFactory.PropertyDeclaration(
+            SyntaxFactory.ParseTypeName("ReadOnlySequence<byte>"), "TLBytes")
+            .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword))
+            .AddAccessorListAccessors(
+               SyntaxFactory.AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
+               .WithBody(bytesBlock)));
+    }
+
     private static string GetTypeName(TLParam item)
     {
-        return item.Type.Replace("bytes", "byte[]")
+        if (item.Type.Contains("JSONObjectValue"))
+        {
+            return item.Type;
+        }
+        return item.Type.Replace("#", "Flags")
+                        .Replace("true", "True")
+                        .Replace("Bool", "bool")
                         .Replace("int128", "Int128")
                         .Replace("int256", "Int256")
                         .Replace("Object", "ITLObject")
+                        .Replace("!X", "ITLObject")
                         .Replace("Vector<int>", "VectorOfInt")
                         .Replace("Vector<long>", "VectorOfLong")
                         .Replace("Vector<double>", "VectorOfDouble")
@@ -667,22 +949,36 @@ class Compiler
             }
 
             string[] pre = item.Predicate.Split('.');
-            string fileName = item.Predicate.ToPascalCase();
-            string nameSpaceName = "";
+            string fileName = item.Predicate.FirstLetterToUpperCase();
+            string nameSpaceName = "layer139";
             if (pre.Length > 1)
             {
-                fileName = pre[1].ToPascalCase();
-                nameSpaceName = pre[0].ToPascalCase();
+                fileName = pre[1].FirstLetterToUpperCase();
+                nameSpaceName += "/"+pre[0];
             }
-
+            fileName += "Impl";
+            
             if (!Directory.Exists("../../../../Ferrite.TL/" + nameSpaceName))
             {
                 Directory.CreateDirectory("../../../../Ferrite.TL/" + nameSpaceName);
             }
-
-            if (!File.Exists("../../../../Ferrite.TL/mtproto/" + item.Predicate.ToPascalCase() + ".cs"))
+            string[] preBase = item.Type.Split('.');
+            string fileNameBase = item.Type;
+            if (preBase.Length > 1)
             {
-                using (var writer = new StreamWriter("../../../../Ferrite.TL/mtproto/" + fileName + ".cs", false))
+                fileNameBase = preBase[1];
+            }
+            string baseClass = CreateAbstractClass(fileNameBase, nameSpaceName);
+            if (!File.Exists("../../../../Ferrite.TL/" + nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileNameBase + ".cs"))
+            {
+                using (var writer = new StreamWriter("../../../../Ferrite.TL/" + nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileNameBase + ".cs", false))
+                {
+                    writer.Write(baseClass);
+                }
+            }
+            if (!File.Exists("../../../../Ferrite.TL/"+nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileName + ".cs"))
+            {
+                using (var writer = new StreamWriter("../../../../Ferrite.TL/" + nameSpaceName +(nameSpaceName.Length>0?"/":"") + fileName + ".cs", false))
                 {
                     writer.Write(CreateTLObjectClass(item, nameSpaceName));
                 }
@@ -716,6 +1012,29 @@ class Compiler
                 using (var writer = new StreamWriter("../../../../Ferrite.TL/mtproto/" + item.Method.ToPascalCase() + ".cs", false))
                 {
                     writer.Write(CreateTLMethod(item, "mtproto"));
+                }
+            }
+        }
+
+        foreach (var item in tlLayer139Schema.Methods)
+        {
+            string[] pre = item.Method.Split('.');
+            string fileName = item.Method.FirstLetterToUpperCase();
+            string nameSpaceName = "layer139";
+            if (pre.Length > 1)
+            {
+                fileName = pre[1].FirstLetterToUpperCase();
+                nameSpaceName += "/" + pre[0];
+            }
+            if (!Directory.Exists("../../../../Ferrite.TL/" + nameSpaceName))
+            {
+                Directory.CreateDirectory("../../../../Ferrite.TL/" + nameSpaceName);
+            }
+            if (!File.Exists("../../../../Ferrite.TL/" + nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileName + ".cs"))
+            {
+                using (var writer = new StreamWriter("../../../../Ferrite.TL/" + nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileName + ".cs", false))
+                {
+                    writer.Write(CreateTLMethod(item, nameSpaceName));
                 }
             }
         }

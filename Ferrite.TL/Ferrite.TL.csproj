@@ -19,7 +19,6 @@
     <None Remove="DotNext.IO" />
     <None Remove="DotNext.Unsafe" />
     <None Remove="mtproto\" />
-    <None Remove="Exceptions\" />
     <None Remove="Autofac" />
   </ItemGroup>
   <ItemGroup>
@@ -29,7 +28,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="mtproto\" />
-    <Folder Include="Exceptions\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
