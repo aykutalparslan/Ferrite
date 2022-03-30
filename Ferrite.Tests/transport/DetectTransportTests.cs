@@ -59,8 +59,8 @@ public class DetectTransportTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.RegisterType<Int128>();
-        builder.RegisterType<Int256>();
+        builder.Register(_=> new Int128());
+        builder.Register(_=> new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
