@@ -275,7 +275,7 @@ class Compiler
                     SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<" + item.Type + ">(ref buff);" + suffix)
                     );
             }
-            else if (typeName == ("Object"))
+            else if (typeName == ("ITLObject"))
             {
                 parseBlock = parseBlock.AddStatements(
                     SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
@@ -649,7 +649,7 @@ class Compiler
                     SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read<" + item.Type + ">(ref buff);" + suffix)
                     );
             }
-            else if (typeName == ("Object"))
+            else if (typeName == ("ITLObject"))
             {
                 parseBlock = parseBlock.AddStatements(
                     SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)

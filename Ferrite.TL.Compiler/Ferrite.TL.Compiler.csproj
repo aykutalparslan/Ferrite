@@ -25,9 +25,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
-    <PackageReference Include="DotNext" Version="4.3.0" />
-    <PackageReference Include="DotNext.IO" Version="4.3.0" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.3.0" />
+    <PackageReference Include="DotNext" Version="4.4.0" />
+    <PackageReference Include="DotNext.IO" Version="4.4.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />

@@ -3,16 +3,13 @@ using System.Security.Cryptography;
 
 namespace Ferrite.Crypto;
 
-public readonly struct ClientAesParameters : AesParameters
+public readonly struct ClientAesParameters
 {
     private readonly byte[] _aesKey;
     public byte[] AesKey => _aesKey;
 
     private readonly byte[] _aesIV;
     public byte[] AesIV => _aesIV;
-
-    private readonly byte[] _messageKey;
-    public byte[] MessageKey => _messageKey;
 
     public ClientAesParameters(Span<byte> authKey, Span<byte> messageKey)
     {
@@ -34,7 +31,6 @@ public readonly struct ClientAesParameters : AesParameters
         sha256b.Slice(0, 8).CopyTo(_aesIV);
         sha256a.Slice(8, 16).CopyTo(_aesIV.AsSpan().Slice(8));
         sha256b.Slice(24, 8).CopyTo(_aesIV.AsSpan().Slice(24));
-        _messageKey = messageKey.ToArray();
     }
 }
 

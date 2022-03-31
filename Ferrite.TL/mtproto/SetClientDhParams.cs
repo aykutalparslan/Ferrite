@@ -26,6 +26,8 @@ using Ferrite.Utils;
 using Ferrite.Crypto;
 using System.Numerics;
 using System.Globalization;
+using Ferrite.TL.Exceptions;
+using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.mtproto;
 public class SetClientDhParams : ITLObject, ITLMethod
@@ -33,13 +35,15 @@ public class SetClientDhParams : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IPersistentStore dataStore;
+    private readonly IDistributedStore distributedStore;
     private bool serialized = false;
     //TODO: Maybe change the DH_PRIME
     private const string dhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
-    public SetClientDhParams(ITLObjectFactory objectFactory, IPersistentStore store)
+    public SetClientDhParams(ITLObjectFactory objectFactory, IPersistentStore store, IDistributedStore cache)
     {
         factory = objectFactory;
         dataStore = store;
+        distributedStore = cache;
     }
 
     public int Constructor => -184262881;
@@ -126,7 +130,7 @@ public class SetClientDhParams : ITLObject, ITLMethod
             var authKey = BigInteger.ModPow(g_b, a, prime).ToByteArray(true, true);
             ctx.SessionBag.Add("auth_key", authKey);
             var authKeySHA1 = SHA1.HashData(authKey);
-            var authKeyHash = authKeySHA1.Skip(12).ToArray();
+            var authKeyHash = MemoryMarshal.Cast<byte,long>(authKeySHA1.AsSpan().Slice(12))[0];
             var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
             var newNonceHash1 = SHA1.HashData(((byte[])ctx.SessionBag["new_nonce"]).Concat(new byte[1] { 1 })
                 .Concat(authKeyAuxHash).ToArray()).Skip(4).ToArray();
@@ -143,9 +147,12 @@ public class SetClientDhParams : ITLObject, ITLMethod
                 dhGenFail.NewNonceHash3 = (Int128)newNonceHash3;
                 return dhGenFail;
             }
-            if (dataStore.GetAuthKey(authKeyHash) == null)
+            var existingKey = await dataStore.GetAuthKeyAsync(authKeyHash);
+            if (existingKey == null)
             {
-                dataStore.SaveAuthKey(authKeyHash, authKey.AsSpan().Slice(0, 192));
+                var authKeyTrimmed = authKey.AsSpan().Slice(0, 192).ToArray();
+                await dataStore.SaveAuthKeyAsync(authKeyHash, authKeyTrimmed);
+                _ = distributedStore.PutAuthKeyAsync(authKeyHash, authKeyTrimmed);
                 var dhGenOk = factory.Resolve<DhGenOk>();
                 dhGenOk.Nonce = sessionNonce;
                 dhGenOk.ServerNonce = sessionServerNonce;
@@ -164,7 +171,7 @@ public class SetClientDhParams : ITLObject, ITLMethod
                 return dhGenRetry;
             }
         }
-        return null;
+        throw new TLExecutionException(String.Format("Constructor 0x{0:X} did not match the expected one.", constructor));
     }
 
     public void Parse(ref SequenceReader buff)

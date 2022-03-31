@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace Ferrite.Crypto;
 
-public readonly struct ServerAesParameters : AesParameters
+public readonly struct ServerAesParameters
 {
     private readonly byte[] _aesKey;
     public byte[] AesKey => _aesKey;

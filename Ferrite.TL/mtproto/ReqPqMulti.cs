@@ -75,7 +75,7 @@ public class ReqPqMulti : ITLObject, ITLMethod
         }
         else
         {
-            respq.ServerNonce = (Int128)(Int128)ctx.SessionBag["server_nonce"];
+            respq.ServerNonce = (Int128)ctx.SessionBag["server_nonce"];
         }
         respq.Nonce = nonce;
         if (ctx.SessionBag.ContainsKey("p"))

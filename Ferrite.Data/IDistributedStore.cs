@@ -3,10 +3,10 @@ namespace Ferrite.Data;
 
 public interface IDistributedStore
 {
-    public byte[] GetAuthKey(byte[] authKeyId);
-    public Task<bool> PutAuthKeyAsync(byte[] authKeyId, byte[] authKey);
-    public byte[] GetSession(byte[] sessionId);
-    public Task<bool> PutSessionAsync(byte[] sessionId, byte[] sessionData);
-    public Task<bool> RemoveSessionAsync(byte[] sessionId);
+    public Task<byte[]> GetAuthKeyAsync(long authKeyId);
+    public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
+    public Task<byte[]> GetSessionAsync(long sessionId);
+    public Task<bool> PutSessionAsync(long sessionId, byte[] sessionData);
+    public Task<bool> RemoveSessionAsync(long sessionId);
 }
 

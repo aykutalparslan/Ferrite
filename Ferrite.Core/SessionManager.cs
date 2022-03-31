@@ -50,23 +50,21 @@ public class SessionManager
         SessionState d = new SessionState();
         d.SessionId = sessionId;
         d.NodeId = NodeId;
-        var remoteAdd = await _store.PutSessionAsync(BitConverter.GetBytes(sessionId), d.ToByteArray());
+        var remoteAdd = await _store.PutSessionAsync(sessionId, d.ToByteArray());
         return remoteAdd && _localSessions.TryAdd(sessionId, session);
     }
-    public bool TryGetSessionState(long sessionId, out SessionState? state)
+    public async Task<SessionState?> GetSessionState(long sessionId)
     {
-        var rawSession = _store.GetSession(BitConverter.GetBytes(sessionId));
+        var rawSession = await _store.GetSessionAsync(sessionId);
         if(rawSession != null)
         {
-            state = new SessionState(ref rawSession[0]); ;
-            return true;
+            return new SessionState(ref rawSession[0]); ;
         }
-        state = null;
-        return false;
+        return null;
     }
     public bool RemoveSession(long sessionId)
     {
-        _store.RemoveSessionAsync(BitConverter.GetBytes(sessionId));
+        _store.RemoveSessionAsync(sessionId);
         return _localSessions.TryRemove(sessionId, out var session);
     }
     public bool LocalSessionExists(long sessionId)

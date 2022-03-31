@@ -24,6 +24,9 @@ using System.Threading.Channels;
 using Ferrite.Transport;
 using System.Text;
 using System.IO.Pipelines;
+using Ferrite.Data;
+using Ferrite.Crypto;
+using System.Security.Cryptography;
 
 namespace Ferrite.Core;
 
@@ -31,9 +34,12 @@ public class MTProtoConnection
 {
     public MTProtoTransport TransportType { get; private set; }
     private readonly ITransportDetector transportDetector;
+    private readonly IDistributedStore _store;
+    private readonly IPersistentStore _db;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
     private long _authKeyId;
+    private byte[] _authKey;
     private ITransportConnection socketConnection;
     private Task? receiveTask;
     private Channel<ITLObject> _outgoing = Channel.CreateUnbounded<ITLObject>();
@@ -46,12 +52,16 @@ public class MTProtoConnection
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
 
-    public MTProtoConnection(ITransportConnection connection, ITLObjectFactory objectFactory, ITransportDetector detector)
+    public MTProtoConnection(ITransportConnection connection,
+        ITLObjectFactory objectFactory, ITransportDetector detector,
+        IDistributedStore store, IPersistentStore persistentStore)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
         factory = objectFactory;
         transportDetector = detector;
+        _store = store;
+        _db = persistentStore;
     }
 
     public void Start()
@@ -219,9 +229,62 @@ public class MTProtoConnection
         }
     }
 
-    private void ProcessEncryptedMessage(in ReadOnlySequence<byte> bytes)
+    private async Task ProcessEncryptedMessageAsync(ReadOnlySequence<byte> bytes)
     {
+        if (bytes.Length < 16)
+        {
+            return;
+        }
+        
+        if (_authKeyId != 0)
+        {
+            if(_authKey == null)
+            {
+                _authKey = await _store.GetAuthKeyAsync(_authKeyId);
+            }
+            if(_authKey == null)
+            {
+                var authKey = await _db.GetAuthKeyAsync(_authKeyId);
+                if (authKey != null)
+                {
+                    _authKey = authKey;
+                    _ = _store.PutAuthKeyAsync(_authKeyId, _authKey);
+                }
+            }
+            DecryptAndRaiseEvent(in bytes);
+        }
+    }
 
+    private void DecryptAndRaiseEvent(in ReadOnlySequence<byte> bytes)
+    {
+        SequenceReader reader = IAsyncBinaryReader.Create(bytes);
+        Span<byte> messageKey = stackalloc byte[16];
+        reader.Read(messageKey);
+        ClientAesParameters p = new ClientAesParameters(_authKey, messageKey);
+        Aes aes = Aes.Create();
+        aes.Key = p.AesKey;
+        var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)reader.RemainingSequence.Length);
+        var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
+        reader.Read(messageSpan);
+        aes.DecryptIge(messageSpan, p.AesIV);
+        SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
+        long salt = rd.ReadInt64(true);
+        long sessionId = rd.ReadInt64(true);
+        long msgId = rd.ReadInt64(true);
+        int seqNo = rd.ReadInt32(true);
+        int messageDataLength = rd.ReadInt32(true);
+        int constructor = rd.ReadInt32(true);
+        try
+        {
+            var msg = factory.Read(constructor, ref rd);
+            messageData.Dispose();
+            OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId: msgId));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        
     }
 
     private void ProcessUnencryptedMessage(in ReadOnlySequence<byte> bytes)
@@ -254,7 +317,7 @@ public class MTProtoConnection
         }
         else
         {
-            ProcessEncryptedMessage(bytes.Slice(8));
+            _ = ProcessEncryptedMessageAsync(bytes.Slice(8));
         }
     }
 

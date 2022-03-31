@@ -51,7 +51,7 @@ public class Program
         sessionManager = Container.Resolve<SessionManager>();
         socketListener = Container.BeginLifetimeScope()
             .Resolve<IConnectionListener>();
-        socketListener.Bind(new IPEndPoint(IPAddress.Loopback, 5222));
+        socketListener.Bind(new IPEndPoint(IPAddress.Any, 5222));
         StartAccept(socketListener);
         Console.WriteLine("Server is listening...");
         while (true)
@@ -69,13 +69,23 @@ public class Program
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyOpenGenericTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
+            .AsSelf();
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
+        builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
-        builder.RegisterType<KVDataStore>().As<IPersistentStore>();
+        builder.Register(_ => new CassandraDataStore("ferrite","cassandra"))
+            .As<IPersistentStore>().SingleInstance();
         builder.Register(_=> new RedisDataStore("redis:6379"))
             .As<IDistributedStore>().SingleInstance();
         builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
@@ -97,8 +107,7 @@ public class Program
             {
                 connection.Start();
                 var scope = Container.BeginLifetimeScope();
-                MTProtoConnection mtProtoConnection = new MTProtoConnection(connection,
-                    scope.Resolve<ITLObjectFactory>(), scope.Resolve<ITransportDetector>());
+                MTProtoConnection mtProtoConnection = scope.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
                 mtProtoConnection.MessageReceived += MtProtoConnection_MessageReceived;
                 mtProtoConnection.Start();
             }

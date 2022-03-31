@@ -31,39 +31,39 @@ public class RedisDataStore: IDistributedStore
         redis = ConnectionMultiplexer.Connect(config);
     }
 
-    public byte[] GetAuthKey(byte[] authKeyId)
+    public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return db.StringGet((RedisKey)authKeyId);
+        return await db.StringGetAsync((RedisKey)BitConverter.GetBytes(authKeyId));
     }
 
-    public byte[] GetSession(byte[] sessionId)
+    public async Task<byte[]> GetSessionAsync(long sessionId)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return db.StringGet((RedisKey)sessionId);
+        return await db.StringGetAsync((RedisKey)BitConverter.GetBytes(sessionId));
     }
 
-    public Task<bool> PutAuthKeyAsync(byte[] authKeyId, byte[] authKey)
+    public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return db.StringSetAsync((RedisKey)authKeyId, (RedisValue)authKey);
+        return await db.StringSetAsync((RedisKey)BitConverter.GetBytes(authKeyId), (RedisValue)authKey);
     }
 
-    public Task<bool> PutSessionAsync(byte[] sessionId, byte[] sessionData)
+    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return db.StringSetAsync((RedisKey)sessionId, (RedisValue)sessionData);
+        return await db.StringSetAsync((RedisKey)BitConverter.GetBytes(sessionId), (RedisValue)sessionData);
     }
 
-    public Task<bool> RemoveSessionAsync(byte[] sessionId)
+    public async Task<bool> RemoveSessionAsync(long sessionId)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return db.KeyDeleteAsync((RedisKey)sessionId);
+        return await db.KeyDeleteAsync((RedisKey)BitConverter.GetBytes(sessionId));
     }
 }
 
