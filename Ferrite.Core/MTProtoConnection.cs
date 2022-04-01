@@ -27,6 +27,8 @@ using System.IO.Pipelines;
 using Ferrite.Data;
 using Ferrite.Crypto;
 using System.Security.Cryptography;
+using Ferrite.Utils;
+using Ferrite.Core.Exceptions;
 
 namespace Ferrite.Core;
 
@@ -36,6 +38,7 @@ public class MTProtoConnection
     private readonly ITransportDetector transportDetector;
     private readonly IDistributedStore _store;
     private readonly IPersistentStore _db;
+    private readonly ILogger _log;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
     private long _authKeyId;
@@ -46,6 +49,7 @@ public class MTProtoConnection
     private Task? sendTask;
     private readonly ITLObjectFactory factory;
     private long _lastMessageId;
+    private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private TLExecutionContext _context = new TLExecutionContext();
     private const int WebSocketGet = 542393671;
@@ -54,7 +58,8 @@ public class MTProtoConnection
 
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
-        IDistributedStore store, IPersistentStore persistentStore)
+        IDistributedStore store, IPersistentStore persistentStore,
+        ILogger logger)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -62,6 +67,7 @@ public class MTProtoConnection
         transportDetector = detector;
         _store = store;
         _db = persistentStore;
+        _log = logger;
     }
 
     public void Start()
@@ -111,7 +117,7 @@ public class MTProtoConnection
         }
         catch (Exception ex)
         {
-
+            _log.Debug(ex, ex.Message);
         }
     }
 
@@ -162,7 +168,7 @@ public class MTProtoConnection
         }
         catch (Exception ex)
         {
-
+            _log.Debug(ex, ex.Message);
         }
     }
     
@@ -260,31 +266,42 @@ public class MTProtoConnection
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
         Span<byte> messageKey = stackalloc byte[16];
         reader.Read(messageKey);
-        ClientAesParameters p = new ClientAesParameters(_authKey, messageKey);
-        Aes aes = Aes.Create();
-        aes.Key = p.AesKey;
+        AesIge aesIge = new AesIge(_authKey, messageKey);
         var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)reader.RemainingSequence.Length);
         var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
         reader.Read(messageSpan);
-        aes.DecryptIge(messageSpan, p.AesIV);
+        var messageKeyActual = AesIge.GenerateMessageKey(_authKey, messageSpan, true);
+        if (!messageKey.SequenceEqual(messageKeyActual))
+        {
+            var ex = new MTProtoSecurityException("The security check for the 'msg_key' failed.");
+            _log.Fatal(ex, ex.Message);
+            throw ex;
+        }
+        aesIge.Decrypt(messageSpan);
         SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
-        long salt = rd.ReadInt64(true);
-        long sessionId = rd.ReadInt64(true);
-        long msgId = rd.ReadInt64(true);
-        int seqNo = rd.ReadInt32(true);
-        int messageDataLength = rd.ReadInt32(true);
-        int constructor = rd.ReadInt32(true);
-        try
-        {
-            var msg = factory.Read(constructor, ref rd);
-            messageData.Dispose();
-            OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId: msgId));
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+        var header = rd.Read<InternalMessageHeader>();
         
+        if (header.MessageId < MTProtoTime.Instance.ThirtySecondsLater &&
+            //msg_id values that belong over 30 seconds in the future
+            header.MessageId > MTProtoTime.Instance.FiveMinutesAgo &&
+            //or over 300 seconds in the past are to be ignored
+            header.MessageId % 2 == 0 && //must have even parity
+            !_lastMessageIds.Contains(header.MessageId) && //must not be equal to any
+            header.MessageId > _lastMessageIds.Min()) //must not be lower than all
+        {
+            _lastMessageIds.Enqueue(header.MessageId);
+
+            try
+            {
+                var msg = factory.Read(header.Constructor, ref rd);
+                messageData.Dispose();
+                OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId: header.MessageId));
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, ex.Message);
+            }
+        }
     }
 
     private void ProcessUnencryptedMessage(in ReadOnlySequence<byte> bytes)

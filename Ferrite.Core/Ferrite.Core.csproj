@@ -16,6 +16,7 @@
     <None Remove="DotNext" />
     <None Remove="DotNext.IO" />
     <None Remove="DotNext.Unsafe" />
+    <None Remove="Exceptions\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DotNext" Version="4.4.0" />
@@ -27,5 +28,8 @@
     <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
     <ProjectReference Include="..\Ferrite.Transport\Ferrite.Transport.csproj" />
     <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
   </ItemGroup>
 </Project>

@@ -35,41 +35,49 @@ public class SerilogLogger : ILogger
 
     public void Debug(string message)
     {
+        Console.WriteLine(message);
         log.Debug(message);
     }
 
     public void Debug(Exception exception, string message)
     {
+        Console.WriteLine(message);
         log.Debug(exception, message);
     }
 
     public void Error(string message)
     {
+        Console.WriteLine(message);
         log.Error(message);
     }
 
     public void Error(Exception exception, string message)
     {
+        Console.WriteLine(message);
         log.Error(exception, message);
     }
 
     public void Fatal(string message)
     {
+        Console.WriteLine(message);
         log.Fatal(message);
     }
 
     public void Fatal(Exception exception, string message)
     {
+        Console.WriteLine(message);
         log.Fatal(exception, message);
     }
 
     public void Information(string message)
     {
+        Console.WriteLine(message);
         log.Information(message);
     }
 
     public void Information(Exception exception, string message)
     {
+        Console.WriteLine(message);
         log.Information(exception, message);
     }
 
@@ -85,11 +93,13 @@ public class SerilogLogger : ILogger
 
     public void Warning(string message)
     {
+        Console.WriteLine(message);
         log.Warning(message);
     }
 
     public void Warning(Exception exception, string message)
     {
+        Console.WriteLine(message);
         log.Warning(exception, message);
     }
 }
