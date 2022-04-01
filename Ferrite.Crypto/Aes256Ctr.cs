@@ -33,6 +33,7 @@ namespace Ferrite.Crypto;
 
 public class Aes256Ctr
 {
+    //TODO: Can we reuse this somehow?
     private readonly Aes aes;
     private byte[] counter;
     private byte[] counterEncrypted;

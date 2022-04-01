@@ -22,6 +22,7 @@ namespace Ferrite.Crypto;
 
 public readonly ref struct AesIge
 {
+    //TODO: Can we reuse this somehow?
     private readonly Aes _aes;
     private readonly Span<byte> _aesIV;
     public AesIge(Span<byte> authKey, Span<byte> messageKey, bool fromClient = true)

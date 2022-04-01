@@ -319,14 +319,14 @@ public class MTProtoConnection
         OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId:msgId));
     }
 
-    private void ProcessFrame(in ReadOnlySequence<byte> bytes)
+    private async void ProcessFrame(ReadOnlySequence<byte> bytes)
     {
         if (bytes.Length < 8)
         {
             return;
         }
-        SequenceReader<byte> reader = new SequenceReader<byte>(bytes);
-        reader.TryReadLittleEndian(out long authKey);
+        SequenceReader reader = IAsyncBinaryReader.Create(bytes);
+        long authKey = reader.ReadInt64(true);
         _authKeyId = authKey;
         if (authKey == 0)
         {
@@ -334,7 +334,7 @@ public class MTProtoConnection
         }
         else
         {
-            _ = ProcessEncryptedMessageAsync(bytes.Slice(8));
+            await ProcessEncryptedMessageAsync(bytes.Slice(8));
         }
     }
 
