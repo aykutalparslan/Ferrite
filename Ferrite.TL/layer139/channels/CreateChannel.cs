@@ -160,8 +160,7 @@ public class CreateChannel : ITLObject, ITLMethod
         _about = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _geoPoint = factory.Read<InputGeoPoint>(ref buff);
+            _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])

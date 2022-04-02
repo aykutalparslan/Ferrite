@@ -258,26 +258,23 @@ public class ChatImpl : Chat
         _flags = buff.Read<Flags>();
         _id = buff.ReadInt64(true);
         _title = buff.ReadTLString();
-        buff.Skip(4); _photo  =  factory . Read < ChatPhoto > ( ref  buff ) ; 
+        _photo = (ChatPhoto)factory.Read(buff.ReadInt32(true), ref buff);
         _participantsCount = buff.ReadInt32(true);
         _date = buff.ReadInt32(true);
         _version = buff.ReadInt32(true);
         if (_flags[6])
         {
-            buff.Skip(4);
-            _migratedTo = factory.Read<InputChannel>(ref buff);
+            _migratedTo = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[14])
         {
-            buff.Skip(4);
-            _adminRights = factory.Read<ChatAdminRights>(ref buff);
+            _adminRights = (ChatAdminRights)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[18])
         {
-            buff.Skip(4);
-            _defaultBannedRights = factory.Read<ChatBannedRights>(ref buff);
+            _defaultBannedRights = (ChatBannedRights)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

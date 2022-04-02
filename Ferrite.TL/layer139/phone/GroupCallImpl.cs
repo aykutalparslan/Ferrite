@@ -110,7 +110,7 @@ public class GroupCallImpl : GroupCall
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _call  =  factory . Read < GroupCall > ( ref  buff ) ; 
+        _call = (GroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _participants  =  factory . Read < Vector < GroupCallParticipant > > ( ref  buff ) ; 
         _participantsNextOffset = buff.ReadTLString();
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 

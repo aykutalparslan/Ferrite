@@ -75,7 +75,7 @@ public class ContactStatusImpl : ContactStatus
     {
         serialized = false;
         _userId = buff.ReadInt64(true);
-        buff.Skip(4); _status  =  factory . Read < UserStatus > ( ref  buff ) ; 
+        _status = (UserStatus)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

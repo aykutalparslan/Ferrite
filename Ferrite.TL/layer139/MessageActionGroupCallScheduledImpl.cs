@@ -74,7 +74,7 @@ public class MessageActionGroupCallScheduledImpl : MessageAction
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         _scheduleDate = buff.ReadInt32(true);
     }
 

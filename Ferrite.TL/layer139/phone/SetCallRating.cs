@@ -114,7 +114,7 @@ public class SetCallRating : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPhoneCall > ( ref  buff ) ; 
+        _peer = (InputPhoneCall)factory.Read(buff.ReadInt32(true), ref buff);
         _rating = buff.ReadInt32(true);
         _comment = buff.ReadTLString();
     }

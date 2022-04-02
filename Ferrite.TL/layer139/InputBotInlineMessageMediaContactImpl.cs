@@ -134,8 +134,7 @@ public class InputBotInlineMessageMediaContactImpl : InputBotInlineMessage
         _vcard = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

@@ -74,7 +74,7 @@ public class UpdatePrivacyImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _key  =  factory . Read < PrivacyKey > ( ref  buff ) ; 
+        _key = (PrivacyKey)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _rules  =  factory . Read < Vector < PrivacyRule > > ( ref  buff ) ; 
     }
 

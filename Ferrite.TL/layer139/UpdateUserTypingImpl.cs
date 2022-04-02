@@ -75,7 +75,7 @@ public class UpdateUserTypingImpl : Update
     {
         serialized = false;
         _userId = buff.ReadInt64(true);
-        buff.Skip(4); _action  =  factory . Read < SendMessageAction > ( ref  buff ) ; 
+        _action = (SendMessageAction)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

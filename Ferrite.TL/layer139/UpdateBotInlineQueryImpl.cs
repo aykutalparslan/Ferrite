@@ -150,14 +150,12 @@ public class UpdateBotInlineQueryImpl : Update
         _query = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _geo = factory.Read<GeoPoint>(ref buff);
+            _geo = (GeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _peerType = factory.Read<InlineQueryPeerType>(ref buff);
+            _peerType = (InlineQueryPeerType)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _offset = buff.ReadTLString();

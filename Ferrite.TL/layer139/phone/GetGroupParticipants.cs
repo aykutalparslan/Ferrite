@@ -115,7 +115,7 @@ public class GetGroupParticipants : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _ids  =  factory . Read < Vector < InputPeer > > ( ref  buff ) ; 
         buff.Skip(4); _sources  =  factory . Read < VectorOfInt > ( ref  buff ) ; 
         _offset = buff.ReadTLString();

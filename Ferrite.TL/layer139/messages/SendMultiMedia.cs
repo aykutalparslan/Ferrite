@@ -183,7 +183,7 @@ public class SendMultiMedia : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _replyToMsgId = buff.ReadInt32(true);
@@ -197,8 +197,7 @@ public class SendMultiMedia : ITLObject, ITLMethod
 
         if (_flags[13])
         {
-            buff.Skip(4);
-            _sendAs = factory.Read<InputPeer>(ref buff);
+            _sendAs = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

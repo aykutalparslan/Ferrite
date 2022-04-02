@@ -88,7 +88,7 @@ public class InputBotInlineResultGameImpl : InputBotInlineResult
         serialized = false;
         _id = buff.ReadTLString();
         _shortName = buff.ReadTLString();
-        buff.Skip(4); _sendMessage  =  factory . Read < InputBotInlineMessage > ( ref  buff ) ; 
+        _sendMessage = (InputBotInlineMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

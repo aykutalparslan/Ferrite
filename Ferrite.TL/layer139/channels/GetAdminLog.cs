@@ -162,12 +162,11 @@ public class GetAdminLog : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
         _q = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _eventsFilter = factory.Read<ChannelAdminLogEventsFilter>(ref buff);
+            _eventsFilter = (ChannelAdminLogEventsFilter)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])

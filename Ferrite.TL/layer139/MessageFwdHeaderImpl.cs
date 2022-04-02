@@ -206,8 +206,7 @@ public class MessageFwdHeaderImpl : MessageFwdHeader
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _fromId = factory.Read<Peer>(ref buff);
+            _fromId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[5])
@@ -228,8 +227,7 @@ public class MessageFwdHeaderImpl : MessageFwdHeader
 
         if (_flags[4])
         {
-            buff.Skip(4);
-            _savedFromPeer = factory.Read<Peer>(ref buff);
+            _savedFromPeer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[4])

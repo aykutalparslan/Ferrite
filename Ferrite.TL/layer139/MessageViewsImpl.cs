@@ -126,8 +126,7 @@ public class MessageViewsImpl : MessageViews
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replies = factory.Read<MessageReplies>(ref buff);
+            _replies = (MessageReplies)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

@@ -103,10 +103,10 @@ public class UploadImportedMedia : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _importId = buff.ReadInt64(true);
         _fileName = buff.ReadTLString();
-        buff.Skip(4); _media  =  factory . Read < InputMedia > ( ref  buff ) ; 
+        _media = (InputMedia)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

@@ -122,7 +122,7 @@ public class PageBlockPhotoImpl : PageBlock
         serialized = false;
         _flags = buff.Read<Flags>();
         _photoId = buff.ReadInt64(true);
-        buff.Skip(4); _caption  =  factory . Read < PageCaption > ( ref  buff ) ; 
+        _caption = (PageCaption)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _url = buff.ReadTLString();

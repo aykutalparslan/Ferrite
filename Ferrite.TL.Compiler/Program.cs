@@ -281,10 +281,16 @@ class Compiler
                     SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
                     );
             }
+            else if (typeName.StartsWith("Vector"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + " buff.Skip(4);" + item.Name.ToCamelCase() + " = factory.Read<"+typeName+">(ref  buff); " + suffix)
+                    );
+            }
             else
             {
                 parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + "buff.Skip(4); " + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref buff);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = ("+typeName+")factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
                     );
             }
         }
@@ -655,10 +661,16 @@ class Compiler
                     SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
                     );
             }
+            else if (typeName.StartsWith("Vector"))
+            {
+                parseBlock = parseBlock.AddStatements(
+                    SyntaxFactory.ParseStatement(prefix + " buff.Skip(4);" + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref  buff); " + suffix)
+                    );
+            }
             else
             {
                 parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + "buff.Skip(4); " + item.Name.ToCamelCase() + " = factory.Read<" + typeName + ">(ref buff);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = (" + typeName + ")factory.Read(buff.ReadInt32(true), ref  buff); " + suffix)
                     );
             }
         }

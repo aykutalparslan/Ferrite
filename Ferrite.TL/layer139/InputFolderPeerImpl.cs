@@ -74,7 +74,7 @@ public class InputFolderPeerImpl : InputFolderPeer
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _folderId = buff.ReadInt32(true);
     }
 

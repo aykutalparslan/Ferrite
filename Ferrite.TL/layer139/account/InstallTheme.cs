@@ -131,8 +131,7 @@ public class InstallTheme : ITLObject, ITLMethod
         _flags = buff.Read<Flags>();
         if (_flags[1])
         {
-            buff.Skip(4);
-            _theme = factory.Read<InputTheme>(ref buff);
+            _theme = (InputTheme)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
@@ -142,8 +141,7 @@ public class InstallTheme : ITLObject, ITLMethod
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _baseTheme = factory.Read<BaseTheme>(ref buff);
+            _baseTheme = (BaseTheme)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

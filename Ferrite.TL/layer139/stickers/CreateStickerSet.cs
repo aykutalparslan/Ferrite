@@ -180,13 +180,12 @@ public class CreateStickerSet : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _title = buff.ReadTLString();
         _shortName = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _thumb = factory.Read<InputDocument>(ref buff);
+            _thumb = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         buff.Skip(4); _stickers  =  factory . Read < Vector < InputStickerSetItem > > ( ref  buff ) ; 

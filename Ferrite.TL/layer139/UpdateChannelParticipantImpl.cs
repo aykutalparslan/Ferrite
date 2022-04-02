@@ -180,20 +180,17 @@ public class UpdateChannelParticipantImpl : Update
         _userId = buff.ReadInt64(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _prevParticipant = factory.Read<ChannelParticipant>(ref buff);
+            _prevParticipant = (ChannelParticipant)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _newParticipant = factory.Read<ChannelParticipant>(ref buff);
+            _newParticipant = (ChannelParticipant)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _invite = factory.Read<ExportedChatInvite>(ref buff);
+            _invite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _qts = buff.ReadInt32(true);

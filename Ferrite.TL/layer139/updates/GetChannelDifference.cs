@@ -126,8 +126,8 @@ public class GetChannelDifference : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
-        buff.Skip(4); _filter  =  factory . Read < ChannelMessagesFilter > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
+        _filter = (ChannelMessagesFilter)factory.Read(buff.ReadInt32(true), ref buff);
         _pts = buff.ReadInt32(true);
         _limit = buff.ReadInt32(true);
     }

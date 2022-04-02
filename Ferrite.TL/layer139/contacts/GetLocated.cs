@@ -107,7 +107,7 @@ public class GetLocated : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _geoPoint  =  factory . Read < InputGeoPoint > ( ref  buff ) ; 
+        _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _selfExpires = buff.ReadInt32(true);

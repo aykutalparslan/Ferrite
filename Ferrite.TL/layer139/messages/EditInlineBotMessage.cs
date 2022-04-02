@@ -158,7 +158,7 @@ public class EditInlineBotMessage : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < InputBotInlineMessageID > ( ref  buff ) ; 
+        _id = (InputBotInlineMessageID)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[11])
         {
             _message = buff.ReadTLString();
@@ -166,14 +166,12 @@ public class EditInlineBotMessage : ITLObject, ITLMethod
 
         if (_flags[14])
         {
-            buff.Skip(4);
-            _media = factory.Read<InputMedia>(ref buff);
+            _media = (InputMedia)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])

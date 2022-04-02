@@ -127,10 +127,10 @@ public class GetMessagePublicForwards : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
         _offsetRate = buff.ReadInt32(true);
-        buff.Skip(4); _offsetPeer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _offsetPeer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _offsetId = buff.ReadInt32(true);
         _limit = buff.ReadInt32(true);
     }

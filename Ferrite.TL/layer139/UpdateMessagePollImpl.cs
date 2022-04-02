@@ -107,11 +107,10 @@ public class UpdateMessagePollImpl : Update
         _pollId = buff.ReadInt64(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _poll = factory.Read<Poll>(ref buff);
+            _poll = (Poll)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _results  =  factory . Read < PollResults > ( ref  buff ) ; 
+        _results = (PollResults)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

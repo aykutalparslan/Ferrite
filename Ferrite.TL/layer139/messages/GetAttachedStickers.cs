@@ -67,7 +67,7 @@ public class GetAttachedStickers : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _media  =  factory . Read < InputStickeredMedia > ( ref  buff ) ; 
+        _media = (InputStickeredMedia)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

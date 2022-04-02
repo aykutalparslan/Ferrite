@@ -91,9 +91,9 @@ public class UploadWallPaper : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _file  =  factory . Read < InputFile > ( ref  buff ) ; 
+        _file = (InputFile)factory.Read(buff.ReadInt32(true), ref buff);
         _mimeType = buff.ReadTLString();
-        buff.Skip(4); _settings  =  factory . Read < WallPaperSettings > ( ref  buff ) ; 
+        _settings = (WallPaperSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

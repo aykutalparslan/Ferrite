@@ -122,7 +122,7 @@ public class InputMediaVenueImpl : InputMedia
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _geoPoint  =  factory . Read < InputGeoPoint > ( ref  buff ) ; 
+        _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _title = buff.ReadTLString();
         _address = buff.ReadTLString();
         _provider = buff.ReadTLString();

@@ -234,12 +234,11 @@ public class Search : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _q = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _fromId = factory.Read<InputPeer>(ref buff);
+            _fromId = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
@@ -247,7 +246,7 @@ public class Search : ITLObject, ITLMethod
             _topMsgId = buff.ReadInt32(true);
         }
 
-        buff.Skip(4); _filter  =  factory . Read < MessagesFilter > ( ref  buff ) ; 
+        _filter = (MessagesFilter)factory.Read(buff.ReadInt32(true), ref buff);
         _minDate = buff.ReadInt32(true);
         _maxDate = buff.ReadInt32(true);
         _offsetId = buff.ReadInt32(true);

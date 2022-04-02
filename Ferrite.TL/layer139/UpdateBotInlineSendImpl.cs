@@ -137,15 +137,13 @@ public class UpdateBotInlineSendImpl : Update
         _query = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _geo = factory.Read<GeoPoint>(ref buff);
+            _geo = (GeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _id = buff.ReadTLString();
         if (_flags[1])
         {
-            buff.Skip(4);
-            _msgId = factory.Read<InputBotInlineMessageID>(ref buff);
+            _msgId = (InputBotInlineMessageID)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

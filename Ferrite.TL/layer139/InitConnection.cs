@@ -207,14 +207,12 @@ public class InitConnection : ITLObject, ITLMethod
         _langCode = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _proxy = factory.Read<InputClientProxy>(ref buff);
+            _proxy = (InputClientProxy)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _params = factory.Read<JSONValue>(ref buff);
+            _params = (JSONValue)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _query = factory.Read(buff.ReadInt32(true), ref buff);

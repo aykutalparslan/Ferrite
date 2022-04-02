@@ -74,7 +74,7 @@ public class InputGameShortNameImpl : InputGame
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _botId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _botId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _shortName = buff.ReadTLString();
     }
 

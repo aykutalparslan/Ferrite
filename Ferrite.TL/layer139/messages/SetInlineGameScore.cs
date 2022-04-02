@@ -124,8 +124,8 @@ public class SetInlineGameScore : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < InputBotInlineMessageID > ( ref  buff ) ; 
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _id = (InputBotInlineMessageID)factory.Read(buff.ReadInt32(true), ref buff);
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _score = buff.ReadInt32(true);
     }
 

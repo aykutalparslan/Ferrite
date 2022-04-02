@@ -168,8 +168,7 @@ public class SetInlineBotResults : ITLObject, ITLMethod
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _switchPm = factory.Read<InlineBotSwitchPM>(ref buff);
+            _switchPm = (InlineBotSwitchPM)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

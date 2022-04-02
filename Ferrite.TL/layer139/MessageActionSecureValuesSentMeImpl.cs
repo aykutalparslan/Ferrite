@@ -75,7 +75,7 @@ public class MessageActionSecureValuesSentMeImpl : MessageAction
     {
         serialized = false;
         buff.Skip(4); _values  =  factory . Read < Vector < SecureValue > > ( ref  buff ) ; 
-        buff.Skip(4); _credentials  =  factory . Read < SecureCredentialsEncrypted > ( ref  buff ) ; 
+        _credentials = (SecureCredentialsEncrypted)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

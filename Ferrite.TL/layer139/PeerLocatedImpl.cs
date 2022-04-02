@@ -86,7 +86,7 @@ public class PeerLocatedImpl : PeerLocated
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _expires = buff.ReadInt32(true);
         _distance = buff.ReadInt32(true);
     }

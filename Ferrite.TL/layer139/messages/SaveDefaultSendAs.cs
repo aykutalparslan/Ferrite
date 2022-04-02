@@ -79,8 +79,8 @@ public class SaveDefaultSendAs : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
-        buff.Skip(4); _sendAs  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _sendAs = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

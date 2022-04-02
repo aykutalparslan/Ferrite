@@ -171,14 +171,12 @@ public class BotInlineMediaResultImpl : BotInlineResult
         _type = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _photo = factory.Read<Photo>(ref buff);
+            _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _document = factory.Read<Document>(ref buff);
+            _document = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
@@ -191,7 +189,7 @@ public class BotInlineMediaResultImpl : BotInlineResult
             _description = buff.ReadTLString();
         }
 
-        buff.Skip(4); _sendMessage  =  factory . Read < BotInlineMessage > ( ref  buff ) ; 
+        _sendMessage = (BotInlineMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

@@ -86,7 +86,7 @@ public class UpdateGroupCallParticipantsImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _participants  =  factory . Read < Vector < GroupCallParticipant > > ( ref  buff ) ; 
         _version = buff.ReadInt32(true);
     }

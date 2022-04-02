@@ -105,7 +105,7 @@ public class ChannelParticipantCreatorImpl : ChannelParticipant
         serialized = false;
         _flags = buff.Read<Flags>();
         _userId = buff.ReadInt64(true);
-        buff.Skip(4); _adminRights  =  factory . Read < ChatAdminRights > ( ref  buff ) ; 
+        _adminRights = (ChatAdminRights)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _rank = buff.ReadTLString();

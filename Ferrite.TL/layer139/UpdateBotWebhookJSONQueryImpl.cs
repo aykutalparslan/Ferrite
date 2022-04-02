@@ -87,7 +87,7 @@ public class UpdateBotWebhookJSONQueryImpl : Update
     {
         serialized = false;
         _queryId = buff.ReadInt64(true);
-        buff.Skip(4); _data  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _data = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
         _timeout = buff.ReadInt32(true);
     }
 

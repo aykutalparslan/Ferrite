@@ -67,7 +67,7 @@ public class GetWallPaper : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _wallpaper  =  factory . Read < InputWallPaper > ( ref  buff ) ; 
+        _wallpaper = (InputWallPaper)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

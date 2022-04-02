@@ -86,7 +86,7 @@ public class UpdateNewMessageImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _message  =  factory . Read < Message > ( ref  buff ) ; 
+        _message = (Message)factory.Read(buff.ReadInt32(true), ref buff);
         _pts = buff.ReadInt32(true);
         _ptsCount = buff.ReadInt32(true);
     }

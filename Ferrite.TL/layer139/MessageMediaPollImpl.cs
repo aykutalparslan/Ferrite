@@ -74,8 +74,8 @@ public class MessageMediaPollImpl : MessageMedia
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _poll  =  factory . Read < Poll > ( ref  buff ) ; 
-        buff.Skip(4); _results  =  factory . Read < PollResults > ( ref  buff ) ; 
+        _poll = (Poll)factory.Read(buff.ReadInt32(true), ref buff);
+        _results = (PollResults)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

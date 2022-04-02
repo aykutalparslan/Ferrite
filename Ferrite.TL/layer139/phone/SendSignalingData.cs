@@ -79,7 +79,7 @@ public class SendSignalingData : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPhoneCall > ( ref  buff ) ; 
+        _peer = (InputPhoneCall)factory.Read(buff.ReadInt32(true), ref buff);
         _data = buff.ReadTLBytes().ToArray();
     }
 

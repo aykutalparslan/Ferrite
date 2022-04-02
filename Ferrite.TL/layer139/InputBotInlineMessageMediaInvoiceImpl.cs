@@ -173,18 +173,16 @@ public class InputBotInlineMessageMediaInvoiceImpl : InputBotInlineMessage
         _description = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _photo = factory.Read<InputWebDocument>(ref buff);
+            _photo = (InputWebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _invoice  =  factory . Read < Invoice > ( ref  buff ) ; 
+        _invoice = (Invoice)factory.Read(buff.ReadInt32(true), ref buff);
         _payload = buff.ReadTLBytes().ToArray();
         _provider = buff.ReadTLString();
-        buff.Skip(4); _providerData  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _providerData = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

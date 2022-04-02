@@ -74,8 +74,8 @@ public class UpdateDraftMessageImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
-        buff.Skip(4); _draft  =  factory . Read < DraftMessage > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
+        _draft = (DraftMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

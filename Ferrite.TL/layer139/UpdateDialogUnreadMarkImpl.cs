@@ -85,7 +85,7 @@ public class UpdateDialogUnreadMarkImpl : Update
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < DialogPeer > ( ref  buff ) ; 
+        _peer = (DialogPeer)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

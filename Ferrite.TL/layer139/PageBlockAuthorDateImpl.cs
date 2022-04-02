@@ -74,7 +74,7 @@ public class PageBlockAuthorDateImpl : PageBlock
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _author  =  factory . Read < RichText > ( ref  buff ) ; 
+        _author = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
         _publishedDate = buff.ReadInt32(true);
     }
 

@@ -121,10 +121,10 @@ public class ChannelParticipantBannedImpl : ChannelParticipant
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _kickedBy = buff.ReadInt64(true);
         _date = buff.ReadInt32(true);
-        buff.Skip(4); _bannedRights  =  factory . Read < ChatBannedRights > ( ref  buff ) ; 
+        _bannedRights = (ChatBannedRights)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

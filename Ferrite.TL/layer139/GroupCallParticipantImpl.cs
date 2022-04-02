@@ -301,7 +301,7 @@ public class GroupCallParticipantImpl : GroupCallParticipant
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _date = buff.ReadInt32(true);
         if (_flags[3])
         {
@@ -326,14 +326,12 @@ public class GroupCallParticipantImpl : GroupCallParticipant
 
         if (_flags[6])
         {
-            buff.Skip(4);
-            _video = factory.Read<GroupCallParticipantVideo>(ref buff);
+            _video = (GroupCallParticipantVideo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[14])
         {
-            buff.Skip(4);
-            _presentation = factory.Read<GroupCallParticipantVideo>(ref buff);
+            _presentation = (GroupCallParticipantVideo)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

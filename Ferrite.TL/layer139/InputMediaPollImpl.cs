@@ -126,7 +126,7 @@ public class InputMediaPollImpl : InputMedia
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _poll  =  factory . Read < Poll > ( ref  buff ) ; 
+        _poll = (Poll)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             buff.Skip(4);

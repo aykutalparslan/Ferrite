@@ -138,8 +138,7 @@ public class FolderImpl : Folder
         _title = buff.ReadTLString();
         if (_flags[3])
         {
-            buff.Skip(4);
-            _photo = factory.Read<ChatPhoto>(ref buff);
+            _photo = (ChatPhoto)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

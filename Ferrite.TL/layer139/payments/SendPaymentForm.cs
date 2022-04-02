@@ -168,7 +168,7 @@ public class SendPaymentForm : ITLObject, ITLMethod
         serialized = false;
         _flags = buff.Read<Flags>();
         _formId = buff.ReadInt64(true);
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
         if (_flags[0])
         {
@@ -180,7 +180,7 @@ public class SendPaymentForm : ITLObject, ITLMethod
             _shippingOptionId = buff.ReadTLString();
         }
 
-        buff.Skip(4); _credentials  =  factory . Read < InputPaymentCredentials > ( ref  buff ) ; 
+        _credentials = (InputPaymentCredentials)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
             _tipAmount = buff.ReadInt64(true);

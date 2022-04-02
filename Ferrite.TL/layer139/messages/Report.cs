@@ -103,9 +103,9 @@ public class Report : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _id  =  factory . Read < VectorOfInt > ( ref  buff ) ; 
-        buff.Skip(4); _reason  =  factory . Read < ReportReason > ( ref  buff ) ; 
+        _reason = (ReportReason)factory.Read(buff.ReadInt32(true), ref buff);
         _message = buff.ReadTLString();
     }
 

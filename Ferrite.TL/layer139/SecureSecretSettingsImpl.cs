@@ -86,7 +86,7 @@ public class SecureSecretSettingsImpl : SecureSecretSettings
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _secureAlgo  =  factory . Read < SecurePasswordKdfAlgo > ( ref  buff ) ; 
+        _secureAlgo = (SecurePasswordKdfAlgo)factory.Read(buff.ReadInt32(true), ref buff);
         _secureSecret = buff.ReadTLBytes().ToArray();
         _secureSecretId = buff.ReadInt64(true);
     }

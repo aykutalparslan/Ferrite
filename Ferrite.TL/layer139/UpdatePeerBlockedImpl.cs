@@ -74,7 +74,7 @@ public class UpdatePeerBlockedImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peerId  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peerId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _blocked = Bool.Read(ref buff);
     }
 

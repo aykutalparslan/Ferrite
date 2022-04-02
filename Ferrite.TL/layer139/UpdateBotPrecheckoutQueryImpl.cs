@@ -162,8 +162,7 @@ public class UpdateBotPrecheckoutQueryImpl : Update
         _payload = buff.ReadTLBytes().ToArray();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _info = factory.Read<PaymentRequestedInfo>(ref buff);
+            _info = (PaymentRequestedInfo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])

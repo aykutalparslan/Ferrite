@@ -86,7 +86,7 @@ public class SecureValueErrorFileImpl : SecureValueError
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _type  =  factory . Read < SecureValueType > ( ref  buff ) ; 
+        _type = (SecureValueType)factory.Read(buff.ReadInt32(true), ref buff);
         _fileHash = buff.ReadTLBytes().ToArray();
         _text = buff.ReadTLString();
     }

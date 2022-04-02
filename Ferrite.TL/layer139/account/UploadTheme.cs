@@ -121,11 +121,10 @@ public class UploadTheme : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _file  =  factory . Read < InputFile > ( ref  buff ) ; 
+        _file = (InputFile)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _thumb = factory.Read<InputFile>(ref buff);
+            _thumb = (InputFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _fileName = buff.ReadTLString();

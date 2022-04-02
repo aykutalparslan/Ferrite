@@ -173,7 +173,7 @@ public class ChannelParticipantAdminImpl : ChannelParticipant
 
         _promotedBy = buff.ReadInt64(true);
         _date = buff.ReadInt32(true);
-        buff.Skip(4); _adminRights  =  factory . Read < ChatAdminRights > ( ref  buff ) ; 
+        _adminRights = (ChatAdminRights)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
             _rank = buff.ReadTLString();

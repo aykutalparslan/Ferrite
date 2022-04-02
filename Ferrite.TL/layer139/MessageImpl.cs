@@ -486,15 +486,13 @@ public class MessageImpl : Message
         _id = buff.ReadInt32(true);
         if (_flags[8])
         {
-            buff.Skip(4);
-            _fromId = factory.Read<Peer>(ref buff);
+            _fromId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _peerId  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peerId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
-            buff.Skip(4);
-            _fwdFrom = factory.Read<MessageFwdHeader>(ref buff);
+            _fwdFrom = (MessageFwdHeader)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[11])
@@ -504,22 +502,19 @@ public class MessageImpl : Message
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _replyTo = factory.Read<MessageReplyHeader>(ref buff);
+            _replyTo = (MessageReplyHeader)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _date = buff.ReadInt32(true);
         _message = buff.ReadTLString();
         if (_flags[9])
         {
-            buff.Skip(4);
-            _media = factory.Read<MessageMedia>(ref buff);
+            _media = (MessageMedia)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[6])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[7])
@@ -540,8 +535,7 @@ public class MessageImpl : Message
 
         if (_flags[23])
         {
-            buff.Skip(4);
-            _replies = factory.Read<MessageReplies>(ref buff);
+            _replies = (MessageReplies)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[15])
@@ -561,8 +555,7 @@ public class MessageImpl : Message
 
         if (_flags[20])
         {
-            buff.Skip(4);
-            _reactions = factory.Read<MessageReactions>(ref buff);
+            _reactions = (MessageReactions)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[22])

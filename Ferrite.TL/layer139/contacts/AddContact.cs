@@ -126,7 +126,7 @@ public class AddContact : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _id = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _firstName = buff.ReadTLString();
         _lastName = buff.ReadTLString();
         _phone = buff.ReadTLString();

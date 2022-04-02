@@ -79,8 +79,8 @@ public class AddStickerToSet : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _stickerset  =  factory . Read < InputStickerSet > ( ref  buff ) ; 
-        buff.Skip(4); _sticker  =  factory . Read < InputStickerSetItem > ( ref  buff ) ; 
+        _stickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
+        _sticker = (InputStickerSetItem)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

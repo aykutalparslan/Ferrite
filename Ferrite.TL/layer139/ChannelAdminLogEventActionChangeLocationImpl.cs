@@ -74,8 +74,8 @@ public class ChannelAdminLogEventActionChangeLocationImpl : ChannelAdminLogEvent
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _prevValue  =  factory . Read < ChannelLocation > ( ref  buff ) ; 
-        buff.Skip(4); _newValue  =  factory . Read < ChannelLocation > ( ref  buff ) ; 
+        _prevValue = (ChannelLocation)factory.Read(buff.ReadInt32(true), ref buff);
+        _newValue = (ChannelLocation)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

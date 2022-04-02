@@ -86,7 +86,7 @@ public class InputUserFromMessageImpl : InputUser
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
         _userId = buff.ReadInt64(true);
     }

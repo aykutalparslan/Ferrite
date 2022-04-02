@@ -112,7 +112,7 @@ public class WebFileImpl : WebFile
         serialized = false;
         _size = buff.ReadInt32(true);
         _mimeType = buff.ReadTLString();
-        buff.Skip(4); _fileType  =  factory . Read < storage . FileType > ( ref  buff ) ; 
+        _fileType = (storage.FileType)factory.Read(buff.ReadInt32(true), ref buff);
         _mtime = buff.ReadInt32(true);
         _bytes = buff.ReadTLBytes().ToArray();
     }

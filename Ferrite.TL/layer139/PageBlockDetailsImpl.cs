@@ -98,7 +98,7 @@ public class PageBlockDetailsImpl : PageBlock
         serialized = false;
         _flags = buff.Read<Flags>();
         buff.Skip(4); _blocks  =  factory . Read < Vector < PageBlock > > ( ref  buff ) ; 
-        buff.Skip(4); _title  =  factory . Read < RichText > ( ref  buff ) ; 
+        _title = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

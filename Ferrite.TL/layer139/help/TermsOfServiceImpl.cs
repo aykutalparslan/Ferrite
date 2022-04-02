@@ -126,7 +126,7 @@ public class TermsOfServiceImpl : TermsOfService
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _id = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
         _text = buff.ReadTLString();
         buff.Skip(4); _entities  =  factory . Read < Vector < MessageEntity > > ( ref  buff ) ; 
         if (_flags[1])

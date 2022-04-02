@@ -103,9 +103,9 @@ public class EditAdmin : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
-        buff.Skip(4); _adminRights  =  factory . Read < ChatAdminRights > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
+        _adminRights = (ChatAdminRights)factory.Read(buff.ReadInt32(true), ref buff);
         _rank = buff.ReadTLString();
     }
 

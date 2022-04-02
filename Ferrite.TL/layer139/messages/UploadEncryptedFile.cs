@@ -79,8 +79,8 @@ public class UploadEncryptedFile : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputEncryptedChat > ( ref  buff ) ; 
-        buff.Skip(4); _file  =  factory . Read < InputEncryptedFile > ( ref  buff ) ; 
+        _peer = (InputEncryptedChat)factory.Read(buff.ReadInt32(true), ref buff);
+        _file = (InputEncryptedFile)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

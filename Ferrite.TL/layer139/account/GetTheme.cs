@@ -92,7 +92,7 @@ public class GetTheme : ITLObject, ITLMethod
     {
         serialized = false;
         _format = buff.ReadTLString();
-        buff.Skip(4); _theme  =  factory . Read < InputTheme > ( ref  buff ) ; 
+        _theme = (InputTheme)factory.Read(buff.ReadInt32(true), ref buff);
         _documentId = buff.ReadInt64(true);
     }
 

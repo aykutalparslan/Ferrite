@@ -189,7 +189,7 @@ public class ChatInviteImpl : ChatInvite
             _about = buff.ReadTLString();
         }
 
-        buff.Skip(4); _photo  =  factory . Read < Photo > ( ref  buff ) ; 
+        _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         _participantsCount = buff.ReadInt32(true);
         if (_flags[4])
         {

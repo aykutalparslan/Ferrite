@@ -148,7 +148,7 @@ public class ThemeSettingsImpl : ThemeSettings
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _baseTheme  =  factory . Read < BaseTheme > ( ref  buff ) ; 
+        _baseTheme = (BaseTheme)factory.Read(buff.ReadInt32(true), ref buff);
         _accentColor = buff.ReadInt32(true);
         if (_flags[3])
         {
@@ -163,8 +163,7 @@ public class ThemeSettingsImpl : ThemeSettings
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _wallpaper = factory.Read<WallPaper>(ref buff);
+            _wallpaper = (WallPaper)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

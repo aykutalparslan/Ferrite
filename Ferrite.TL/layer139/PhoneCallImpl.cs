@@ -210,7 +210,7 @@ public class PhoneCallImpl : PhoneCall
         _participantId = buff.ReadInt64(true);
         _gAOrB = buff.ReadTLBytes().ToArray();
         _keyFingerprint = buff.ReadInt64(true);
-        buff.Skip(4); _protocol  =  factory . Read < PhoneCallProtocol > ( ref  buff ) ; 
+        _protocol = (PhoneCallProtocol)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _connections  =  factory . Read < Vector < PhoneConnection > > ( ref  buff ) ; 
         _startDate = buff.ReadInt32(true);
     }

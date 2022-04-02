@@ -92,7 +92,7 @@ public class UpdatePeerHistoryTTLImpl : Update
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _ttlPeriod = buff.ReadInt32(true);

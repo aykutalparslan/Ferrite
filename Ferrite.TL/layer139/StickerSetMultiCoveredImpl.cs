@@ -74,7 +74,7 @@ public class StickerSetMultiCoveredImpl : StickerSetCovered
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _set  =  factory . Read < StickerSet > ( ref  buff ) ; 
+        _set = (StickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _covers  =  factory . Read < Vector < Document > > ( ref  buff ) ; 
     }
 

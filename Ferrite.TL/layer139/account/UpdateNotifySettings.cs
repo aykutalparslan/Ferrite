@@ -79,8 +79,8 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputNotifyPeer > ( ref  buff ) ; 
-        buff.Skip(4); _settings  =  factory . Read < InputPeerNotifySettings > ( ref  buff ) ; 
+        _peer = (InputNotifyPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _settings = (InputPeerNotifySettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

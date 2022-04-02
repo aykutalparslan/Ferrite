@@ -215,8 +215,7 @@ public class ThemeImpl : Theme
         _title = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _document = factory.Read<Document>(ref buff);
+            _document = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])

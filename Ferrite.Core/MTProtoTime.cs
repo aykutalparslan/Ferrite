@@ -44,7 +44,7 @@ public class MTProtoTime
     {
         while (true)
         {
-            _seconds = (long)new TimeSpan(DateTime.Now.Ticks).TotalSeconds;
+            _seconds = DateTimeOffset.Now.ToUnixTimeSeconds();
             _fiveMinutesAgo = (_seconds - 300) * 4294967296L;
             _thirtySecondsLater = (_seconds + 30) * 4294967296L;
             await Task.Delay(1000);

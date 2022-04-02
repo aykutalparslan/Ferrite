@@ -86,7 +86,7 @@ public class UpdateWebPageImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _webpage  =  factory . Read < WebPage > ( ref  buff ) ; 
+        _webpage = (WebPage)factory.Read(buff.ReadInt32(true), ref buff);
         _pts = buff.ReadInt32(true);
         _ptsCount = buff.ReadInt32(true);
     }

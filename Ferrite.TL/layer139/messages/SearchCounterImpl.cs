@@ -97,7 +97,7 @@ public class SearchCounterImpl : SearchCounter
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _filter  =  factory . Read < MessagesFilter > ( ref  buff ) ; 
+        _filter = (MessagesFilter)factory.Read(buff.ReadInt32(true), ref buff);
         _count = buff.ReadInt32(true);
     }
 

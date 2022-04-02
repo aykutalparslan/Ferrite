@@ -67,7 +67,7 @@ public class SetAccountTTL : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _ttl  =  factory . Read < AccountDaysTTL > ( ref  buff ) ; 
+        _ttl = (AccountDaysTTL)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

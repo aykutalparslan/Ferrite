@@ -86,7 +86,7 @@ public class UpdateBotCommandsImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _botId = buff.ReadInt64(true);
         buff.Skip(4); _commands  =  factory . Read < Vector < BotCommand > > ( ref  buff ) ; 
     }

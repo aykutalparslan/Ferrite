@@ -136,7 +136,7 @@ public class GetBotCallbackAnswer : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
         if (_flags[0])
         {
@@ -145,8 +145,7 @@ public class GetBotCallbackAnswer : ITLObject, ITLMethod
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _password = factory.Read<InputCheckPasswordSRP>(ref buff);
+            _password = (InputCheckPasswordSRP)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

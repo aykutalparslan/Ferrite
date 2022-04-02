@@ -74,7 +74,7 @@ public class ChannelLocationImpl : ChannelLocation
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _geoPoint  =  factory . Read < GeoPoint > ( ref  buff ) ; 
+        _geoPoint = (GeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _address = buff.ReadTLString();
     }
 

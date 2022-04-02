@@ -126,10 +126,10 @@ public class RequestCall : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _randomId = buff.ReadInt32(true);
         _gAHash = buff.ReadTLBytes().ToArray();
-        buff.Skip(4); _protocol  =  factory . Read < PhoneCallProtocol > ( ref  buff ) ; 
+        _protocol = (PhoneCallProtocol)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

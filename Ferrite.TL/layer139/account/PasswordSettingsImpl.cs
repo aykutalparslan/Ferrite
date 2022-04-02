@@ -104,8 +104,7 @@ public class PasswordSettingsImpl : PasswordSettings
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _secureSettings = factory.Read<SecureSecretSettings>(ref buff);
+            _secureSettings = (SecureSecretSettings)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

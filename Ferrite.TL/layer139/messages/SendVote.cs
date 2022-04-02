@@ -91,7 +91,7 @@ public class SendVote : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
         buff.Skip(4); _options  =  factory . Read < VectorOfBytes > ( ref  buff ) ; 
     }

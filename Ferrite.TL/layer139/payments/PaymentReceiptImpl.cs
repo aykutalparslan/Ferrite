@@ -258,21 +258,18 @@ public class PaymentReceiptImpl : PaymentReceipt
         _description = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _photo = factory.Read<WebDocument>(ref buff);
+            _photo = (WebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _invoice  =  factory . Read < Invoice > ( ref  buff ) ; 
+        _invoice = (Invoice)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _info = factory.Read<PaymentRequestedInfo>(ref buff);
+            _info = (PaymentRequestedInfo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _shipping = factory.Read<ShippingOption>(ref buff);
+            _shipping = (ShippingOption)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])

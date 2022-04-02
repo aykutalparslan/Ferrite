@@ -157,8 +157,8 @@ public class DialogFolderImpl : Dialog
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _folder  =  factory . Read < Folder > ( ref  buff ) ; 
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _folder = (Folder)factory.Read(buff.ReadInt32(true), ref buff);
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _topMessage = buff.ReadInt32(true);
         _unreadMutedPeersCount = buff.ReadInt32(true);
         _unreadUnmutedPeersCount = buff.ReadInt32(true);

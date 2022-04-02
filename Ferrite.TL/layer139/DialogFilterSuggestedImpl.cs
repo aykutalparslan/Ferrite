@@ -74,7 +74,7 @@ public class DialogFilterSuggestedImpl : DialogFilterSuggested
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _filter  =  factory . Read < DialogFilter > ( ref  buff ) ; 
+        _filter = (DialogFilter)factory.Read(buff.ReadInt32(true), ref buff);
         _description = buff.ReadTLString();
     }
 

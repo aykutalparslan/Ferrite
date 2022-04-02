@@ -86,9 +86,9 @@ public class AutoDownloadSettingsImpl : AutoDownloadSettings
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _low  =  factory . Read < AutoDownloadSettings > ( ref  buff ) ; 
-        buff.Skip(4); _medium  =  factory . Read < AutoDownloadSettings > ( ref  buff ) ; 
-        buff.Skip(4); _high  =  factory . Read < AutoDownloadSettings > ( ref  buff ) ; 
+        _low = (AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
+        _medium = (AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
+        _high = (AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

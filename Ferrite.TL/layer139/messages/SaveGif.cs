@@ -79,7 +79,7 @@ public class SaveGif : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _id  =  factory . Read < InputDocument > ( ref  buff ) ; 
+        _id = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         _unsave = Bool.Read(ref buff);
     }
 

@@ -150,8 +150,7 @@ public class MessageActionPaymentSentMeImpl : MessageAction
         _payload = buff.ReadTLBytes().ToArray();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _info = factory.Read<PaymentRequestedInfo>(ref buff);
+            _info = (PaymentRequestedInfo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
@@ -159,7 +158,7 @@ public class MessageActionPaymentSentMeImpl : MessageAction
             _shippingOptionId = buff.ReadTLString();
         }
 
-        buff.Skip(4); _charge  =  factory . Read < PaymentCharge > ( ref  buff ) ; 
+        _charge = (PaymentCharge)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

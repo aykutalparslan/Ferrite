@@ -62,7 +62,7 @@ public class ChannelAdminLogEventActionStopPollImpl : ChannelAdminLogEventAction
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _message  =  factory . Read < Message > ( ref  buff ) ; 
+        _message = (Message)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

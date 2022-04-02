@@ -112,8 +112,7 @@ public class MessageReplyHeaderImpl : MessageReplyHeader
         _replyToMsgId = buff.ReadInt32(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _replyToPeerId = factory.Read<Peer>(ref buff);
+            _replyToPeerId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])

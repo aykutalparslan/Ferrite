@@ -194,8 +194,8 @@ public class EditGroupCallParticipant : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
-        buff.Skip(4); _participant  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
+        _participant = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _muted = Bool.Read(ref buff);

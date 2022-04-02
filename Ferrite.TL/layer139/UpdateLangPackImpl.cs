@@ -62,7 +62,7 @@ public class UpdateLangPackImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _difference  =  factory . Read < LangPackDifference > ( ref  buff ) ; 
+        _difference = (LangPackDifference)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

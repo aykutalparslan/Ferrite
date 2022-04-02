@@ -121,7 +121,7 @@ public class UpdatePinnedMessagesImpl : Update
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _messages  =  factory . Read < VectorOfInt > ( ref  buff ) ; 
         _pts = buff.ReadInt32(true);
         _ptsCount = buff.ReadInt32(true);

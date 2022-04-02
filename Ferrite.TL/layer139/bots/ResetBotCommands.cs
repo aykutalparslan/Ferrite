@@ -79,7 +79,7 @@ public class ResetBotCommands : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _scope  =  factory . Read < BotCommandScope > ( ref  buff ) ; 
+        _scope = (BotCommandScope)factory.Read(buff.ReadInt32(true), ref buff);
         _langCode = buff.ReadTLString();
     }
 

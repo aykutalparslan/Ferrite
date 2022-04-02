@@ -74,7 +74,7 @@ public class UpdateNewEncryptedMessageImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _message  =  factory . Read < EncryptedMessage > ( ref  buff ) ; 
+        _message = (EncryptedMessage)factory.Read(buff.ReadInt32(true), ref buff);
         _qts = buff.ReadInt32(true);
     }
 

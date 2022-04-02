@@ -62,7 +62,7 @@ public class LoginTokenSuccessImpl : LoginToken
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _authorization  =  factory . Read < auth . Authorization > ( ref  buff ) ; 
+        _authorization = (auth.Authorization)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

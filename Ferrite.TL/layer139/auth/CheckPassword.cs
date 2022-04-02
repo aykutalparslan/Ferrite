@@ -67,7 +67,7 @@ public class CheckPassword : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _password  =  factory . Read < InputCheckPasswordSRP > ( ref  buff ) ; 
+        _password = (InputCheckPasswordSRP)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

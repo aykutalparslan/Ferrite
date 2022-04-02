@@ -67,7 +67,7 @@ public class GetUserInfo : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

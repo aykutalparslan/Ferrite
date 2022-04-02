@@ -90,7 +90,7 @@ public class MarkDialogUnread : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputDialogPeer > ( ref  buff ) ; 
+        _peer = (InputDialogPeer)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

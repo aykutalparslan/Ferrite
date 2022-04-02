@@ -180,20 +180,17 @@ public class UpdateChatParticipantImpl : Update
         _userId = buff.ReadInt64(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _prevParticipant = factory.Read<ChatParticipant>(ref buff);
+            _prevParticipant = (ChatParticipant)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _newParticipant = factory.Read<ChatParticipant>(ref buff);
+            _newParticipant = (ChatParticipant)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _invite = factory.Read<ExportedChatInvite>(ref buff);
+            _invite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _qts = buff.ReadInt32(true);

@@ -254,19 +254,19 @@ public class MegagroupStatsImpl : MegagroupStats
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _period  =  factory . Read < StatsDateRangeDays > ( ref  buff ) ; 
-        buff.Skip(4); _members  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _messages  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _viewers  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _posters  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _growthGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _membersGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _newMembersBySourceGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _languagesGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _messagesGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _actionsGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _topHoursGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _weekdaysGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
+        _period = (StatsDateRangeDays)factory.Read(buff.ReadInt32(true), ref buff);
+        _members = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _messages = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _viewers = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _posters = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _growthGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _membersGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _newMembersBySourceGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _languagesGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _messagesGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _actionsGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _topHoursGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _weekdaysGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _topPosters  =  factory . Read < Vector < StatsGroupTopPoster > > ( ref  buff ) ; 
         buff.Skip(4); _topAdmins  =  factory . Read < Vector < StatsGroupTopAdmin > > ( ref  buff ) ; 
         buff.Skip(4); _topInviters  =  factory . Read < Vector < StatsGroupTopInviter > > ( ref  buff ) ; 

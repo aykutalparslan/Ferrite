@@ -67,7 +67,7 @@ public class Unblock : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _id  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _id = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

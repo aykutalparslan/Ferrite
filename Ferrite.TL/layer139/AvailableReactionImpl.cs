@@ -193,21 +193,19 @@ public class AvailableReactionImpl : AvailableReaction
         _flags = buff.Read<Flags>();
         _reaction = buff.ReadTLString();
         _title = buff.ReadTLString();
-        buff.Skip(4); _staticIcon  =  factory . Read < Document > ( ref  buff ) ; 
-        buff.Skip(4); _appearAnimation  =  factory . Read < Document > ( ref  buff ) ; 
-        buff.Skip(4); _selectAnimation  =  factory . Read < Document > ( ref  buff ) ; 
-        buff.Skip(4); _activateAnimation  =  factory . Read < Document > ( ref  buff ) ; 
-        buff.Skip(4); _effectAnimation  =  factory . Read < Document > ( ref  buff ) ; 
+        _staticIcon = (Document)factory.Read(buff.ReadInt32(true), ref buff);
+        _appearAnimation = (Document)factory.Read(buff.ReadInt32(true), ref buff);
+        _selectAnimation = (Document)factory.Read(buff.ReadInt32(true), ref buff);
+        _activateAnimation = (Document)factory.Read(buff.ReadInt32(true), ref buff);
+        _effectAnimation = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[1])
         {
-            buff.Skip(4);
-            _aroundAnimation = factory.Read<Document>(ref buff);
+            _aroundAnimation = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _centerIcon = factory.Read<Document>(ref buff);
+            _centerIcon = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

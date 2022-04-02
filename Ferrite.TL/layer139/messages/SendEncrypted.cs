@@ -114,7 +114,7 @@ public class SendEncrypted : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputEncryptedChat > ( ref  buff ) ; 
+        _peer = (InputEncryptedChat)factory.Read(buff.ReadInt32(true), ref buff);
         _randomId = buff.ReadInt64(true);
         _data = buff.ReadTLBytes().ToArray();
     }

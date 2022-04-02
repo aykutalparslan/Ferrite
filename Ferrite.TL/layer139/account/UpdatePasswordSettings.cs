@@ -79,8 +79,8 @@ public class UpdatePasswordSettings : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _password  =  factory . Read < InputCheckPasswordSRP > ( ref  buff ) ; 
-        buff.Skip(4); _newSettings  =  factory . Read < account . PasswordInputSettings > ( ref  buff ) ; 
+        _password = (InputCheckPasswordSRP)factory.Read(buff.ReadInt32(true), ref buff);
+        _newSettings = (account.PasswordInputSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

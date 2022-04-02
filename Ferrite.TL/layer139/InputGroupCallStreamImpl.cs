@@ -133,7 +133,7 @@ public class InputGroupCallStreamImpl : InputFileLocation
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         _timeMs = buff.ReadInt64(true);
         _scale = buff.ReadInt32(true);
         if (_flags[0])

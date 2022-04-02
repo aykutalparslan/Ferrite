@@ -92,7 +92,7 @@ public class InputMediaPhotoImpl : InputMedia
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < InputPhoto > ( ref  buff ) ; 
+        _id = (InputPhoto)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _ttlSeconds = buff.ReadInt32(true);

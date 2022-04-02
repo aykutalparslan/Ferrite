@@ -100,8 +100,8 @@ public class InputBotInlineResultPhotoImpl : InputBotInlineResult
         serialized = false;
         _id = buff.ReadTLString();
         _type = buff.ReadTLString();
-        buff.Skip(4); _photo  =  factory . Read < InputPhoto > ( ref  buff ) ; 
-        buff.Skip(4); _sendMessage  =  factory . Read < InputBotInlineMessage > ( ref  buff ) ; 
+        _photo = (InputPhoto)factory.Read(buff.ReadInt32(true), ref buff);
+        _sendMessage = (InputBotInlineMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

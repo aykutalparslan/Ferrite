@@ -92,8 +92,7 @@ public class SavedInfoImpl : SavedInfo
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _savedInfo = factory.Read<PaymentRequestedInfo>(ref buff);
+            _savedInfo = (PaymentRequestedInfo)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

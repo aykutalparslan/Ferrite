@@ -97,8 +97,7 @@ public class GetNotifyExceptions : ITLObject, ITLMethod
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _peer = factory.Read<InputNotifyPeer>(ref buff);
+            _peer = (InputNotifyPeer)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

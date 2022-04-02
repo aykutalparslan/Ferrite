@@ -126,10 +126,10 @@ public class SendEncryptedFile : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputEncryptedChat > ( ref  buff ) ; 
+        _peer = (InputEncryptedChat)factory.Read(buff.ReadInt32(true), ref buff);
         _randomId = buff.ReadInt64(true);
         _data = buff.ReadTLBytes().ToArray();
-        buff.Skip(4); _file  =  factory . Read < InputEncryptedFile > ( ref  buff ) ; 
+        _file = (InputEncryptedFile)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

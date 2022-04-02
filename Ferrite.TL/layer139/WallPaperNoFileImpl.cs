@@ -115,8 +115,7 @@ public class WallPaperNoFileImpl : WallPaper
         _flags = buff.Read<Flags>();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _settings = factory.Read<WallPaperSettings>(ref buff);
+            _settings = (WallPaperSettings)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

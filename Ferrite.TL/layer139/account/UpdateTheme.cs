@@ -161,7 +161,7 @@ public class UpdateTheme : ITLObject, ITLMethod
         serialized = false;
         _flags = buff.Read<Flags>();
         _format = buff.ReadTLString();
-        buff.Skip(4); _theme  =  factory . Read < InputTheme > ( ref  buff ) ; 
+        _theme = (InputTheme)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _slug = buff.ReadTLString();
@@ -174,8 +174,7 @@ public class UpdateTheme : ITLObject, ITLMethod
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _document = factory.Read<InputDocument>(ref buff);
+            _document = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])

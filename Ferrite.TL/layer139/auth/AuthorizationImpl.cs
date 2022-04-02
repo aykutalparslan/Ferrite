@@ -129,7 +129,7 @@ public class AuthorizationImpl : Authorization
             _tmpSessions = buff.ReadInt32(true);
         }
 
-        buff.Skip(4); _user  =  factory . Read < User > ( ref  buff ) ; 
+        _user = (User)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

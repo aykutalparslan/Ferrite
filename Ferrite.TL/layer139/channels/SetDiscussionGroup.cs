@@ -79,8 +79,8 @@ public class SetDiscussionGroup : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _broadcast  =  factory . Read < InputChannel > ( ref  buff ) ; 
-        buff.Skip(4); _group  =  factory . Read < InputChannel > ( ref  buff ) ; 
+        _broadcast = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
+        _group = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

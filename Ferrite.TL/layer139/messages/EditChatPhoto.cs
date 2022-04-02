@@ -80,7 +80,7 @@ public class EditChatPhoto : ITLObject, ITLMethod
     {
         serialized = false;
         _chatId = buff.ReadInt64(true);
-        buff.Skip(4); _photo  =  factory . Read < InputChatPhoto > ( ref  buff ) ; 
+        _photo = (InputChatPhoto)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

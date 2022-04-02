@@ -80,7 +80,7 @@ public class SendCustomRequest : ITLObject, ITLMethod
     {
         serialized = false;
         _customMethod = buff.ReadTLString();
-        buff.Skip(4); _params  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _params = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

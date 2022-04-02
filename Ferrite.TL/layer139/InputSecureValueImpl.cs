@@ -194,29 +194,25 @@ public class InputSecureValueImpl : InputSecureValue
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _type  =  factory . Read < SecureValueType > ( ref  buff ) ; 
+        _type = (SecureValueType)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _data = factory.Read<SecureData>(ref buff);
+            _data = (SecureData)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _frontSide = factory.Read<InputSecureFile>(ref buff);
+            _frontSide = (InputSecureFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _reverseSide = factory.Read<InputSecureFile>(ref buff);
+            _reverseSide = (InputSecureFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _selfie = factory.Read<InputSecureFile>(ref buff);
+            _selfie = (InputSecureFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[6])
@@ -233,8 +229,7 @@ public class InputSecureValueImpl : InputSecureValue
 
         if (_flags[5])
         {
-            buff.Skip(4);
-            _plainData = factory.Read<SecurePlainData>(ref buff);
+            _plainData = (SecurePlainData)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

@@ -100,8 +100,7 @@ public class RecoverPassword : ITLObject, ITLMethod
         _code = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _newSettings = factory.Read<account.PasswordInputSettings>(ref buff);
+            _newSettings = (account.PasswordInputSettings)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

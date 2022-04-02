@@ -230,20 +230,20 @@ public class BroadcastStatsImpl : BroadcastStats
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _period  =  factory . Read < StatsDateRangeDays > ( ref  buff ) ; 
-        buff.Skip(4); _followers  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _viewsPerPost  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _sharesPerPost  =  factory . Read < StatsAbsValueAndPrev > ( ref  buff ) ; 
-        buff.Skip(4); _enabledNotifications  =  factory . Read < StatsPercentValue > ( ref  buff ) ; 
-        buff.Skip(4); _growthGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _followersGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _muteGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _topHoursGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _interactionsGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _ivInteractionsGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _viewsBySourceGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _newFollowersBySourceGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
-        buff.Skip(4); _languagesGraph  =  factory . Read < StatsGraph > ( ref  buff ) ; 
+        _period = (StatsDateRangeDays)factory.Read(buff.ReadInt32(true), ref buff);
+        _followers = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _viewsPerPost = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _sharesPerPost = (StatsAbsValueAndPrev)factory.Read(buff.ReadInt32(true), ref buff);
+        _enabledNotifications = (StatsPercentValue)factory.Read(buff.ReadInt32(true), ref buff);
+        _growthGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _followersGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _muteGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _topHoursGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _interactionsGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _ivInteractionsGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _viewsBySourceGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _newFollowersBySourceGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
+        _languagesGraph = (StatsGraph)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _recentMessageInteractions  =  factory . Read < Vector < MessageInteractionCounters > > ( ref  buff ) ; 
     }
 

@@ -723,12 +723,11 @@ public class ChannelFullImpl : ChatFull
         _readInboxMaxId = buff.ReadInt32(true);
         _readOutboxMaxId = buff.ReadInt32(true);
         _unreadCount = buff.ReadInt32(true);
-        buff.Skip(4); _chatPhoto  =  factory . Read < Photo > ( ref  buff ) ; 
-        buff.Skip(4); _notifySettings  =  factory . Read < PeerNotifySettings > ( ref  buff ) ; 
+        _chatPhoto = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
+        _notifySettings = (PeerNotifySettings)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[23])
         {
-            buff.Skip(4);
-            _exportedInvite = factory.Read<ExportedChatInvite>(ref buff);
+            _exportedInvite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         buff.Skip(4); _botInfo  =  factory . Read < Vector < BotInfo > > ( ref  buff ) ; 
@@ -749,8 +748,7 @@ public class ChannelFullImpl : ChatFull
 
         if (_flags[8])
         {
-            buff.Skip(4);
-            _stickerset = factory.Read<StickerSet>(ref buff);
+            _stickerset = (StickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[9])
@@ -770,8 +768,7 @@ public class ChannelFullImpl : ChatFull
 
         if (_flags[15])
         {
-            buff.Skip(4);
-            _location = factory.Read<ChannelLocation>(ref buff);
+            _location = (ChannelLocation)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[17])
@@ -792,8 +789,7 @@ public class ChannelFullImpl : ChatFull
         _pts = buff.ReadInt32(true);
         if (_flags[21])
         {
-            buff.Skip(4);
-            _call = factory.Read<InputGroupCall>(ref buff);
+            _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[24])
@@ -809,8 +805,7 @@ public class ChannelFullImpl : ChatFull
 
         if (_flags[26])
         {
-            buff.Skip(4);
-            _groupcallDefaultJoinAs = factory.Read<Peer>(ref buff);
+            _groupcallDefaultJoinAs = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[27])
@@ -831,8 +826,7 @@ public class ChannelFullImpl : ChatFull
 
         if (_flags[29])
         {
-            buff.Skip(4);
-            _defaultSendAs = factory.Read<Peer>(ref buff);
+            _defaultSendAs = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[30])

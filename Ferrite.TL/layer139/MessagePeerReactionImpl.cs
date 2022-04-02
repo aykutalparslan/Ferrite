@@ -107,7 +107,7 @@ public class MessagePeerReactionImpl : MessagePeerReaction
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peerId  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peerId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _reaction = buff.ReadTLString();
     }
 

@@ -86,9 +86,9 @@ public class UpdateMessageReactionsImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
-        buff.Skip(4); _reactions  =  factory . Read < MessageReactions > ( ref  buff ) ; 
+        _reactions = (MessageReactions)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

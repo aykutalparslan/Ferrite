@@ -145,7 +145,7 @@ public class UpdateReadHistoryInboxImpl : Update
             _folderId = buff.ReadInt32(true);
         }
 
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _maxId = buff.ReadInt32(true);
         _stillUnreadCount = buff.ReadInt32(true);
         _pts = buff.ReadInt32(true);

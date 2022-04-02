@@ -163,8 +163,7 @@ public class BotResultsImpl : BotResults
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _switchPm = factory.Read<InlineBotSwitchPM>(ref buff);
+            _switchPm = (InlineBotSwitchPM)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         buff.Skip(4); _results  =  factory . Read < Vector < BotInlineResult > > ( ref  buff ) ; 

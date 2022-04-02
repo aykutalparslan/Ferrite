@@ -67,7 +67,7 @@ public class GetPrivacy : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _key  =  factory . Read < InputPrivacyKey > ( ref  buff ) ; 
+        _key = (InputPrivacyKey)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

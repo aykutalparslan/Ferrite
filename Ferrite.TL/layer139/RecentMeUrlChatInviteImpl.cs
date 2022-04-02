@@ -75,7 +75,7 @@ public class RecentMeUrlChatInviteImpl : RecentMeUrl
     {
         serialized = false;
         _url = buff.ReadTLString();
-        buff.Skip(4); _chatInvite  =  factory . Read < ChatInvite > ( ref  buff ) ; 
+        _chatInvite = (ChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

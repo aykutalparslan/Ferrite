@@ -206,29 +206,25 @@ public class SecureValueImpl : SecureValue
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _type  =  factory . Read < SecureValueType > ( ref  buff ) ; 
+        _type = (SecureValueType)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _data = factory.Read<SecureData>(ref buff);
+            _data = (SecureData)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _frontSide = factory.Read<SecureFile>(ref buff);
+            _frontSide = (SecureFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _reverseSide = factory.Read<SecureFile>(ref buff);
+            _reverseSide = (SecureFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _selfie = factory.Read<SecureFile>(ref buff);
+            _selfie = (SecureFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[6])
@@ -245,8 +241,7 @@ public class SecureValueImpl : SecureValue
 
         if (_flags[5])
         {
-            buff.Skip(4);
-            _plainData = factory.Read<SecurePlainData>(ref buff);
+            _plainData = (SecurePlainData)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _hash = buff.ReadTLBytes().ToArray();

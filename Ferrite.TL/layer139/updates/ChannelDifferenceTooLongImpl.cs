@@ -143,7 +143,7 @@ public class ChannelDifferenceTooLongImpl : ChannelDifference
             _timeout = buff.ReadInt32(true);
         }
 
-        buff.Skip(4); _dialog  =  factory . Read < Dialog > ( ref  buff ) ; 
+        _dialog = (Dialog)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _messages  =  factory . Read < Vector < Message > > ( ref  buff ) ; 
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 

@@ -162,7 +162,7 @@ public class GetDialogs : ITLObject, ITLMethod
 
         _offsetDate = buff.ReadInt32(true);
         _offsetId = buff.ReadInt32(true);
-        buff.Skip(4); _offsetPeer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _offsetPeer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _limit = buff.ReadInt32(true);
         _hash = buff.ReadInt64(true);
     }

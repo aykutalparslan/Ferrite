@@ -74,8 +74,8 @@ public class ChannelAdminLogEventActionExportedInviteEditImpl : ChannelAdminLogE
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _prevInvite  =  factory . Read < ExportedChatInvite > ( ref  buff ) ; 
-        buff.Skip(4); _newInvite  =  factory . Read < ExportedChatInvite > ( ref  buff ) ; 
+        _prevInvite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
+        _newInvite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

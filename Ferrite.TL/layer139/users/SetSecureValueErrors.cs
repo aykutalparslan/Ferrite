@@ -79,7 +79,7 @@ public class SetSecureValueErrors : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _id  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _id = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _errors  =  factory . Read < Vector < SecureValueError > > ( ref  buff ) ; 
     }
 

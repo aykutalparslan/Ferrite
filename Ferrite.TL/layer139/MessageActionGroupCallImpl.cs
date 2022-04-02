@@ -92,7 +92,7 @@ public class MessageActionGroupCallImpl : MessageAction
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _duration = buff.ReadInt32(true);

@@ -62,7 +62,7 @@ public class UpdateChatParticipantsImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _participants  =  factory . Read < ChatParticipants > ( ref  buff ) ; 
+        _participants = (ChatParticipants)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

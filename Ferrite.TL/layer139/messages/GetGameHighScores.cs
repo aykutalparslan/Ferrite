@@ -91,9 +91,9 @@ public class GetGameHighScores : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _id = buff.ReadInt32(true);
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

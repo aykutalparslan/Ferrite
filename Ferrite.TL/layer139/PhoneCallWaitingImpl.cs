@@ -167,7 +167,7 @@ public class PhoneCallWaitingImpl : PhoneCall
         _date = buff.ReadInt32(true);
         _adminId = buff.ReadInt64(true);
         _participantId = buff.ReadInt64(true);
-        buff.Skip(4); _protocol  =  factory . Read < PhoneCallProtocol > ( ref  buff ) ; 
+        _protocol = (PhoneCallProtocol)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _receiveDate = buff.ReadInt32(true);

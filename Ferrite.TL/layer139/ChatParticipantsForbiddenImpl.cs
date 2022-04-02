@@ -95,8 +95,7 @@ public class ChatParticipantsForbiddenImpl : ChatParticipants
         _chatId = buff.ReadInt64(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _selfParticipant = factory.Read<ChatParticipant>(ref buff);
+            _selfParticipant = (ChatParticipant)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

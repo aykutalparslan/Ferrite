@@ -101,7 +101,7 @@ public class UpdateBotShippingQueryImpl : Update
         _queryId = buff.ReadInt64(true);
         _userId = buff.ReadInt64(true);
         _payload = buff.ReadTLBytes().ToArray();
-        buff.Skip(4); _shippingAddress  =  factory . Read < PostAddress > ( ref  buff ) ; 
+        _shippingAddress = (PostAddress)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

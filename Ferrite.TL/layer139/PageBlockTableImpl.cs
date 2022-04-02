@@ -107,7 +107,7 @@ public class PageBlockTableImpl : PageBlock
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _title  =  factory . Read < RichText > ( ref  buff ) ; 
+        _title = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _rows  =  factory . Read < Vector < PageTableRow > > ( ref  buff ) ; 
     }
 

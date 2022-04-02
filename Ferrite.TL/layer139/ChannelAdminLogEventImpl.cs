@@ -101,7 +101,7 @@ public class ChannelAdminLogEventImpl : ChannelAdminLogEvent
         _id = buff.ReadInt64(true);
         _date = buff.ReadInt32(true);
         _userId = buff.ReadInt64(true);
-        buff.Skip(4); _action  =  factory . Read < ChannelAdminLogEventAction > ( ref  buff ) ; 
+        _action = (ChannelAdminLogEventAction)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

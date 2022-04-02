@@ -79,7 +79,7 @@ public class InvokeWithMessagesRange : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _range  =  factory . Read < MessageRange > ( ref  buff ) ; 
+        _range = (MessageRange)factory.Read(buff.ReadInt32(true), ref buff);
         _query = factory.Read(buff.ReadInt32(true), ref buff);
     }
 

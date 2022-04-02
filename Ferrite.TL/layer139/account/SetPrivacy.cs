@@ -79,7 +79,7 @@ public class SetPrivacy : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _key  =  factory . Read < InputPrivacyKey > ( ref  buff ) ; 
+        _key = (InputPrivacyKey)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _rules  =  factory . Read < Vector < InputPrivacyRule > > ( ref  buff ) ; 
     }
 

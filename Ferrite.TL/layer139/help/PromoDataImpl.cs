@@ -156,7 +156,7 @@ public class PromoDataImpl : PromoData
         serialized = false;
         _flags = buff.Read<Flags>();
         _expires = buff.ReadInt32(true);
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
         if (_flags[1])

@@ -75,7 +75,7 @@ public class TermsOfServiceUpdateImpl : TermsOfServiceUpdate
     {
         serialized = false;
         _expires = buff.ReadInt32(true);
-        buff.Skip(4); _termsOfService  =  factory . Read < help . TermsOfService > ( ref  buff ) ; 
+        _termsOfService = (help.TermsOfService)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

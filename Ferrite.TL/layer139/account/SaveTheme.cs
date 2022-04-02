@@ -79,7 +79,7 @@ public class SaveTheme : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _theme  =  factory . Read < InputTheme > ( ref  buff ) ; 
+        _theme = (InputTheme)factory.Read(buff.ReadInt32(true), ref buff);
         _unsave = Bool.Read(ref buff);
     }
 

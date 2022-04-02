@@ -75,9 +75,7 @@ public readonly ref struct AesIge
         sha256.AppendData(authKey.Slice(88+x, 32));
         sha256.AppendData(plaintext);
         Span<byte> messageKeyLarge = sha256.GetCurrentHash();
-        Span<byte> tmp = new byte[32 + plaintext.Length];
-        SHA256.HashData(tmp, messageKeyLarge);
-        Span<byte> messageKey = messageKeyLarge.Slice(8);
+        Span<byte> messageKey = messageKeyLarge.Slice(8,16);
         return messageKey;
     }
 }

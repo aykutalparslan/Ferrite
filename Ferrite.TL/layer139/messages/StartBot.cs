@@ -103,8 +103,8 @@ public class StartBot : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _bot  =  factory . Read < InputUser > ( ref  buff ) ; 
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _bot = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _randomId = buff.ReadInt64(true);
         _startParam = buff.ReadTLString();
     }

@@ -91,7 +91,7 @@ public class AcceptEncryption : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputEncryptedChat > ( ref  buff ) ; 
+        _peer = (InputEncryptedChat)factory.Read(buff.ReadInt32(true), ref buff);
         _gB = buff.ReadTLBytes().ToArray();
         _keyFingerprint = buff.ReadInt64(true);
     }

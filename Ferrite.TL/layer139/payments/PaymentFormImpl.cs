@@ -225,7 +225,7 @@ public class PaymentFormImpl : PaymentForm
         _flags = buff.Read<Flags>();
         _formId = buff.ReadInt64(true);
         _botId = buff.ReadInt64(true);
-        buff.Skip(4); _invoice  =  factory . Read < Invoice > ( ref  buff ) ; 
+        _invoice = (Invoice)factory.Read(buff.ReadInt32(true), ref buff);
         _providerId = buff.ReadInt64(true);
         _url = buff.ReadTLString();
         if (_flags[4])
@@ -235,20 +235,17 @@ public class PaymentFormImpl : PaymentForm
 
         if (_flags[4])
         {
-            buff.Skip(4);
-            _nativeParams = factory.Read<DataJSON>(ref buff);
+            _nativeParams = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[0])
         {
-            buff.Skip(4);
-            _savedInfo = factory.Read<PaymentRequestedInfo>(ref buff);
+            _savedInfo = (PaymentRequestedInfo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _savedCredentials = factory.Read<PaymentSavedCredentials>(ref buff);
+            _savedCredentials = (PaymentSavedCredentials)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 

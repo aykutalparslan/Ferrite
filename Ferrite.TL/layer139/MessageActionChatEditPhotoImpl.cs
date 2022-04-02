@@ -62,7 +62,7 @@ public class MessageActionChatEditPhotoImpl : MessageAction
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _photo  =  factory . Read < Photo > ( ref  buff ) ; 
+        _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

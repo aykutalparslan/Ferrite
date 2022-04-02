@@ -74,8 +74,8 @@ public class PageBlockPullquoteImpl : PageBlock
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _text  =  factory . Read < RichText > ( ref  buff ) ; 
-        buff.Skip(4); _caption  =  factory . Read < RichText > ( ref  buff ) ; 
+        _text = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
+        _caption = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

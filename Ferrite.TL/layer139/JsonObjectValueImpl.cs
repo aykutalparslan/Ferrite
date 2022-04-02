@@ -75,7 +75,7 @@ public class JsonObjectValueImpl : JSONObjectValue
     {
         serialized = false;
         _key = buff.ReadTLString();
-        buff.Skip(4); _value  =  factory . Read < JSONValue > ( ref  buff ) ; 
+        _value = (JSONValue)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

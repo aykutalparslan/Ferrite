@@ -114,7 +114,7 @@ public class PeerDialogsImpl : PeerDialogs
         buff.Skip(4); _messages  =  factory . Read < Vector < Message > > ( ref  buff ) ; 
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
-        buff.Skip(4); _state  =  factory . Read < updates . State > ( ref  buff ) ; 
+        _state = (updates.State)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

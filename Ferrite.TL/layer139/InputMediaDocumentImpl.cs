@@ -109,7 +109,7 @@ public class InputMediaDocumentImpl : InputMedia
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < InputDocument > ( ref  buff ) ; 
+        _id = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _ttlSeconds = buff.ReadInt32(true);

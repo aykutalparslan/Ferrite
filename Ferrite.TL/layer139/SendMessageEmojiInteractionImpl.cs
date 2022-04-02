@@ -88,7 +88,7 @@ public class SendMessageEmojiInteractionImpl : SendMessageAction
         serialized = false;
         _emoticon = buff.ReadTLString();
         _msgId = buff.ReadInt32(true);
-        buff.Skip(4); _interaction  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _interaction = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

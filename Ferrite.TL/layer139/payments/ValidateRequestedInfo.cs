@@ -114,9 +114,9 @@ public class ValidateRequestedInfo : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
-        buff.Skip(4); _info  =  factory . Read < PaymentRequestedInfo > ( ref  buff ) ; 
+        _info = (PaymentRequestedInfo)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

@@ -157,11 +157,10 @@ public class GameImpl : Game
         _shortName = buff.ReadTLString();
         _title = buff.ReadTLString();
         _description = buff.ReadTLString();
-        buff.Skip(4); _photo  =  factory . Read < Photo > ( ref  buff ) ; 
+        _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _document = factory.Read<Document>(ref buff);
+            _document = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

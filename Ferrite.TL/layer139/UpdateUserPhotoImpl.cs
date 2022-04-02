@@ -100,7 +100,7 @@ public class UpdateUserPhotoImpl : Update
         serialized = false;
         _userId = buff.ReadInt64(true);
         _date = buff.ReadInt32(true);
-        buff.Skip(4); _photo  =  factory . Read < UserProfilePhoto > ( ref  buff ) ; 
+        _photo = (UserProfilePhoto)factory.Read(buff.ReadInt32(true), ref buff);
         _previous = Bool.Read(ref buff);
     }
 

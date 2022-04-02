@@ -79,7 +79,7 @@ public class GetStickerSet : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _stickerset  =  factory . Read < InputStickerSet > ( ref  buff ) ; 
+        _stickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         _hash = buff.ReadInt32(true);
     }
 

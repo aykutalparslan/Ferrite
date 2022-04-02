@@ -159,7 +159,7 @@ public class UpdateBotCallbackQueryImpl : Update
         _flags = buff.Read<Flags>();
         _queryId = buff.ReadInt64(true);
         _userId = buff.ReadInt64(true);
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
         _chatInstance = buff.ReadInt64(true);
         if (_flags[0])

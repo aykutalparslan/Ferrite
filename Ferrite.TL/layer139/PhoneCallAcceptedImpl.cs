@@ -163,7 +163,7 @@ public class PhoneCallAcceptedImpl : PhoneCall
         _adminId = buff.ReadInt64(true);
         _participantId = buff.ReadInt64(true);
         _gB = buff.ReadTLBytes().ToArray();
-        buff.Skip(4); _protocol  =  factory . Read < PhoneCallProtocol > ( ref  buff ) ; 
+        _protocol = (PhoneCallProtocol)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

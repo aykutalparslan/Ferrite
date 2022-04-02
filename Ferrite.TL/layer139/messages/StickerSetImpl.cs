@@ -86,7 +86,7 @@ public class StickerSetImpl : StickerSet
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _set  =  factory . Read < StickerSet > ( ref  buff ) ; 
+        _set = (StickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _packs  =  factory . Read < Vector < StickerPack > > ( ref  buff ) ; 
         buff.Skip(4); _documents  =  factory . Read < Vector < Document > > ( ref  buff ) ; 
     }

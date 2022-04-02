@@ -127,7 +127,7 @@ public class DifferenceImpl : Difference
         buff.Skip(4); _otherUpdates  =  factory . Read < Vector < Update > > ( ref  buff ) ; 
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
-        buff.Skip(4); _state  =  factory . Read < updates . State > ( ref  buff ) ; 
+        _state = (updates.State)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

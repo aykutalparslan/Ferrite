@@ -79,8 +79,8 @@ public class JoinGroupCallPresentation : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
-        buff.Skip(4); _params  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
+        _params = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

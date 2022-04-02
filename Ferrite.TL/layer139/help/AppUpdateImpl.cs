@@ -178,8 +178,7 @@ public class AppUpdateImpl : AppUpdate
         buff.Skip(4); _entities  =  factory . Read < Vector < MessageEntity > > ( ref  buff ) ; 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _document = factory.Read<Document>(ref buff);
+            _document = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
@@ -189,8 +188,7 @@ public class AppUpdateImpl : AppUpdate
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _sticker = factory.Read<Document>(ref buff);
+            _sticker = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

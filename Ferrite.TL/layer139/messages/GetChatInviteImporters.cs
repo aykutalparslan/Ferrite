@@ -160,7 +160,7 @@ public class GetChatInviteImporters : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[1])
         {
             _link = buff.ReadTLString();
@@ -172,7 +172,7 @@ public class GetChatInviteImporters : ITLObject, ITLMethod
         }
 
         _offsetDate = buff.ReadInt32(true);
-        buff.Skip(4); _offsetUser  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _offsetUser = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _limit = buff.ReadInt32(true);
     }
 

@@ -95,8 +95,7 @@ public class MessageEmptyImpl : Message
         _id = buff.ReadInt32(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _peerId = factory.Read<Peer>(ref buff);
+            _peerId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

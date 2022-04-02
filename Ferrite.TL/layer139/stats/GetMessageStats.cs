@@ -102,7 +102,7 @@ public class GetMessageStats : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
         _msgId = buff.ReadInt32(true);
     }
 

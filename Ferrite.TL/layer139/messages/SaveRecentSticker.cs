@@ -102,7 +102,7 @@ public class SaveRecentSticker : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _id  =  factory . Read < InputDocument > ( ref  buff ) ; 
+        _id = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         _unsave = Bool.Read(ref buff);
     }
 

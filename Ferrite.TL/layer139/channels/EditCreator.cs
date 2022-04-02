@@ -91,9 +91,9 @@ public class EditCreator : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
-        buff.Skip(4); _password  =  factory . Read < InputCheckPasswordSRP > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
+        _password = (InputCheckPasswordSRP)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

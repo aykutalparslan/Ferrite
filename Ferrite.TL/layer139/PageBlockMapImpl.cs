@@ -110,11 +110,11 @@ public class PageBlockMapImpl : PageBlock
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _geo  =  factory . Read < GeoPoint > ( ref  buff ) ; 
+        _geo = (GeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _zoom = buff.ReadInt32(true);
         _w = buff.ReadInt32(true);
         _h = buff.ReadInt32(true);
-        buff.Skip(4); _caption  =  factory . Read < PageCaption > ( ref  buff ) ; 
+        _caption = (PageCaption)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

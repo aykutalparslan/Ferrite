@@ -91,8 +91,8 @@ public class EditLocation : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
-        buff.Skip(4); _geoPoint  =  factory . Read < InputGeoPoint > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
+        _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _address = buff.ReadTLString();
     }
 

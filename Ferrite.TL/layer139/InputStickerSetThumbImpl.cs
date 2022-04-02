@@ -74,7 +74,7 @@ public class InputStickerSetThumbImpl : InputFileLocation
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _stickerset  =  factory . Read < InputStickerSet > ( ref  buff ) ; 
+        _stickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         _thumbVersion = buff.ReadInt32(true);
     }
 

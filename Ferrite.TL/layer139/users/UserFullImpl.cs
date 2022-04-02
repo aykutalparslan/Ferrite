@@ -86,7 +86,7 @@ public class UserFullImpl : UserFull
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _fullUser  =  factory . Read < UserFull > ( ref  buff ) ; 
+        _fullUser = (UserFull)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
     }

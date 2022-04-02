@@ -142,8 +142,7 @@ public class PhoneCallDiscardedImpl : PhoneCall
         _id = buff.ReadInt64(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _reason = factory.Read<PhoneCallDiscardReason>(ref buff);
+            _reason = (PhoneCallDiscardReason)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])

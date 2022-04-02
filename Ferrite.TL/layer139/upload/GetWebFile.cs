@@ -91,7 +91,7 @@ public class GetWebFile : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _location  =  factory . Read < InputWebFileLocation > ( ref  buff ) ; 
+        _location = (InputWebFileLocation)factory.Read(buff.ReadInt32(true), ref buff);
         _offset = buff.ReadInt32(true);
         _limit = buff.ReadInt32(true);
     }

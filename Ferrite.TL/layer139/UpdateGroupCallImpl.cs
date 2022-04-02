@@ -75,7 +75,7 @@ public class UpdateGroupCallImpl : Update
     {
         serialized = false;
         _chatId = buff.ReadInt64(true);
-        buff.Skip(4); _call  =  factory . Read < GroupCall > ( ref  buff ) ; 
+        _call = (GroupCall)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

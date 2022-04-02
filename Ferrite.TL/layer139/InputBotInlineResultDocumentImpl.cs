@@ -157,8 +157,8 @@ public class InputBotInlineResultDocumentImpl : InputBotInlineResult
             _description = buff.ReadTLString();
         }
 
-        buff.Skip(4); _document  =  factory . Read < InputDocument > ( ref  buff ) ; 
-        buff.Skip(4); _sendMessage  =  factory . Read < InputBotInlineMessage > ( ref  buff ) ; 
+        _document = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
+        _sendMessage = (InputBotInlineMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

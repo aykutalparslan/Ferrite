@@ -80,7 +80,7 @@ public class SendVerifyPhoneCode : ITLObject, ITLMethod
     {
         serialized = false;
         _phoneNumber = buff.ReadTLString();
-        buff.Skip(4); _settings  =  factory . Read < CodeSettings > ( ref  buff ) ; 
+        _settings = (CodeSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

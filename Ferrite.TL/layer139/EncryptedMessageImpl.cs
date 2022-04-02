@@ -114,7 +114,7 @@ public class EncryptedMessageImpl : EncryptedMessage
         _chatId = buff.ReadInt32(true);
         _date = buff.ReadInt32(true);
         _bytes = buff.ReadTLBytes().ToArray();
-        buff.Skip(4); _file  =  factory . Read < EncryptedFile > ( ref  buff ) ; 
+        _file = (EncryptedFile)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

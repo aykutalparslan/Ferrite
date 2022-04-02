@@ -148,8 +148,8 @@ public class GetExportedChatInvites : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
-        buff.Skip(4); _adminId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _adminId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
             _offsetDate = buff.ReadInt32(true);

@@ -79,8 +79,8 @@ public class EditChatDefaultBannedRights : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
-        buff.Skip(4); _bannedRights  =  factory . Read < ChatBannedRights > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _bannedRights = (ChatBannedRights)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

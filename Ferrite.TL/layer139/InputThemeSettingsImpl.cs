@@ -165,7 +165,7 @@ public class InputThemeSettingsImpl : InputThemeSettings
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _baseTheme  =  factory . Read < BaseTheme > ( ref  buff ) ; 
+        _baseTheme = (BaseTheme)factory.Read(buff.ReadInt32(true), ref buff);
         _accentColor = buff.ReadInt32(true);
         if (_flags[3])
         {
@@ -180,14 +180,12 @@ public class InputThemeSettingsImpl : InputThemeSettings
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _wallpaper = factory.Read<InputWallPaper>(ref buff);
+            _wallpaper = (InputWallPaper)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _wallpaperSettings = factory.Read<WallPaperSettings>(ref buff);
+            _wallpaperSettings = (WallPaperSettings)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

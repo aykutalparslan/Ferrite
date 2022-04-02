@@ -148,8 +148,7 @@ public class PaymentRequestedInfoImpl : PaymentRequestedInfo
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _shippingAddress = factory.Read<PostAddress>(ref buff);
+            _shippingAddress = (PostAddress)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

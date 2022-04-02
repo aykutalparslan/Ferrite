@@ -67,7 +67,7 @@ public class RemoveStickerFromSet : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _sticker  =  factory . Read < InputDocument > ( ref  buff ) ; 
+        _sticker = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

@@ -440,14 +440,12 @@ public class UserImpl : User
 
         if (_flags[5])
         {
-            buff.Skip(4);
-            _photo = factory.Read<UserProfilePhoto>(ref buff);
+            _photo = (UserProfilePhoto)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[6])
         {
-            buff.Skip(4);
-            _status = factory.Read<UserStatus>(ref buff);
+            _status = (UserStatus)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[14])

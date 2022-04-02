@@ -116,7 +116,7 @@ public class InputSingleMediaImpl : InputSingleMedia
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _media  =  factory . Read < InputMedia > ( ref  buff ) ; 
+        _media = (InputMedia)factory.Read(buff.ReadInt32(true), ref buff);
         _randomId = buff.ReadInt64(true);
         _message = buff.ReadTLString();
         if (_flags[0])

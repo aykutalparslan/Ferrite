@@ -141,14 +141,14 @@ public class JoinGroupCall : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _call  =  factory . Read < InputGroupCall > ( ref  buff ) ; 
-        buff.Skip(4); _joinAs  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
+        _joinAs = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[1])
         {
             _inviteHash = buff.ReadTLString();
         }
 
-        buff.Skip(4); _params  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _params = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

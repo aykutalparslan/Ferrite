@@ -105,7 +105,7 @@ public class SecureRequiredTypeImpl : SecureRequiredType
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _type  =  factory . Read < SecureValueType > ( ref  buff ) ; 
+        _type = (SecureValueType)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

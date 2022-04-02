@@ -106,7 +106,7 @@ public class SendCode : ITLObject, ITLMethod
         _phoneNumber = buff.ReadTLString();
         _apiId = buff.ReadInt32(true);
         _apiHash = buff.ReadTLString();
-        buff.Skip(4); _settings  =  factory . Read < CodeSettings > ( ref  buff ) ; 
+        _settings = (CodeSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

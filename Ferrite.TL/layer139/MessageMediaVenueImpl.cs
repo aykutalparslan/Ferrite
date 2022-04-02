@@ -122,7 +122,7 @@ public class MessageMediaVenueImpl : MessageMedia
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _geo  =  factory . Read < GeoPoint > ( ref  buff ) ; 
+        _geo = (GeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _title = buff.ReadTLString();
         _address = buff.ReadTLString();
         _provider = buff.ReadTLString();

@@ -74,7 +74,7 @@ public class UpdateDeleteScheduledMessagesImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _messages  =  factory . Read < VectorOfInt > ( ref  buff ) ; 
     }
 

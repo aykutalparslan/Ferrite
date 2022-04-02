@@ -92,7 +92,7 @@ public class SearchSentMedia : ITLObject, ITLMethod
     {
         serialized = false;
         _q = buff.ReadTLString();
-        buff.Skip(4); _filter  =  factory . Read < MessagesFilter > ( ref  buff ) ; 
+        _filter = (MessagesFilter)factory.Read(buff.ReadInt32(true), ref buff);
         _limit = buff.ReadInt32(true);
     }
 

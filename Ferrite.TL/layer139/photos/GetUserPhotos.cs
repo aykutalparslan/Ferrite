@@ -103,7 +103,7 @@ public class GetUserPhotos : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
         _offset = buff.ReadInt32(true);
         _maxId = buff.ReadInt64(true);
         _limit = buff.ReadInt32(true);

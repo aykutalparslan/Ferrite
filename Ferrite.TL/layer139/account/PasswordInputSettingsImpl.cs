@@ -150,8 +150,7 @@ public class PasswordInputSettingsImpl : PasswordInputSettings
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _newAlgo = factory.Read<PasswordKdfAlgo>(ref buff);
+            _newAlgo = (PasswordKdfAlgo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[0])
@@ -171,8 +170,7 @@ public class PasswordInputSettingsImpl : PasswordInputSettings
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _newSecureSettings = factory.Read<SecureSecretSettings>(ref buff);
+            _newSecureSettings = (SecureSecretSettings)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

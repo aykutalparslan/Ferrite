@@ -101,7 +101,7 @@ public class InputAppEventImpl : InputAppEvent
         _time = buff.ReadInt64(true);
         _type = buff.ReadTLString();
         _peer = buff.ReadInt64(true);
-        buff.Skip(4); _data  =  factory . Read < JSONValue > ( ref  buff ) ; 
+        _data = (JSONValue)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

@@ -74,7 +74,7 @@ public class ChatInvitePeekImpl : ChatInvite
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _chat  =  factory . Read < Chat > ( ref  buff ) ; 
+        _chat = (Chat)factory.Read(buff.ReadInt32(true), ref buff);
         _expires = buff.ReadInt32(true);
     }
 

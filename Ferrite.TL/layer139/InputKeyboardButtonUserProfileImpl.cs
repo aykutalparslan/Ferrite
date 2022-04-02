@@ -75,7 +75,7 @@ public class InputKeyboardButtonUserProfileImpl : KeyboardButton
     {
         serialized = false;
         _text = buff.ReadTLString();
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

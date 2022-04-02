@@ -337,18 +337,16 @@ public class ChatFullImpl : ChatFull
         _flags = buff.Read<Flags>();
         _id = buff.ReadInt64(true);
         _about = buff.ReadTLString();
-        buff.Skip(4); _participants  =  factory . Read < ChatParticipants > ( ref  buff ) ; 
+        _participants = (ChatParticipants)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
-            buff.Skip(4);
-            _chatPhoto = factory.Read<Photo>(ref buff);
+            _chatPhoto = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _notifySettings  =  factory . Read < PeerNotifySettings > ( ref  buff ) ; 
+        _notifySettings = (PeerNotifySettings)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[13])
         {
-            buff.Skip(4);
-            _exportedInvite = factory.Read<ExportedChatInvite>(ref buff);
+            _exportedInvite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])
@@ -369,8 +367,7 @@ public class ChatFullImpl : ChatFull
 
         if (_flags[12])
         {
-            buff.Skip(4);
-            _call = factory.Read<InputGroupCall>(ref buff);
+            _call = (InputGroupCall)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[14])
@@ -380,8 +377,7 @@ public class ChatFullImpl : ChatFull
 
         if (_flags[15])
         {
-            buff.Skip(4);
-            _groupcallDefaultJoinAs = factory.Read<Peer>(ref buff);
+            _groupcallDefaultJoinAs = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[16])

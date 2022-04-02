@@ -74,7 +74,7 @@ public class ChannelAdminLogEventActionParticipantJoinByRequestImpl : ChannelAdm
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _invite  =  factory . Read < ExportedChatInvite > ( ref  buff ) ; 
+        _invite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         _approvedBy = buff.ReadInt64(true);
     }
 

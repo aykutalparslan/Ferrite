@@ -62,7 +62,7 @@ public class MessageMediaWebPageImpl : MessageMedia
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _webpage  =  factory . Read < WebPage > ( ref  buff ) ; 
+        _webpage = (WebPage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

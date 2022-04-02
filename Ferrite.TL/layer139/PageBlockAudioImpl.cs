@@ -75,7 +75,7 @@ public class PageBlockAudioImpl : PageBlock
     {
         serialized = false;
         _audioId = buff.ReadInt64(true);
-        buff.Skip(4); _caption  =  factory . Read < PageCaption > ( ref  buff ) ; 
+        _caption = (PageCaption)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

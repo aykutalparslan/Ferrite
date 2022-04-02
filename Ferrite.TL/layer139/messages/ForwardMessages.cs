@@ -210,10 +210,10 @@ public class ForwardMessages : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _fromPeer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _fromPeer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _id  =  factory . Read < VectorOfInt > ( ref  buff ) ; 
         buff.Skip(4); _randomId  =  factory . Read < VectorOfLong > ( ref  buff ) ; 
-        buff.Skip(4); _toPeer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _toPeer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[10])
         {
             _scheduleDate = buff.ReadInt32(true);
@@ -221,8 +221,7 @@ public class ForwardMessages : ITLObject, ITLMethod
 
         if (_flags[13])
         {
-            buff.Skip(4);
-            _sendAs = factory.Read<InputPeer>(ref buff);
+            _sendAs = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

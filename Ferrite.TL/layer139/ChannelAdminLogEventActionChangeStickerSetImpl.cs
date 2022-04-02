@@ -74,8 +74,8 @@ public class ChannelAdminLogEventActionChangeStickerSetImpl : ChannelAdminLogEve
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _prevStickerset  =  factory . Read < InputStickerSet > ( ref  buff ) ; 
-        buff.Skip(4); _newStickerset  =  factory . Read < InputStickerSet > ( ref  buff ) ; 
+        _prevStickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
+        _newStickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

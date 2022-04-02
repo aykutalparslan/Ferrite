@@ -166,8 +166,7 @@ public class PageTableCellImpl : PageTableCell
         _flags = buff.Read<Flags>();
         if (_flags[7])
         {
-            buff.Skip(4);
-            _text = factory.Read<RichText>(ref buff);
+            _text = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])

@@ -233,8 +233,7 @@ public class PasswordImpl : Password
         _flags = buff.Read<Flags>();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _currentAlgo = factory.Read<PasswordKdfAlgo>(ref buff);
+            _currentAlgo = (PasswordKdfAlgo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
@@ -257,8 +256,8 @@ public class PasswordImpl : Password
             _emailUnconfirmedPattern = buff.ReadTLString();
         }
 
-        buff.Skip(4); _newAlgo  =  factory . Read < PasswordKdfAlgo > ( ref  buff ) ; 
-        buff.Skip(4); _newSecureAlgo  =  factory . Read < SecurePasswordKdfAlgo > ( ref  buff ) ; 
+        _newAlgo = (PasswordKdfAlgo)factory.Read(buff.ReadInt32(true), ref buff);
+        _newSecureAlgo = (SecurePasswordKdfAlgo)factory.Read(buff.ReadInt32(true), ref buff);
         _secureRandom = buff.ReadTLBytes().ToArray();
         if (_flags[5])
         {

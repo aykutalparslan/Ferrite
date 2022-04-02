@@ -75,7 +75,7 @@ public class PageListOrderedItemTextImpl : PageListOrderedItem
     {
         serialized = false;
         _num = buff.ReadTLString();
-        buff.Skip(4); _text  =  factory . Read < RichText > ( ref  buff ) ; 
+        _text = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

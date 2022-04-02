@@ -147,7 +147,7 @@ public class UpdateInlineBotCallbackQueryImpl : Update
         _flags = buff.Read<Flags>();
         _queryId = buff.ReadInt64(true);
         _userId = buff.ReadInt64(true);
-        buff.Skip(4); _msgId  =  factory . Read < InputBotInlineMessageID > ( ref  buff ) ; 
+        _msgId = (InputBotInlineMessageID)factory.Read(buff.ReadInt32(true), ref buff);
         _chatInstance = buff.ReadInt64(true);
         if (_flags[0])
         {

@@ -187,11 +187,11 @@ public class SearchGlobal : ITLObject, ITLMethod
         }
 
         _q = buff.ReadTLString();
-        buff.Skip(4); _filter  =  factory . Read < MessagesFilter > ( ref  buff ) ; 
+        _filter = (MessagesFilter)factory.Read(buff.ReadInt32(true), ref buff);
         _minDate = buff.ReadInt32(true);
         _maxDate = buff.ReadInt32(true);
         _offsetRate = buff.ReadInt32(true);
-        buff.Skip(4); _offsetPeer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _offsetPeer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _offsetId = buff.ReadInt32(true);
         _limit = buff.ReadInt32(true);
     }

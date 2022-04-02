@@ -85,7 +85,7 @@ public class UpdateGroupCallConnectionImpl : Update
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _params  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _params = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

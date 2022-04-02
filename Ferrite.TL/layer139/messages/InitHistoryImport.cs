@@ -91,8 +91,8 @@ public class InitHistoryImport : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
-        buff.Skip(4); _file  =  factory . Read < InputFile > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _file = (InputFile)factory.Read(buff.ReadInt32(true), ref buff);
         _mediaCount = buff.ReadInt32(true);
     }
 

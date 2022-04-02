@@ -151,7 +151,7 @@ public class ExportChatInvite : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _expireDate = buff.ReadInt32(true);

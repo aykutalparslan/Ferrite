@@ -97,7 +97,7 @@ public class InputPeerPhotoFileLocationImpl : InputFileLocation
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _photoId = buff.ReadInt64(true);
     }
 

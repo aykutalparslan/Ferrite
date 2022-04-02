@@ -178,8 +178,7 @@ public class UpdateShortSentMessageImpl : Updates
         _date = buff.ReadInt32(true);
         if (_flags[9])
         {
-            buff.Skip(4);
-            _media = factory.Read<MessageMedia>(ref buff);
+            _media = (MessageMedia)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[7])

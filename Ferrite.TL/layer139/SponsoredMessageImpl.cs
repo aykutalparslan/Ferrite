@@ -192,14 +192,12 @@ public class SponsoredMessageImpl : SponsoredMessage
         _randomId = buff.ReadTLBytes().ToArray();
         if (_flags[3])
         {
-            buff.Skip(4);
-            _fromId = factory.Read<Peer>(ref buff);
+            _fromId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[4])
         {
-            buff.Skip(4);
-            _chatInvite = factory.Read<ChatInvite>(ref buff);
+            _chatInvite = (ChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[4])

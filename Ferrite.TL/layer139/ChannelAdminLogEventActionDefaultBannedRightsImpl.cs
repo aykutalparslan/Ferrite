@@ -74,8 +74,8 @@ public class ChannelAdminLogEventActionDefaultBannedRightsImpl : ChannelAdminLog
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _prevBannedRights  =  factory . Read < ChatBannedRights > ( ref  buff ) ; 
-        buff.Skip(4); _newBannedRights  =  factory . Read < ChatBannedRights > ( ref  buff ) ; 
+        _prevBannedRights = (ChatBannedRights)factory.Read(buff.ReadInt32(true), ref buff);
+        _newBannedRights = (ChatBannedRights)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

@@ -103,9 +103,9 @@ public class ReportProfilePhoto : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
-        buff.Skip(4); _photoId  =  factory . Read < InputPhoto > ( ref  buff ) ; 
-        buff.Skip(4); _reason  =  factory . Read < ReportReason > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _photoId = (InputPhoto)factory.Read(buff.ReadInt32(true), ref buff);
+        _reason = (ReportReason)factory.Read(buff.ReadInt32(true), ref buff);
         _message = buff.ReadTLString();
     }
 

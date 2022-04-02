@@ -62,7 +62,7 @@ public class InputStickeredMediaDocumentImpl : InputStickeredMedia
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _id  =  factory . Read < InputDocument > ( ref  buff ) ; 
+        _id = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

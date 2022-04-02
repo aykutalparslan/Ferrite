@@ -187,7 +187,7 @@ public class EditMessage : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         _id = buff.ReadInt32(true);
         if (_flags[11])
         {
@@ -196,14 +196,12 @@ public class EditMessage : ITLObject, ITLMethod
 
         if (_flags[14])
         {
-            buff.Skip(4);
-            _media = factory.Read<InputMedia>(ref buff);
+            _media = (InputMedia)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])

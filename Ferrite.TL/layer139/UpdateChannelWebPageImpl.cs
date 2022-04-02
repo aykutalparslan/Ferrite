@@ -99,7 +99,7 @@ public class UpdateChannelWebPageImpl : Update
     {
         serialized = false;
         _channelId = buff.ReadInt64(true);
-        buff.Skip(4); _webpage  =  factory . Read < WebPage > ( ref  buff ) ; 
+        _webpage = (WebPage)factory.Read(buff.ReadInt32(true), ref buff);
         _pts = buff.ReadInt32(true);
         _ptsCount = buff.ReadInt32(true);
     }

@@ -74,8 +74,8 @@ public class UpdateNotifySettingsImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < NotifyPeer > ( ref  buff ) ; 
-        buff.Skip(4); _notifySettings  =  factory . Read < PeerNotifySettings > ( ref  buff ) ; 
+        _peer = (NotifyPeer)factory.Read(buff.ReadInt32(true), ref buff);
+        _notifySettings = (PeerNotifySettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

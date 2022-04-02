@@ -375,8 +375,7 @@ public class WebPageImpl : WebPage
 
         if (_flags[4])
         {
-            buff.Skip(4);
-            _photo = factory.Read<Photo>(ref buff);
+            _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[5])
@@ -411,14 +410,12 @@ public class WebPageImpl : WebPage
 
         if (_flags[9])
         {
-            buff.Skip(4);
-            _document = factory.Read<Document>(ref buff);
+            _document = (Document)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[10])
         {
-            buff.Skip(4);
-            _cachedPage = factory.Read<Page>(ref buff);
+            _cachedPage = (Page)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[12])

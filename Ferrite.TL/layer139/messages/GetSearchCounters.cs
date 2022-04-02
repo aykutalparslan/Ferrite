@@ -79,7 +79,7 @@ public class GetSearchCounters : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _filters  =  factory . Read < Vector < MessagesFilter > > ( ref  buff ) ; 
     }
 

@@ -133,12 +133,11 @@ public class GetInlineBotResults : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _bot  =  factory . Read < InputUser > ( ref  buff ) ; 
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _bot = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _geoPoint = factory.Read<InputGeoPoint>(ref buff);
+            _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _query = buff.ReadTLString();

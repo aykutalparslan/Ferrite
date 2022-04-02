@@ -133,7 +133,7 @@ public class InputKeyboardButtonUrlAuthImpl : KeyboardButton
         }
 
         _url = buff.ReadTLString();
-        buff.Skip(4); _bot  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _bot = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

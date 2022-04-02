@@ -270,6 +270,7 @@ public class MTProtoConnection
         var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)reader.RemainingSequence.Length);
         var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
         reader.Read(messageSpan);
+        aesIge.Decrypt(messageSpan);
         var messageKeyActual = AesIge.GenerateMessageKey(_authKey, messageSpan, true);
         if (!messageKey.SequenceEqual(messageKeyActual))
         {
@@ -277,25 +278,29 @@ public class MTProtoConnection
             _log.Fatal(ex, ex.Message);
             throw ex;
         }
-        aesIge.Decrypt(messageSpan);
         SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
-        var header = rd.Read<InternalMessageHeader>();
-        
-        if (header.MessageId < MTProtoTime.Instance.ThirtySecondsLater &&
+        long salt = rd.ReadInt64(true);
+        long sessionId = rd.ReadInt64(true);
+        long msgId = rd.ReadInt64(true);
+        int seqNo = rd.ReadInt32(true);
+        int messageDataLength = rd.ReadInt32(true);
+        int constructor = rd.ReadInt32(true);
+
+        if (msgId < MTProtoTime.Instance.ThirtySecondsLater &&
             //msg_id values that belong over 30 seconds in the future
-            header.MessageId > MTProtoTime.Instance.FiveMinutesAgo &&
+            msgId > MTProtoTime.Instance.FiveMinutesAgo &&
             //or over 300 seconds in the past are to be ignored
-            header.MessageId % 2 == 0 && //must have even parity
-            !_lastMessageIds.Contains(header.MessageId) && //must not be equal to any
-            header.MessageId > _lastMessageIds.Min()) //must not be lower than all
+            msgId % 2 == 0 && //must have even parity
+            (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(msgId) && //must not be equal to any
+            msgId > _lastMessageIds.Min()))) //must not be lower than all
         {
-            _lastMessageIds.Enqueue(header.MessageId);
+            _lastMessageIds.Enqueue(msgId);
 
             try
             {
-                var msg = factory.Read(header.Constructor, ref rd);
+                var msg = factory.Read(constructor, ref rd);
                 messageData.Dispose();
-                OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId: header.MessageId));
+                OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId: msgId));
             }
             catch (Exception ex)
             {
@@ -340,7 +345,7 @@ public class MTProtoConnection
 
     private long GenerateMessageId(bool response)
     {
-        long id = (long)new TimeSpan(DateTime.Now.Ticks).TotalSeconds;
+        long id = DateTimeOffset.Now.ToUnixTimeSeconds();
         id *= 4294967296L;
         if (id <= _lastMessageId)
         {

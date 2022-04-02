@@ -313,18 +313,16 @@ public class UserFullImpl : UserFull
             _about = buff.ReadTLString();
         }
 
-        buff.Skip(4); _settings  =  factory . Read < PeerSettings > ( ref  buff ) ; 
+        _settings = (PeerSettings)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[2])
         {
-            buff.Skip(4);
-            _profilePhoto = factory.Read<Photo>(ref buff);
+            _profilePhoto = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _notifySettings  =  factory . Read < PeerNotifySettings > ( ref  buff ) ; 
+        _notifySettings = (PeerNotifySettings)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[3])
         {
-            buff.Skip(4);
-            _botInfo = factory.Read<BotInfo>(ref buff);
+            _botInfo = (BotInfo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[6])

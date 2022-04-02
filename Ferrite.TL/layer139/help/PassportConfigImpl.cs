@@ -75,7 +75,7 @@ public class PassportConfigImpl : PassportConfig
     {
         serialized = false;
         _hash = buff.ReadInt32(true);
-        buff.Skip(4); _countriesLangs  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _countriesLangs = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

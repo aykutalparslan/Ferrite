@@ -86,7 +86,7 @@ public class ChannelParticipantImpl : ChannelParticipant
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _participant  =  factory . Read < ChannelParticipant > ( ref  buff ) ; 
+        _participant = (ChannelParticipant)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
     }

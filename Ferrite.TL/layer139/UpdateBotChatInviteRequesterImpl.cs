@@ -122,11 +122,11 @@ public class UpdateBotChatInviteRequesterImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _date = buff.ReadInt32(true);
         _userId = buff.ReadInt64(true);
         _about = buff.ReadTLString();
-        buff.Skip(4); _invite  =  factory . Read < ExportedChatInvite > ( ref  buff ) ; 
+        _invite = (ExportedChatInvite)factory.Read(buff.ReadInt32(true), ref buff);
         _qts = buff.ReadInt32(true);
     }
 

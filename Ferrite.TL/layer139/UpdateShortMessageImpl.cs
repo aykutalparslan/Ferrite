@@ -268,8 +268,7 @@ public class UpdateShortMessageImpl : Updates
         _date = buff.ReadInt32(true);
         if (_flags[2])
         {
-            buff.Skip(4);
-            _fwdFrom = factory.Read<MessageFwdHeader>(ref buff);
+            _fwdFrom = (MessageFwdHeader)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[11])
@@ -279,8 +278,7 @@ public class UpdateShortMessageImpl : Updates
 
         if (_flags[3])
         {
-            buff.Skip(4);
-            _replyTo = factory.Read<MessageReplyHeader>(ref buff);
+            _replyTo = (MessageReplyHeader)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[7])

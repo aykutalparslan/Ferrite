@@ -115,11 +115,10 @@ public class DocumentAttributeStickerImpl : DocumentAttribute
         serialized = false;
         _flags = buff.Read<Flags>();
         _alt = buff.ReadTLString();
-        buff.Skip(4); _stickerset  =  factory . Read < InputStickerSet > ( ref  buff ) ; 
+        _stickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _maskCoords = factory.Read<MaskCoords>(ref buff);
+            _maskCoords = (MaskCoords)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

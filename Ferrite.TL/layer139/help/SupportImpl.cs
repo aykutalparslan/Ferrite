@@ -75,7 +75,7 @@ public class SupportImpl : Support
     {
         serialized = false;
         _phoneNumber = buff.ReadTLString();
-        buff.Skip(4); _user  =  factory . Read < User > ( ref  buff ) ; 
+        _user = (User)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

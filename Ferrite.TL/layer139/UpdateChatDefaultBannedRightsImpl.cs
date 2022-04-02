@@ -86,8 +86,8 @@ public class UpdateChatDefaultBannedRightsImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
-        buff.Skip(4); _defaultBannedRights  =  factory . Read < ChatBannedRights > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
+        _defaultBannedRights = (ChatBannedRights)factory.Read(buff.ReadInt32(true), ref buff);
         _version = buff.ReadInt32(true);
     }
 

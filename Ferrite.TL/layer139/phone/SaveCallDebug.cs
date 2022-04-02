@@ -79,8 +79,8 @@ public class SaveCallDebug : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPhoneCall > ( ref  buff ) ; 
-        buff.Skip(4); _debug  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _peer = (InputPhoneCall)factory.Read(buff.ReadInt32(true), ref buff);
+        _debug = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

@@ -92,7 +92,7 @@ public class StatsGraphImpl : StatsGraph
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _json  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _json = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _zoomToken = buff.ReadTLString();

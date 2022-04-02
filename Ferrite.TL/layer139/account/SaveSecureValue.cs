@@ -79,7 +79,7 @@ public class SaveSecureValue : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _value  =  factory . Read < InputSecureValue > ( ref  buff ) ; 
+        _value = (InputSecureValue)factory.Read(buff.ReadInt32(true), ref buff);
         _secureSecretId = buff.ReadInt64(true);
     }
 

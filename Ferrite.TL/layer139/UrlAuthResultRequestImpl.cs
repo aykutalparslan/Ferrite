@@ -97,7 +97,7 @@ public class UrlAuthResultRequestImpl : UrlAuthResult
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _bot  =  factory . Read < User > ( ref  buff ) ; 
+        _bot = (User)factory.Read(buff.ReadInt32(true), ref buff);
         _domain = buff.ReadTLString();
     }
 

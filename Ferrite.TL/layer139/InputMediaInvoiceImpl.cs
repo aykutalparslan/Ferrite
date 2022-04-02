@@ -173,14 +173,13 @@ public class InputMediaInvoiceImpl : InputMedia
         _description = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _photo = factory.Read<InputWebDocument>(ref buff);
+            _photo = (InputWebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _invoice  =  factory . Read < Invoice > ( ref  buff ) ; 
+        _invoice = (Invoice)factory.Read(buff.ReadInt32(true), ref buff);
         _payload = buff.ReadTLBytes().ToArray();
         _provider = buff.ReadTLString();
-        buff.Skip(4); _providerData  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _providerData = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[1])
         {
             _startParam = buff.ReadTLString();

@@ -109,13 +109,13 @@ public class SetTyping : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _topMsgId = buff.ReadInt32(true);
         }
 
-        buff.Skip(4); _action  =  factory . Read < SendMessageAction > ( ref  buff ) ; 
+        _action = (SendMessageAction)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

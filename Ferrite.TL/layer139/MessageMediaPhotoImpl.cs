@@ -99,8 +99,7 @@ public class MessageMediaPhotoImpl : MessageMedia
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _photo = factory.Read<Photo>(ref buff);
+            _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])

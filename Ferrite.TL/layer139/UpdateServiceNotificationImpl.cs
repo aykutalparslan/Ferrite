@@ -145,7 +145,7 @@ public class UpdateServiceNotificationImpl : Update
 
         _type = buff.ReadTLString();
         _message = buff.ReadTLString();
-        buff.Skip(4); _media  =  factory . Read < MessageMedia > ( ref  buff ) ; 
+        _media = (MessageMedia)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _entities  =  factory . Read < Vector < MessageEntity > > ( ref  buff ) ; 
     }
 

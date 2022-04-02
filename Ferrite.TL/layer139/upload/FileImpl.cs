@@ -86,7 +86,7 @@ public class FileImpl : File
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _type  =  factory . Read < storage . FileType > ( ref  buff ) ; 
+        _type = (storage.FileType)factory.Read(buff.ReadInt32(true), ref buff);
         _mtime = buff.ReadInt32(true);
         _bytes = buff.ReadTLBytes().ToArray();
     }

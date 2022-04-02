@@ -74,7 +74,7 @@ public class UpdateShortImpl : Updates
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _update  =  factory . Read < Update > ( ref  buff ) ; 
+        _update = (Update)factory.Read(buff.ReadInt32(true), ref buff);
         _date = buff.ReadInt32(true);
     }
 

@@ -75,7 +75,7 @@ public class RecentMeUrlStickerSetImpl : RecentMeUrl
     {
         serialized = false;
         _url = buff.ReadTLString();
-        buff.Skip(4); _set  =  factory . Read < StickerSetCovered > ( ref  buff ) ; 
+        _set = (StickerSetCovered)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

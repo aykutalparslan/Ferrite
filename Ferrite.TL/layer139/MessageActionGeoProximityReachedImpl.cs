@@ -86,8 +86,8 @@ public class MessageActionGeoProximityReachedImpl : MessageAction
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _fromId  =  factory . Read < Peer > ( ref  buff ) ; 
-        buff.Skip(4); _toId  =  factory . Read < Peer > ( ref  buff ) ; 
+        _fromId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
+        _toId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _distance = buff.ReadInt32(true);
     }
 

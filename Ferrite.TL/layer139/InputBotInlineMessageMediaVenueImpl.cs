@@ -152,7 +152,7 @@ public class InputBotInlineMessageMediaVenueImpl : InputBotInlineMessage
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _geoPoint  =  factory . Read < InputGeoPoint > ( ref  buff ) ; 
+        _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _title = buff.ReadTLString();
         _address = buff.ReadTLString();
         _provider = buff.ReadTLString();
@@ -160,8 +160,7 @@ public class InputBotInlineMessageMediaVenueImpl : InputBotInlineMessage
         _venueType = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

@@ -87,8 +87,8 @@ public class UpdateChatUserTypingImpl : Update
     {
         serialized = false;
         _chatId = buff.ReadInt64(true);
-        buff.Skip(4); _fromId  =  factory . Read < Peer > ( ref  buff ) ; 
-        buff.Skip(4); _action  =  factory . Read < SendMessageAction > ( ref  buff ) ; 
+        _fromId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
+        _action = (SendMessageAction)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

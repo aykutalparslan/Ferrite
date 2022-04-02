@@ -143,7 +143,7 @@ public class BotInlineMessageMediaGeoImpl : BotInlineMessage
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _geo  =  factory . Read < GeoPoint > ( ref  buff ) ; 
+        _geo = (GeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _heading = buff.ReadInt32(true);
@@ -161,8 +161,7 @@ public class BotInlineMessageMediaGeoImpl : BotInlineMessage
 
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

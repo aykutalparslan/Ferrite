@@ -74,8 +74,8 @@ public class ChannelAdminLogEventActionParticipantToggleAdminImpl : ChannelAdmin
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _prevParticipant  =  factory . Read < ChannelParticipant > ( ref  buff ) ; 
-        buff.Skip(4); _newParticipant  =  factory . Read < ChannelParticipant > ( ref  buff ) ; 
+        _prevParticipant = (ChannelParticipant)factory.Read(buff.ReadInt32(true), ref buff);
+        _newParticipant = (ChannelParticipant)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

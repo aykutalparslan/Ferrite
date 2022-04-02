@@ -203,17 +203,15 @@ public class BotInlineResultImpl : BotInlineResult
 
         if (_flags[4])
         {
-            buff.Skip(4);
-            _thumb = factory.Read<WebDocument>(ref buff);
+            _thumb = (WebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[5])
         {
-            buff.Skip(4);
-            _content = factory.Read<WebDocument>(ref buff);
+            _content = (WebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _sendMessage  =  factory . Read < BotInlineMessage > ( ref  buff ) ; 
+        _sendMessage = (BotInlineMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

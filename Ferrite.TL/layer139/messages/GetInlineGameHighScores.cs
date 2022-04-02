@@ -79,8 +79,8 @@ public class GetInlineGameHighScores : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _id  =  factory . Read < InputBotInlineMessageID > ( ref  buff ) ; 
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _id = (InputBotInlineMessageID)factory.Read(buff.ReadInt32(true), ref buff);
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

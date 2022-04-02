@@ -124,7 +124,7 @@ public class GetFile : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _location  =  factory . Read < InputFileLocation > ( ref  buff ) ; 
+        _location = (InputFileLocation)factory.Read(buff.ReadInt32(true), ref buff);
         _offset = buff.ReadInt32(true);
         _limit = buff.ReadInt32(true);
     }

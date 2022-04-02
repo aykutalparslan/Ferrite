@@ -95,8 +95,7 @@ public class UpdateDialogFilterImpl : Update
         _id = buff.ReadInt32(true);
         if (_flags[0])
         {
-            buff.Skip(4);
-            _filter = factory.Read<DialogFilter>(ref buff);
+            _filter = (DialogFilter)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

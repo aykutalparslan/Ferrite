@@ -116,14 +116,12 @@ public class InputChatUploadedPhotoImpl : InputChatPhoto
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _file = factory.Read<InputFile>(ref buff);
+            _file = (InputFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _video = factory.Read<InputFile>(ref buff);
+            _video = (InputFile)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])

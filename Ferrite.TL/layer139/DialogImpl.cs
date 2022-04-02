@@ -230,14 +230,14 @@ public class DialogImpl : Dialog
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peer = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         _topMessage = buff.ReadInt32(true);
         _readInboxMaxId = buff.ReadInt32(true);
         _readOutboxMaxId = buff.ReadInt32(true);
         _unreadCount = buff.ReadInt32(true);
         _unreadMentionsCount = buff.ReadInt32(true);
         _unreadReactionsCount = buff.ReadInt32(true);
-        buff.Skip(4); _notifySettings  =  factory . Read < PeerNotifySettings > ( ref  buff ) ; 
+        _notifySettings = (PeerNotifySettings)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _pts = buff.ReadInt32(true);
@@ -245,8 +245,7 @@ public class DialogImpl : Dialog
 
         if (_flags[1])
         {
-            buff.Skip(4);
-            _draft = factory.Read<DraftMessage>(ref buff);
+            _draft = (DraftMessage)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[4])

@@ -74,8 +74,8 @@ public class ChannelAdminLogEventActionChangePhotoImpl : ChannelAdminLogEventAct
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _prevPhoto  =  factory . Read < Photo > ( ref  buff ) ; 
-        buff.Skip(4); _newPhoto  =  factory . Read < Photo > ( ref  buff ) ; 
+        _prevPhoto = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
+        _newPhoto = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

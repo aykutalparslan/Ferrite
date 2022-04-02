@@ -122,7 +122,7 @@ public class InputWebFileGeoPointLocationImpl : InputWebFileLocation
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _geoPoint  =  factory . Read < InputGeoPoint > ( ref  buff ) ; 
+        _geoPoint = (InputGeoPoint)factory.Read(buff.ReadInt32(true), ref buff);
         _accessHash = buff.ReadInt64(true);
         _w = buff.ReadInt32(true);
         _h = buff.ReadInt32(true);

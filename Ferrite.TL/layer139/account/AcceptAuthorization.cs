@@ -119,7 +119,7 @@ public class AcceptAuthorization : ITLObject, ITLMethod
         _scope = buff.ReadTLString();
         _publicKey = buff.ReadTLString();
         buff.Skip(4); _valueHashes  =  factory . Read < Vector < SecureValueHash > > ( ref  buff ) ; 
-        buff.Skip(4); _credentials  =  factory . Read < SecureCredentialsEncrypted > ( ref  buff ) ; 
+        _credentials = (SecureCredentialsEncrypted)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

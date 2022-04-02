@@ -79,8 +79,8 @@ public class InstallWallPaper : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _wallpaper  =  factory . Read < InputWallPaper > ( ref  buff ) ; 
-        buff.Skip(4); _settings  =  factory . Read < WallPaperSettings > ( ref  buff ) ; 
+        _wallpaper = (InputWallPaper)factory.Read(buff.ReadInt32(true), ref buff);
+        _settings = (WallPaperSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

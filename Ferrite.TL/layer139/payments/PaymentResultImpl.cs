@@ -62,7 +62,7 @@ public class PaymentResultImpl : PaymentResult
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _updates  =  factory . Read < Updates > ( ref  buff ) ; 
+        _updates = (Updates)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

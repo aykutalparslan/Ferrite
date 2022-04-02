@@ -140,7 +140,7 @@ public class PageBlockEmbedPostImpl : PageBlock
         _author = buff.ReadTLString();
         _date = buff.ReadInt32(true);
         buff.Skip(4); _blocks  =  factory . Read < Vector < PageBlock > > ( ref  buff ) ; 
-        buff.Skip(4); _caption  =  factory . Read < PageCaption > ( ref  buff ) ; 
+        _caption = (PageCaption)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

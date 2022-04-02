@@ -74,7 +74,7 @@ public class PageBlockRelatedArticlesImpl : PageBlock
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _title  =  factory . Read < RichText > ( ref  buff ) ; 
+        _title = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _articles  =  factory . Read < Vector < PageRelatedArticle > > ( ref  buff ) ; 
     }
 

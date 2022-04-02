@@ -104,12 +104,11 @@ public class InputStickerSetItemImpl : InputStickerSetItem
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _document  =  factory . Read < InputDocument > ( ref  buff ) ; 
+        _document = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         _emoji = buff.ReadTLString();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _maskCoords = factory.Read<MaskCoords>(ref buff);
+            _maskCoords = (MaskCoords)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

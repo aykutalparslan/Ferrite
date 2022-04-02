@@ -203,17 +203,15 @@ public class InputBotInlineResultImpl : InputBotInlineResult
 
         if (_flags[4])
         {
-            buff.Skip(4);
-            _thumb = factory.Read<InputWebDocument>(ref buff);
+            _thumb = (InputWebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[5])
         {
-            buff.Skip(4);
-            _content = factory.Read<InputWebDocument>(ref buff);
+            _content = (InputWebDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _sendMessage  =  factory . Read < InputBotInlineMessage > ( ref  buff ) ; 
+        _sendMessage = (InputBotInlineMessage)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

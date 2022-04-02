@@ -126,9 +126,9 @@ public class DiscardCall : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPhoneCall > ( ref  buff ) ; 
+        _peer = (InputPhoneCall)factory.Read(buff.ReadInt32(true), ref buff);
         _duration = buff.ReadInt32(true);
-        buff.Skip(4); _reason  =  factory . Read < PhoneCallDiscardReason > ( ref  buff ) ; 
+        _reason = (PhoneCallDiscardReason)factory.Read(buff.ReadInt32(true), ref buff);
         _connectionId = buff.ReadInt64(true);
     }
 

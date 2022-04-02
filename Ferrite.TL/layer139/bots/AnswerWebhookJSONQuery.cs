@@ -80,7 +80,7 @@ public class AnswerWebhookJSONQuery : ITLObject, ITLMethod
     {
         serialized = false;
         _queryId = buff.ReadInt64(true);
-        buff.Skip(4); _data  =  factory . Read < DataJSON > ( ref  buff ) ; 
+        _data = (DataJSON)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

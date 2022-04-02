@@ -225,19 +225,17 @@ public class MessageServiceImpl : Message
         _id = buff.ReadInt32(true);
         if (_flags[8])
         {
-            buff.Skip(4);
-            _fromId = factory.Read<Peer>(ref buff);
+            _fromId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
-        buff.Skip(4); _peerId  =  factory . Read < Peer > ( ref  buff ) ; 
+        _peerId = (Peer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[3])
         {
-            buff.Skip(4);
-            _replyTo = factory.Read<MessageReplyHeader>(ref buff);
+            _replyTo = (MessageReplyHeader)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _date = buff.ReadInt32(true);
-        buff.Skip(4); _action  =  factory . Read < MessageAction > ( ref  buff ) ; 
+        _action = (MessageAction)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[25])
         {
             _ttlPeriod = buff.ReadInt32(true);

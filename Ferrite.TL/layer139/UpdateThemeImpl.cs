@@ -62,7 +62,7 @@ public class UpdateThemeImpl : Update
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _theme  =  factory . Read < Theme > ( ref  buff ) ; 
+        _theme = (Theme)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

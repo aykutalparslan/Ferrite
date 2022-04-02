@@ -239,7 +239,7 @@ public class SendMessage : ITLObject, ITLMethod
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         if (_flags[0])
         {
             _replyToMsgId = buff.ReadInt32(true);
@@ -249,8 +249,7 @@ public class SendMessage : ITLObject, ITLMethod
         _randomId = buff.ReadInt64(true);
         if (_flags[2])
         {
-            buff.Skip(4);
-            _replyMarkup = factory.Read<ReplyMarkup>(ref buff);
+            _replyMarkup = (ReplyMarkup)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])
@@ -266,8 +265,7 @@ public class SendMessage : ITLObject, ITLMethod
 
         if (_flags[13])
         {
-            buff.Skip(4);
-            _sendAs = factory.Read<InputPeer>(ref buff);
+            _sendAs = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

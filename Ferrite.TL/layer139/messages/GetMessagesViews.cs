@@ -91,7 +91,7 @@ public class GetMessagesViews : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _peer  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _peer = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _id  =  factory . Read < VectorOfInt > ( ref  buff ) ; 
         _increment = Bool.Read(ref buff);
     }

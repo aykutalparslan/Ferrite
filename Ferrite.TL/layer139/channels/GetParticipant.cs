@@ -79,8 +79,8 @@ public class GetParticipant : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _channel  =  factory . Read < InputChannel > ( ref  buff ) ; 
-        buff.Skip(4); _participant  =  factory . Read < InputPeer > ( ref  buff ) ; 
+        _channel = (InputChannel)factory.Read(buff.ReadInt32(true), ref buff);
+        _participant = (InputPeer)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

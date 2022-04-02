@@ -121,12 +121,11 @@ public class SentCodeImpl : SentCode
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        buff.Skip(4); _type  =  factory . Read < auth . SentCodeType > ( ref  buff ) ; 
+        _type = (auth.SentCodeType)factory.Read(buff.ReadInt32(true), ref buff);
         _phoneCodeHash = buff.ReadTLString();
         if (_flags[1])
         {
-            buff.Skip(4);
-            _nextType = factory.Read<auth.CodeType>(ref buff);
+            _nextType = (auth.CodeType)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[2])

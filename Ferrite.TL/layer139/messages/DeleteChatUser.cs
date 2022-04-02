@@ -103,7 +103,7 @@ public class DeleteChatUser : ITLObject, ITLMethod
         serialized = false;
         _flags = buff.Read<Flags>();
         _chatId = buff.ReadInt64(true);
-        buff.Skip(4); _userId  =  factory . Read < InputUser > ( ref  buff ) ; 
+        _userId = (InputUser)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

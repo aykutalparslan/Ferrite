@@ -82,8 +82,7 @@ public class AuthorizationSignUpRequiredImpl : Authorization
         _flags = buff.Read<Flags>();
         if (_flags[0])
         {
-            buff.Skip(4);
-            _termsOfService = factory.Read<help.TermsOfService>(ref buff);
+            _termsOfService = (help.TermsOfService)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

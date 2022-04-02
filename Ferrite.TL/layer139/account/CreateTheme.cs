@@ -130,8 +130,7 @@ public class CreateTheme : ITLObject, ITLMethod
         _title = buff.ReadTLString();
         if (_flags[2])
         {
-            buff.Skip(4);
-            _document = factory.Read<InputDocument>(ref buff);
+            _document = (InputDocument)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         if (_flags[3])

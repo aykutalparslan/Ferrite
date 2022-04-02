@@ -86,7 +86,7 @@ public class TextUrlImpl : RichText
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _text  =  factory . Read < RichText > ( ref  buff ) ; 
+        _text = (RichText)factory.Read(buff.ReadInt32(true), ref buff);
         _url = buff.ReadTLString();
         _webpageId = buff.ReadInt64(true);
     }

@@ -67,7 +67,7 @@ public class SetGlobalPrivacySettings : ITLObject, ITLMethod
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _settings  =  factory . Read < GlobalPrivacySettings > ( ref  buff ) ; 
+        _settings = (GlobalPrivacySettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public void WriteTo(Span<byte> buff)
