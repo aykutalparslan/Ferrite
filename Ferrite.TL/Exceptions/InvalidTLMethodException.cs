@@ -17,11 +17,23 @@
  */
 
 using System;
-namespace Ferrite.TL
+namespace Ferrite.TL.Exceptions
 {
-    public class TLExecutionContext
+    public class InvalidTLMethodException : Exception
     {
-        public Dictionary<string, object> SessionData = new();
+        public InvalidTLMethodException()
+        {
+        }
+
+        public InvalidTLMethodException(string message)
+            : base(message)
+        {
+        }
+
+        public InvalidTLMethodException(string message, Exception inner)
+            : base(message, inner)
+        {
+        }
     }
 }
 

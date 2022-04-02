@@ -99,15 +99,15 @@ public class SetClientDhParams : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         bool failed = false;
-        var sessionNonce = (Int128)ctx.SessionBag["nonce"];
-        var sessionServerNonce = (Int128)ctx.SessionBag["server_nonce"];
+        var sessionNonce = (Int128)ctx.SessionData["nonce"];
+        var sessionServerNonce = (Int128)ctx.SessionData["server_nonce"];
         if (nonce != sessionNonce || serverNonce != sessionServerNonce)
         {
             failed = true;
         }
         Aes aes = Aes.Create();
-        aes.Key = (byte[])ctx.SessionBag["temp_aes_key"];
-        aes.DecryptIge(encryptedData, ((byte[])ctx.SessionBag["temp_aes_iv"]).ToArray());
+        aes.Key = (byte[])ctx.SessionData["temp_aes_key"];
+        aes.DecryptIge(encryptedData, ((byte[])ctx.SessionData["temp_aes_iv"]).ToArray());
         var sha1Received = encryptedData.AsSpan().Slice(0, 20).ToArray();
         var dataWithPadding = encryptedData.AsMemory().Slice(20);
         SequenceReader reader = IAsyncBinaryReader.Create(dataWithPadding);
@@ -125,16 +125,16 @@ public class SetClientDhParams : ITLObject, ITLMethod
             }
             BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
             BigInteger g_b = new BigInteger(clientDhInnerData.GB, true, true);
-            BigInteger g = new BigInteger((int)ctx.SessionBag["g"]);
-            BigInteger a = new BigInteger((byte[])ctx.SessionBag["a"],true,true);
+            BigInteger g = new BigInteger((int)ctx.SessionData["g"]);
+            BigInteger a = new BigInteger((byte[])ctx.SessionData["a"],true,true);
             var authKey = BigInteger.ModPow(g_b, a, prime).ToByteArray(true, true);
-            ctx.SessionBag.Add("auth_key", authKey);
+            ctx.SessionData.Add("auth_key", authKey);
             var authKeySHA1 = SHA1.HashData(authKey);
             var authKeyHash = MemoryMarshal.Cast<byte,long>(authKeySHA1.AsSpan().Slice(12))[0];
             var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
-            var newNonceHash1 = SHA1.HashData(((byte[])ctx.SessionBag["new_nonce"]).Concat(new byte[1] { 1 })
+            var newNonceHash1 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"]).Concat(new byte[1] { 1 })
                 .Concat(authKeyAuxHash).ToArray()).Skip(4).ToArray();
-            var newNonceHash3 = SHA1.HashData(((byte[])ctx.SessionBag["new_nonce"])
+            var newNonceHash3 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
                     .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
                     .Skip(4).ToArray();
             BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
@@ -161,7 +161,7 @@ public class SetClientDhParams : ITLObject, ITLMethod
             }
             else
             {
-                var newNonceHash2 = SHA1.HashData(((byte[])ctx.SessionBag["new_nonce"])
+                var newNonceHash2 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
                     .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
                     .Skip(4).ToArray();
                 var dhGenRetry = factory.Resolve<DhGenRetry>();

@@ -39,17 +39,79 @@ namespace Ferrite.Tests.pq;
 
 class MockDataStore : IPersistentStore
 {
-    public byte[] GetAuthKey(ReadOnlySpan<byte> authKeyId)
+    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         return RandomNumberGenerator.GetBytes(192);
     }
 
-    public void SaveAuthKey(ReadOnlySpan<byte> authKeyId, ReadOnlySpan<byte> authKey)
+    public Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
     {
-        
+        throw new NotImplementedException();
+    }
+
+    public async Task SaveAuthKeyAysnc(byte[] authKeyId, byte[] authKey)
+    {
+        throw new NotImplementedException();
     }
 }
 
+class MockRedis : IDistributedStore
+{
+    Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+    Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
+    public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
+    {
+        if (!authKeys.ContainsKey(authKeyId))
+        {
+            return null;
+        }
+        return authKeys[authKeyId];
+    }
+
+    public async Task<byte[]> GetSessionAsync(long sessionId)
+    {
+        if (!sessions.ContainsKey(sessionId))
+        {
+            return null;
+        }
+        return sessions[sessionId];
+    }
+
+    public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
+    {
+        authKeys.Add(authKeyId, authKey);
+        return true;
+    }
+
+    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)
+    {
+        sessions.Add(sessionId, sessionData);
+        return true;
+    }
+
+    public async Task<bool> RemoveSessionAsync(long sessionId)
+    {
+        sessions.Remove(sessionId);
+        return false;
+    }
+}
+class MockCassandra : IPersistentStore
+{
+    Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
+    {
+        if (!authKeys.ContainsKey(authKeyId))
+        {
+            return null;
+        }
+        return authKeys[authKeyId];
+    }
+
+    public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
+    {
+        authKeys.Add(authKeyId, authKey);
+    }
+}
 class MockRandomGenerator : IRandomGenerator
 {
     byte[] random = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
@@ -178,11 +240,11 @@ public class PqTests
         TLExecutionContext context = new TLExecutionContext();
         var respq = reqpq.ExecuteAsync(context);
 
-        Assert.Equal(0x494C553B, (int)context.SessionBag["p"]);
-        Assert.Equal(0x53911073, (int)context.SessionBag["q"]);
+        Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
+        Assert.Equal(0x53911073, (int)context.SessionData["q"]);
 
-        Assert.Equal(nonce, (Int128)context.SessionBag["nonce"]);
-        Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
+        Assert.Equal(nonce, (Int128)context.SessionData["nonce"]);
+        Assert.Equal(server_nonce, (Int128)context.SessionData["server_nonce"]);
     }
 
     [Fact]
@@ -207,16 +269,16 @@ public class PqTests
         TLExecutionContext context = new TLExecutionContext();
         var respq = reqpq.ExecuteAsync(context);
 
-        Assert.Equal(0x494C553B, (int)context.SessionBag["p"]);
-        Assert.Equal(0x53911073, (int)context.SessionBag["q"]);
+        Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
+        Assert.Equal(0x53911073, (int)context.SessionData["q"]);
 
-        Assert.Equal(nonce, (Int128)context.SessionBag["nonce"]);
-        Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
+        Assert.Equal(nonce, (Int128)context.SessionData["nonce"]);
+        Assert.Equal(server_nonce, (Int128)context.SessionData["server_nonce"]);
 
         var reqpqNew = container.Resolve<ReqPqMulti>();
         reqpqNew.Nonce = (Int128)nonce;
         var respqNew = reqpqNew.ExecuteAsync(context);
-        Assert.Equal(server_nonce, (Int128)context.SessionBag["server_nonce"]);
+        Assert.Equal(server_nonce, (Int128)context.SessionData["server_nonce"]);
     }
 
     private static IContainer BuildContainer()
@@ -231,8 +293,8 @@ public class PqTests
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
-        builder.RegisterType<KVDataStore>().As<IPersistentStore>();
+        builder.RegisterType<MockCassandra>().As<IPersistentStore>();
+        builder.RegisterType<MockRedis>().As<IDistributedStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         return container;
@@ -288,10 +350,10 @@ public class PqTests
             0x0A, 0xFC, 0x4A, 0x76, 0xA7, 0x35, 0xCF, 0x5B,
             0x1F, 0x0F, 0xD6, 0x8B, 0xD1, 0x7F, 0xA1, 0x81,
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
-        context.SessionBag.Add("nonce", (Int128)n);
-        context.SessionBag.Add("server_nonce", (Int128)sn);
-        context.SessionBag.Add("p", 0x494C553B);
-        context.SessionBag.Add("q", 0x53911073);
+        context.SessionData.Add("nonce", (Int128)n);
+        context.SessionData.Add("server_nonce", (Int128)sn);
+        context.SessionData.Add("p", 0x494C553B);
+        context.SessionData.Add("q", 0x53911073);
 
         var reqDhParams = container.Resolve<ReqDhParams>();
         reqDhParams.Nonce = (Int128)n;
@@ -381,14 +443,14 @@ public class PqTests
         Assert.Equal(tempAesIV,
             StringToByteArray("3212D579EE35452ED23E0D0C92841AA7D31B2E9BDEF2151E80D15860311C85DB"));
         
-        Assert.True(context.SessionBag.ContainsKey("a"));
+        Assert.True(context.SessionData.ContainsKey("a"));
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
-        BigInteger a = new BigInteger((byte[])context.SessionBag["a"], true, true);
-        BigInteger g_a = BigInteger.ModPow(new BigInteger((int)context.SessionBag["g"]), a, prime);
+        BigInteger a = new BigInteger((byte[])context.SessionData["a"], true, true);
+        BigInteger g_a = BigInteger.ModPow(new BigInteger((int)context.SessionData["g"]), a, prime);
 
         bool mod_ok;
         uint mod_r;
-        switch ((int)context.SessionBag["g"])
+        switch ((int)context.SessionData["g"])
         {
             case 2:
                 mod_ok = prime % 8 == 7u;
@@ -415,11 +477,11 @@ public class PqTests
         Assert.True(mod_ok);
         Assert.Equal((int)TLConstructor.ServerDhInnerData, constructor);
         Assert.Equal(sha1Actual, sha1Received);
-        Assert.Equal(nn, (byte[])context.SessionBag["new_nonce"]);
-        Assert.Equal(tempAesKey, (byte[])context.SessionBag["temp_aes_key"]);
-        Assert.Equal(tempAesIV, (byte[])context.SessionBag["temp_aes_iv"]);
-        Assert.Equal(serverDhInnerData.G, (int)context.SessionBag["g"]);
-        Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionBag["g_a"]);
+        Assert.Equal(nn, (byte[])context.SessionData["new_nonce"]);
+        Assert.Equal(tempAesKey, (byte[])context.SessionData["temp_aes_key"]);
+        Assert.Equal(tempAesIV, (byte[])context.SessionData["temp_aes_iv"]);
+        Assert.Equal(serverDhInnerData.G, (int)context.SessionData["g"]);
+        Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionData["g_a"]);
         Assert.Equal(serverDhInnerData.DhPrime, StringToByteArray(dhPrime));
         Assert.Contains(serverDhInnerData.G, gs);
     }
@@ -429,10 +491,10 @@ public class PqTests
         IContainer container = BuildContainer();
 
         TLExecutionContext context = new TLExecutionContext();
-        context.SessionBag.Add("nonce", (Int128)nonce);
-        context.SessionBag.Add("server_nonce", (Int128)server_nonce);
-        context.SessionBag.Add("p", 0x494C553B);
-        context.SessionBag.Add("q", 0x53911073);
+        context.SessionData.Add("nonce", (Int128)nonce);
+        context.SessionData.Add("server_nonce", (Int128)server_nonce);
+        context.SessionData.Add("p", 0x494C553B);
+        context.SessionData.Add("q", 0x53911073);
 
         var reqDhParams = container.Resolve<ReqDhParams>();
         reqDhParams.Nonce = (Int128)nonce;
@@ -516,15 +578,15 @@ public class PqTests
         serverDhInnerData = (ServerDhInnerData)factory.Read(constructor, ref reader);
         sha1Actual = SHA1.HashData(serverDhInnerData.TLBytes.ToArray());
 
-        Assert.True(context.SessionBag.ContainsKey("valid_until"));
-        Assert.True(context.SessionBag.ContainsKey("a"));
+        Assert.True(context.SessionData.ContainsKey("valid_until"));
+        Assert.True(context.SessionData.ContainsKey("a"));
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
-        BigInteger a = new BigInteger((byte[])context.SessionBag["a"], true, true);
-        BigInteger g_a = BigInteger.ModPow(new BigInteger((int)context.SessionBag["g"]), a, prime);
+        BigInteger a = new BigInteger((byte[])context.SessionData["a"], true, true);
+        BigInteger g_a = BigInteger.ModPow(new BigInteger((int)context.SessionData["g"]), a, prime);
 
         bool mod_ok;
         uint mod_r;
-        switch ((int)context.SessionBag["g"])
+        switch ((int)context.SessionData["g"])
         {
             case 2:
                 mod_ok = prime % 8 == 7u;
@@ -552,12 +614,12 @@ public class PqTests
 
         Assert.Equal(sha1Actual, sha1Received);
         Assert.Equal((int)TLConstructor.ServerDhInnerData, constructor);
-        Assert.Equal(newNonceBytes, (byte[])context.SessionBag["new_nonce"]);
-        Assert.Equal(tempAesKey, (byte[])context.SessionBag["temp_aes_key"]);
-        Assert.Equal(tempAesIV, (byte[])context.SessionBag["temp_aes_iv"]);
-        Assert.Equal(serverDhInnerData.G, (int)context.SessionBag["g"]);
-        Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionBag["g_a"]);
-        Assert.Equal(g_a.ToByteArray(true,true),(byte[])context.SessionBag["g_a"]);
+        Assert.Equal(newNonceBytes, (byte[])context.SessionData["new_nonce"]);
+        Assert.Equal(tempAesKey, (byte[])context.SessionData["temp_aes_key"]);
+        Assert.Equal(tempAesIV, (byte[])context.SessionData["temp_aes_iv"]);
+        Assert.Equal(serverDhInnerData.G, (int)context.SessionData["g"]);
+        Assert.Equal(serverDhInnerData.GA, (byte[])context.SessionData["g_a"]);
+        Assert.Equal(g_a.ToByteArray(true,true),(byte[])context.SessionData["g_a"]);
         Assert.Equal(serverDhInnerData.DhPrime, StringToByteArray(dhPrime));
         Assert.Contains(serverDhInnerData.G, gs);
     }
@@ -576,8 +638,8 @@ public class PqTests
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
         builder.RegisterType<MockDataStore>().As<IPersistentStore>();
+        builder.RegisterType<MockRedis>().As<IDistributedStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         
@@ -592,10 +654,10 @@ public class PqTests
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
 
         TLExecutionContext context = new TLExecutionContext();
-        context.SessionBag.Add("nonce", (Int128)n);
-        context.SessionBag.Add("server_nonce", (Int128)sn);
-        context.SessionBag.Add("p", 0x494C553B);
-        context.SessionBag.Add("q", 0x53911073);
+        context.SessionData.Add("nonce", (Int128)n);
+        context.SessionData.Add("server_nonce", (Int128)sn);
+        context.SessionData.Add("p", 0x494C553B);
+        context.SessionData.Add("q", 0x53911073);
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
         BigInteger max = prime - min;
@@ -608,11 +670,11 @@ public class PqTests
             g_a = BigInteger.ModPow(g, a, prime);
         }
 
-        context.SessionBag.Add("g", (int)g);
-        context.SessionBag.Add("g_a", g_a.ToByteArray(true, true));
-        context.SessionBag.Add("a", a.ToByteArray(true, true));
+        context.SessionData.Add("g", (int)g);
+        context.SessionData.Add("g_a", g_a.ToByteArray(true, true));
+        context.SessionData.Add("a", a.ToByteArray(true, true));
         byte[] newNonce = RandomNumberGenerator.GetBytes(32);
-        context.SessionBag.Add("new_nonce", nn);
+        context.SessionData.Add("new_nonce", nn);
 
         BigInteger b = random.GetRandomInteger(2, prime - 2);
         BigInteger g_b = BigInteger.ModPow(g, b, prime);
@@ -647,8 +709,8 @@ public class PqTests
             .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
         var tmpAesIV = serverNonceNewNonce.Skip(12)
             .Concat(newNonceNewNonce).Concat(newNonce).SkipLast(28).ToArray();
-        context.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
-        context.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+        context.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
+        context.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
         Aes aes = Aes.Create();
         aes.Key = tmpAesKey;
         byte[] encrypted = new byte[buff.WrittenCount];
@@ -672,7 +734,7 @@ public class PqTests
 
 
 
-        Assert.Equal(authKey, (byte[])context.SessionBag["auth_key"]);
+        Assert.Equal(authKey, (byte[])context.SessionData["auth_key"]);
         Assert.Equal(newNonceHash2, result.NewNonceHash2);
     }
 
@@ -692,10 +754,10 @@ public class PqTests
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
 
         TLExecutionContext context = new TLExecutionContext();
-        context.SessionBag.Add("nonce", (Int128)n);
-        context.SessionBag.Add("server_nonce", (Int128)sn);
-        context.SessionBag.Add("p", 0x494C553B);
-        context.SessionBag.Add("q", 0x53911073);
+        context.SessionData.Add("nonce", (Int128)n);
+        context.SessionData.Add("server_nonce", (Int128)sn);
+        context.SessionData.Add("p", 0x494C553B);
+        context.SessionData.Add("q", 0x53911073);
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
         BigInteger max = prime - min;
@@ -708,11 +770,11 @@ public class PqTests
             g_a = BigInteger.ModPow(g, a, prime);
         }
 
-        context.SessionBag.Add("g", (int)g);
-        context.SessionBag.Add("g_a", g_a.ToByteArray(true, true));
-        context.SessionBag.Add("a", a.ToByteArray(true, true));
+        context.SessionData.Add("g", (int)g);
+        context.SessionData.Add("g_a", g_a.ToByteArray(true, true));
+        context.SessionData.Add("a", a.ToByteArray(true, true));
         byte[] newNonce = RandomNumberGenerator.GetBytes(32);
-        context.SessionBag.Add("new_nonce", nn);
+        context.SessionData.Add("new_nonce", nn);
 
         BigInteger b = random.GetRandomInteger(2, prime - 2);
         BigInteger g_b = BigInteger.ModPow(g, b, prime);
@@ -747,8 +809,8 @@ public class PqTests
             .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
         var tmpAesIV = serverNonceNewNonce.Skip(12)
             .Concat(newNonceNewNonce).Concat(newNonce).SkipLast(28).ToArray();
-        context.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
-        context.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+        context.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
+        context.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
         Aes aes = Aes.Create();
         aes.Key = tmpAesKey;
         byte[] encrypted = new byte[buff.WrittenCount];
@@ -772,7 +834,7 @@ public class PqTests
 
 
 
-        Assert.Equal(authKey, (byte[])context.SessionBag["auth_key"]);
+        Assert.Equal(authKey, (byte[])context.SessionData["auth_key"]);
         Assert.Equal(newNonceHash1, result.NewNonceHash1);
     }
 

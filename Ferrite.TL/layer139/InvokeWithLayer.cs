@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.Exceptions;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139;
@@ -27,10 +28,12 @@ public class InvokeWithLayer : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly ILogger _log;
     private bool serialized = false;
-    public InvokeWithLayer(ITLObjectFactory objectFactory)
+    public InvokeWithLayer(ITLObjectFactory objectFactory, ILogger logger)
     {
         factory = objectFactory;
+        _log = logger;
     }
 
     public int Constructor => -627372787;
@@ -73,7 +76,17 @@ public class InvokeWithLayer : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if(_layer == 139 &&
+            _query is ITLMethod medhod)
+        {
+            ctx.SessionData.Add("layer", _layer);
+            _log.Verbose(String.Format("Invoke {0} with Layer {1}", medhod.ToString(), _layer));
+            return await medhod.ExecuteAsync(ctx);
+        }
+        var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");
+        var ex = new TLExecutionException(String.Format("Invocation failed for Layer {0}", _layer), inner);
+        _log.Error(ex, ex.Message);
+        throw ex;
     }
 
     public void Parse(ref SequenceReader buff)

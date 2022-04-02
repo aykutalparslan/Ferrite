@@ -160,12 +160,12 @@ public class ReqDhParams : ITLObject, ITLMethod
         SequenceReader reader = IAsyncBinaryReader.Create(data.Slice(32, 192));
 
         int constructor = reader.ReadInt32(true);
-        var sessionNonce = (Int128)ctx.SessionBag["nonce"];
-        var sessionServerNonce = (Int128)ctx.SessionBag["server_nonce"];
+        var sessionNonce = (Int128)ctx.SessionData["nonce"];
+        var sessionServerNonce = (Int128)ctx.SessionData["server_nonce"];
         if (constructor == TLConstructor.PQInnerData)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
-            ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
+            ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
             if (nonce != obj.Nonce ||
                 nonce != sessionNonce ||
                 serverNonce != obj.ServerNonce ||
@@ -185,8 +185,8 @@ public class ReqDhParams : ITLObject, ITLMethod
                 .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
             var tmpAesIV = serverNonceNewNonce.Skip(12)
                 .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).SkipLast(28)).ToArray();
-            ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
-            ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+            ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
             byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             serverDhParamsOk.EncryptedAnswer = answer;
 
@@ -195,7 +195,7 @@ public class ReqDhParams : ITLObject, ITLMethod
         else if (constructor == TLConstructor.PQInnerDataDc)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
-            ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
+            ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
             if (nonce != obj.Nonce ||
                 nonce != sessionNonce ||
                 serverNonce != obj.ServerNonce ||
@@ -215,8 +215,8 @@ public class ReqDhParams : ITLObject, ITLMethod
                 .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
             var tmpAesIV = serverNonceNewNonce.Skip(12)
                 .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).SkipLast(28)).ToArray();
-            ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
-            ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+            ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
             byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             serverDhParamsOk.EncryptedAnswer = answer;
 
@@ -225,7 +225,7 @@ public class ReqDhParams : ITLObject, ITLMethod
         else if (constructor == TLConstructor.PQInnerDataTempDc)
         {
             var obj = factory.Read<PQInnerDataTempDc>(ref reader);
-            ctx.SessionBag.Add("new_nonce", (byte[])obj.NewNonce);
+            ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
             if (nonce != obj.Nonce ||
                 nonce != sessionNonce ||
                 serverNonce != obj.ServerNonce ||
@@ -245,11 +245,11 @@ public class ReqDhParams : ITLObject, ITLMethod
                 .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
             var tmpAesIV = serverNonceNewNonce.Skip(12)
                 .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).Take(4)).ToArray();
-            ctx.SessionBag.Add("temp_aes_key", tmpAesKey.ToArray());
-            ctx.SessionBag.Add("temp_aes_iv", tmpAesIV.ToArray());
+            ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
             byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             serverDhParamsOk.EncryptedAnswer = answer;
-            ctx.SessionBag.Add("valid_until", DateTime.Now.AddSeconds(obj.ExpiresIn));
+            ctx.SessionData.Add("valid_until", DateTime.Now.AddSeconds(obj.ExpiresIn));
             return serverDhParamsOk;
         }
 
@@ -281,9 +281,9 @@ public class ReqDhParams : ITLObject, ITLMethod
         serverDhInnerData.GA = g_a.ToByteArray(true, true);
         serverDhInnerData.ServerTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
         
-        ctx.SessionBag.Add("g", serverDhInnerData.G);
-        ctx.SessionBag.Add("a", a.ToByteArray(true,true));
-        ctx.SessionBag.Add("g_a", serverDhInnerData.GA);
+        ctx.SessionData.Add("g", serverDhInnerData.G);
+        ctx.SessionData.Add("a", a.ToByteArray(true,true));
+        ctx.SessionData.Add("g_a", serverDhInnerData.GA);
 
         var buff = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
         buff.Write(SHA1.HashData(serverDhInnerData.TLBytes.IsSingleSegment ?

@@ -83,11 +83,13 @@ public class SerilogLogger : ILogger
 
     public void Verbose(string message)
     {
+        Console.WriteLine(message);
         log.Verbose(message);
     }
 
     public void Verbose(Exception exception, string message)
     {
+        Console.WriteLine(message);
         log.Verbose(exception, message);
     }
 

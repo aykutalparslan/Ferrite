@@ -63,8 +63,7 @@ public class DetectTransportTests
         builder.Register(_=> new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
-        builder.RegisterType<RocksDBKVStore>().As<IKVStore>();
-        builder.RegisterType<KVDataStore>().As<IPersistentStore>();
+        builder.RegisterType<CassandraDataStore>().As<IPersistentStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
 

@@ -26,11 +26,13 @@ namespace Ferrite.TL.layer139;
 public class InitConnection : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
+    private readonly ILogger _log;
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
-    public InitConnection(ITLObjectFactory objectFactory)
+    public InitConnection(ITLObjectFactory objectFactory, ILogger logger)
     {
         factory = objectFactory;
+        _log = logger;
     }
 
     public int Constructor => -1043505495;

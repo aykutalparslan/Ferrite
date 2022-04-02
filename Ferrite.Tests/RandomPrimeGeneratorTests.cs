@@ -82,13 +82,4 @@ public class RandomPrimeGeneratorTests
         val = RandomGenerator.SieveOfEratosthenesSegmented(1087, 7529);
         Assert.Equal(range.ToArray(), val); ;
     }
-
-    [Fact]
-    public void GetRandomPrime_ShouldReturnPrime()
-    {
-        RandomGenerator? rpg = new RandomGenerator();
-        int p =  rpg.GetRandomPrime();
-        
-        Assert.True(RandomGenerator.MillerRabin(p));
-    }
 }

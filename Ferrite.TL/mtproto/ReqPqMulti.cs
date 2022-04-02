@@ -66,25 +66,25 @@ public class ReqPqMulti : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         ResPQ respq = factory.Resolve<ResPQ>();
-        if (!ctx.SessionBag.ContainsKey("nonce") ||
-            (Int128)ctx.SessionBag["nonce"] != nonce)
+        if (!ctx.SessionData.ContainsKey("nonce") ||
+            (Int128)ctx.SessionData["nonce"] != nonce)
         {
-            ctx.SessionBag.Add("nonce", nonce);
+            ctx.SessionData.Add("nonce", nonce);
             respq.ServerNonce = (Int128)randomGenerator.GetRandomBytes(16);
-            ctx.SessionBag.Add("server_nonce", respq.ServerNonce);
+            ctx.SessionData.Add("server_nonce", respq.ServerNonce);
         }
         else
         {
-            respq.ServerNonce = (Int128)ctx.SessionBag["server_nonce"];
+            respq.ServerNonce = (Int128)ctx.SessionData["server_nonce"];
         }
         respq.Nonce = nonce;
-        if (ctx.SessionBag.ContainsKey("p"))
+        if (ctx.SessionData.ContainsKey("p"))
         {
-            ctx.SessionBag.Remove("p");
+            ctx.SessionData.Remove("p");
         }
-        if (ctx.SessionBag.ContainsKey("q"))
+        if (ctx.SessionData.ContainsKey("q"))
         {
-            ctx.SessionBag.Remove("q");
+            ctx.SessionData.Remove("q");
         }
 
         int a = randomGenerator.GetRandomPrime();
@@ -92,13 +92,13 @@ public class ReqPqMulti : ITLObject, ITLMethod
         BigInteger pq = new BigInteger(a) * b;
         if (a < b)
         {
-            ctx.SessionBag.Add("p", a);
-            ctx.SessionBag.Add("q", b);
+            ctx.SessionData.Add("p", a);
+            ctx.SessionData.Add("q", b);
         }
         else
         {
-            ctx.SessionBag.Add("p", b);
-            ctx.SessionBag.Add("q", a);
+            ctx.SessionData.Add("p", b);
+            ctx.SessionData.Add("q", a);
         }
 
         respq.Pq = pq.ToByteArray(isBigEndian: true);

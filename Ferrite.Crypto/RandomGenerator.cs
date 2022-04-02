@@ -179,7 +179,7 @@ namespace Ferrite.Crypto
                 }
                 for (int i2 = 0; i2 < r - 1; i2++)
                 {
-                    x = x * x % n;
+                    x = ((x * x) % n);
                     if (x == n - 1)
                     {
                         break;
