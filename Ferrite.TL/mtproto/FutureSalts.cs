@@ -88,7 +88,7 @@ public class FutureSalts : ITLObject
         serialized = false;
         reqMsgId = buff.ReadInt64(true);
         now = buff.ReadInt32(true);
-        buff.Skip(4); salts  =  factory . Read < VectorBare < FutureSalt > > ( ref  buff ) ; 
+        salts = factory.Read<VectorBare<FutureSalt>>(ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

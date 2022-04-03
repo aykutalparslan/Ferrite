@@ -266,7 +266,7 @@ class Compiler
             else if (typeName.StartsWith("vector<%"))
             {
                 parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + "factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + "factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);" + suffix)
                     );
             }
             else if (typeName.StartsWith("VectorBare<"))
@@ -646,7 +646,7 @@ class Compiler
             else if (typeName.StartsWith("vector<%"))
             {
                 parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + "factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + "factory.Read<" + item.Type.Replace("vector<%", "VectorBare<") + ">(ref buff);" + suffix)
                     );
             }
             else if (typeName.StartsWith("VectorBare<"))

@@ -62,7 +62,7 @@ public class MsgContainer : ITLObject
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        factory.Read<VectorBare<Message>>(ref buff);
+        messages = factory.Read<VectorBare<Message>>(ref buff);
     }
 
     public void WriteTo(Span<byte> buff)
