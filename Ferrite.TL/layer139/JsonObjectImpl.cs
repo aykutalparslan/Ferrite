@@ -62,7 +62,7 @@ public class JsonObjectImpl : JSONValue
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        buff.Skip(4); _value  =  factory . Read < Vector < JSONObjectValue > > ( ref  buff ) ; 
+        buff.Skip(4); _value = factory.Read<Vector<JSONObjectValue>>(ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

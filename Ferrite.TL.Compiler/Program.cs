@@ -955,6 +955,7 @@ class Compiler
     {
         var mtProtoSchema = TLSchema.Load("mtproto.json");
         var tlLayer139Schema = TLSchema.Load("schema.L139.json");
+        var tlSchemaForMissingTypes = TLSchema.Load("schema.missing.json");
         if (!Directory.Exists("../../../../Ferrite.TL/mtproto/"))
         {
             Directory.CreateDirectory("../../../../Ferrite.TL/mtproto/");
@@ -1083,6 +1084,29 @@ class Compiler
             }
         }
 
+        foreach (var item in tlSchemaForMissingTypes.Methods)
+        {
+            string[] pre = item.Method.Split('.');
+            string fileName = item.Method.FirstLetterToUpperCase();
+            string nameSpaceName = "";
+            if (pre.Length > 1)
+            {
+                fileName = pre[1].FirstLetterToUpperCase();
+                nameSpaceName += "/" + pre[0];
+            }
+            if (!Directory.Exists("../../../../Ferrite.TL/" + nameSpaceName))
+            {
+                Directory.CreateDirectory("../../../../Ferrite.TL/" + nameSpaceName);
+            }
+            if (!File.Exists("../../../../Ferrite.TL/" + nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileName + ".cs"))
+            {
+                using (var writer = new StreamWriter("../../../../Ferrite.TL/" + nameSpaceName + (nameSpaceName.Length > 0 ? "/" : "") + fileName + ".cs", false))
+                {
+                    writer.Write(CreateTLMethod(item, nameSpaceName));
+                }
+            }
+        }
+
         if (File.Exists("../../../../Ferrite.TL/TLObjectFactory.cs"))
         {
             StreamReader sr = new StreamReader("../../../../Ferrite.TL/TLObjectFactory.cs");
@@ -1160,9 +1184,25 @@ class Compiler
                             .WithLeadingTrivia(SyntaxFactory.Tab, SyntaxFactory.Tab)
                             .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
                     }
+                    foreach (var item in tlSchemaForMissingTypes.Methods)
+                    {
+                        string[] arr = item.Method.Split('.');
+                        string fileName = item.Method.FirstLetterToUpperCase();
+                        string nameSpaceName = "";
+                        if (arr.Length > 1)
+                        {
+                            fileName = arr[1].FirstLetterToUpperCase();
+                            nameSpaceName += "." + arr[0];
+                        }
+                        arms = arms.Add(SyntaxFactory.SwitchExpressionArm(
+                            SyntaxFactory.ConstantPattern(SyntaxFactory.ParseExpression(item.Id)),
+                            SyntaxFactory.ParseExpression("Read<" + nameSpaceName + (nameSpaceName.Length>0?".":"") + fileName + ">(ref buff),"))
+                            .WithLeadingTrivia(SyntaxFactory.Tab, SyntaxFactory.Tab)
+                            .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
+                    }
                     arms = arms.Add(SyntaxFactory.SwitchExpressionArm(
                             SyntaxFactory.ConstantPattern(SyntaxFactory.ParseExpression("_")),
-                            SyntaxFactory.ParseExpression("throw new DeserializationException(\"Constructor \"+ string.Format(\"0x{ 0:X}\", constructor) + \" not found.\")"))
+                            SyntaxFactory.ParseExpression("throw new DeserializationException(\"Constructor \"+ string.Format(\"0x{0:X}\", constructor) + \" not found.\")"))
                             .WithLeadingTrivia(SyntaxFactory.Tab, SyntaxFactory.Tab)
                             .WithTrailingTrivia(SyntaxFactory.CarriageReturnLineFeed));
                     SwitchExpressionSyntax newSyntax = oldSyntax.WithArms(arms).NormalizeWhitespace();

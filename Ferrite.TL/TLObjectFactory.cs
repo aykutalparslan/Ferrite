@@ -1455,6 +1455,7 @@ public class TLObjectFactory : ITLObjectFactory
         447879488 => Read<layer139.phone.GetGroupCallStreamChannels>(ref buff),
         -558650433 => Read<layer139.phone.GetGroupCallStreamRtmpUrl>(ref buff),
         276705696 => Read<layer139.messages.SearchSentMedia>(ref buff),
+        2018609336 => Read<InitConnection>(ref buff),
         _ => throw new DeserializationException("Constructor " + string.Format("0x{0:X}", constructor) + " not found.")};
     public T Read<T>(ref SequenceReader buff)
         where T : ITLObject

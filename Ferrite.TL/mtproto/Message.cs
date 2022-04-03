@@ -101,7 +101,12 @@ public class Message : ITLObject
         msgId = buff.ReadInt64(true);
         seqno = buff.ReadInt32(true);
         bytes = buff.ReadInt32(true);
-        body = factory.Read(buff.ReadInt32(true), ref buff);
+        int rem = (int)buff.RemainingSequence.Length;
+        int constructor = buff.ReadInt32(true);
+        body = factory.Read(constructor, ref buff);
+        int skip = bytes - (rem - (int)buff.RemainingSequence.Length);
+        buff.Skip(skip);//TODO: Investigate why we need this.
+                        // I must have missed something in the spec.
     }
 
     public void WriteTo(Span<byte> buff)

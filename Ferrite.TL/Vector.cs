@@ -69,7 +69,7 @@ public class Vector<T> : ITLObject, ICollection<T>
         int size = buff.ReadInt32(true);
         for (int i = 0; i < size; i++)
         {
-            list.Add(factory.Read<T>(ref buff));
+            list.Add((T)factory.Read(buff.ReadInt32(true), ref buff));
         }
     }
 
