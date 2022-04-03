@@ -19,10 +19,11 @@
 using System;
 using System.Collections.Concurrent;
 using Ferrite.Data;
+using MessagePack;
 
 namespace Ferrite.Core;
 
-public class SessionManager
+public class SessionManager : ISessionManager
 {
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTPtotoSession> _localSessions = new();
@@ -33,7 +34,8 @@ public class SessionManager
         {
             var bytes = File.ReadAllBytes("node.guid");
             return new Guid(bytes);
-        } else
+        }
+        else
         {
             var guid = Guid.NewGuid();
             File.WriteAllBytes("node.guid", guid.ToByteArray());
@@ -45,20 +47,26 @@ public class SessionManager
         NodeId = GetNodeId();
         _store = store;
     }
-    public async Task<bool> AddSessionAsync(long sessionId, MTPtotoSession session)
+    public async Task<bool> AddSessionAsync(SessionState state, MTPtotoSession session)
     {
-        SessionState d = new SessionState();
-        d.SessionId = sessionId;
-        d.NodeId = NodeId;
-        var remoteAdd = await _store.PutSessionAsync(sessionId, d.ToByteArray());
-        return remoteAdd && _localSessions.TryAdd(sessionId, session);
+        state.NodeId = NodeId;
+        var remoteAdd = await _store.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state));
+        return remoteAdd && _localSessions.TryAdd(state.SessionId, session);
     }
-    public async Task<SessionState?> GetSessionState(long sessionId)
+    public async Task<SessionState?> GetSessionStateAsync(long sessionId)
     {
         var rawSession = await _store.GetSessionAsync(sessionId);
-        if(rawSession != null)
+        if (rawSession != null)
         {
-            return new SessionState(ref rawSession[0]); ;
+            var state = MessagePackSerializer.Deserialize<SessionState>(rawSession);
+            if (state.ServerSalt.ValidSince <= (DateTimeOffset.Now.ToUnixTimeSeconds() - 1800))
+            {
+                state.ServerSaltOld = state.ServerSalt;
+                var salt = new ServerSalt();
+                state.ServerSalt = salt;
+                await _store.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state));
+            }
+            return state;
         }
         return null;
     }

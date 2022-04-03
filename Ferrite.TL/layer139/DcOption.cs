@@ -34,4 +34,24 @@ public abstract class DcOption : ITLObject
     {
         throw new NotImplementedException();
     }
+    private static Vector<DcOption> _options;
+    public static async Task<Vector<DcOption>> GetDefaultDcOptionsAsync(ITLObjectFactory factory)
+    {
+        if(_options != null)
+        {
+            return _options;
+        }
+        //TODO: Populate from the data store
+        var dcOption = factory.Resolve<DcOptionImpl>();
+        dcOption.Id = 1;
+        dcOption.IpAddress = "127.0.0.1";
+        dcOption.Port = 5222;
+        Vector<DcOption> options = factory.Resolve<Vector<DcOption>>();
+        options.Add(dcOption);
+        if (_options == null)
+        {
+            _options = options;
+        }
+        return _options;
+    }
 }

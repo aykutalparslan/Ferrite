@@ -16,6 +16,7 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Buffers;
 using System.Security.Cryptography;
 
 namespace Ferrite.Crypto;
@@ -54,6 +55,16 @@ public readonly ref struct AesIge
         _aes.Key = _aesKey;
     }
 
+    public void Encrypt(Span<byte> message)
+    {
+        _aes.EncryptIge(message, _aesIV);
+    }
+
+    public void Encrypt(Span<byte> source, Span<byte> destination)
+    {
+        _aes.EncryptIge(source, _aesIV, destination);
+    }
+
     public void Decrypt(Span<byte> message)
     {
         _aes.DecryptIge(message, _aesIV);
@@ -76,6 +87,23 @@ public readonly ref struct AesIge
         sha256.AppendData(plaintext);
         Span<byte> messageKeyLarge = sha256.GetCurrentHash();
         Span<byte> messageKey = messageKeyLarge.Slice(8,16);
+        return messageKey;
+    }
+    public static Span<byte> GenerateMessageKey(Span<byte> authKey, ReadOnlySequence<byte> plaintext, bool fromClient = false)
+    {
+        int x = 0;
+        if (!fromClient)
+        {
+            x = 8;
+        }
+        var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        sha256.AppendData(authKey.Slice(88 + x, 32));
+        foreach (var memory in plaintext)
+        {
+            sha256.AppendData(memory.Span);
+        }
+        Span<byte> messageKeyLarge = sha256.GetCurrentHash();
+        Span<byte> messageKey = messageKeyLarge.Slice(8, 16);
         return messageKey;
     }
 }

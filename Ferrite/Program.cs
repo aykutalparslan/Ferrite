@@ -36,21 +36,32 @@ using Ferrite.TL;
 using System.Reflection;
 using Ferrite.Data;
 using StackExchange.Redis;
+using MessagePack;
 
 namespace Ferrite;
 
 public class Program
 {
     private static IContainer Container { get; set; }
-    private static SessionManager sessionManager;
     private static IConnectionListener socketListener;
+    private static IDistributedStore _store;
+    private static IDistributedPipe _pipe;
+    private static Task? _pipeReceiveTask;
+    private static ISessionManager _sessionManager;
+    private static ILogger _log;
     public static int Main(String[] args)
     {
         BuildIoCContainer();
 
-        sessionManager = Container.Resolve<SessionManager>();
-        socketListener = Container.BeginLifetimeScope()
-            .Resolve<IConnectionListener>();
+        var scope = Container.BeginLifetimeScope();
+        socketListener = scope.Resolve<IConnectionListener>();
+        _store = scope.Resolve<IDistributedStore>();
+        _sessionManager = scope.Resolve<ISessionManager>();
+        _pipe = scope.Resolve<IDistributedPipe>();
+        _pipe.Subscribe(_sessionManager.NodeId.ToString());
+        _pipeReceiveTask = DoReceive();
+        _log = scope.Resolve<ILogger>();
+
         socketListener.Bind(new IPEndPoint(IPAddress.Any, 5222));
         StartAccept(socketListener);
         Console.WriteLine("Server is listening...");
@@ -90,7 +101,7 @@ public class Program
             .As<IDistributedStore>().SingleInstance();
         builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        builder.RegisterType<SessionManager>().SingleInstance();
+        builder.RegisterType<SessionManager>().As<ISessionManager>().SingleInstance();
 
         var container = builder.Build();
 
@@ -120,12 +131,46 @@ public class Program
         if (e.Message is ITLMethod method)
         {
             var result = await method.ExecuteAsync(e.ExecutionContext);
-            Console.WriteLine("-->" + result.ToString());
-            if (sender != null)
+            MTProtoMessage message = new MTProtoMessage();
+            message.SessionId = e.ExecutionContext.SessionId;
+            message.Data = result.TLBytes.ToArray();
+            message.IsResponse = true;
+            if(e.ExecutionContext.SessionId == 0 &&
+                sender is MTProtoConnection connection)
             {
-                var connection = (MTProtoConnection)sender;
-                await connection.SendAsync(result);
+                _ = connection.SendAsync(message);
             }
+            else if(await _sessionManager.GetSessionStateAsync(e.ExecutionContext.SessionId)
+                is SessionState session)
+            {
+                var bytes = MessagePackSerializer.Serialize(message);
+                _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes); 
+            }
+
+            Console.WriteLine("-->" + result.ToString());
         }
     }
+
+    private static async Task DoReceive()
+    {
+        try
+        {
+            while (true)
+            {
+                var result = await _pipe.ReadAsync();
+                var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
+                var sessionExists = _sessionManager.TryGetLocalSession(message.SessionId, out var protoSession);
+                if (sessionExists &&
+                    protoSession.TryGetConnection(out var connection))
+                {
+                    _ = connection.SendAsync(message);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Debug(ex, ex.Message);
+        }
+    }
+
 }

@@ -29,6 +29,7 @@ using Ferrite.Crypto;
 using System.Security.Cryptography;
 using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
+using MessagePack;
 
 namespace Ferrite.Core;
 
@@ -39,19 +40,23 @@ public class MTProtoConnection
     private readonly IDistributedStore _store;
     private readonly IPersistentStore _db;
     private readonly ILogger _log;
+    private readonly IRandomGenerator _random;
+    private readonly ISessionManager _sessionManager;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
     private long _authKeyId;
     private byte[] _authKey;
+    private long _sessionId;
+    private int _seq = 0;
     private ITransportConnection socketConnection;
     private Task? receiveTask;
-    private Channel<ITLObject> _outgoing = Channel.CreateUnbounded<ITLObject>();
+    private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
     private Task? sendTask;
     private readonly ITLObjectFactory factory;
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private TLExecutionContext _context = new TLExecutionContext();
+    private Dictionary<string, object> _sessionData = new Dictionary<string, object>();
     private const int WebSocketGet = 542393671;
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
@@ -59,7 +64,7 @@ public class MTProtoConnection
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedStore store, IPersistentStore persistentStore,
-        ILogger logger)
+        ILogger logger, IRandomGenerator random, ISessionManager sessionManager)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -68,6 +73,8 @@ public class MTProtoConnection
         _store = store;
         _db = persistentStore;
         _log = logger;
+        _random = random;
+        _sessionManager = sessionManager;
     }
 
     public void Start()
@@ -121,12 +128,9 @@ public class MTProtoConnection
         }
     }
 
-    public async Task SendAsync(ITLObject message)
+    public async Task SendAsync(MTProtoMessage message)
     {
-        if (message != null)
-        {
-            await _outgoing.Writer.WriteAsync(message);
-        }
+        await _outgoing.Writer.WriteAsync(message);
     }
 
     private async void SendAsync(byte[] data)
@@ -142,27 +146,22 @@ public class MTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-                if (msg != null)
+
+                var data = msg.Data;
+                if (_authKeyId == 0)
                 {
-                    var data = msg.TLBytes;
-                    writer.Clear();
-                    writer.WriteInt64(0, true);
-                    writer.WriteInt64(GenerateMessageId(true), true);
-                    writer.WriteInt32((int)data.Length, true);
-                    writer.Write(data, false);
-                    var message = writer.ToReadOnlySequence();
-                    var encoded = encoder.Encode(message);
-                    if (webSocketHandler != null)
-                    {
-                        webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
-                    }
-                    socketConnection.Transport.Output.Write(encoded);
-                    var result = await socketConnection.Transport.Output.FlushAsync();
-                    if(result.IsCompleted ||
-                        result.IsCanceled)
-                    {
-                        break;
-                    }
+                    SendUnencrypted(data);
+                }
+                else if(await _sessionManager.GetSessionStateAsync(_sessionId)
+                    is SessionState state)
+                {
+                    SendEncrypted(msg, state);
+                }
+                var result = await socketConnection.Transport.Output.FlushAsync();
+                if (result.IsCompleted ||
+                    result.IsCanceled)
+                {
+                    break;
                 }
             }
         }
@@ -171,7 +170,60 @@ public class MTProtoConnection
             _log.Debug(ex, ex.Message);
         }
     }
-    
+
+    private void SendUnencrypted(Span<byte> data)
+    {
+        writer.Clear();
+        writer.WriteInt64(0, true);
+        writer.WriteInt64(GenerateMessageId(true), true);
+        writer.WriteInt32((int)data.Length, true);
+        writer.Write(data);
+        var message = writer.ToReadOnlySequence();
+        var encoded = encoder.Encode(message);
+        if (webSocketHandler != null)
+        {
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
+        }
+        socketConnection.Transport.Output.Write(encoded);
+    }
+
+    private void SendEncrypted(MTProtoMessage message, SessionState state)
+    {
+        writer.Clear();
+        writer.WriteInt64(state.ServerSalt.Salt, true);
+        writer.WriteInt64(state.SessionId, true);
+        writer.WriteInt64(GenerateMessageId(message.IsResponse), true);
+        writer.WriteInt32(GenerateSeqNo(message.IsContentRelated), true);
+        writer.WriteInt32(message.Data.Length, true);
+        writer.Write(message.Data);
+        int paddingLength = Random.Shared.Next(12, 512);
+        while ((message.Data.Length + paddingLength) % 16 != 0)
+        {
+            paddingLength++;
+        }
+        writer.Write(_random.GetRandomBytes(paddingLength), false);
+
+        using (var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)writer.WrittenCount))
+        {
+            var messageSpan = messageData.Memory.Slice(0, (int)writer.WrittenCount).Span;
+            writer.ToReadOnlySequence().CopyTo(messageSpan);
+            Span<byte> messageKey = AesIge.GenerateMessageKey(_authKey, messageSpan);
+            AesIge aesIge = new AesIge(_authKey, messageKey, false);
+            aesIge.Encrypt(messageSpan);
+            writer.Clear();
+            writer.WriteInt64(state.AuthKeyId, true);
+            writer.Write(messageKey);
+            writer.Write(messageSpan);
+            var msg = writer.ToReadOnlySequence();
+            var encoded = encoder.Encode(msg);
+            if (webSocketHandler != null)
+            {
+                webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
+            }
+            socketConnection.Transport.Output.Write(encoded);
+        }      
+    }
+
     public delegate Task AsyncEventHandler<MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
     public event AsyncEventHandler<MTProtoAsyncEventArgs>? MessageReceived;
 
@@ -267,44 +319,60 @@ public class MTProtoConnection
         Span<byte> messageKey = stackalloc byte[16];
         reader.Read(messageKey);
         AesIge aesIge = new AesIge(_authKey, messageKey);
-        var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)reader.RemainingSequence.Length);
-        var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
-        reader.Read(messageSpan);
-        aesIge.Decrypt(messageSpan);
-        var messageKeyActual = AesIge.GenerateMessageKey(_authKey, messageSpan, true);
-        if (!messageKey.SequenceEqual(messageKeyActual))
+        using (var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)reader.RemainingSequence.Length))
         {
-            var ex = new MTProtoSecurityException("The security check for the 'msg_key' failed.");
-            _log.Fatal(ex, ex.Message);
-            throw ex;
-        }
-        SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
-        long salt = rd.ReadInt64(true);
-        long sessionId = rd.ReadInt64(true);
-        long msgId = rd.ReadInt64(true);
-        int seqNo = rd.ReadInt32(true);
-        int messageDataLength = rd.ReadInt32(true);
-        int constructor = rd.ReadInt32(true);
-
-        if (msgId < MTProtoTime.Instance.ThirtySecondsLater &&
-            //msg_id values that belong over 30 seconds in the future
-            msgId > MTProtoTime.Instance.FiveMinutesAgo &&
-            //or over 300 seconds in the past are to be ignored
-            msgId % 2 == 0 && //must have even parity
-            (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(msgId) && //must not be equal to any
-            msgId > _lastMessageIds.Min()))) //must not be lower than all
-        {
-            _lastMessageIds.Enqueue(msgId);
-
-            try
+            var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
+            reader.Read(messageSpan);
+            aesIge.Decrypt(messageSpan);
+            var messageKeyActual = AesIge.GenerateMessageKey(_authKey, messageSpan, true);
+            if (!messageKey.SequenceEqual(messageKeyActual))
             {
-                var msg = factory.Read(constructor, ref rd);
-                messageData.Dispose();
-                OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId: msgId));
+                var ex = new MTProtoSecurityException("The security check for the 'msg_key' failed.");
+                _log.Fatal(ex, ex.Message);
+                throw ex;
             }
-            catch (Exception ex)
+            SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
+            TLExecutionContext _context = new TLExecutionContext(_sessionData);
+            _context.Salt = rd.ReadInt64(true);
+            _context.SessionId = rd.ReadInt64(true);
+            if (_sessionId == 0)
             {
-                _log.Error(ex, ex.Message);
+                _sessionId = _context.SessionId;
+                SessionState state = new SessionState();
+                var salt = new ServerSalt();
+                state.SessionId = _sessionId;
+                state.ServerSalt = salt;
+                state.AuthKeyId = _authKeyId;
+                state.AuthKey = _authKey;
+                state.NodeId = _sessionManager.NodeId;
+                _sessionManager.AddSessionAsync(state,
+                    new MTPtotoSession(_sessionId,this)).Wait();
+  
+            }
+            _context.MessageId = rd.ReadInt64(true);
+            _context.SequenceNo = rd.ReadInt32(true);
+            int messageDataLength = rd.ReadInt32(true);
+            int constructor = rd.ReadInt32(true);
+
+            if (_context.MessageId < MTProtoTime.Instance.ThirtySecondsLater &&
+                //msg_id values that belong over 30 seconds in the future
+                _context.MessageId > MTProtoTime.Instance.FiveMinutesAgo &&
+                //or over 300 seconds in the past are to be ignored
+                _context.MessageId % 2 == 0 && //must have even parity
+                (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(_context.MessageId) && //must not be equal to any
+                _context.MessageId > _lastMessageIds.Min()))) //must not be lower than all
+            {
+                _lastMessageIds.Enqueue(_context.MessageId);
+
+                try
+                {
+                    var msg = factory.Read(constructor, ref rd);
+                    OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex, ex.Message);
+                }
             }
         }
     }
@@ -321,7 +389,9 @@ public class MTProtoConnection
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);
         //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
-        OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context, messageId:msgId));
+        TLExecutionContext _context = new TLExecutionContext(_sessionData);
+        _context.MessageId = msgId;
+        OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
 
     private async void ProcessFrame(ReadOnlySequence<byte> bytes)
@@ -342,7 +412,10 @@ public class MTProtoConnection
             await ProcessEncryptedMessageAsync(bytes.Slice(8));
         }
     }
-
+    private int GenerateSeqNo(bool isContentRelated)
+    {
+        return isContentRelated ? (2 * _seq++) + 1 : 2 * _seq;
+    }
     private long GenerateMessageId(bool response)
     {
         long id = DateTimeOffset.Now.ToUnixTimeSeconds();

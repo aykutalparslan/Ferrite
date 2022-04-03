@@ -19,9 +19,22 @@
 using System;
 namespace Ferrite.TL
 {
-    public class TLExecutionContext
+    public struct TLExecutionContext
     {
-        public Dictionary<string, object> SessionData = new();
+        private readonly Dictionary<string, object> _sessionData;
+        public Dictionary<string, object> SessionData => _sessionData;
+        public long Salt { get; set; }
+        public long SessionId { get; set; }
+        public long MessageId { get; set; }
+        public int SequenceNo { get; set; }
+        public TLExecutionContext(Dictionary<string, object> sessionData)
+        {
+            _sessionData = sessionData;
+            Salt = 0;
+            SessionId = 0;
+            MessageId = 0;
+            SequenceNo = 0;
+        }
     }
 }
 

@@ -49,7 +49,7 @@ public class GetConfig : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        return await Config.GetDefaultConfigAsync(factory);
     }
 
     public void Parse(ref SequenceReader buff)

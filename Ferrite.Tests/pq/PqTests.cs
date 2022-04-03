@@ -196,7 +196,7 @@ public class PqTests
         reqpq.Nonce = (Int128)(new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
             0x66, 0xB3, 0x01, 0xA4, 0x8F, 0xEC, 0xE2, 0xFC });
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         var respq = await reqpq.ExecuteAsync(context);
 
         byte[] expected = new byte[]
@@ -237,7 +237,7 @@ public class PqTests
         var reqpq = container.Resolve<ReqPqMulti>();
         reqpq.Nonce = (Int128)nonce;
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         var respq = reqpq.ExecuteAsync(context);
 
         Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
@@ -266,7 +266,7 @@ public class PqTests
         var reqpq = container.Resolve<ReqPqMulti>();
         reqpq.Nonce = (Int128)nonce;
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         var respq = reqpq.ExecuteAsync(context);
 
         Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
@@ -341,7 +341,7 @@ public class PqTests
     {
         IContainer container = BuildContainer();
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         byte[] n = new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
             0x66, 0xB3, 0x01, 0xA4, 0x8F, 0xEC, 0xE2, 0xFC };
         byte[] sn = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
@@ -490,7 +490,7 @@ public class PqTests
     {
         IContainer container = BuildContainer();
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         context.SessionData.Add("nonce", (Int128)nonce);
         context.SessionData.Add("server_nonce", (Int128)server_nonce);
         context.SessionData.Add("p", 0x494C553B);
@@ -653,7 +653,7 @@ public class PqTests
             0x1F, 0x0F, 0xD6, 0x8B, 0xD1, 0x7F, 0xA1, 0x81,
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         context.SessionData.Add("nonce", (Int128)n);
         context.SessionData.Add("server_nonce", (Int128)sn);
         context.SessionData.Add("p", 0x494C553B);
@@ -753,7 +753,7 @@ public class PqTests
             0x1F, 0x0F, 0xD6, 0x8B, 0xD1, 0x7F, 0xA1, 0x81,
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
 
-        TLExecutionContext context = new TLExecutionContext();
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
         context.SessionData.Add("nonce", (Int128)n);
         context.SessionData.Add("server_nonce", (Int128)sn);
         context.SessionData.Add("p", 0x494C553B);

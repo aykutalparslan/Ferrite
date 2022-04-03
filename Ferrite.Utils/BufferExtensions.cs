@@ -18,6 +18,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DotNext.Buffers;
 using DotNext.IO;
@@ -26,6 +27,15 @@ namespace Ferrite.Utils;
 
 public static class BufferExtensions
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ReadOnlySpan<byte> ToSpan(in this ReadOnlySequence<byte> buffer)
+    {
+        if (buffer.IsSingleSegment)
+        {
+            return buffer.FirstSpan;
+        }
+        return buffer.ToArray();
+    }
     public static string ReadTLString(this ref SequenceReader reader)
     {
         return Encoding.UTF8.GetString(reader.ReadTLBytes());

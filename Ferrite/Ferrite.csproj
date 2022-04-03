@@ -15,12 +15,14 @@
     <None Remove="DotNext.IO" />
     <None Remove="DotNext.Unsafe" />
     <None Remove="Microsoft.AspNetCore.Server.Kestrel" />
+    <None Remove="MessagePack" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="RocksDB" Version="7.0.4.27464" />
     <PackageReference Include="DotNext" Version="4.4.0" />
     <PackageReference Include="DotNext.IO" Version="4.4.0" />
     <PackageReference Include="DotNext.Unsafe" Version="4.4.0" />
+    <PackageReference Include="MessagePack" Version="2.3.85" />
   </ItemGroup>
   <ItemGroup>
     <None Update="TL\mtproto\T4Template.hhh">

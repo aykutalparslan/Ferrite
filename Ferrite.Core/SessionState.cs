@@ -19,77 +19,24 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using MessagePack;
 
 namespace Ferrite.Core;
 
-[StructLayout(LayoutKind.Explicit)]
-public unsafe struct SessionState
+[MessagePackObject]
+public struct SessionState
 {
-    public SessionState(ref byte source)
-    {
-        Unsafe.SkipInit(out this);
-        this = Unsafe.As<byte, SessionState>(ref source);
-    }
-    [FieldOffset(0)]
-    public long SessionId;
-    [FieldOffset(8)]
-    public long AuthKeyId;
-    [FieldOffset(16)]
-    private fixed byte _authKey[128];
-    public ReadOnlySpan<byte> AuthKey
-    {
-        get
-        {
-            fixed (byte* p = _authKey)
-            {
-                return new ReadOnlySpan<byte>(p, 128);
-            }
-        }
-        set
-        {
-            if (value.Length == 128)
-            {
-                fixed (byte* p = _authKey)
-                fixed (byte* v = &MemoryMarshal.GetReference(value))
-                {
-                    Buffer.MemoryCopy(v, p, 128, 128);
-                }
-            }
-            else
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-        }
-    }
-    [FieldOffset(144), MarshalAs(UnmanagedType.Struct, SizeConst = 16)]
-    public Guid NodeId;
-    [FieldOffset(160)]
-    public long ServerSalt;
-    [FieldOffset(168)]
-    public long ServerSaltOld;
-    [FieldOffset(0)]
-    private fixed byte _bytes[176];
-    public ReadOnlySpan<byte> Span
-    {
-        get
-        {
-            fixed (byte* p = _bytes)
-            {
-                return new ReadOnlySpan<byte>(p, sizeof(SessionState));
-            }
-        }
-    }
-    public byte[] ToByteArray()
-    {
-        byte[] buff = new byte[sizeof(SessionState)];
-        fixed (byte* p = _bytes)
-        {
-            Marshal.Copy((IntPtr)p, buff, 0, sizeof(SessionState));
-        }
-        return buff;
-    }
-    public static SessionState Read(ReadOnlySpan<byte> from)
-    {
-        return MemoryMarshal.Cast<byte, SessionState>(from)[0];
-    }
+    
+    [Key(0)]
+    public long SessionId { get; set; }
+    [Key(1)]
+    public long AuthKeyId { get; set; }
+    [Key(2)]
+    public byte[] AuthKey { get; set; }
+    [Key(3)]
+    public Guid NodeId { get; set; }
+    [Key(4)]
+    public ServerSalt ServerSalt { get; set; }
+    [Key(5)]
+    public ServerSalt ServerSaltOld { get; set; }
 }

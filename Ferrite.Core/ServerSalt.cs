@@ -16,18 +16,21 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using MessagePack;
 
 namespace Ferrite.Core;
 
-[StructLayout(LayoutKind.Sequential)]
-public readonly struct InternalMessageHeader
+[MessagePackObject]
+public unsafe struct ServerSalt
 {
-    public readonly long Salt;
-    public readonly long SessionId;
-    public readonly long MessageId;
-    public readonly int SeqNo;
-    public readonly int MessageDataLength;
-    public readonly int Constructor;
+    [Key(0)]
+    public long Salt;
+    [Key(1)]
+    public long ValidSince { get; set; }
+    [Key(2)]
+    public long ValidUntil { get; set; }
 }
 

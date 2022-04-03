@@ -16,20 +16,17 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using Ferrite.TL;
 
 namespace Ferrite.Core
 {
-    public class MTProtoAsyncEventArgs : EventArgs
+    public interface ISessionManager
     {
-        public ITLObject Message { get; set; }
-        public TLExecutionContext ExecutionContext { get; set; }
-        public MTProtoAsyncEventArgs(ITLObject message, TLExecutionContext context)
-        {
-            Message = message;
-            ExecutionContext = context;
-        }
+        Guid NodeId { get; }
+
+        Task<bool> AddSessionAsync(SessionState state, MTPtotoSession session);
+        Task<SessionState?> GetSessionStateAsync(long sessionId);
+        bool LocalSessionExists(long sessionId);
+        bool RemoveSession(long sessionId);
+        bool TryGetLocalSession(long sessionId, out MTPtotoSession session);
     }
 }
-
