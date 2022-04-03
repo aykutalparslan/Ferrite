@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.help;
@@ -49,7 +50,11 @@ public class GetConfig : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        return await Config.GetDefaultConfigAsync(factory);
+        var config = await Config.GetDefaultConfigAsync(factory);
+        RpcResult result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = config;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

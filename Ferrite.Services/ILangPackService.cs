@@ -16,20 +16,14 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using MessagePack;
+namespace Ferrite.Services;
 
-namespace Ferrite.Core;
-
-[MessagePackObject]
-public class MTProtoMessage
+public interface ILangPackService
 {
-    [Key(0)]
-    public long SessionId { get; set; }
-    [Key(1)]
-    public bool IsResponse { get; set; }
-    [Key(2)]
-    public bool IsContentRelated { get; set; }
-    [Key(3)]
-    public byte[] Data { get; set; }
+    Task<IDictionary<string, string>?> GetLangPackAsync(string langPack, string langCode);
+    Task<IDictionary<string, string>?> GetStringsAsync(string langPack, string langCode, ICollection<string> keys);
+    Task<IDictionary<string, string>?> GetDifferenceAsync(string langPack, string langCode, int fromVersion);
+    Task<List<LangPackLanguage>> GetLanguagesAsync(string langPack);
+    Task<LangPackLanguage?> GetLanguageAsync(string langPack, string langCode);
 }
 

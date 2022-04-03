@@ -24,9 +24,8 @@ using MessagePack;
 namespace Ferrite.Core;
 
 [MessagePackObject]
-public struct SessionState
+public class SessionState
 {
-    
     [Key(0)]
     public long SessionId { get; set; }
     [Key(1)]

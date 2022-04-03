@@ -16,20 +16,21 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using MessagePack;
-
-namespace Ferrite.Core;
-
-[MessagePackObject]
-public class MTProtoMessage
+namespace Ferrite.Services
 {
-    [Key(0)]
-    public long SessionId { get; set; }
-    [Key(1)]
-    public bool IsResponse { get; set; }
-    [Key(2)]
-    public bool IsContentRelated { get; set; }
-    [Key(3)]
-    public byte[] Data { get; set; }
+    public class LangPackLanguage
+    {
+        public bool Official { get; set; }
+        public bool Rtl { get; set; }
+        public bool Beta { get; set; }
+        public string Name { get; set; }
+        public string NativeName { get; set; }
+        public string LangCode { get; set; }
+        public string BaseLangCode { get; set; }
+        public string PluralCode { get; set; }
+        public int StringsCount { get; set; }
+        public int TranslatedCount { get; set; }
+        public string TranslationsUrl { get; set; }
+    }
 }
 

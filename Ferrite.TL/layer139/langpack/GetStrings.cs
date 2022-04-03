@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.langpack;
@@ -27,10 +29,18 @@ public class GetStrings : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly ILangPackService _langPackService;
+    private const string Zero = "_zero";
+    private const string One = "_one";
+    private const string Two = "_two";
+    private const string Few = "_few";
+    private const string Many = "_many";
+    private const string Other = "_other";
     private bool serialized = false;
-    public GetStrings(ITLObjectFactory objectFactory)
+    public GetStrings(ITLObjectFactory objectFactory, ILangPackService langPackService)
     {
         factory = objectFactory;
+        _langPackService = langPackService;
     }
 
     public int Constructor => -269862909;
@@ -85,7 +95,55 @@ public class GetStrings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        Vector<LangPackString> strings = factory.Resolve<Vector<LangPackString>>();
+        var tmp = await _langPackService.GetStringsAsync(_langPack, _langCode, _keys);
+        foreach (var key in _keys)
+        {
+            if (tmp!= null && tmp.ContainsKey(key))
+            {
+                LangPackStringImpl str = factory.Resolve<LangPackStringImpl>();
+                str.Key = key;
+                str.Value = tmp[key];
+                strings.Add(str);
+            }
+            else if (tmp != null && (tmp.ContainsKey(key + Zero) ||
+                tmp.ContainsKey(key + One) || tmp.ContainsKey(key + Two) ||
+                tmp.ContainsKey(key + Few) || tmp.ContainsKey(key + Many) ||
+                tmp.ContainsKey(key + Other)))
+            {
+                LangPackStringPluralizedImpl str = factory.Resolve<LangPackStringPluralizedImpl>();
+                str.Key = key;
+                if (tmp.ContainsKey(key + Zero))
+                {
+                    str.ZeroValue = tmp[key + Zero];
+                }
+                if (tmp.ContainsKey(key + One))
+                {
+                    str.OneValue = tmp[key + One];
+                }
+                if (tmp.ContainsKey(key + Two))
+                {
+                    str.TwoValue = tmp[key + Two];
+                }
+                if (tmp.ContainsKey(key + Few))
+                {
+                    str.FewValue = tmp[key + Few];
+                }
+                if (tmp.ContainsKey(key + Many))
+                {
+                    str.ManyValue = tmp[key + Many];
+                }
+                if (tmp.ContainsKey(key + Other))
+                {
+                    str.OtherValue = tmp[key + Other];
+                }
+                strings.Add(str);
+            }
+        }
+        RpcResult result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = strings;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

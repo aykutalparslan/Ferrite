@@ -37,6 +37,7 @@ using System.Reflection;
 using Ferrite.Data;
 using StackExchange.Redis;
 using MessagePack;
+using Ferrite.Services;
 
 namespace Ferrite;
 
@@ -44,6 +45,7 @@ public class Program
 {
     private static IContainer Container { get; set; }
     private static IConnectionListener socketListener;
+    private static ITLObjectFactory _factory;
     private static IDistributedStore _store;
     private static IDistributedPipe _pipe;
     private static Task? _pipeReceiveTask;
@@ -55,6 +57,7 @@ public class Program
 
         var scope = Container.BeginLifetimeScope();
         socketListener = scope.Resolve<IConnectionListener>();
+        _factory = scope.Resolve<ITLObjectFactory>();
         _store = scope.Resolve<IDistributedStore>();
         _sessionManager = scope.Resolve<ISessionManager>();
         _pipe = scope.Resolve<IDistributedPipe>();
@@ -77,6 +80,8 @@ public class Program
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
+        builder.RegisterType<LangPackService>().As<ILangPackService>()
+            .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -133,9 +138,10 @@ public class Program
             var result = await method.ExecuteAsync(e.ExecutionContext);
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = e.ExecutionContext.SessionId;
-            message.Data = result.TLBytes.ToArray();
             message.IsResponse = true;
-            if(e.ExecutionContext.SessionId == 0 &&
+            message.IsContentRelated = true;
+            message.Data = result.TLBytes.ToArray();
+            if (e.ExecutionContext.SessionId == 0 &&
                 sender is MTProtoConnection connection)
             {
                 _ = connection.SendAsync(message);

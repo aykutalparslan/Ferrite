@@ -19,7 +19,7 @@
 using System;
 namespace Ferrite.TL
 {
-    public struct TLExecutionContext
+    public class TLExecutionContext
     {
         private readonly Dictionary<string, object> _sessionData;
         public Dictionary<string, object> SessionData => _sessionData;

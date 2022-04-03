@@ -24,13 +24,11 @@ using MessagePack;
 namespace Ferrite.Core;
 
 [MessagePackObject]
-public unsafe struct ServerSalt
+public struct ServerSalt
 {
     [Key(0)]
     public long Salt;
     [Key(1)]
     public long ValidSince { get; set; }
-    [Key(2)]
-    public long ValidUntil { get; set; }
 }
 

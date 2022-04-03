@@ -16,6 +16,7 @@
     <None Remove="DotNext.Unsafe" />
     <None Remove="Microsoft.AspNetCore.Server.Kestrel" />
     <None Remove="MessagePack" />
+    <None Remove="LanguagePacks\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="RocksDB" Version="7.0.4.27464" />
@@ -34,6 +35,9 @@
     <None Update="default-public.key">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="LanguagePacks\android_en_v20699265.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Compile Update="TL\mtproto\T4Template.txt">
@@ -49,6 +53,10 @@
     <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
     <ProjectReference Include="..\Ferrite.Core\Ferrite.Core.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+    <ProjectReference Include="..\Ferrite.Services\Ferrite.Services.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="LanguagePacks\" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
