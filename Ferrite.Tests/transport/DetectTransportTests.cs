@@ -48,8 +48,6 @@ public class DetectTransportTests
         Assert.NotNull(encoder);
     }
 
-    
-
     private static IContainer BuildContainer()
     {
         var tl = Assembly.Load("Ferrite.TL");
