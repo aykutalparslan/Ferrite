@@ -28,6 +28,7 @@ public readonly ref struct AesIge
     private readonly Span<byte> _aesIV;
     public AesIge(Span<byte> authKey, Span<byte> messageKey, bool fromClient = true)
     {
+        //x = 0 for messages from client to server and x = 8 for those from server to client.
         int x = 0;
         if (!fromClient)
         {
@@ -35,7 +36,9 @@ public readonly ref struct AesIge
         }
         _aes = Aes.Create();
         Span<byte> tmp = stackalloc byte[52];
+        //sha256_a = SHA256(msg_key + substr(auth_key, x, 36));
         Span<byte> sha256a = stackalloc byte[32];
+        //sha256_b = SHA256 (substr (auth_key, 40+x, 36) + msg_key);
         Span<byte> sha256b = stackalloc byte[32];
         messageKey.CopyTo(tmp);
         authKey.Slice(0+x, 36).CopyTo(tmp.Slice(16));
@@ -44,7 +47,9 @@ public readonly ref struct AesIge
         authKey.Slice(40+x, 36).CopyTo(tmp);
         messageKey.CopyTo(tmp.Slice(36));
         SHA256.HashData(tmp, sha256b);
+        //aes_key = substr(sha256_a, 0, 8) + substr(sha256_b, 8, 16) + substr(sha256_a, 24, 8);
         var _aesKey = new byte[32];
+        //aes_iv = substr(sha256_b, 0, 8) + substr(sha256_a, 8, 16) + substr(sha256_b, 24, 8);
         _aesIV = new byte[32];
         sha256a.Slice(0, 8).CopyTo(_aesKey);
         sha256b.Slice(8, 16).CopyTo(_aesKey.AsSpan().Slice(8));
@@ -77,6 +82,7 @@ public readonly ref struct AesIge
 
     public static Span<byte> GenerateMessageKey(Span<byte> authKey, Span<byte> plaintext, bool fromClient = false)
     {
+        //x = 0 for messages from client to server and x = 8 for those from server to client.
         int x = 0;
         if (!fromClient)
         {
@@ -85,12 +91,15 @@ public readonly ref struct AesIge
         var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         sha256.AppendData(authKey.Slice(88+x, 32));
         sha256.AppendData(plaintext);
+        //msg_key_large = SHA256(substr(auth_key, 88 + x, 32) + plaintext + random_padding);
         Span<byte> messageKeyLarge = sha256.GetCurrentHash();
+        //msg_key = substr (msg_key_large, 8, 16);
         Span<byte> messageKey = messageKeyLarge.Slice(8,16);
         return messageKey;
     }
     public static Span<byte> GenerateMessageKey(Span<byte> authKey, ReadOnlySequence<byte> plaintext, bool fromClient = false)
     {
+        //x = 0 for messages from client to server and x = 8 for those from server to client.
         int x = 0;
         if (!fromClient)
         {
@@ -102,7 +111,9 @@ public readonly ref struct AesIge
         {
             sha256.AppendData(memory.Span);
         }
+        //msg_key_large = SHA256(substr(auth_key, 88 + x, 32) + plaintext + random_padding);
         Span<byte> messageKeyLarge = sha256.GetCurrentHash();
+        //msg_key = substr (msg_key_large, 8, 16);
         Span<byte> messageKey = messageKeyLarge.Slice(8, 16);
         return messageKey;
     }

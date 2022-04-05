@@ -39,6 +39,7 @@
     <None Remove="testdata\abridged\" />
     <None Remove="testdata\intermediate\" />
     <None Remove="crypto\" />
+    <None Remove="testdata\crypto\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="pq\" />
@@ -47,6 +48,7 @@
     <Folder Include="testdata\abridged\" />
     <Folder Include="testdata\intermediate\" />
     <Folder Include="crypto\" />
+    <Folder Include="testdata\crypto\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="testdata\obfuscatedIntermediateSession.bin">
@@ -152,6 +154,30 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="testdata\obfuscatedAbridgedSession.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\authKeyClient">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\messageClientDecrypted">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\messageClientEncrypted">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\messageKeyClient">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\authKeyServer">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\messageKeyServer">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\messageServerDecrypted">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\crypto\messageServerEncrypted">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
