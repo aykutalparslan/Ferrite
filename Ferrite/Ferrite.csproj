@@ -19,7 +19,6 @@
     <None Remove="LanguagePacks\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="RocksDB" Version="7.0.4.27464" />
     <PackageReference Include="DotNext" Version="4.4.0" />
     <PackageReference Include="DotNext.IO" Version="4.4.0" />
     <PackageReference Include="DotNext.Unsafe" Version="4.4.0" />
