@@ -29,7 +29,7 @@ using Ferrite.TL;
 using Ferrite.Utils;
 using DotNext.IO;
 using Xunit;
-namespace Ferrite.Tests.transport
+namespace Ferrite.Tests.Crypto
 {
     public class AesCtrTests
     {
