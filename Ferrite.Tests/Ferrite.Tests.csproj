@@ -49,9 +49,6 @@
     <Folder Include="crypto\" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="testdata\obfuscatedIntermediate.bin">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="testdata\obfuscatedIntermediateSession.bin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -149,6 +146,12 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="testdata\intermediate\raw2">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\obfuscatedIntermediate.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\obfuscatedAbridgedSession.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

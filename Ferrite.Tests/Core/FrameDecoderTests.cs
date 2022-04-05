@@ -34,6 +34,58 @@ namespace Ferrite.Tests.transport
     public class FrameDecoderTests
     {
         [Fact]
+        public void ShouldDecodeObfuscatedAbridged()
+        {
+            var container = BuildContainer();
+            var detector = container.Resolve<ITransportDetector>();
+
+            byte[] data = File.ReadAllBytes("testdata/obfuscatedAbridgedSession.bin");
+            var seq = new ReadOnlySequence<byte>(data);
+            var reader = new SequenceReader<byte>(seq);
+            _ = detector.DetectTransport(ref reader, out var decoder, out var encoder);
+            List<byte[]> frames = new();
+            bool hasMore = false;
+            do
+            {
+                hasMore = decoder.Decode(ref reader, out var frame);
+                var framedata = frame.ToArray();
+                frames.Add(framedata);
+            } while (hasMore);
+            Assert.Equal(10, frames.Count);
+            Assert.Equal(40, frames[0].Length);
+            SequenceReader rd = IAsyncBinaryReader.Create(frames[0]);
+            long authKey = rd.ReadInt64(true);
+            long msgId = rd.ReadInt64(true);
+            int msgLength = rd.ReadInt32(true);
+            int constructor = rd.ReadInt32(true);
+            Assert.Equal(0, authKey);
+            Assert.Equal(7083195348767984184, msgId);
+            Assert.Equal(20, msgLength);
+            Assert.Equal(-1099002127, constructor);
+            Assert.Equal(340, frames[1].Length);
+            rd = IAsyncBinaryReader.Create(frames[1]);
+            authKey = rd.ReadInt64(true);
+            msgId = rd.ReadInt64(true);
+            msgLength = rd.ReadInt32(true);
+            constructor = rd.ReadInt32(true);
+            Assert.Equal(0, authKey);
+            Assert.Equal(7083195350463984280, msgId);
+            Assert.Equal(320, msgLength);
+            Assert.Equal(-686627650, constructor);
+            Assert.Equal(396, frames[2].Length); rd = IAsyncBinaryReader.Create(frames[1]);
+            rd = IAsyncBinaryReader.Create(frames[2]);
+            authKey = rd.ReadInt64(true);
+            msgId = rd.ReadInt64(true);
+            msgLength = rd.ReadInt32(true);
+            constructor = rd.ReadInt32(true);
+            Assert.Equal(0, authKey);
+            Assert.Equal(7083195351299983772, msgId);
+            Assert.Equal(376, msgLength);
+            Assert.Equal(-184262881, constructor);
+        }
+
+
+        [Fact]
         public void ShouldDecodeObfuscatedIntermediate()
         {
             var container = BuildContainer();
