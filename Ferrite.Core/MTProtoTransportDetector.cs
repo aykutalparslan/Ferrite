@@ -95,39 +95,42 @@ public class MTProtoTransportDetector : ITransportDetector
             var decryptionIV = payload.Slice(40, 16).ToArray();
             var encryptionKey = payload.ToArray().Reverse().ToArray().AsSpan().Slice(8, 32).ToArray();
             var encryptionIV = payload.ToArray().Reverse().ToArray().AsSpan().Slice(40, 16).ToArray();
-            
+
             Aes256Ctr decryptor = new Aes256Ctr(decryptionKey, decryptionIV);
             Aes256Ctr encryptor = new Aes256Ctr(encryptionKey, encryptionIV);
 
-            Memory<byte> data = UnmanagedMemoryPool<byte>.Shared.Rent(64).Memory;
-            
-            decryptor.Transform(payload, data.Span);
-            SpanReader<byte> rd = new SpanReader<byte>(data.Span.Slice(56));
-            int identifier = rd.ReadInt32(true);
-            if (identifier == AbridgedInt)
+            using (IMemoryOwner<byte> owner = UnmanagedMemoryPool<byte>.Shared.Rent(64))
             {
-                transport = MTProtoTransport.Abridged;
-                decoder = new AbridgedFrameDecoder(decryptor);
-                encoder = new AbridgedFrameEncoder(encryptor);
+                Memory<byte> data = owner.Memory;
+                decryptor.Transform(payload, data.Span);
+                SpanReader<byte> rd = new SpanReader<byte>(data.Span.Slice(56));
+                int identifier = rd.ReadInt32(true);
+                if (identifier == AbridgedInt)
+                {
+                    transport = MTProtoTransport.Abridged;
+                    decoder = new AbridgedFrameDecoder(decryptor);
+                    encoder = new AbridgedFrameEncoder(encryptor);
+                }
+                else if (identifier == Intermediate)
+                {
+                    transport = MTProtoTransport.Intermediate;
+                    decoder = new IntermediateFrameDecoder(decryptor);
+                    encoder = new IntermediateFrameEncoder(encryptor);
+                }
+                else if (identifier == PaddedIntermediate)
+                {
+                    transport = MTProtoTransport.PaddedIntermediate;
+                    decoder = new PaddedIntermediateFrameDecoder(decryptor);
+                    encoder = new PaddedIntermediateFrameEncoder(encryptor);
+                }
+                else
+                {
+                    transport = MTProtoTransport.Full;
+                    decoder = new FullFrameDecoder(decryptor);
+                    encoder = new FullFrameEncoder(encryptor);
+                }
             }
-            else if (identifier == Intermediate)
-            {
-                transport = MTProtoTransport.Intermediate;
-                decoder = new IntermediateFrameDecoder(decryptor);
-                encoder = new IntermediateFrameEncoder(encryptor);
-            }
-            else if (identifier == PaddedIntermediate)
-            {
-                transport = MTProtoTransport.PaddedIntermediate;
-                decoder = new PaddedIntermediateFrameDecoder(decryptor);
-                encoder = new PaddedIntermediateFrameEncoder(encryptor);
-            }
-            else
-            {
-                transport = MTProtoTransport.Full;
-                decoder = new FullFrameDecoder(decryptor);
-                encoder = new FullFrameEncoder(encryptor);
-            }
+
             reader.Advance(56);
             return transport;
         }

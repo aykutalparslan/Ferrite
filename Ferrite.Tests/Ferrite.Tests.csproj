@@ -36,11 +36,13 @@
     <None Remove="testdata\" />
     <None Remove="DotNext" />
     <None Remove="DotNext.IO" />
+    <None Remove="testdata\abridged\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="pq\" />
     <Folder Include="transport\" />
     <Folder Include="testdata\" />
+    <Folder Include="testdata\abridged\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="testdata\obfuscatedIntermediate.bin">
@@ -75,6 +77,15 @@
     </None>
     <None Update="testdata\messageIntermediate2">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\abridged\abridgedMessageEncoded0">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\abridged\abridgedEncrypted0">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testdata\abridged\abridgedMessage1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 </Project>
