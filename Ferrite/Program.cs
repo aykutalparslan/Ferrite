@@ -78,6 +78,7 @@ public class Program
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
+        builder.RegisterType<MTProtoTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterType<LangPackService>().As<ILangPackService>()

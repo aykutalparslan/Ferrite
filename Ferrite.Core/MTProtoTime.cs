@@ -22,11 +22,11 @@ namespace Ferrite.Core;
 /// Calculates msg_id values 30 seconds in the future and
 /// 300 seconds in the past periodically.
 /// </summary>
-public class MTProtoTime
+public class MTProtoTime : IMTProtoTime
 {
-    private static Lazy<MTProtoTime> _instance = new Lazy<MTProtoTime>(
-        () => new MTProtoTime(),
-        LazyThreadSafetyMode.ExecutionAndPublication);
+    //private static Lazy<MTProtoTime> _instance = new Lazy<MTProtoTime>(
+    //    () => new MTProtoTime(),
+    //    LazyThreadSafetyMode.ExecutionAndPublication);
 
     private long _seconds;
     private long _fiveMinutesAgo;
@@ -53,7 +53,7 @@ public class MTProtoTime
     /// <summary>
     /// Fully thread safe; uses locking to ensure that only one thread initializes the value.
     /// </summary>
-    public static MTProtoTime Instance => _instance.Value;
+    //public static MTProtoTime Instance => _instance.Value;
     public MTProtoTime()
     {
         _keepTimeTask = KeepTime();

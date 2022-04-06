@@ -42,6 +42,7 @@ public class MTProtoConnection
     private readonly ILogger _log;
     private readonly IRandomGenerator _random;
     private readonly ISessionManager _sessionManager;
+    private readonly IMTProtoTime _time;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
     private long _authKeyId;
@@ -64,7 +65,8 @@ public class MTProtoConnection
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedStore store, IPersistentStore persistentStore,
-        ILogger logger, IRandomGenerator random, ISessionManager sessionManager)
+        ILogger logger, IRandomGenerator random, ISessionManager sessionManager,
+        IMTProtoTime protoTime)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -75,6 +77,7 @@ public class MTProtoConnection
         _log = logger;
         _random = random;
         _sessionManager = sessionManager;
+        _time = protoTime;
     }
 
     public void Start()
@@ -229,11 +232,7 @@ public class MTProtoConnection
 
     protected virtual void OnMessageReceived(MTProtoAsyncEventArgs e)
     {
-        AsyncEventHandler<MTProtoAsyncEventArgs> raiseEvent = MessageReceived;
-        if (raiseEvent != null)
-        {
-            raiseEvent(this, e);
-        }
+        MessageReceived?.Invoke(this, e);
     }
 
     private SequencePosition Process(in ReadOnlySequence<byte> buffer)
@@ -309,6 +308,7 @@ public class MTProtoConnection
                     _ = _store.PutAuthKeyAsync(_authKeyId, _authKey);
                 }
             }
+            
             DecryptAndRaiseEvent(in bytes);
         }
     }
@@ -354,9 +354,9 @@ public class MTProtoConnection
             int messageDataLength = rd.ReadInt32(true);
             int constructor = rd.ReadInt32(true);
 
-            if (_context.MessageId < MTProtoTime.Instance.ThirtySecondsLater &&
+            if (_context.MessageId < _time.ThirtySecondsLater &&
                 //msg_id values that belong over 30 seconds in the future
-                _context.MessageId > MTProtoTime.Instance.FiveMinutesAgo &&
+                _context.MessageId > _time.FiveMinutesAgo &&
                 //or over 300 seconds in the past are to be ignored
                 _context.MessageId % 2 == 0 && //must have even parity
                 (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(_context.MessageId) && //must not be equal to any

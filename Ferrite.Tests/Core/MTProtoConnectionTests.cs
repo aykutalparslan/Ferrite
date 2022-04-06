@@ -34,8 +34,19 @@ using Xunit;
 
 namespace Ferrite.Tests.Core;
 
+class MockTime : IMTProtoTime
+{
+    public long FiveMinutesAgo => long.MinValue;
+
+    public long ThirtySecondsLater => long.MaxValue;
+}
 class MockRedis : IDistributedStore
 {
+    public MockRedis()
+    {
+        byte[] key = File.ReadAllBytes("testdata/authKey_1508830554984586608");
+        authKeys.Add(1508830554984586608, key);
+    }
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
     Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
     public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
@@ -108,9 +119,11 @@ class MockTransportConnection : ITransportConnection
     public IDuplexPipe Transport { get; set; }
     public Pipe Input { get; set; }
     public Pipe Output { get; set; }
+    private string _file;
 
-    public MockTransportConnection()
+    public MockTransportConnection(string file = "testdata/obfuscatedIntermediateSession.bin")
     {
+        _file = file;
         Input = new Pipe();
         Output = new Pipe();
         Transport = new MockDuplexPipe(Input.Reader, Output.Writer);
@@ -118,7 +131,7 @@ class MockTransportConnection : ITransportConnection
 
     public void Start()
     {
-        byte[] data = File.ReadAllBytes("testdata/obfuscatedIntermediateSession.bin");
+        byte[] data = File.ReadAllBytes(_file);
         Input.Writer.WriteAsync(data);
         Input.Writer.FlushAsync();
     }
@@ -145,10 +158,35 @@ public class MTProtoConnectionTests
         Assert.IsType<SetClientDhParams>(received[2]);
     }
 
+    [Fact]
+    public void ReceivesMessagesFromWebSocket()
+    {
+        var container = BuildIoCContainer();
+        ITransportConnection connection = new MockTransportConnection("testdata/websocketSession.bin");
+        connection.Start();
+        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
+        List<ITLObject> received = new List<ITLObject>();
+        var sess = new Dictionary<string, object>();
+        mtProtoConnection.MessageReceived += async (s, e) => {
+            received.Add(e.Message);
+            await ((ITLMethod)e.Message).ExecuteAsync(new TLExecutionContext(sess));
+        };
+        mtProtoConnection.Start();
+        Assert.IsType<ReqPqMulti>(received[0]);
+        Assert.IsType<ReqDhParams>(received[1]);
+        Assert.IsType<SetClientDhParams>(received[2]);
+        Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(received[3]);
+        Assert.IsType<Ferrite.TL.layer139.updates.GetState>(received[4]);
+        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(received[5]);
+        Assert.IsType<Ferrite.TL.mtproto.MsgContainer>(received[6]);
+        Assert.IsType<Ferrite.TL.mtproto.PingDelayDisconnect>(received[7]);
+    }
+
     private IContainer BuildIoCContainer()
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
+        builder.RegisterType<MockTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterType<LangPackService>().As<ILangPackService>()
