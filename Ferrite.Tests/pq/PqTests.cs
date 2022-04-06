@@ -35,7 +35,7 @@ using Ferrite.Data;
 using System.Globalization;
 using System.Threading.Tasks;
 
-namespace Ferrite.Tests.pq;
+namespace Ferrite.Tests.PQ;
 
 class MockDataStore : IPersistentStore
 {

@@ -23,7 +23,7 @@ using System.Text;
 using Ferrite.Transport;
 using Xunit;
 
-namespace Ferrite.Tests.transport
+namespace Ferrite.Tests.Transport
 {
     public class WebSocketTests
     {

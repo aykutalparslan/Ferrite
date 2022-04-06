@@ -30,25 +30,29 @@
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="pq\" />
+    <None Remove="PQ\" />
     <None Remove="Autofac" />
-    <None Remove="transport\" />
+    <None Remove="Transport\" />
     <None Remove="testdata\" />
     <None Remove="DotNext" />
     <None Remove="DotNext.IO" />
     <None Remove="testdata\abridged\" />
     <None Remove="testdata\intermediate\" />
-    <None Remove="crypto\" />
+    <None Remove="Crypto\" />
     <None Remove="testdata\crypto\" />
+    <None Remove="Utils\" />
+    <None Remove="Transport\" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="pq\" />
+    <Folder Include="PQ\" />
     <Folder Include="Core\" />
     <Folder Include="testdata\" />
     <Folder Include="testdata\abridged\" />
     <Folder Include="testdata\intermediate\" />
-    <Folder Include="crypto\" />
+    <Folder Include="Crypto\" />
     <Folder Include="testdata\crypto\" />
+    <Folder Include="Utils\" />
+    <Folder Include="Transport\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="testdata\obfuscatedIntermediateSession.bin">
