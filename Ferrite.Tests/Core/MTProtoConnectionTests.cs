@@ -239,6 +239,68 @@ class FakeSessionManager : ISessionManager
         throw new NotImplementedException();
     }
 }
+class FakeLogger : ILogger
+{
+    public void Debug(string message)
+    {
+        
+    }
+
+    public void Debug(Exception exception, string message)
+    {
+        
+    }
+
+    public void Error(string message)
+    {
+        
+    }
+
+    public void Error(Exception exception, string message)
+    {
+        
+    }
+
+    public void Fatal(string message)
+    {
+        
+    }
+
+    public void Fatal(Exception exception, string message)
+    {
+        
+    }
+
+    public void Information(string message)
+    {
+        
+    }
+
+    public void Information(Exception exception, string message)
+    {
+        
+    }
+
+    public void Verbose(string message)
+    {
+        
+    }
+
+    public void Verbose(Exception exception, string message)
+    {
+        
+    }
+
+    public void Warning(string message)
+    {
+        
+    }
+
+    public void Warning(Exception exception, string message)
+    {
+        
+    }
+}
 
 public class MTProtoConnectionTests
 {
@@ -384,9 +446,11 @@ public class MTProtoConnectionTests
         result = await connection.Application.Input.ReadAsync();
         connection.Application.Input.AdvanceTo(result.Buffer.End);
 
-        while (!mtProtoConnection.IsEncrypted)
+        int wait = 10;
+        while (!mtProtoConnection.IsEncrypted && wait<<2000)
         {
-            await Task.Delay(1);
+            await Task.Delay(wait);
+            wait *= 2;
         }
         data = File.ReadAllBytes("testdata/message_3");
         var expected = File.ReadAllBytes("testdata/sent_3");
@@ -427,7 +491,7 @@ public class MTProtoConnectionTests
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
         builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
 
         var container = builder.Build();
