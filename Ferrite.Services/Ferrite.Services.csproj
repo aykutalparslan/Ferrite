@@ -9,6 +9,16 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Auth\" />
+    <None Remove="Help\" />
+    <None Remove="Account\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Auth\" />
+    <Folder Include="Help\" />
+    <Folder Include="Account\" />
+  </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
       <Properties>

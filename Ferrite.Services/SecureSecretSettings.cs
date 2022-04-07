@@ -18,18 +18,10 @@
 using System;
 namespace Ferrite.Services;
 
-public record LangPackLanguage
+public record SecureSecretSettings
 {
-    public bool Official { get; init; }
-    public bool Rtl { get; init; }
-    public bool Beta { get; init; }
-    public string Name { get; init; } = default!;
-    public string NativeName { get; init; } = default!;
-    public string LangCode { get; init; } = default!;
-    public string BaseLangCode { get; init; } = default!;
-    public string PluralCode { get; init; } = default!;
-    public int StringsCount { get; init; }
-    public int TranslatedCount { get; init; }
-    public string TranslationsUrl { get; init; } = default!;
+    public SecurePasswordKdfAlgo SecureAlgo { get; init; } = default!;
+    public byte[] SecureSecret { get; init; } = default!;
+    public int SecureSecretId { get; init; }
 }
 

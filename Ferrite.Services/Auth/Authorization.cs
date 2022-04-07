@@ -16,20 +16,15 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Services;
+namespace Ferrite.Services.Auth;
 
-public record LangPackLanguage
+public record Authorization
 {
-    public bool Official { get; init; }
-    public bool Rtl { get; init; }
-    public bool Beta { get; init; }
-    public string Name { get; init; } = default!;
-    public string NativeName { get; init; } = default!;
-    public string LangCode { get; init; } = default!;
-    public string BaseLangCode { get; init; } = default!;
-    public string PluralCode { get; init; } = default!;
-    public int StringsCount { get; init; }
-    public int TranslatedCount { get; init; }
-    public string TranslationsUrl { get; init; } = default!;
+    public AuthorizationType AuthorizationType { get; init; }
+    public bool SetupPasswordRequired { get; init; }
+    public int OtherwiseReloginDays { get; init; }
+    public int TmpSessions { get; init; }
+    public User User { get; init; } = default!;
+    public Help.TermsOfService TermsOfService { get; init; } = default!;
 }
 
