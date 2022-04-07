@@ -447,7 +447,7 @@ public class MTProtoConnectionTests
         connection.Application.Input.AdvanceTo(result.Buffer.End);
 
         int wait = 10;
-        while (!mtProtoConnection.IsEncrypted && wait<<2000)
+        while (!mtProtoConnection.IsEncrypted && wait<2000)
         {
             await Task.Delay(wait);
             wait *= 2;
