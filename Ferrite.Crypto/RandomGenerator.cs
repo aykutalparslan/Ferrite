@@ -197,7 +197,7 @@ namespace Ferrite.Crypto
         {
             return RandomNumberGenerator.GetInt32(toExclusive);
         }
-
+        
         public byte[] GetRandomBytes(int count)
         {
             return RandomNumberGenerator.GetBytes(count);
@@ -272,6 +272,16 @@ namespace Ferrite.Crypto
             } while (value > max);
 
             return value;
+        }
+
+        public int GetNext(int fromInclusive, int toExclusive)
+        {
+            return RandomNumberGenerator.GetInt32(fromInclusive, toExclusive);
+        }
+
+        public void Fill(Span<byte> data)
+        {
+            RandomNumberGenerator.Fill(data);
         }
     }
 }

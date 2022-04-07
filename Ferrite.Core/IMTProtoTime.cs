@@ -21,5 +21,6 @@ namespace Ferrite.Core
     {
         long FiveMinutesAgo { get; }
         long ThirtySecondsLater { get; }
+        long GetUnixTimeInSeconds();
     }
 }

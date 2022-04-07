@@ -36,6 +36,7 @@ namespace Ferrite.Core;
 public class MTProtoConnection
 {
     public MTProtoTransport TransportType { get; private set; }
+    public bool IsEncrypted => _authKeyId != 0;
     private readonly ITransportDetector transportDetector;
     private readonly IDistributedStore _store;
     private readonly IPersistentStore _db;
@@ -85,7 +86,7 @@ public class MTProtoConnection
         receiveTask = DoReceive();
         sendTask = DoSend();
     }
-
+    
     private async Task DoReceive()
     {
         try
@@ -136,12 +137,6 @@ public class MTProtoConnection
         await _outgoing.Writer.WriteAsync(message);
     }
 
-    private async void SendAsync(byte[] data)
-    {
-        socketConnection.Transport.Output.Write(data);
-        _ = await socketConnection.Transport.Output.FlushAsync();
-    }
-
     private async Task DoSend()
     {
         try
@@ -173,7 +168,7 @@ public class MTProtoConnection
             _log.Debug(ex, ex.Message);
         }
     }
-
+    
     private void SendUnencrypted(Span<byte> data)
     {
         writer.Clear();
@@ -199,7 +194,7 @@ public class MTProtoConnection
         writer.WriteInt32(GenerateSeqNo(message.IsContentRelated), true);
         writer.WriteInt32(message.Data.Length, true);
         writer.Write(message.Data);
-        int paddingLength = Random.Shared.Next(12, 512);
+        int paddingLength = _random.GetNext(12, 512);
         while ((message.Data.Length + paddingLength) % 16 != 0)
         {
             paddingLength++;
@@ -418,7 +413,7 @@ public class MTProtoConnection
     }
     private long GenerateMessageId(bool response)
     {
-        long id = DateTimeOffset.Now.ToUnixTimeSeconds();
+        long id = _time.GetUnixTimeInSeconds();
         id *= 4294967296L;
         if (id <= _lastMessageId)
         {

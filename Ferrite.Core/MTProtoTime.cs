@@ -50,6 +50,12 @@ public class MTProtoTime : IMTProtoTime
             await Task.Delay(1000);
         }
     }
+
+    public long GetUnixTimeInSeconds()
+    {
+        return DateTimeOffset.Now.ToUnixTimeSeconds();
+    }
+
     /// <summary>
     /// Fully thread safe; uses locking to ensure that only one thread initializes the value.
     /// </summary>

@@ -19,15 +19,16 @@
 using System;
 using System.Numerics;
 
-namespace Ferrite.Crypto
+namespace Ferrite.Crypto;
+
+public interface IRandomGenerator
 {
-    public interface IRandomGenerator
-    {
-        public int GetRandomPrime();
-        public int GetRandomNumber(int toExclusive);
-        public int GetRandomNumber(int fromInclusive, int toExclusive);
-        public byte[] GetRandomBytes(int count);
-        public BigInteger GetRandomInteger(BigInteger min, BigInteger max);
-    }
+    public int GetRandomPrime();
+    public int GetRandomNumber(int toExclusive);
+    public int GetRandomNumber(int fromInclusive, int toExclusive);
+    public byte[] GetRandomBytes(int count);
+    public BigInteger GetRandomInteger(BigInteger min, BigInteger max);
+    public int GetNext(int fromInclusive, int toExclusive);
+    public void Fill(Span<byte> data);
 }
 
