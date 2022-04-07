@@ -37,7 +37,7 @@ using System.Threading.Tasks;
 
 namespace Ferrite.Tests.PQ;
 
-class MockDataStore : IPersistentStore
+class FakeDataStore : IPersistentStore
 {
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
@@ -55,7 +55,7 @@ class MockDataStore : IPersistentStore
     }
 }
 
-class MockRedis : IDistributedStore
+class FakeRedis : IDistributedStore
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
     Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
@@ -95,7 +95,7 @@ class MockRedis : IDistributedStore
         return false;
     }
 }
-class MockCassandra : IPersistentStore
+class FakeCassandra : IPersistentStore
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -112,7 +112,7 @@ class MockCassandra : IPersistentStore
         authKeys.Add(authKeyId, authKey);
     }
 }
-class MockRandomGenerator : IRandomGenerator
+class FakeRandomGenerator : IRandomGenerator
 {
     byte[] random = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
         0x77, 0xBA, 0x4A, 0xA5, 0x73, 0x90, 0x73, 0x30 };
@@ -153,9 +153,19 @@ class MockRandomGenerator : IRandomGenerator
     {
         throw new NotImplementedException();
     }
+
+    public int GetNext(int fromInclusive, int toExclusive)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void Fill(Span<byte> data)
+    {
+        throw new NotImplementedException();
+    }
 }
 
-class MockKeyPairProvider : IKeyProvider
+class FakeKeyPairProvider : IKeyProvider
 {
     public IRSAKey? GetKey(long fingerprint)
     {
@@ -181,8 +191,8 @@ public class PqTests
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
-        builder.RegisterType<MockRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<MockKeyPairProvider>().As<IKeyProvider>();
+        builder.RegisterType<FakeRandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<FakeKeyPairProvider>().As<IKeyProvider>();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -223,8 +233,8 @@ public class PqTests
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
-        builder.RegisterType<MockRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<MockKeyPairProvider>().As<IKeyProvider>();
+        builder.RegisterType<FakeRandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<FakeKeyPairProvider>().As<IKeyProvider>();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -252,8 +262,8 @@ public class PqTests
     {
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
-        builder.RegisterType<MockRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<MockKeyPairProvider>().As<IKeyProvider>();
+        builder.RegisterType<FakeRandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<FakeKeyPairProvider>().As<IKeyProvider>();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -293,8 +303,8 @@ public class PqTests
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<MockCassandra>().As<IPersistentStore>();
-        builder.RegisterType<MockRedis>().As<IDistributedStore>();
+        builder.RegisterType<FakeCassandra>().As<IPersistentStore>();
+        builder.RegisterType<FakeRedis>().As<IDistributedStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         return container;
@@ -638,8 +648,8 @@ public class PqTests
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<MockDataStore>().As<IPersistentStore>();
-        builder.RegisterType<MockRedis>().As<IDistributedStore>();
+        builder.RegisterType<FakeDataStore>().As<IPersistentStore>();
+        builder.RegisterType<FakeRedis>().As<IDistributedStore>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         
