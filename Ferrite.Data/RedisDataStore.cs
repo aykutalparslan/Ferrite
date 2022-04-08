@@ -25,6 +25,9 @@ namespace Ferrite.Data;
 public class RedisDataStore: IDistributedStore
 {
     private readonly ConnectionMultiplexer redis;
+    private readonly byte[] AuthKeyPrefix = new byte[] { (byte)'A', (byte)'U', (byte)'T', (byte)'H', (byte)'-', (byte)'-' };
+    private readonly byte[] SessionPrefix = new byte[] { (byte)'S', (byte)'E', (byte)'S', (byte)'S', (byte)'-', (byte)'-' };
+    private readonly byte[] PhoneCodePrefix = new byte[] { (byte)'P', (byte)'C', (byte)'D', (byte)'E', (byte)'-', (byte)'-' };
 
     public RedisDataStore(string config)
     {
@@ -35,35 +38,63 @@ public class RedisDataStore: IDistributedStore
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return await db.StringGetAsync((RedisKey)BitConverter.GetBytes(authKeyId));
+        RedisKey key = BitConverter.GetBytes(authKeyId);
+        key.Prepend(AuthKeyPrefix);
+        return await db.StringGetAsync(key);
+    }
+
+    public async Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = phoneNumber + phoneCodeHash;
+        key.Prepend(PhoneCodePrefix);     
+        return await db.StringGetAsync(key);
     }
 
     public async Task<byte[]> GetSessionAsync(long sessionId)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return await db.StringGetAsync((RedisKey)BitConverter.GetBytes(sessionId));
+        RedisKey key = BitConverter.GetBytes(sessionId);
+        key.Prepend(SessionPrefix);
+        return await db.StringGetAsync(key);
     }
 
     public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return await db.StringSetAsync((RedisKey)BitConverter.GetBytes(authKeyId), (RedisValue)authKey);
+        RedisKey key = BitConverter.GetBytes(authKeyId);
+        key.Prepend(AuthKeyPrefix);
+        return await db.StringSetAsync(key, (RedisValue)authKey);
+    }
+
+    public async Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = phoneNumber + phoneCodeHash;
+        key.Prepend(PhoneCodePrefix);
+        return await db.StringSetAsync(key, phoneCode, expiresIn);
     }
 
     public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return await db.StringSetAsync((RedisKey)BitConverter.GetBytes(sessionId), (RedisValue)sessionData);
+        RedisKey key = BitConverter.GetBytes(sessionId);
+        key.Prepend(SessionPrefix);
+        return await db.StringSetAsync(key, (RedisValue)sessionData);
     }
 
     public async Task<bool> RemoveSessionAsync(long sessionId)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
-        return await db.KeyDeleteAsync((RedisKey)BitConverter.GetBytes(sessionId));
+        RedisKey key = BitConverter.GetBytes(sessionId);
+        key.Prepend(SessionPrefix);
+        return await db.KeyDeleteAsync(key);
     }
 }
 

@@ -17,15 +17,40 @@
 //
 using System;
 namespace Ferrite.Services.Auth;
-
+/// <summary>
+/// Contains info about a sent verification code.
+/// </summary>
 public record SentCode
 {
+    /// <summary>
+    /// Phone code type
+    /// </summary>
     public SentCodeType CodeType { get; init; }
+    /// <summary>
+    /// Length of the code in bytes in the cases of App and SMS
+    /// Length of the verification code in the cases of Call and MissedCall
+    /// </summary>
     public int CodeLength { get; init; }
+    /// <summary>
+    /// pattern to match
+    /// </summary>
     public string CodePattern { get; init; } = default!;
+    /// <summary>
+    /// Prefix of the phone number from which the call will be made
+    /// </summary>
     public string CodePrefix { get; init; } = default!;
+    /// <summary>
+    /// Phone code hash, to be stored and later re-used with auth.signIn
+    /// </summary>
     public string PhoneCodeHash { get; init; } = default!;
+    /// <summary>
+    /// Phone code type that will be sent next, if the phone code is not
+    /// received within timeout seconds: to send it use auth.resendCode
+    /// </summary>
     public SentCodeType NextType { get; init; }
+    /// <summary>
+    /// Timeout for reception of the phone code
+    /// </summary>
     public int Timeout { get; init; }
 }
 

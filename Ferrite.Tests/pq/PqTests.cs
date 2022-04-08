@@ -68,6 +68,11 @@ class FakeRedis : IDistributedStore
         return authKeys[authKeyId];
     }
 
+    public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]> GetSessionAsync(long sessionId)
     {
         if (!sessions.ContainsKey(sessionId))
@@ -81,6 +86,11 @@ class FakeRedis : IDistributedStore
     {
         authKeys.Add(authKeyId, authKey);
         return true;
+    }
+
+    public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)

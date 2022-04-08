@@ -22,6 +22,14 @@ namespace Ferrite.Services;
 
 public interface IAuthService
 {
+    /// <summary>
+	/// Send the verification code for login
+	/// </summary>
+	/// <param name="phoneNumber">Phone number in international format</param>
+	/// <param name="apiId">Application identifier</param>
+	/// <param name="apiHash">Application secret hash</param>
+	/// <param name="settings">Settings for the code type to send</param>
+	/// <returns>The method returns an auth.SentCode object with information on the message sent.</returns>
     public SentCode SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings);
     public Authorization SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName);
     public Authorization SignIn(string phoneNumber, string phoneCodeHash, string phoneCode);

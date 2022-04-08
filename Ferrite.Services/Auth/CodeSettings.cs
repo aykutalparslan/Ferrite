@@ -17,13 +17,35 @@
 //
 using System;
 namespace Ferrite.Services.Auth;
-
+/// <summary>
+/// Settings used by telegram servers for sending the confirm code.
+/// </summary>
 public record CodeSettings
 {
+    /// <summary>
+    /// Whether to allow phone verification via phone calls.
+    /// </summary>
     public bool AllowFlashcall { get; init; }
+    /// <summary>
+    /// Pass true if the phone number is used on the current device.
+    /// Ignored if allow_flashcall is not set.
+    /// </summary>
     public bool CurrentNumber { get; init; }
+    /// <summary>
+    /// If a token that will be included in eventually sent SMSs is required:
+    /// required in newer versions of android, to use the
+    /// <see href="https://developers.google.com/identity/sms-retriever/overview">android SMS receiver APIs</see>
+    /// </summary>
     public bool AllowAppHash { get; init; }
+    /// <summary>
+    /// Whether this device supports receiving the code using
+    /// the auth.codeTypeMissedCall method
+    /// </summary>
     public bool AllowMissedCall { get; init; }
+    /// <summary>
+    /// Previously stored logout tokens,
+    /// <see href="https://core.telegram.org/api/auth#logout-tokens">see the documentation for more info »</see>
+    /// </summary>
     public ICollection<byte[]> LogoutTokens { get; init; } = default!;
 }
 

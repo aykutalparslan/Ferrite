@@ -20,10 +20,30 @@ namespace Ferrite.Services.Auth;
 
 public enum SentCodeType
 {
+    None,
+    /// <summary>
+    /// The code was sent through the telegram app
+    /// </summary>
     App,
+    /// <summary>
+    /// The code was sent via SMS
+    /// </summary>
     Sms,
+    /// <summary>
+    /// The code will be sent via a phone call: a synthesized voice will tell
+    /// the user which verification code to input.
+    /// </summary>
     Call,
+    /// <summary>
+    /// The code will be sent via a flash phone call, that will be closed immediately.
+    /// The phone code will then be the phone number itself, just make sure that
+    /// the phone number matches the specified pattern.
+    /// </summary>
     FlashCall,
+    /// <summary>
+    /// The code will be sent via a flash phone call, that will be closed immediately.
+    /// The last digits of the phone number that calls are the code that must be entered manually by the user.
+    /// </summary>
     MissedCall
 }
 

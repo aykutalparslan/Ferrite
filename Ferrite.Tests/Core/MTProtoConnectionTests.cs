@@ -138,6 +138,16 @@ class FakeRedis : IDistributedStore
         sessions.Remove(sessionId);
         return false;
     }
+
+    public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
