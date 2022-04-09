@@ -16,21 +16,13 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using Ferrite.TL;
-using MessagePack;
+using System.Net;
 
 namespace Ferrite.Core;
 
-[MessagePackObject]
-public class MTProtoMessage
+public interface IFerriteServer
 {
-    [Key(0)]
-    public long SessionId { get; set; }
-    [Key(1)]
-    public bool IsResponse { get; set; }
-    [Key(2)]
-    public bool IsContentRelated { get; set; }
-    [Key(3)]
-    public byte[] Data { get; set; } = default!;
+    public Task StartAsync(IPEndPoint endPoint, CancellationToken token);
+    public Task StopAsync(CancellationToken token);
 }
 

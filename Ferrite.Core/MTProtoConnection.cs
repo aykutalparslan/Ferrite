@@ -30,6 +30,7 @@ using System.Security.Cryptography;
 using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
 using MessagePack;
+using System.Collections.Concurrent;
 
 namespace Ferrite.Core;
 
@@ -46,6 +47,7 @@ public class MTProtoConnection
     private readonly IMTProtoTime _time;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
+    private IProcessor _processor;
     private long _authKeyId;
     private byte[] _authKey;
     private long _sessionId;
@@ -67,7 +69,7 @@ public class MTProtoConnection
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedStore store, IPersistentStore persistentStore,
         ILogger logger, IRandomGenerator random, ISessionManager sessionManager,
-        IMTProtoTime protoTime)
+        IMTProtoTime protoTime, IProcessor processor)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -79,6 +81,7 @@ public class MTProtoConnection
         _random = random;
         _sessionManager = sessionManager;
         _time = protoTime;
+        _processor = processor;
     }
 
     public void Start()
@@ -362,6 +365,7 @@ public class MTProtoConnection
                 try
                 {
                     var msg = factory.Read(constructor, ref rd);
+                    _processor.Process(this, msg, new ConcurrentQueue<ITLObject>(), _context);
                     OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
                 }
                 catch (Exception ex)
@@ -386,6 +390,7 @@ public class MTProtoConnection
         //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
         TLExecutionContext _context = new TLExecutionContext(_sessionData);
         _context.MessageId = msgId;
+        _processor.Process(this, msg, new ConcurrentQueue<ITLObject>(), _context);
         OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
 

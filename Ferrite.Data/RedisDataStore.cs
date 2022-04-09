@@ -28,6 +28,7 @@ public class RedisDataStore: IDistributedStore
     private readonly byte[] AuthKeyPrefix = new byte[] { (byte)'A', (byte)'U', (byte)'T', (byte)'H', (byte)'-', (byte)'-' };
     private readonly byte[] SessionPrefix = new byte[] { (byte)'S', (byte)'E', (byte)'S', (byte)'S', (byte)'-', (byte)'-' };
     private readonly byte[] PhoneCodePrefix = new byte[] { (byte)'P', (byte)'C', (byte)'D', (byte)'E', (byte)'-', (byte)'-' };
+    private readonly byte[] AuthSessionPrefix = new byte[] { (byte)'A', (byte)'K', (byte)'C', (byte)'R', (byte)'-', (byte)'-' };
 
     public RedisDataStore(string config)
     {
@@ -40,6 +41,15 @@ public class RedisDataStore: IDistributedStore
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
         key.Prepend(AuthKeyPrefix);
+        return await db.StringGetAsync(key);
+    }
+
+    public async Task<byte[]> GetAuthKeySessionAsync(byte[] nonce)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = nonce;
+        key.Prepend(AuthSessionPrefix);
         return await db.StringGetAsync(key);
     }
 
@@ -68,6 +78,15 @@ public class RedisDataStore: IDistributedStore
         RedisKey key = BitConverter.GetBytes(authKeyId);
         key.Prepend(AuthKeyPrefix);
         return await db.StringSetAsync(key, (RedisValue)authKey);
+    }
+
+    public async Task<bool> PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = nonce;
+        key.Prepend(AuthSessionPrefix);
+        return await db.StringSetAsync(key, (RedisValue)sessionData);
     }
 
     public async Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)

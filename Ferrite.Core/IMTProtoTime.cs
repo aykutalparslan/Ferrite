@@ -15,12 +15,19 @@
 //    You should have received a copy of the GNU Affero General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-namespace Ferrite.Core
+namespace Ferrite.Core;
+/// <summary>
+/// Helpers for getting the current UnixTime and approximate MTProto message ids
+/// </summary>
+public interface IMTProtoTime
 {
-    public interface IMTProtoTime
-    {
-        long FiveMinutesAgo { get; }
-        long ThirtySecondsLater { get; }
-        long GetUnixTimeInSeconds();
-    }
+    /// <summary>
+    /// Returns a msg_id approximate 300 seconds in the past
+    /// </summary>
+    long FiveMinutesAgo { get; }
+    /// <summary>
+    /// Returns a msg_id approximate 30 seconds in the future
+    /// </summary>
+    long ThirtySecondsLater { get; }
+    long GetUnixTimeInSeconds();
 }

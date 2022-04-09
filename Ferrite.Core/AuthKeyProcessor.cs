@@ -16,21 +16,23 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Collections.Concurrent;
+using Ferrite.Data;
 using Ferrite.TL;
-using MessagePack;
 
 namespace Ferrite.Core;
 
-[MessagePackObject]
-public class MTProtoMessage
+public class AuthKeyProcessor : IProcessor
 {
-    [Key(0)]
-    public long SessionId { get; set; }
-    [Key(1)]
-    public bool IsResponse { get; set; }
-    [Key(2)]
-    public bool IsContentRelated { get; set; }
-    [Key(3)]
-    public byte[] Data { get; set; } = default!;
+    private readonly IDistributedStore _store;
+    public AuthKeyProcessor(IDistributedStore store)
+    {
+        _store = store;
+    }
+
+    public Task Process(object? sender, ITLObject input, ConcurrentQueue<ITLObject> output, TLExecutionContext ctx)
+    {
+        throw new NotImplementedException();
+    }
 }
 

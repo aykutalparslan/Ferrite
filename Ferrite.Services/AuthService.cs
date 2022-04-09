@@ -23,6 +23,14 @@ namespace Ferrite.Services;
 
 public class AuthService : IAuthService
 {
+    private static ReadOnlySpan<int> UnauthorizedMethods => new int[]
+    {
+        -1502141361, 1056025023, 1418342645, -779399914, -2131827673,
+        -1126886015, -1518699091, -990308245, 531836966, 1378703997,
+        1375900482, -219008246, -269862909, -845657435, 1120311183,
+        1784243458
+    };
+
     public Authorization AcceptLoginToken(byte[] token)
     {
         throw new NotImplementedException();

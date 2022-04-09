@@ -16,12 +16,14 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
 using System.Numerics;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Ferrite.Core;
@@ -145,6 +147,16 @@ class FakeRedis : IDistributedStore
     }
 
     public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<byte[]> GetAuthKeySessionAsync(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
     {
         throw new NotImplementedException();
     }
@@ -309,6 +321,30 @@ class FakeLogger : ILogger
     public void Warning(Exception exception, string message)
     {
         
+    }
+}
+class FakeDistributedPipe : IDistributedPipe
+{
+    ConcurrentQueue<byte[]> _channel = new();
+    public async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
+    {
+        _channel.TryDequeue(out var result);
+        return result;
+    }
+
+    public void Subscribe(string channel)
+    {
+        
+    }
+
+    public async Task UnSubscribeAsync()
+    {
+
+    }
+
+    public async Task WriteAsync(string channel, byte[] message)
+    {
+        _channel.Enqueue(message);
     }
 }
 
@@ -503,6 +539,8 @@ public class MTProtoConnectionTests
         builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
+        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().SingleInstance();
+        builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
 
         var container = builder.Build();
 
