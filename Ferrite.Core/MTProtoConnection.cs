@@ -47,7 +47,7 @@ public class MTProtoConnection
     private readonly IMTProtoTime _time;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
-    private IProcessor _processor;
+    private IProcessorManager _processorManager;
     private long _authKeyId;
     private byte[] _authKey;
     private long _sessionId;
@@ -60,7 +60,7 @@ public class MTProtoConnection
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private Dictionary<string, object> _sessionData = new Dictionary<string, object>();
+    //private Dictionary<string, object> _sessionData = new Dictionary<string, object>();
     private const int WebSocketGet = 542393671;
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
@@ -69,7 +69,7 @@ public class MTProtoConnection
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedStore store, IPersistentStore persistentStore,
         ILogger logger, IRandomGenerator random, ISessionManager sessionManager,
-        IMTProtoTime protoTime, IProcessor processor)
+        IMTProtoTime protoTime, IProcessorManager processorManager)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -81,7 +81,7 @@ public class MTProtoConnection
         _random = random;
         _sessionManager = sessionManager;
         _time = protoTime;
-        _processor = processor;
+        _processorManager = processorManager;
     }
 
     public void Start()
@@ -330,9 +330,10 @@ public class MTProtoConnection
                 throw ex;
             }
             SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
-            TLExecutionContext _context = new TLExecutionContext(_sessionData);
+            TLExecutionContext _context = new TLExecutionContext(new Dictionary<string, object>());
             _context.Salt = rd.ReadInt64(true);
             _context.SessionId = rd.ReadInt64(true);
+            _context.AuthKeyId = _authKeyId;
             if (_sessionId == 0)
             {
                 _sessionId = _context.SessionId;
@@ -344,7 +345,7 @@ public class MTProtoConnection
                 state.AuthKey = _authKey;
                 state.NodeId = _sessionManager.NodeId;
                 _sessionManager.AddSessionAsync(state,
-                    new MTPtotoSession(_sessionId,this)).Wait();
+                    new MTPtotoSession(this)).Wait();
   
             }
             _context.MessageId = rd.ReadInt64(true);
@@ -365,7 +366,7 @@ public class MTProtoConnection
                 try
                 {
                     var msg = factory.Read(constructor, ref rd);
-                    _processor.Process(this, msg, new ConcurrentQueue<ITLObject>(), _context);
+                    _processorManager.Process(this, msg, _context);
                     OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
                 }
                 catch (Exception ex)
@@ -388,9 +389,10 @@ public class MTProtoConnection
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);
         //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
-        TLExecutionContext _context = new TLExecutionContext(_sessionData);
+        TLExecutionContext _context = new TLExecutionContext(new Dictionary<string, object>());
         _context.MessageId = msgId;
-        _processor.Process(this, msg, new ConcurrentQueue<ITLObject>(), _context);
+        _context.AuthKeyId = _authKeyId;
+        _processorManager.Process(this, msg, _context);
         OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
 

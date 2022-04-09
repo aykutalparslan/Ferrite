@@ -99,8 +99,8 @@ public class SetClientDhParams : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         bool failed = false;
-        var sessionNonce = (Int128)ctx.SessionData["nonce"];
-        var sessionServerNonce = (Int128)ctx.SessionData["server_nonce"];
+        var sessionNonce = (Int128)(byte[])ctx.SessionData["nonce"];
+        var sessionServerNonce = (Int128)(byte[])ctx.SessionData["server_nonce"];
         if (nonce != sessionNonce || serverNonce != sessionServerNonce)
         {
             failed = true;

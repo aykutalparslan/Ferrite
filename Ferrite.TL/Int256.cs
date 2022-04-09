@@ -26,17 +26,18 @@ using xxHash;
 
 namespace Ferrite.TL;
 
-[StructLayout(LayoutKind.Explicit)]
-public unsafe struct Int256 : ITLObject, IEquatable<Int256>
+public struct Int256 : ITLObject, IEquatable<Int256>
 {
-    [FieldOffset(0)]
-    private fixed byte _value[32];
+    private byte[] _value;
+    public Int256()
+    {
+        _value = new byte[32];
+    }
     public Int256(byte[] val)
     {
         if (val.Length == 32)
         {
-            Unsafe.SkipInit(out this);
-            this = Unsafe.As<byte, Int256>(ref val[0]);
+            _value = val;
         }
         else
         {
@@ -47,9 +48,7 @@ public unsafe struct Int256 : ITLObject, IEquatable<Int256>
 
     public static implicit operator byte[](Int256 i)
     {
-        byte[] buff = new byte[32];
-        Marshal.Copy((IntPtr)i._value, buff, 0, 32);
-        return buff;
+        return i._value;
     }
     public static explicit operator Int256(byte[] b) => new Int256(b);
 
@@ -59,27 +58,17 @@ public unsafe struct Int256 : ITLObject, IEquatable<Int256>
 
     public Span<byte> AsSpan()
     {
-        fixed (byte* p = _value)
-        {
-            return new Span<byte>(p, 32);
-        }
+        return _value;
     }
 
     public void Parse(ref SequenceReader buff)
     {
-        fixed (byte* p = _value)
-        {
-            buff.Read(new Span<byte>(p, 32));
-        }
+        buff.Read(_value);
     }
 
     public void WriteTo(Span<byte> buff)
     {
-        fixed (byte* p = _value)
-        fixed (byte* d = &MemoryMarshal.GetReference(buff))
-        {
-            Buffer.MemoryCopy(p, d, 32, 32);
-        }
+        _value.CopyTo(buff);
     }
 
     public static bool operator ==(Int256 left, Int256 right)

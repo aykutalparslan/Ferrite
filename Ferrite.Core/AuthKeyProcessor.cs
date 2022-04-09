@@ -16,23 +16,104 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using System.Collections.Concurrent;
+using System.Buffers;
 using Ferrite.Data;
 using Ferrite.TL;
+using Ferrite.TL.mtproto;
+using MessagePack;
 
 namespace Ferrite.Core;
 
 public class AuthKeyProcessor : IProcessor
 {
-    private readonly IDistributedStore _store;
-    public AuthKeyProcessor(IDistributedStore store)
+    private readonly ISessionManager _sessionManager;
+    private readonly IDistributedPipe _pipe;
+    public AuthKeyProcessor(ISessionManager sessionManager, IDistributedPipe pipe)
     {
-        _store = store;
+        _sessionManager = sessionManager;
+        _pipe = pipe;
     }
 
-    public Task Process(object? sender, ITLObject input, ConcurrentQueue<ITLObject> output, TLExecutionContext ctx)
+    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (ctx.AuthKeyId != 0)
+        {
+            output.Enqueue(input);
+            return;
+        }
+        if (input.Constructor != TLConstructor.ReqPqMulti &&
+            input.Constructor != TLConstructor.ReqDhParams &&
+            input.Constructor != TLConstructor.SetClientDhParams)
+        {
+            return;
+        }
+
+
+        if (input is ReqPqMulti reqPq &&
+            sender is MTProtoConnection connection)
+        {
+            var result = await reqPq.ExecuteAsync(ctx);
+            MTProtoMessage message = new MTProtoMessage();
+            message.SessionId = ctx.SessionId;
+            message.IsResponse = true;
+            message.IsContentRelated = true;
+            message.Data = result.TLBytes.ToArray();
+            await _sessionManager.AddAuthSessionAsync(reqPq.Nonce,
+                new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
+                new MTPtotoSession(connection));
+            message.Nonce = reqPq.Nonce;
+            message.IsUnencrypted = true;
+            var bytes = MessagePackSerializer.Serialize(message);
+            _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
+
+            Console.WriteLine("-->" + result.ToString());
+        }
+        else if (input is ReqDhParams reqDhParams &&
+            await _sessionManager.GetAuthSessionStateAsync(reqDhParams.Nonce)
+            is AuthSessionState state)
+        {
+            ctx.SessionData = state.SessionData;
+            var result = await reqDhParams.ExecuteAsync(ctx);
+            MTProtoMessage message = new MTProtoMessage();
+            message.SessionId = ctx.SessionId;
+            message.IsResponse = true;
+            message.IsContentRelated = true;
+            message.Data = result.TLBytes.ToArray();
+            message.IsUnencrypted = true;
+            message.Nonce = reqDhParams.Nonce;
+            var bytes = MessagePackSerializer.Serialize(message);
+            _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
+            await _sessionManager.UpdateAuthSessionAsync(reqDhParams.Nonce, new AuthSessionState()
+            {
+                NodeId = _sessionManager.NodeId,
+                SessionData = ctx.SessionData
+            });
+
+            Console.WriteLine("-->" + result.ToString());
+        }
+        else if (input is SetClientDhParams setClientDhParams &&
+           await _sessionManager.GetAuthSessionStateAsync(setClientDhParams.Nonce)
+           is AuthSessionState state2)
+        {
+            ctx.SessionData = state2.SessionData;
+            var result = await setClientDhParams.ExecuteAsync(ctx);
+            MTProtoMessage message = new MTProtoMessage();
+            message.SessionId = ctx.SessionId;
+            message.IsResponse = true;
+            message.IsContentRelated = true;
+            message.Data = result.TLBytes.ToArray();
+            message.IsUnencrypted = true;
+            message.Nonce = setClientDhParams.Nonce;
+            var bytes = MessagePackSerializer.Serialize(message);
+            _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
+            await _sessionManager.UpdateAuthSessionAsync(setClientDhParams.Nonce, new AuthSessionState()
+            {
+                NodeId = _sessionManager.NodeId,
+                SessionData = ctx.SessionData
+            });
+
+            Console.WriteLine("-->" + result.ToString());
+        }
     }
 }
 

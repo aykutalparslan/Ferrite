@@ -16,25 +16,10 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using Ferrite.TL;
-using MessagePack;
-
 namespace Ferrite.Core;
 
-[MessagePackObject]
-public class MTProtoMessage
+public interface IProcessorChain
 {
-    [Key(0)]
-    public long SessionId { get; set; }
-    [Key(1)]
-    public bool IsResponse { get; set; }
-    [Key(2)]
-    public bool IsContentRelated { get; set; }
-    [Key(3)]
-    public byte[] Data { get; set; } = default!;
-    [Key(4)]
-    public bool IsUnencrypted { get; set; }
-    [Key(5)]
-    public byte[] Nonce { get; set; } = default!;
+    public void AddLast(IProcessor processor);
 }
 

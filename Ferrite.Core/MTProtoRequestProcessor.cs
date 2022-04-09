@@ -33,7 +33,7 @@ public class MTProtoRequestProcessor : IProcessor
         _sessionManager = sessionManager;
         _pipe = pipe;
     }
-    public async Task Process(object? sender, ITLObject input, ConcurrentQueue<ITLObject> output, TLExecutionContext ctx)
+    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
         Console.WriteLine(input.ToString());
         if (input is ITLMethod method)
@@ -44,12 +44,13 @@ public class MTProtoRequestProcessor : IProcessor
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.TLBytes.ToArray();
-            if (ctx.SessionId == 0 &&
-                sender is MTProtoConnection connection)
-            {
-                _ = connection.SendAsync(message);
-            }
-            else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+            //if (ctx.SessionId == 0 &&
+            //    sender is MTProtoConnection connection)
+            //{
+            //    _ = connection.SendAsync(message);
+            //}
+            //else
+            if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
                 is SessionState session)
             {
                 var bytes = MessagePackSerializer.Serialize(message);

@@ -25,8 +25,13 @@ namespace Ferrite.Core
 
         Task<bool> AddSessionAsync(SessionState state, MTPtotoSession session);
         Task<SessionState?> GetSessionStateAsync(long sessionId);
+        Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTPtotoSession session);
+        public Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state);
+        Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce);
         bool LocalSessionExists(long sessionId);
+        bool LocalAuthSessionExists(byte[] nonce);
         bool RemoveSession(long sessionId);
         bool TryGetLocalSession(long sessionId, out MTPtotoSession session);
+        bool TryGetLocalAuthSession(byte[] nonce, out MTPtotoSession session);
     }
 }

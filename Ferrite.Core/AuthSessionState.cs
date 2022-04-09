@@ -17,24 +17,17 @@
  */
 
 using System;
-namespace Ferrite.TL
-{
-    public class TLExecutionContext
-    {
-        public Dictionary<string, object> SessionData { get; set; }
-        public long AuthKeyId { get; set; }
-        public long Salt { get; set; }
-        public long SessionId { get; set; }
-        public long MessageId { get; set; }
-        public int SequenceNo { get; set; }
-        public TLExecutionContext(Dictionary<string, object> sessionData)
-        {
-            SessionData = sessionData;
-            Salt = 0;
-            SessionId = 0;
-            MessageId = 0;
-            SequenceNo = 0;
-        }
-    }
-}
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using MessagePack;
 
+namespace Ferrite.Core;
+
+[MessagePackObject]
+public class AuthSessionState
+{
+    [Key(0)]
+    public Dictionary<string, object> SessionData { get; set; } = default!;
+    [Key(1)]
+    public Guid NodeId { get; set; }
+}

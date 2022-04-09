@@ -76,7 +76,9 @@ public class Program
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();
-        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().SingleInstance();
+        builder.RegisterType<AuthKeyProcessor>().As<IProcessor>().AsSelf();
+        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().AsSelf();
+        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
@@ -87,7 +89,7 @@ public class Program
         builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<SessionManager>().As<ISessionManager>().SingleInstance();
-        builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();
+        builder.RegisterType<FerriteServer>().As<IFerriteServer>();
 
         var container = builder.Build();
 

@@ -273,8 +273,8 @@ public class PqTests
         Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
         Assert.Equal(0x53911073, (int)context.SessionData["q"]);
 
-        Assert.Equal(nonce, (Int128)context.SessionData["nonce"]);
-        Assert.Equal(server_nonce, (Int128)context.SessionData["server_nonce"]);
+        Assert.Equal(nonce, context.SessionData["nonce"]);
+        Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
     }
 
     [Fact]
@@ -302,13 +302,13 @@ public class PqTests
         Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
         Assert.Equal(0x53911073, (int)context.SessionData["q"]);
 
-        Assert.Equal(nonce, (Int128)context.SessionData["nonce"]);
-        Assert.Equal(server_nonce, (Int128)context.SessionData["server_nonce"]);
+        Assert.Equal(nonce, context.SessionData["nonce"]);
+        Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
 
         var reqpqNew = container.Resolve<ReqPqMulti>();
         reqpqNew.Nonce = (Int128)nonce;
         var respqNew = reqpqNew.ExecuteAsync(context);
-        Assert.Equal(server_nonce, (Int128)context.SessionData["server_nonce"]);
+        Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
     }
 
     private static IContainer BuildContainer()
@@ -380,8 +380,8 @@ public class PqTests
             0x0A, 0xFC, 0x4A, 0x76, 0xA7, 0x35, 0xCF, 0x5B,
             0x1F, 0x0F, 0xD6, 0x8B, 0xD1, 0x7F, 0xA1, 0x81,
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
-        context.SessionData.Add("nonce", (Int128)n);
-        context.SessionData.Add("server_nonce", (Int128)sn);
+        context.SessionData.Add("nonce", n);
+        context.SessionData.Add("server_nonce", sn);
         context.SessionData.Add("p", 0x494C553B);
         context.SessionData.Add("q", 0x53911073);
 
@@ -521,8 +521,8 @@ public class PqTests
         IContainer container = BuildContainer();
 
         TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-        context.SessionData.Add("nonce", (Int128)nonce);
-        context.SessionData.Add("server_nonce", (Int128)server_nonce);
+        context.SessionData.Add("nonce", nonce);
+        context.SessionData.Add("server_nonce", server_nonce);
         context.SessionData.Add("p", 0x494C553B);
         context.SessionData.Add("q", 0x53911073);
 
@@ -684,8 +684,8 @@ public class PqTests
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
 
         TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-        context.SessionData.Add("nonce", (Int128)n);
-        context.SessionData.Add("server_nonce", (Int128)sn);
+        context.SessionData.Add("nonce", n);
+        context.SessionData.Add("server_nonce", sn);
         context.SessionData.Add("p", 0x494C553B);
         context.SessionData.Add("q", 0x53911073);
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
@@ -784,8 +784,8 @@ public class PqTests
             0xE1, 0x22, 0x9A, 0xD8, 0x67, 0xCC, 0x02, 0x4D };
 
         TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-        context.SessionData.Add("nonce", (Int128)n);
-        context.SessionData.Add("server_nonce", (Int128)sn);
+        context.SessionData.Add("nonce", n);
+        context.SessionData.Add("server_nonce", sn);
         context.SessionData.Add("p", 0x494C553B);
         context.SessionData.Add("q", 0x53911073);
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);

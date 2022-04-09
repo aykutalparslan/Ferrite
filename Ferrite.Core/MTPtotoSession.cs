@@ -23,15 +23,11 @@ namespace Ferrite.Core
 {
     public class MTPtotoSession
     {
-        private readonly long _id;
         private readonly WeakReference<MTProtoConnection> _ref;
-        public MTPtotoSession(long sessionId, MTProtoConnection connection)
+        public MTPtotoSession(MTProtoConnection connection)
         {
-            _id = sessionId;
             _ref = new(connection);
         }
-
-        public long SessionId => _id;
 
         public bool TryGetConnection([NotNullWhen(true)] out MTProtoConnection? connection)
         {

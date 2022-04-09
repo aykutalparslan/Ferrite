@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using Ferrite.Data;
+using Ferrite.TL;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -27,6 +28,7 @@ public class SessionManager : ISessionManager
 {
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTPtotoSession> _localSessions = new();
+    private readonly ConcurrentDictionary<Int128, MTPtotoSession> _localAuthSessions = new();
     private readonly IDistributedStore _store;
     private Guid GetNodeId()
     {
@@ -51,6 +53,10 @@ public class SessionManager : ISessionManager
     {
         state.NodeId = NodeId;
         var remoteAdd = await _store.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state));
+        if (_localSessions.ContainsKey(state.SessionId))
+        {
+            _localSessions.Remove(state.SessionId, out var value);
+        }
         return remoteAdd && _localSessions.TryAdd(state.SessionId, session);
     }
     public async Task<SessionState?> GetSessionStateAsync(long sessionId)
@@ -82,6 +88,45 @@ public class SessionManager : ISessionManager
     public bool TryGetLocalSession(long sessionId, out MTPtotoSession session)
     {
         return _localSessions.TryGetValue(sessionId, out session);
+    }
+
+    public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTPtotoSession session)
+    {
+        state.NodeId = NodeId;
+        var remoteAdd = await _store.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
+        var key = (Int128)nonce;
+        if (_localAuthSessions.ContainsKey(key))
+        {
+            _localAuthSessions.Remove(key, out var value);
+        }
+        return remoteAdd && _localAuthSessions.TryAdd((Int128)nonce, session);
+    }
+
+    public async Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state)
+    {
+        return await _store.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
+    }
+
+    public async Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce)
+    {
+        var rawSession = await _store.GetAuthKeySessionAsync(nonce);
+        if (rawSession != null)
+        {
+            var state = MessagePackSerializer.Deserialize<AuthSessionState>(rawSession);
+            
+            return state;
+        }
+        return null;
+    }
+
+    public bool LocalAuthSessionExists(byte[] nonce)
+    {
+        return _localAuthSessions.ContainsKey((Int128)nonce);
+    }
+
+    public bool TryGetLocalAuthSession(byte[] nonce, out MTPtotoSession session)
+    {
+        return _localAuthSessions.TryGetValue((Int128)nonce, out session);
     }
 }
 

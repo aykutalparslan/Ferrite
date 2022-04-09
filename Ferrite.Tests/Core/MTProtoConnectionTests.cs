@@ -22,6 +22,7 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Numerics;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,6 +60,12 @@ class FakeTime : IMTProtoTime
 }
 class FakeRandom : IRandomGenerator
 {
+    private int[] generatedPrimes;
+    public FakeRandom()
+    {
+        int rangeEnd = RandomNumberGenerator.GetInt32(int.MaxValue / 4 * 3, int.MaxValue);
+        generatedPrimes = RandomGenerator.SieveOfEratosthenesSegmented(rangeEnd - 5000000, rangeEnd);
+    }
     public void Fill(Span<byte> data)
     {
         throw new NotImplementedException();
@@ -71,27 +78,95 @@ class FakeRandom : IRandomGenerator
 
     public byte[] GetRandomBytes(int count)
     {
+        if(count == 16)
+        {
+            return new byte[]
+            {
+                178, 121,62,117,215,188,141,152,36,193,57,227,183,151,131,37
+            };
+        }
         return File.ReadAllBytes("testdata/randomBytes_0");
     }
 
     public BigInteger GetRandomInteger(BigInteger min, BigInteger max)
     {
-        throw new NotImplementedException();
+        RandomNumberGenerator gen = RandomNumberGenerator.Create();
+        return RandomInRange(gen, min, max);
+    }
+
+    // Implementation was taken from
+    // https://stackoverflow.com/a/48855115/2015348
+    private static BigInteger RandomInRange(RandomNumberGenerator rng, BigInteger min, BigInteger max)
+    {
+        if (min > max)
+        {
+            var buff = min;
+            min = max;
+            max = buff;
+        }
+
+        // offset to set min = 0
+        BigInteger offset = -min;
+        min = 0;
+        max += offset;
+
+        var value = randomInRangeFromZeroToPositive(rng, max) - offset;
+        return value;
+    }
+
+    private static BigInteger randomInRangeFromZeroToPositive(RandomNumberGenerator rng, BigInteger max)
+    {
+        BigInteger value;
+        var bytes = max.ToByteArray();
+
+        // count how many bits of the most significant byte are 0
+        // NOTE: sign bit is always 0 because `max` must always be positive
+        byte zeroBitsMask = 0b00000000;
+
+        var mostSignificantByte = bytes[bytes.Length - 1];
+
+        // we try to set to 0 as many bits as there are in the most significant byte, starting from the left (most significant bits first)
+        // NOTE: `i` starts from 7 because the sign bit is always 0
+        for (var i = 7; i >= 0; i--)
+        {
+            // we keep iterating until we find the most significant non-0 bit
+            if ((mostSignificantByte & (0b1 << i)) != 0)
+            {
+                var zeroBits = 7 - i;
+                zeroBitsMask = (byte)(0b11111111 >> zeroBits);
+                break;
+            }
+        }
+
+        do
+        {
+            rng.GetBytes(bytes);
+
+            // set most significant bits to 0 (because `value > max` if any of these bits is 1)
+            bytes[bytes.Length - 1] &= zeroBitsMask;
+
+            value = new BigInteger(bytes);
+
+            // `value > max` 50% of the times, in which case the fastest way to keep the distribution uniform is to try again
+        } while (value > max);
+
+        return value;
     }
 
     public int GetRandomNumber(int toExclusive)
     {
-        throw new NotImplementedException();
+        return RandomNumberGenerator.GetInt32(toExclusive);
     }
 
     public int GetRandomNumber(int fromInclusive, int toExclusive)
     {
-        throw new NotImplementedException();
+        return RandomNumberGenerator.GetInt32(fromInclusive, toExclusive);
     }
 
     public int GetRandomPrime()
     {
-        throw new NotImplementedException();
+        int rnd = RandomNumberGenerator.GetInt32(generatedPrimes.Length);
+        return generatedPrimes[rnd];
     }
 }
 class FakeRedis : IDistributedStore
@@ -235,15 +310,43 @@ class FakeSessionManager : ISessionManager
 {
     public Guid NodeId => Guid.NewGuid();
 
+    private Dictionary<Int128, byte[]> _authKeySessionStates = new();
+    private Dictionary<Int128, MTPtotoSession> _authKeySessions = new();
+
+    public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTPtotoSession session)
+    {
+        var stateBytes = MessagePackSerializer.Serialize(state);
+        _authKeySessions.Add((Int128)nonce, session);
+        _authKeySessionStates.Add((Int128)nonce, stateBytes);
+        return true;
+    }
+
     public async Task<bool> AddSessionAsync(SessionState state, MTPtotoSession session)
     {
         return true;
+    }
+
+    public async Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce)
+    {
+        var rawSession = _authKeySessionStates[(Int128)nonce];
+        if (rawSession != null)
+        {
+            var state = MessagePackSerializer.Deserialize<AuthSessionState>(rawSession);
+
+            return state;
+        }
+        return null;
     }
 
     public async Task<SessionState?> GetSessionStateAsync(long sessionId)
     {
         var data = File.ReadAllBytes("testdata/sessionState");
         return MessagePackSerializer.Deserialize<SessionState>(data);
+    }
+
+    public bool LocalAuthSessionExists(byte[] nonce)
+    {
+        throw new NotImplementedException();
     }
 
     public bool LocalSessionExists(long sessionId)
@@ -256,9 +359,21 @@ class FakeSessionManager : ISessionManager
         throw new NotImplementedException();
     }
 
+    public bool TryGetLocalAuthSession(byte[] nonce, out MTPtotoSession session)
+    {
+        throw new NotImplementedException();
+    }
+
     public bool TryGetLocalSession(long sessionId, out MTPtotoSession session)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state)
+    {
+        _authKeySessionStates.Remove((Int128)nonce);
+        _authKeySessionStates.Add((Int128)nonce, MessagePackSerializer.Serialize(state));
+        return true;
     }
 }
 class FakeLogger : ILogger
@@ -361,7 +476,6 @@ public class MTProtoConnectionTests
         var sess = new Dictionary<string, object>();
         mtProtoConnection.MessageReceived += async (s,e) => {
             received.Add(e.Message);
-            await ((ITLMethod)e.Message).ExecuteAsync(new TLExecutionContext(sess));
         };
         mtProtoConnection.Start();
         Assert.IsType<ReqPqMulti>(received[0]);
@@ -380,7 +494,6 @@ public class MTProtoConnectionTests
         var sess = new Dictionary<string, object>();
         mtProtoConnection.MessageReceived += async (s, e) => {
             received.Add(e.Message);
-            await ((ITLMethod)e.Message).ExecuteAsync(new TLExecutionContext(sess));
         };
         mtProtoConnection.Start();
         Assert.IsType<ReqPqMulti>(received[0]);
@@ -539,7 +652,9 @@ public class MTProtoConnectionTests
         builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
-        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().SingleInstance();
+        builder.RegisterType<AuthKeyProcessor>().As<IProcessor>().AsSelf();
+        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().AsSelf();
+        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
 
         var container = builder.Build();

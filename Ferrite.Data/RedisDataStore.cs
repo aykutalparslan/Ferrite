@@ -86,7 +86,7 @@ public class RedisDataStore: IDistributedStore
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = nonce;
         key.Prepend(AuthSessionPrefix);
-        return await db.StringSetAsync(key, (RedisValue)sessionData);
+        return await db.StringSetAsync(key, (RedisValue)sessionData, new TimeSpan(0,0,600));
     }
 
     public async Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)

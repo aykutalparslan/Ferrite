@@ -160,8 +160,8 @@ public class ReqDhParams : ITLObject, ITLMethod
         SequenceReader reader = IAsyncBinaryReader.Create(data.Slice(32, 192));
 
         int constructor = reader.ReadInt32(true);
-        var sessionNonce = (Int128)ctx.SessionData["nonce"];
-        var sessionServerNonce = (Int128)ctx.SessionData["server_nonce"];
+        var sessionNonce = (Int128)(byte[])ctx.SessionData["nonce"];
+        var sessionServerNonce = (Int128)(byte[])ctx.SessionData["server_nonce"];
         if (constructor == TLConstructor.PQInnerData)
         {
             var obj = factory.Read<PQInnerDataDc>(ref reader);
@@ -173,6 +173,7 @@ public class ReqDhParams : ITLObject, ITLMethod
             {
                 rpcError = factory.Resolve<RpcError>();
                 rpcError.ErrorCode = -404;
+                rpcError.ErrorMessage = "Nonce values did not match.";
                 return rpcError;
             }
             var newNonceServerNonce = SHA1.HashData(((byte[])obj.NewNonce)

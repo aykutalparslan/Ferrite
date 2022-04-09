@@ -20,6 +20,8 @@
     <None Remove="DotNext.Unsafe" />
     <None Remove="mtproto\" />
     <None Remove="Autofac" />
+    <None Remove="MessagePack" />
+    <None Remove="MessagePackAnalyzer" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DotNext.IO" Version="4.4.0" />

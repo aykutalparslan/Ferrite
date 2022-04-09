@@ -65,7 +65,6 @@ public class FerriteServer : IFerriteServer
 
     private async Task StartAccept(IConnectionListener socketListener)
     {
-        Console.WriteLine("Server is listening at {0}", socketListener.EndPoint);
         _log.Information(String.Format("Server is listening at {0}", socketListener.EndPoint));
         while (true)
         {
@@ -87,12 +86,25 @@ public class FerriteServer : IFerriteServer
             {
                 var result = await _pipe.ReadAsync();
                 var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
-                var sessionExists = _sessionManager.TryGetLocalSession(message.SessionId, out var protoSession);
-                if (sessionExists &&
-                    protoSession.TryGetConnection(out var connection))
+                if (message.IsUnencrypted)
                 {
-                    _ = connection.SendAsync(message);
+                    var sessionExists = _sessionManager.TryGetLocalAuthSession(message.Nonce, out var protoSession);
+                    if (sessionExists &&
+                        protoSession.TryGetConnection(out var connection))
+                    {
+                        _ = connection.SendAsync(message);
+                    }
                 }
+                else
+                {
+                    var sessionExists = _sessionManager.TryGetLocalSession(message.SessionId, out var protoSession);
+                    if (sessionExists &&
+                        protoSession.TryGetConnection(out var connection))
+                    {
+                        _ = connection.SendAsync(message);
+                    }
+                }
+                
             }
         }
         catch (Exception ex)

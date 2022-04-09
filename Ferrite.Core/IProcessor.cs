@@ -16,13 +16,12 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using System.Collections.Concurrent;
 using Ferrite.TL;
 
 namespace Ferrite.Core;
 
 public interface IProcessor
 {
-    public Task Process(object? sender, ITLObject input, ConcurrentQueue<ITLObject> output, TLExecutionContext ctx);
+    public Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx);
 }
 

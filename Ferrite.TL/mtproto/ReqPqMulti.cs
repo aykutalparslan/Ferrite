@@ -69,9 +69,9 @@ public class ReqPqMulti : ITLObject, ITLMethod
         if (!ctx.SessionData.ContainsKey("nonce") ||
             (Int128)ctx.SessionData["nonce"] != nonce)
         {
-            ctx.SessionData.Add("nonce", nonce);
+            ctx.SessionData.Add("nonce", (byte[])nonce);
             respq.ServerNonce = (Int128)randomGenerator.GetRandomBytes(16);
-            ctx.SessionData.Add("server_nonce", respq.ServerNonce);
+            ctx.SessionData.Add("server_nonce", (byte[])respq.ServerNonce);
         }
         else
         {
