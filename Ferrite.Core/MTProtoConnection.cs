@@ -59,6 +59,9 @@ public class MTProtoConnection
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
 
+    private readonly object _abortLock = new object();
+    private bool _connectionAborted = false;
+
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedStore store, IPersistentStore persistentStore,
@@ -82,6 +85,36 @@ public class MTProtoConnection
     {
         receiveTask = DoReceive();
         sendTask = DoSend();
+    }
+
+    private async Task Disconnect(int delayInMiliseconds)
+    {
+        await Task.Delay(delayInMiliseconds);
+        Abort(new Exception());
+    }
+
+    public void Abort(Exception abortReason)
+    {
+        lock (_abortLock)
+        {
+            if (_connectionAborted)
+            {
+                return;
+            }
+
+            _connectionAborted = true;
+            try
+            {
+                _outgoing.Writer.Complete();
+                socketConnection.Abort(abortReason);
+                socketConnection.DisposeAsync();
+                writer.Dispose();
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
     }
     
     private async Task DoReceive()
@@ -339,7 +372,7 @@ public class MTProtoConnection
                 state.AuthKey = _authKey;
                 state.NodeId = _sessionManager.NodeId;
                 _sessionManager.AddSessionAsync(state,
-                    new MTPtotoSession(this)).Wait();
+                    new MTProtoSession(this)).Wait();
   
             }
             _context.MessageId = rd.ReadInt64(true);

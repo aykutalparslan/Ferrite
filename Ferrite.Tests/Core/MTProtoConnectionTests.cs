@@ -305,15 +305,25 @@ class FakeTransportConnection : ITransportConnection
         byte[] data = File.ReadAllBytes(file);
         await Input.Writer.WriteAsync(data);
     }
+
+    public void Abort(Exception abortReason)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeSessionManager : ISessionManager
 {
     public Guid NodeId => Guid.NewGuid();
 
     private Dictionary<Int128, byte[]> _authKeySessionStates = new();
-    private Dictionary<Int128, MTPtotoSession> _authKeySessions = new();
+    private Dictionary<Int128, MTProtoSession> _authKeySessions = new();
 
-    public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTPtotoSession session)
+    public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session)
     {
         var stateBytes = MessagePackSerializer.Serialize(state);
         _authKeySessions.Add((Int128)nonce, session);
@@ -321,7 +331,7 @@ class FakeSessionManager : ISessionManager
         return true;
     }
 
-    public async Task<bool> AddSessionAsync(SessionState state, MTPtotoSession session)
+    public async Task<bool> AddSessionAsync(SessionState state, MTProtoSession session)
     {
         return true;
     }
@@ -359,12 +369,12 @@ class FakeSessionManager : ISessionManager
         throw new NotImplementedException();
     }
 
-    public bool TryGetLocalAuthSession(byte[] nonce, out MTPtotoSession session)
+    public bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session)
     {
         throw new NotImplementedException();
     }
 
-    public bool TryGetLocalSession(long sessionId, out MTPtotoSession session)
+    public bool TryGetLocalSession(long sessionId, out MTProtoSession session)
     {
         throw new NotImplementedException();
     }

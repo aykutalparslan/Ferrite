@@ -25,12 +25,12 @@ using MessagePack;
 
 namespace Ferrite.Core;
 
-public class MsgContainerProcessor : IProcessor
+public class ServiceMessagesProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionManager _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public MsgContainerProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe)
+    public ServiceMessagesProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe)
     {
         _scope = scope;
         _sessionManager = sessionManager;
@@ -39,27 +39,10 @@ public class MsgContainerProcessor : IProcessor
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        if (input.Constructor == TLConstructor.MsgContainer &&
-            input is MsgContainer container)
+        if (input.Constructor == TLConstructor.Ping &&
+            input is Ping ping && sender is MTProtoConnection connection)
         {
-            foreach (var msg in container.Messages)
-            {
-                output.Enqueue(msg);
-            }
-            var ack = _scope.Resolve<MsgsAck>();
-            ack.MsgIds = new VectorOfLong(1);
-            ack.MsgIds.Add(ctx.MessageId);
-            MTProtoMessage message = new MTProtoMessage();
-            message.SessionId = ctx.SessionId;
-            message.IsResponse = true;
-            message.IsContentRelated = true;
-            message.Data = ack.TLBytes.ToArray();
-            if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                    is SessionState session)
-            {
-                var bytes = MessagePackSerializer.Serialize(message);
-                _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
-            }
+            //process ping
         }
         else
         {

@@ -17,6 +17,7 @@
 //
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 using Autofac;
 using Ferrite.TL;
 using Ferrite.Utils;
@@ -25,18 +26,18 @@ namespace Ferrite.Core;
 
 public class IncomingMessageHandler: IProcessorManager
 {
-    private readonly List<IProcessor> _processors;
+    private readonly ImmutableList<IProcessor> _processors;
     private readonly ILifetimeScope _scope;
     private readonly ILogger _log;
     public IncomingMessageHandler(ILifetimeScope scope, ILogger log)
     {
         _scope = scope;
         _log = log;
-        _processors = new List<IProcessor>();
-        _processors.Add(_scope.Resolve<AuthKeyProcessor>());
-        _processors.Add(_scope.Resolve<MsgContainerProcessor>());
-        _processors.Add(_scope.Resolve<AuthorizationProcessor>());
-        _processors.Add(_scope.Resolve<MTProtoRequestProcessor>());
+        _processors = ImmutableList<IProcessor>.Empty
+            .Add(_scope.Resolve<AuthKeyProcessor>())
+            .Add(_scope.Resolve<MsgContainerProcessor>())
+            .Add(_scope.Resolve<AuthorizationProcessor>())
+            .Add(_scope.Resolve<MTProtoRequestProcessor>());
     }
 
     public async Task Process(object? sender, ITLObject input, TLExecutionContext ctx)

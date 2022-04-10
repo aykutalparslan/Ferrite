@@ -27,8 +27,8 @@ namespace Ferrite.Core;
 public class SessionManager : ISessionManager
 {
     public Guid NodeId { get; private set; }
-    private readonly ConcurrentDictionary<long, MTPtotoSession> _localSessions = new();
-    private readonly ConcurrentDictionary<Int128, MTPtotoSession> _localAuthSessions = new();
+    private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
+    private readonly ConcurrentDictionary<Int128, MTProtoSession> _localAuthSessions = new();
     private readonly IDistributedStore _store;
     private Guid GetNodeId()
     {
@@ -49,7 +49,7 @@ public class SessionManager : ISessionManager
         NodeId = GetNodeId();
         _store = store;
     }
-    public async Task<bool> AddSessionAsync(SessionState state, MTPtotoSession session)
+    public async Task<bool> AddSessionAsync(SessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
         var remoteAdd = await _store.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state));
@@ -85,12 +85,12 @@ public class SessionManager : ISessionManager
     {
         return _localSessions.ContainsKey(sessionId);
     }
-    public bool TryGetLocalSession(long sessionId, out MTPtotoSession session)
+    public bool TryGetLocalSession(long sessionId, out MTProtoSession session)
     {
         return _localSessions.TryGetValue(sessionId, out session);
     }
 
-    public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTPtotoSession session)
+    public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
         var remoteAdd = await _store.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
@@ -124,7 +124,7 @@ public class SessionManager : ISessionManager
         return _localAuthSessions.ContainsKey((Int128)nonce);
     }
 
-    public bool TryGetLocalAuthSession(byte[] nonce, out MTPtotoSession session)
+    public bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session)
     {
         return _localAuthSessions.TryGetValue((Int128)nonce, out session);
     }

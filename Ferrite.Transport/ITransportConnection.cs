@@ -25,5 +25,7 @@ public interface ITransportConnection
 {
     public IDuplexPipe Transport { get; }
     public void Start();
+    public void Abort(Exception abortReason);
+    public ValueTask DisposeAsync();
 }
 
