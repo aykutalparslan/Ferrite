@@ -22,15 +22,11 @@ using DotNext.Buffers;
 using Ferrite.TL;
 using System.Threading.Channels;
 using Ferrite.Transport;
-using System.Text;
 using System.IO.Pipelines;
 using Ferrite.Data;
 using Ferrite.Crypto;
-using System.Security.Cryptography;
 using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
-using MessagePack;
-using System.Collections.Concurrent;
 
 namespace Ferrite.Core;
 
@@ -129,7 +125,7 @@ public class MTProtoConnection
         }
         catch (Exception ex)
         {
-            _log.Debug(ex, ex.Message);
+            _log.Error(ex, ex.Message);
         }
     }
 
@@ -166,7 +162,7 @@ public class MTProtoConnection
         }
         catch (Exception ex)
         {
-            _log.Debug(ex, ex.Message);
+            _log.Error(ex, ex.Message);
         }
     }
     

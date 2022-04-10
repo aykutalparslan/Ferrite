@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Threading.Tasks.Sources;
 using Ferrite.Services.Account;
 using Ferrite.Services.Auth;
 
@@ -84,6 +85,11 @@ public class AuthService : IAuthService
     public LoginToken ImportLoginToken(byte[] token)
     {
         throw new NotImplementedException();
+    }
+
+    public async Task<bool> IsAuthorized(long authKeyId)
+    {
+        return false;
     }
 
     public bool LogOut(out byte[] futureAuthToken)

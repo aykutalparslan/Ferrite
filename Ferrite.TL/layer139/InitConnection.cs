@@ -195,22 +195,22 @@ public class InitConnection : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        if ((int)ctx.SessionData["layer"] != 139)
-        {
-            var err = factory.Resolve<RpcError>();
-            err.ErrorCode = 400;
-            err.ErrorMessage = "CONNECTION_LAYER_INVALID";
-            return err;
-        }
+        //if ((int)ctx.SessionData["layer"] != 139)
+        //{
+        //    var err = factory.Resolve<RpcError>();
+        //    err.ErrorCode = 400;
+        //    err.ErrorMessage = "CONNECTION_LAYER_INVALID";
+        //    return err;
+        //}
         if (_query is ITLMethod medhod)
         {
-            _log.Verbose(String.Format("Execute {0}", medhod.ToString()));
+            _log.Information(String.Format("Execute {0}", medhod.ToString()));
             return await medhod.ExecuteAsync(ctx);
         }
-        var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");
-        var ex = new TLExecutionException("Execution failed.", inner);
-        _log.Error(ex, ex.Message);
-        throw ex;
+        var ack = factory.Resolve<MsgsAck>();
+        ack.MsgIds = new VectorOfLong(1);
+        ack.MsgIds.Add(ctx.MessageId);
+        return ack;
     }
 
     public void Parse(ref SequenceReader buff)

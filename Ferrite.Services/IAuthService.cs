@@ -22,6 +22,7 @@ namespace Ferrite.Services;
 
 public interface IAuthService
 {
+    public Task<bool> IsAuthorized(long authKeyId);
     /// <summary>
 	/// Send the verification code for login
 	/// </summary>

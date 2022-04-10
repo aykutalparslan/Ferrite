@@ -19,6 +19,7 @@ using System;
 using System.Collections.Concurrent;
 using Autofac;
 using Ferrite.TL;
+using Ferrite.Utils;
 
 namespace Ferrite.Core;
 
@@ -26,11 +27,15 @@ public class IncomingMessageHandler: IProcessorManager
 {
     private readonly List<IProcessor> _processors;
     private readonly ILifetimeScope _scope;
-    public IncomingMessageHandler(ILifetimeScope scope)
+    private readonly ILogger _log;
+    public IncomingMessageHandler(ILifetimeScope scope, ILogger log)
     {
         _scope = scope;
+        _log = log;
         _processors = new List<IProcessor>();
         _processors.Add(_scope.Resolve<AuthKeyProcessor>());
+        _processors.Add(_scope.Resolve<MsgContainerProcessor>());
+        _processors.Add(_scope.Resolve<AuthorizationProcessor>());
         _processors.Add(_scope.Resolve<MTProtoRequestProcessor>());
     }
 
@@ -50,7 +55,14 @@ public class IncomingMessageHandler: IProcessorManager
             for (int i = 0; i < limit; i++)
             {
                 var curr = tobeProcessed.Dequeue();
-                await processor.Process(sender, curr, tobeProcessed, ctx);
+                try
+                {
+                    await processor.Process(sender, curr, tobeProcessed, ctx);
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex, ex.Message);
+                }
             }
             if (++idx < _processors.Count)
             {

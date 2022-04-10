@@ -30,21 +30,15 @@ public class FerriteServer : IFerriteServer
 {
     private readonly ILifetimeScope _scope;
     private readonly IConnectionListener _socketListener;
-    private readonly ITLObjectFactory _factory;
-    private readonly IDistributedStore _store;
     private readonly IDistributedPipe _pipe;
     private readonly Task? _pipeReceiveTask;
     private readonly ISessionManager _sessionManager;
-    private readonly IProcessor _requestProcessor;
     private readonly ILogger _log;
     public FerriteServer(ILifetimeScope scope)
     {
         _scope = scope;
         _socketListener = _scope.Resolve<IConnectionListener>();
-        _factory = _scope.Resolve<ITLObjectFactory>();
-        _store = _scope.Resolve<IDistributedStore>();
         _sessionManager = _scope.Resolve<ISessionManager>();
-        _requestProcessor = _scope.Resolve<IProcessor>();
         _pipe = _scope.Resolve<IDistributedPipe>();
         _pipe.Subscribe(_sessionManager.NodeId.ToString());
         _pipeReceiveTask = DoReceive();
@@ -86,7 +80,7 @@ public class FerriteServer : IFerriteServer
             {
                 var result = await _pipe.ReadAsync();
                 var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
-                if (message.IsUnencrypted)
+                if (message.MessageType == MTProtoMessageType.Unencrypted)
                 {
                     var sessionExists = _sessionManager.TryGetLocalAuthSession(message.Nonce, out var protoSession);
                     if (sessionExists &&
@@ -109,7 +103,7 @@ public class FerriteServer : IFerriteServer
         }
         catch (Exception ex)
         {
-            _log.Debug(ex, ex.Message);
+            _log.Error(ex, ex.Message);
         }
     }
 }

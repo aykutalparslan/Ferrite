@@ -61,7 +61,7 @@ public class AuthKeyProcessor : IProcessor
                 new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
                 new MTPtotoSession(connection));
             message.Nonce = reqPq.Nonce;
-            message.IsUnencrypted = true;
+            message.MessageType = MTProtoMessageType.Unencrypted;
             var bytes = MessagePackSerializer.Serialize(message);
             _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
 
@@ -78,7 +78,7 @@ public class AuthKeyProcessor : IProcessor
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.TLBytes.ToArray();
-            message.IsUnencrypted = true;
+            message.MessageType = MTProtoMessageType.Unencrypted;
             message.Nonce = reqDhParams.Nonce;
             var bytes = MessagePackSerializer.Serialize(message);
             _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
@@ -101,7 +101,7 @@ public class AuthKeyProcessor : IProcessor
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.TLBytes.ToArray();
-            message.IsUnencrypted = true;
+            message.MessageType = MTProtoMessageType.Unencrypted;
             message.Nonce = setClientDhParams.Nonce;
             var bytes = MessagePackSerializer.Serialize(message);
             _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);

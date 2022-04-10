@@ -79,8 +79,7 @@ public class InvokeWithLayer : ITLObject, ITLMethod
         if(_layer == 139 &&
             _query is ITLMethod medhod)
         {
-            ctx.SessionData.Add("layer", _layer);
-            _log.Verbose(String.Format("Invoke {0} with Layer {1}", medhod.ToString(), _layer));
+            _log.Information(String.Format("Invoke {0} with Layer {1}", medhod.ToString(), _layer));
             return await medhod.ExecuteAsync(ctx);
         }
         var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");

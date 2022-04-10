@@ -76,8 +76,10 @@ public class Program
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();
-        builder.RegisterType<AuthKeyProcessor>().As<IProcessor>().AsSelf();
-        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().AsSelf();
+        builder.RegisterType<AuthKeyProcessor>();
+        builder.RegisterType<MsgContainerProcessor>();
+        builder.RegisterType<AuthorizationProcessor>();
+        builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();

@@ -20,6 +20,7 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using Ferrite.Data;
 using Ferrite.TL;
+using Ferrite.TL.mtproto;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -39,20 +40,51 @@ public class MTProtoRequestProcessor : IProcessor
         if (input is ITLMethod method)
         {
             var result = await method.ExecuteAsync(ctx);
-            MTProtoMessage message = new MTProtoMessage();
-            message.SessionId = ctx.SessionId;
-            message.IsResponse = true;
-            message.IsContentRelated = true;
-            message.Data = result.TLBytes.ToArray();
-
-            if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                is SessionState session)
+            if (result != null)
             {
-                var bytes = MessagePackSerializer.Serialize(message);
-                _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
-            }
+                MTProtoMessage message = new MTProtoMessage();
+                message.SessionId = ctx.SessionId;
+                message.IsResponse = true;
+                message.IsContentRelated = true;
+                message.Data = result.TLBytes.ToArray();
 
-            Console.WriteLine("-->" + result.ToString());
+                if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                    is SessionState session)
+                {
+                    var bytes = MessagePackSerializer.Serialize(message);
+                    _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                }
+
+                Console.WriteLine("-->" + result.ToString());
+            }
+        }
+        if (input is Message msg && msg.Body is ITLMethod encMethod)
+        {
+            Console.WriteLine(encMethod.ToString());
+            var _context = new TLExecutionContext(ctx.SessionData);
+            _context.MessageId = msg.MsgId;
+            _context.AuthKeyId = ctx.AuthKeyId;
+            _context.SequenceNo = msg.Seqno;
+            _context.Salt = ctx.Salt;
+            _context.SessionId = ctx.SessionId;
+            var result = await encMethod.ExecuteAsync(_context);
+            if (result != null)
+            {
+                MTProtoMessage message = new MTProtoMessage();
+                message.SessionId = ctx.SessionId;
+                message.IsResponse = true;
+                message.IsContentRelated = true;
+                message.Data = result.TLBytes.ToArray();
+
+                if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                    is SessionState session)
+                {
+                    var bytes = MessagePackSerializer.Serialize(message);
+                    _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                }
+
+                Console.WriteLine("-->" + result.ToString());
+            }
         }
     }
 }

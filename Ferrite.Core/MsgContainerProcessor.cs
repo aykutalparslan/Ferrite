@@ -17,24 +17,26 @@
 //
 using System;
 using Ferrite.TL;
-using MessagePack;
+using Ferrite.TL.mtproto;
 
 namespace Ferrite.Core;
 
-[MessagePackObject]
-public class MTProtoMessage
+public class MsgContainerProcessor : IProcessor
 {
-    [Key(0)]
-    public long SessionId { get; set; }
-    [Key(1)]
-    public bool IsResponse { get; set; }
-    [Key(2)]
-    public bool IsContentRelated { get; set; }
-    [Key(3)]
-    public byte[]? Data { get; set; }
-    [Key(4)]
-    public MTProtoMessageType MessageType { get; set; }
-    [Key(5)]
-    public byte[]? Nonce { get; set; }
+    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
+    {
+        if (input.Constructor == TLConstructor.MsgContainer &&
+            input is MsgContainer container)
+        {
+            foreach (var message in container.Messages)
+            {
+                output.Enqueue(message);
+            }
+        }
+        else
+        {
+            output.Enqueue(input);
+        }
+    }
 }
 

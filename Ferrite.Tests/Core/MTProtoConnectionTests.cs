@@ -652,8 +652,10 @@ public class MTProtoConnectionTests
         builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
-        builder.RegisterType<AuthKeyProcessor>().As<IProcessor>().AsSelf();
-        builder.RegisterType<MTProtoRequestProcessor>().As<IProcessor>().AsSelf();
+        builder.RegisterType<AuthKeyProcessor>();
+        builder.RegisterType<MsgContainerProcessor>();
+        builder.RegisterType<AuthorizationProcessor>();
+        builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
 
