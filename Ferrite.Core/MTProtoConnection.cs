@@ -60,8 +60,6 @@ public class MTProtoConnection
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    //private Dictionary<string, object> _sessionData = new Dictionary<string, object>();
-    private const int WebSocketGet = 542393671;
     private WebSocketHandler webSocketHandler;
     private Pipe webSocketPipe;
 
@@ -241,7 +239,7 @@ public class MTProtoConnection
             if (reader.TryReadLittleEndian(out int firstInt))
             {
                 reader.Rewind(4);
-                if (firstInt == WebSocketGet)
+                if (firstInt == WebSocketHandler.Get)
                 {
                     ProcessWebSocketHandshake(ref reader);
                     return reader.Position;

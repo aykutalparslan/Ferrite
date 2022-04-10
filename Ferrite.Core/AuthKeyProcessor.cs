@@ -48,7 +48,6 @@ public class AuthKeyProcessor : IProcessor
             return;
         }
 
-
         if (input is ReqPqMulti reqPq &&
             sender is MTProtoConnection connection)
         {

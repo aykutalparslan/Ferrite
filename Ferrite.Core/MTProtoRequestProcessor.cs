@@ -44,12 +44,7 @@ public class MTProtoRequestProcessor : IProcessor
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.TLBytes.ToArray();
-            //if (ctx.SessionId == 0 &&
-            //    sender is MTProtoConnection connection)
-            //{
-            //    _ = connection.SendAsync(message);
-            //}
-            //else
+
             if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
                 is SessionState session)
             {

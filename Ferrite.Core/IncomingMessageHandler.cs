@@ -22,7 +22,7 @@ using Ferrite.TL;
 
 namespace Ferrite.Core;
 
-public class IncomingMessageHandler: IProcessorManager, IProcessorChain
+public class IncomingMessageHandler: IProcessorManager
 {
     private readonly List<IProcessor> _processors;
     private readonly ILifetimeScope _scope;
@@ -32,11 +32,6 @@ public class IncomingMessageHandler: IProcessorManager, IProcessorChain
         _processors = new List<IProcessor>();
         _processors.Add(_scope.Resolve<AuthKeyProcessor>());
         _processors.Add(_scope.Resolve<MTProtoRequestProcessor>());
-    }
-
-    public void AddLast(IProcessor processor)
-    {
-        _processors.Add(processor);
     }
 
     public async Task Process(object? sender, ITLObject input, TLExecutionContext ctx)

@@ -10,8 +10,7 @@ namespace Ferrite.Transport
 {
     public class WebSocketHandler : IHttpRequestLineHandler, IHttpHeadersHandler
     {
-        
-
+        public static int Get => 542393671;
         public IHeaderDictionary RequestHeaders { get; } = new HeaderDictionary();
         public bool RequestLineComplete { get; private set; }
         public bool HeadersComplete { get; private set; }
