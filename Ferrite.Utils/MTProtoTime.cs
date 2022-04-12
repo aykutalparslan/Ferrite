@@ -16,7 +16,7 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Core;
+namespace Ferrite.Utils;
 
 /// <summary>
 /// Calculates msg_id values 30 seconds in the future and

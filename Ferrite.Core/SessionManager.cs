@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using Ferrite.Data;
 using Ferrite.TL;
 using MessagePack;

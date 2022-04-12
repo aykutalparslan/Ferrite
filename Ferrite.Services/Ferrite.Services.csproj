@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
+    <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

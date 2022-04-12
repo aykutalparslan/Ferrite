@@ -16,8 +16,6 @@
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using MessagePack;
 
@@ -26,6 +24,18 @@ namespace Ferrite.Data;
 [MessagePackObject]
 public struct ServerSalt
 {
+    public ServerSalt()
+    {
+        ValidSince = DateTimeOffset.Now.ToUnixTimeSeconds();
+        Span<byte> salt = stackalloc byte[8];
+        RandomNumberGenerator.Fill(salt);
+        Salt = BitConverter.ToInt64(salt);
+    }
+    public ServerSalt(long salt, long validSince)
+    {
+        ValidSince = validSince;
+        Salt = salt;
+    }
     [Key(0)]
     public long Salt;
     [Key(1)]

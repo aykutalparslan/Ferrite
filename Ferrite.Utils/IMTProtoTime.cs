@@ -15,7 +15,7 @@
 //    You should have received a copy of the GNU Affero General Public License
 //    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-namespace Ferrite.Core;
+namespace Ferrite.Utils;
 /// <summary>
 /// Helpers for getting the current UnixTime and approximate MTProto message ids
 /// </summary>
