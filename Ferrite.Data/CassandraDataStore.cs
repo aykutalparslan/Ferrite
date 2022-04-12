@@ -54,8 +54,8 @@ namespace Ferrite.Data
                 "CREATE TABLE IF NOT EXISTS ferrite.server_salts (" +
                             "auth_key_id bigint," +
                             "server_salt bigint," +
-                            "valid_since timestamp," +
-                            "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC));");
+                            "valid_since bigint," +
+                            "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 

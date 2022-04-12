@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
@@ -27,10 +28,14 @@ public class GetFutureSalts : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMTProtoService protoService;
+    private readonly IMTProtoTime _time;
     private bool serialized = false;
-    public GetFutureSalts(ITLObjectFactory objectFactory)
+    public GetFutureSalts(ITLObjectFactory objectFactory, IMTProtoService mTProtoService, IMTProtoTime time)
     {
         factory = objectFactory;
+        protoService = mTProtoService;
+        _time = time;
     }
 
     public int Constructor => -1188971260;
@@ -61,7 +66,22 @@ public class GetFutureSalts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        FutureSalts futureSalts = factory.Resolve<FutureSalts>();
+        futureSalts.ReqMsgId = ctx.MessageId;
+        futureSalts.Now = (int)_time.GetUnixTimeInSeconds();
+        var salts = await protoService.GetServerSaltsAsync(ctx.AuthKeyId, num);
+        futureSalts.Salts = factory.Resolve<VectorBare<FutureSalt>>();
+        foreach (var salt in salts)
+        {
+            var futureSalt = factory.Resolve<FutureSalt>();
+            futureSalt.Salt = salt.Salt;
+            futureSalt.ValidSince = (int)salt.ValidSince;
+            futureSalts.Salts.Add(futureSalt);
+        }
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        rpcResult.Result = futureSalts;
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)

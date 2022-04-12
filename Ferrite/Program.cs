@@ -59,6 +59,8 @@ public class Program
         builder.RegisterType<MTProtoTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
+        builder.RegisterType<MTProtoService>().As<IMTProtoService>()
+            .SingleInstance();
         builder.RegisterType<LangPackService>().As<ILangPackService>()
             .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
