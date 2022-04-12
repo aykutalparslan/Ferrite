@@ -145,7 +145,7 @@ public class MTProtoConnection
             Data = pong.TLBytes.ToArray(),
             IsContentRelated = false,
             IsResponse = true,
-            MessageType = MTProtoMessageType.Encrypted,
+            MessageType = MTProtoMessageType.Pong,
             SessionId = _sessionId
         };
         await SendAsync(message);
@@ -208,15 +208,11 @@ public class MTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-
                 var data = msg.Data;
                 _log.Debug($"=>Sending {msg.MessageType} message.");
                 if (_authKeyId == 0)
                 {
-                    
-                    SendUnencrypted(data,
-                        msg.MessageType == MTProtoMessageType.Pong ?
-                        msg.MessageId: NextMessageId(msg.IsResponse));
+                    SendUnencrypted(data, NextMessageId(msg.IsResponse));
                 }
                 else if(await _sessionManager.GetSessionStateAsync(_sessionId)
                     is SessionState state)
@@ -255,10 +251,13 @@ public class MTProtoConnection
 
     private void SendEncrypted(MTProtoMessage message, SessionState state)
     {
+        if(message.Data == null) { return; }
         writer.Clear();
         writer.WriteInt64(state.ServerSalt.Salt, true);
         writer.WriteInt64(state.SessionId, true);
-        writer.WriteInt64(NextMessageId(message.IsResponse), true);
+        writer.WriteInt64(message.MessageType == MTProtoMessageType.Pong ?
+            message.MessageId:
+            NextMessageId(message.IsResponse), true);
         writer.WriteInt32(GenerateSeqNo(message.IsContentRelated), true);
         writer.WriteInt32(message.Data.Length, true);
         writer.Write(message.Data);
@@ -488,7 +487,7 @@ public class MTProtoConnection
     /// </summary>
     /// <param name="response">If the message is a response to a client message.</param>
     /// <returns></returns>
-    public long NextMessageId(bool response)
+    private long NextMessageId(bool response)
     {
         long id = _time.GetUnixTimeInSeconds();
         id *= 4294967296L;
