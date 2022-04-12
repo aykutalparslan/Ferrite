@@ -39,10 +39,37 @@ public class ServiceMessagesProcessor : IProcessor
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        if (input.Constructor == TLConstructor.Ping &&
-            input is Ping ping && sender is MTProtoConnection connection)
+        if(sender is MTProtoConnection connection)
         {
-            //process ping
+            if (input.Constructor == TLConstructor.Ping &&
+            input is Ping ping)
+            {
+                Console.WriteLine("Ping received.");
+                await connection.Ping(ping.PingId);
+            }
+            else if (input.Constructor == TLConstructor.PingDelayDisconnect &&
+               input is PingDelayDisconnect pingDelay)
+            {
+                Console.WriteLine($"Ping received with delay of {pingDelay.DisconnectDelay} seconds.");
+                await connection.Ping(pingDelay.PingId, pingDelay.DisconnectDelay);
+            }
+            else if (input.Constructor == TLConstructor.Message && input is Message message &&
+              message.Body.Constructor == TLConstructor.Ping && message.Body is Ping ping2)
+            {
+                Console.WriteLine("Ping received.");
+                await connection.Ping(ping2.PingId);
+            }
+            else if (input.Constructor == TLConstructor.Message && input is Message message2 &&
+               message2.Body.Constructor == TLConstructor.PingDelayDisconnect &&
+               message2.Body is PingDelayDisconnect pingDelay2)
+            {
+                Console.WriteLine($"Ping received with delay of {pingDelay2.DisconnectDelay} seconds.");
+                await connection.Ping(pingDelay2.PingId, pingDelay2.DisconnectDelay);
+            }
+            else
+            {
+                output.Enqueue(input);
+            }
         }
         else
         {

@@ -36,6 +36,7 @@ public class IncomingMessageHandler: IProcessorManager
         _processors = ImmutableList<IProcessor>.Empty
             .Add(_scope.Resolve<AuthKeyProcessor>())
             .Add(_scope.Resolve<MsgContainerProcessor>())
+            .Add(_scope.Resolve<ServiceMessagesProcessor>())
             .Add(_scope.Resolve<AuthorizationProcessor>())
             .Add(_scope.Resolve<MTProtoRequestProcessor>());
     }

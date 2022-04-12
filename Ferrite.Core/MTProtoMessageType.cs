@@ -21,6 +21,7 @@ namespace Ferrite.Core;
 public enum MTProtoMessageType
 {
     Encrypted,
-    Unencrypted
+    Unencrypted,
+    Pong
 }
 

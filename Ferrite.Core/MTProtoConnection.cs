@@ -27,6 +27,7 @@ using Ferrite.Data;
 using Ferrite.Crypto;
 using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
+using Ferrite.TL.mtproto;
 
 namespace Ferrite.Core;
 
@@ -52,6 +53,8 @@ public class MTProtoConnection
     private Task? receiveTask;
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
     private Task? sendTask;
+    private Timer? disconnectTimer;
+    private object disconnectTimerState = new object();
     private readonly ITLObjectFactory factory;
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
@@ -85,12 +88,26 @@ public class MTProtoConnection
     {
         receiveTask = DoReceive();
         sendTask = DoSend();
+        DelayDisconnect();
     }
 
-    private async Task Disconnect(int delayInMiliseconds)
+    private void DelayDisconnect(int delayInMiliseconds = 750000)
     {
-        await Task.Delay(delayInMiliseconds);
-        Abort(new Exception());
+        lock (disconnectTimerState)
+        {
+            if (disconnectTimer == null)
+            {
+                disconnectTimer = new Timer((state) =>
+                {
+                    Abort(new Exception());
+                }, disconnectTimerState, delayInMiliseconds, delayInMiliseconds);
+            }
+            else
+            {
+                disconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                disconnectTimer.Change(delayInMiliseconds, delayInMiliseconds);
+            }
+        }
     }
 
     public void Abort(Exception abortReason)
@@ -109,12 +126,29 @@ public class MTProtoConnection
                 socketConnection.Abort(abortReason);
                 socketConnection.DisposeAsync();
                 writer.Dispose();
+                disconnectTimer?.Dispose();
             }
             catch (Exception ex)
             {
 
             }
         }
+    }
+    public async Task Ping(long pingId, int delayDisconnectInSeconds = 75)
+    {
+        DelayDisconnect(delayDisconnectInSeconds*1000);
+        var pong = factory.Resolve<Pong>();
+        pong.PingId = pingId;
+        pong.MsgId = NextMessageId(true);
+        MTProtoMessage message = new MTProtoMessage()
+        {
+            Data = pong.TLBytes.ToArray(),
+            IsContentRelated = false,
+            IsResponse = true,
+            MessageType = MTProtoMessageType.Encrypted,
+            SessionId = _sessionId
+        };
+        await SendAsync(message);
     }
     
     private async Task DoReceive()
@@ -176,9 +210,13 @@ public class MTProtoConnection
                 var msg = await _outgoing.Reader.ReadAsync();
 
                 var data = msg.Data;
+                _log.Debug($"=>Sending {msg.MessageType} message.");
                 if (_authKeyId == 0)
                 {
-                    SendUnencrypted(data);
+                    
+                    SendUnencrypted(data,
+                        msg.MessageType == MTProtoMessageType.Pong ?
+                        msg.MessageId: NextMessageId(msg.IsResponse));
                 }
                 else if(await _sessionManager.GetSessionStateAsync(_sessionId)
                     is SessionState state)
@@ -199,12 +237,12 @@ public class MTProtoConnection
         }
     }
     
-    private void SendUnencrypted(Span<byte> data)
+    private void SendUnencrypted(Span<byte> data, long messageId)
     {
         writer.Clear();
         writer.WriteInt64(0, true);
-        writer.WriteInt64(GenerateMessageId(true), true);
-        writer.WriteInt32((int)data.Length, true);
+        writer.WriteInt64(messageId, true);
+        writer.WriteInt32(data.Length, true);
         writer.Write(data);
         var message = writer.ToReadOnlySequence();
         var encoded = encoder.Encode(message);
@@ -220,7 +258,7 @@ public class MTProtoConnection
         writer.Clear();
         writer.WriteInt64(state.ServerSalt.Salt, true);
         writer.WriteInt64(state.SessionId, true);
-        writer.WriteInt64(GenerateMessageId(message.IsResponse), true);
+        writer.WriteInt64(NextMessageId(message.IsResponse), true);
         writer.WriteInt32(GenerateSeqNo(message.IsContentRelated), true);
         writer.WriteInt32(message.Data.Length, true);
         writer.Write(message.Data);
@@ -445,29 +483,37 @@ public class MTProtoConnection
     {
         return isContentRelated ? (2 * _seq++) + 1 : 2 * _seq;
     }
-    private long GenerateMessageId(bool response)
+    /// <summary>
+    /// Gets the next Message Identifier (msg_id) for this session.
+    /// </summary>
+    /// <param name="response">If the message is a response to a client message.</param>
+    /// <returns></returns>
+    public long NextMessageId(bool response)
     {
         long id = _time.GetUnixTimeInSeconds();
         id *= 4294967296L;
-        if (id <= _lastMessageId)
+        long r1 = (4 - id % 4) % 4;
+        id += (response ? r1 + 1 : r1 + 3);
+        long last = _lastMessageId;
+        long r2 = 4 - (last + 1) % 4;
+        if (id <= last)
         {
-            id = ++_lastMessageId;
-        }
-        if (response)
-        {
-            while (id % 4 != 1)
+            id = Interlocked.Add(ref _lastMessageId,
+                response ? r2 + 2 : r2 + 4);
+            if ((response && id % 4 == 1) || (!response && id % 4 == 3))
             {
-                id++;
+                return id;
             }
         }
-        else
+        else if (Interlocked.CompareExchange(ref _lastMessageId, id, last) == last)
         {
-            while (id % 4 != 3)
-            {
-                id++;
-            }
+            return id;
         }
-        _lastMessageId = id;
+        do
+        {
+            r2 = 4 - (_lastMessageId + 1) % 4;
+            id = Interlocked.Add(ref _lastMessageId, response ? r2 + 2 : r2 + 4);
+        } while (!((response && id % 4 != 1) || (!response && id % 4 != 3)));
         return id;
     }
 }

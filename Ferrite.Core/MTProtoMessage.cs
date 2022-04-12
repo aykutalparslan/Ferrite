@@ -36,5 +36,7 @@ public class MTProtoMessage
     public MTProtoMessageType MessageType { get; set; }
     [Key(5)]
     public byte[]? Nonce { get; set; }
+    [Key(6)]
+    public long MessageId { get; set; }
 }
 

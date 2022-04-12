@@ -615,11 +615,10 @@ public class MTProtoConnectionTests
         result = await connection.Application.Input.ReadAsync();
         connection.Application.Input.AdvanceTo(result.Buffer.End);
 
-        int wait = 10;
-        while (!mtProtoConnection.IsEncrypted && wait<2000)
+        int wait = 20;
+        while (!mtProtoConnection.IsEncrypted)
         {
             await Task.Delay(wait);
-            wait *= 2;
         }
         data = File.ReadAllBytes("testdata/message_3");
         var expected = File.ReadAllBytes("testdata/sent_3");
@@ -664,6 +663,7 @@ public class MTProtoConnectionTests
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
+        builder.RegisterType<ServiceMessagesProcessor>();
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();

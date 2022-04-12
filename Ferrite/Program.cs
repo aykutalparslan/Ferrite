@@ -78,6 +78,7 @@ public class Program
         builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
+        builder.RegisterType<ServiceMessagesProcessor>();
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
