@@ -50,6 +50,13 @@ namespace Ferrite.Data
                             "auth_key blob," +
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.server_salts (" +
+                            "auth_key_id bigint," +
+                            "server_salt bigint," +
+                            "valid_since timestamp," +
+                            "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -76,6 +83,37 @@ namespace Ferrite.Data
                 authKeyId, authKey).SetKeyspace(keySpace);
 
             await session.ExecuteAsync(statement);
+        }
+
+        public async Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+        {
+            var statement = new SimpleStatement(
+                $"INSERT INTO ferrite.server_salts(auth_key_id, server_salt, valid_since) VALUES(?,?,?) USING TTL ?;",
+                authKeyId, serverSalt, validSince, TTL).SetKeyspace(keySpace);
+
+            await session.ExecuteAsync(statement);
+        }
+
+        public async Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.server_salts WHERE auth_key_id = ? LIMIT ?;",
+                authKeyId, count);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            List<ServerSalt> serverSalts = new();
+            foreach (var row in results)
+            {
+                var serverSalt = row.GetValue<long>("server_salt");
+                var validSince = row.GetValue<long>("valid_since");
+                serverSalts.Add(new ServerSalt()
+                {
+                    Salt = serverSalt,
+                    ValidSince = validSince
+                });
+            }
+            return serverSalts;
         }
     }
 }

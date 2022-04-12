@@ -29,6 +29,7 @@ public class RedisDataStore: IDistributedStore
     private readonly byte[] SessionPrefix = new byte[] { (byte)'S', (byte)'E', (byte)'S', (byte)'S', (byte)'-', (byte)'-' };
     private readonly byte[] PhoneCodePrefix = new byte[] { (byte)'P', (byte)'C', (byte)'D', (byte)'E', (byte)'-', (byte)'-' };
     private readonly byte[] AuthSessionPrefix = new byte[] { (byte)'A', (byte)'K', (byte)'C', (byte)'R', (byte)'-', (byte)'-' };
+    private readonly byte[] ServerSaltPrefix = new byte[] { (byte)'S', (byte)'A', (byte)'L', (byte)'T', (byte)'-', (byte)'-' };
 
     public RedisDataStore(string config)
     {
@@ -60,6 +61,21 @@ public class RedisDataStore: IDistributedStore
         RedisKey key = phoneNumber + phoneCodeHash;
         key.Prepend(PhoneCodePrefix);     
         return await db.StringGetAsync(key);
+    }
+
+    public async Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = ServerSaltPrefix;
+        key.Append(BitConverter.GetBytes(authKeyId));
+        key.Append(BitConverter.GetBytes(serverSalt));
+        var val = (byte[])await db.StringGetAsync(key);
+        if(val == null)
+        {
+            return 0;
+        }
+        return BitConverter.ToInt64(val);
     }
 
     public async Task<byte[]> GetSessionAsync(long sessionId)
@@ -96,6 +112,16 @@ public class RedisDataStore: IDistributedStore
         RedisKey key = phoneNumber + phoneCodeHash;
         key.Prepend(PhoneCodePrefix);
         return await db.StringSetAsync(key, phoneCode, expiresIn);
+    }
+
+    public async Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = ServerSaltPrefix;
+        key.Append(BitConverter.GetBytes(authKeyId));
+        key.Append(BitConverter.GetBytes(serverSalt));
+        return await db.StringSetAsync(key, BitConverter.GetBytes(validSince), expiresIn);
     }
 
     public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)

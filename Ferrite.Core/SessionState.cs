@@ -19,6 +19,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Ferrite.Data;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -31,7 +32,7 @@ public class SessionState
     [Key(1)]
     public long AuthKeyId { get; set; }
     [Key(2)]
-    public byte[] AuthKey { get; set; }
+    public byte[] AuthKey { get; set; } = default!;
     [Key(3)]
     public Guid NodeId { get; set; }
     [Key(4)]

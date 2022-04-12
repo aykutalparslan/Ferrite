@@ -1,5 +1,5 @@
 ﻿/*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Project Ferrite is an Implementation of the Telegram Server API\r\n" +
                   " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
                   " *\r\n" +
                   " *   This program is free software: you can redistribute it and/or modify\r\n" +
@@ -93,7 +93,7 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Project Ferrite is an Implementation of the Telegram Server API\r\n" +
                   " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
                   " *\r\n" +
                   " *   This program is free software: you can redistribute it and/or modify\r\n" +
@@ -443,7 +443,7 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Project Ferrite is an Implementation of the Telegram Server API\r\n" +
                   " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
                   " *\r\n" +
                   " *   This program is free software: you can redistribute it and/or modify\r\n" +
@@ -881,7 +881,7 @@ class Compiler
         var syntax = SyntaxFactory.CompilationUnit().AddUsings(
                 SyntaxFactory.UsingDirective(SyntaxFactory.ParseName("System"))
                 .WithLeadingTrivia(SyntaxFactory.Comment("/*\r\n" +
-                  " *   Project Ferrite is an Implementation Telegram Server API\r\n" +
+                  " *   Project Ferrite is an Implementation of the Telegram Server API\r\n" +
                   " *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>\r\n" +
                   " *\r\n" +
                   " *   This program is free software: you can redistribute it and/or modify\r\n" +

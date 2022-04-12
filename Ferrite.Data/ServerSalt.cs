@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using MessagePack;
 
-namespace Ferrite.Core;
+namespace Ferrite.Data;
 
 [MessagePackObject]
 public struct ServerSalt

@@ -1,5 +1,5 @@
 ﻿/*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -22,5 +22,7 @@ public interface IPersistentStore
 {
     public Task SaveAuthKeyAsync(long authKeyId, byte[] authKey);
     public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
+    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL);
+    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count);
 }
 

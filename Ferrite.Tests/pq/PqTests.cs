@@ -44,12 +44,22 @@ class FakeDataStore : IPersistentStore
         return RandomNumberGenerator.GetBytes(192);
     }
 
+    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         throw new NotImplementedException();
     }
 
     public async Task SaveAuthKeyAysnc(byte[] authKeyId, byte[] authKey)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
     {
         throw new NotImplementedException();
     }
@@ -74,6 +84,11 @@ class FakeRedis : IDistributedStore
     }
 
     public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
     {
         throw new NotImplementedException();
     }
@@ -103,6 +118,11 @@ class FakeRedis : IDistributedStore
         throw new NotImplementedException();
     }
 
+    public Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)
     {
         sessions.Add(sessionId, sessionData);
@@ -127,9 +147,19 @@ class FakeCassandra : IPersistentStore
         return authKeys[authKeyId];
     }
 
+    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         authKeys.Add(authKeyId, authKey);
+    }
+
+    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+    {
+        throw new NotImplementedException();
     }
 }
 class FakeRandomGenerator : IRandomGenerator

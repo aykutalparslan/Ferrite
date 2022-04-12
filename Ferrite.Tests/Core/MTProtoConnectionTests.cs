@@ -235,6 +235,16 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    public async Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
@@ -248,9 +258,19 @@ class FakeCassandra : IPersistentStore
         return authKeys[authKeyId];
     }
 
+    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         authKeys.Add(authKeyId, authKey);
+    }
+
+    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+    {
+        throw new NotImplementedException();
     }
 }
 class FakeDuplexPipe : IDuplexPipe
