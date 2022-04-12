@@ -1,5 +1,5 @@
 ﻿//
-//  Project Ferrite is an Implementation Telegram Server API
+//  Project Ferrite is an Implementation of the Telegram Server API
 //  Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
 //
 //  This program is free software: you can redistribute it and/or modify
@@ -16,16 +16,16 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Services;
+namespace Ferrite.Data;
 
-public record InputPeer
+public enum InputPeerType
 {
-    public InputPeerType InputPeerType { get; init; }
-    public long ChatId { get; init; }
-    public long UserId { get; init; }
-    public long ChannelId { get; init; }
-    public long AccessHash { get; init; }
-    public InputPeer Peer { get; init; } = default!;
-    public int MsgId { get; init; }
+    Empty,
+    Self,
+    Chat,
+    User,
+    Channel,
+    UserFromMessage,
+    ChannelFromMessage
 }
 

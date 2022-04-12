@@ -14,11 +14,19 @@
     <None Remove="CassandraCSharpDriver" />
     <None Remove="MessagePack" />
     <None Remove="MessagePackAnalyzer" />
+    <None Remove="Account\" />
+    <None Remove="Auth\" />
+    <None Remove="Help\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.17.1" />
     <PackageReference Include="MessagePack" Version="2.3.85" />
     <PackageReference Include="MessagePackAnalyzer" Version="2.3.85" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Account\" />
+    <Folder Include="Auth\" />
+    <Folder Include="Help\" />
   </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
 ﻿//
-//  Project Ferrite is an Implementation Telegram Server API
+//  Project Ferrite is an Implementation of the Telegram Server API
 //  Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
 //
 //  This program is free software: you can redistribute it and/or modify
@@ -16,20 +16,14 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Services;
+namespace Ferrite.Data.Help;
 
-public record LangPackLanguage
+public record TermsOfService
 {
-    public bool Official { get; init; }
-    public bool Rtl { get; init; }
-    public bool Beta { get; init; }
-    public string Name { get; init; } = default!;
-    public string NativeName { get; init; } = default!;
-    public string LangCode { get; init; } = default!;
-    public string BaseLangCode { get; init; } = default!;
-    public string PluralCode { get; init; } = default!;
-    public int StringsCount { get; init; }
-    public int TranslatedCount { get; init; }
-    public string TranslationsUrl { get; init; } = default!;
+    public bool PopUp { get; init; }
+    public string Id { get; init; } = default!;
+    public string Text { get; init; } = default!;
+    public ICollection<MessageEntity> Entities { get; init; } = default!;
+    public int MinAgeConfirm { get; init; }
 }
 

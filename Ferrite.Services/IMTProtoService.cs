@@ -16,10 +16,13 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Services
+using Ferrite.Data;
+
+namespace Ferrite.Services;
+
+public interface IMTProtoService
 {
-    public interface IMTProtoService
-    {
-    }
+    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count);
+    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
 }
 

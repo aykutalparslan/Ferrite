@@ -16,15 +16,14 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Services;
+namespace Ferrite.Data;
 
-public enum UserStatus
+public record InputUser
 {
-    Empty,
-    Online,
-    Offline,
-    Recently,
-    LastWeek,
-    LastMonth
+    public InputUserType InputUserType { get; init; }
+    public long UserId { get; init; }
+    public long AccessHash { get; init; }
+    public InputPeer Peer { get; init; } = default!;
+    public int MsgId { get; init; }
 }
 

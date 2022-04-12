@@ -1,5 +1,5 @@
 ﻿//
-//  Project Ferrite is an Implementation Telegram Server API
+//  Project Ferrite is an Implementation of the Telegram Server API
 //  Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
 //
 //  This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,15 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Services.Help;
+namespace Ferrite.Data;
 
-public record TermsOfService
+public enum UserStatus
 {
-    public bool PopUp { get; init; }
-    public string Id { get; init; } = default!;
-    public string Text { get; init; } = default!;
-    public ICollection<MessageEntity> Entities { get; init; } = default!;
-    public int MinAgeConfirm { get; init; }
+    Empty,
+    Online,
+    Offline,
+    Recently,
+    LastWeek,
+    LastMonth
 }
 

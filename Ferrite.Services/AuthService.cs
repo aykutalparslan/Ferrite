@@ -17,8 +17,8 @@
 //
 using System;
 using System.Threading.Tasks.Sources;
-using Ferrite.Services.Account;
-using Ferrite.Services.Auth;
+using Ferrite.Data.Account;
+using Ferrite.Data.Auth;
 
 namespace Ferrite.Services;
 

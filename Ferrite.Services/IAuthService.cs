@@ -16,7 +16,8 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using Ferrite.Services.Auth;
+using Ferrite.Data.Auth;
+using Ferrite.Data.Account;
 
 namespace Ferrite.Services;
 
@@ -42,7 +43,7 @@ public interface IAuthService
     public Authorization ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
     public Authorization CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
     public string RequestPasswordRecovery();
-    public Authorization RecoverPassword(string code, Account.PasswordInputSettings newSettings);
+    public Authorization RecoverPassword(string code, PasswordInputSettings newSettings);
     public SentCode ResendCode(string phoneNumber, string phoneCodeHash);
     public bool CancelCode(string phoneNumber, string phoneCodeHash);
     public bool DropTempAuthKeys(ICollection<long> exceptAuthKeys);

@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Ferrite.Data;
 
 namespace Ferrite.Services;
 
