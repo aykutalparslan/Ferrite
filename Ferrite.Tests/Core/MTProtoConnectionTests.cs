@@ -662,7 +662,6 @@ public class MTProtoConnectionTests
         }
     }
 
-
     private IContainer BuildIoCContainer()
     {
         var tl = Assembly.Load("Ferrite.TL");
