@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -48,8 +48,8 @@ public class MsgContainer : ITLObject
         }
     }
 
-    private VectorBare<Message> messages;
-    public VectorBare<Message> Messages
+    private VectorOfMessage messages;
+    public VectorOfMessage Messages
     {
         get => messages;
         set
@@ -62,7 +62,7 @@ public class MsgContainer : ITLObject
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        messages = factory.Read<VectorBare<Message>>(ref buff);
+        messages = factory.Read<VectorOfMessage>(ref buff);
     }
 
     public void WriteTo(Span<byte> buff)

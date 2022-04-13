@@ -48,6 +48,7 @@ public class MTProtoConnection
     private long _authKeyId;
     private byte[] _authKey;
     private long _sessionId;
+    private long _uniqueSessionId;
     private int _seq = 0;
     private ITransportConnection socketConnection;
     private Task? receiveTask;
@@ -146,7 +147,8 @@ public class MTProtoConnection
             IsContentRelated = false,
             IsResponse = true,
             MessageType = MTProtoMessageType.Pong,
-            SessionId = _sessionId
+            SessionId = _sessionId,
+            MessageId = pong.MsgId
         };
         await SendAsync(message);
     }
@@ -398,6 +400,12 @@ public class MTProtoConnection
             _context.Salt = rd.ReadInt64(true);
             _context.SessionId = rd.ReadInt64(true);
             _context.AuthKeyId = _authKeyId;
+            _context.MessageId = rd.ReadInt64(true);
+            _context.SequenceNo = rd.ReadInt32(true);
+
+
+            int messageDataLength = rd.ReadInt32(true);
+            int constructor = rd.ReadInt32(true);
             if (_sessionId == 0)
             {
                 _sessionId = _context.SessionId;
@@ -410,12 +418,20 @@ public class MTProtoConnection
                 state.NodeId = _sessionManager.NodeId;
                 _sessionManager.AddSessionAsync(state,
                     new MTProtoSession(this)).Wait();
-  
+
+                _uniqueSessionId = _random.NextLong();
+                var newSessionCreated = factory.Resolve<NewSessionCreated>();
+                newSessionCreated.FirstMsgId = _context.MessageId;
+                newSessionCreated.ServerSalt = salt.Salt;
+                newSessionCreated.UniqueId = _uniqueSessionId;
+                MTProtoMessage newSessionMessage = new MTProtoMessage();
+                newSessionMessage.Data = newSessionCreated.TLBytes.ToArray();
+                newSessionMessage.IsContentRelated = false;
+                newSessionMessage.IsResponse = false;
+                newSessionMessage.SessionId = _sessionId;
+                newSessionMessage.MessageType = MTProtoMessageType.NewSession;
+                _ = SendAsync(newSessionMessage);
             }
-            _context.MessageId = rd.ReadInt64(true);
-            _context.SequenceNo = rd.ReadInt32(true);
-            int messageDataLength = rd.ReadInt32(true);
-            int constructor = rd.ReadInt32(true);
 
             if (_context.MessageId < _time.ThirtySecondsLater &&
                 //msg_id values that belong over 30 seconds in the future

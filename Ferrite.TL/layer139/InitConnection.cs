@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -207,10 +207,11 @@ public class InitConnection : ITLObject, ITLMethod
             _log.Information(String.Format("Execute {0}", medhod.ToString()));
             return await medhod.ExecuteAsync(ctx);
         }
-        var ack = factory.Resolve<MsgsAck>();
-        ack.MsgIds = new VectorOfLong(1);
-        ack.MsgIds.Add(ctx.MessageId);
-        return ack;
+        //var ack = factory.Resolve<MsgsAck>();
+        //ack.MsgIds = new VectorOfLong(1);
+        //ack.MsgIds.Add(ctx.MessageId);
+        //return ack;
+        return null;
     }
 
     public void Parse(ref SequenceReader buff)

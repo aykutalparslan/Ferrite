@@ -213,6 +213,11 @@ class FakeRandomGenerator : IRandomGenerator
     {
         throw new NotImplementedException();
     }
+
+    public long NextLong()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 class FakeKeyPairProvider : IKeyProvider

@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -76,6 +76,7 @@ public class GetFutureSalts : ITLObject, ITLMethod
             var futureSalt = factory.Resolve<FutureSalt>();
             futureSalt.Salt = salt.Salt;
             futureSalt.ValidSince = (int)salt.ValidSince;
+            futureSalt.ValidUntil = (int)salt.ValidSince+3600;
             futureSalts.Salts.Add(futureSalt);
         }
         var rpcResult = factory.Resolve<RpcResult>();

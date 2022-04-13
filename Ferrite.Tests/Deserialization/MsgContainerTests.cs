@@ -1,5 +1,5 @@
 ﻿//
-//  Project Ferrite is an Implementation Telegram Server API
+//  Project Ferrite is an Implementation of the Telegram Server API
 //  Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
 //
 //  This program is free software: you can redistribute it and/or modify
@@ -22,11 +22,13 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
+using DotNext.IO;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -38,7 +40,84 @@ using Ferrite.Utils;
 using MessagePack;
 using Xunit;
 
-namespace Ferrite.Tests.Core;
+namespace Ferrite.Tests.Deserialization;
+
+public class MsgContainerTests
+{
+    [Fact]
+    public void Deserializez_MsgContainer()
+    {
+        Span<uint> data = new uint[] {
+            0x73f1f8dc, 0x00000002, 0xb2e1df30, 0x62570c6f, 0x00000005, 0x000000b8, 0xda9b0d0d, 0x0000008b,
+            0x785188b8, 0x00000002, 0x0001716f, 0x73654407, 0x706f746b, 0x63616d0c, 0x3120534f, 0x2e332e32,
+            0x00000031, 0x302e3110, 0x4454202c, 0x2062694c, 0x2e382e31, 0x00000032, 0x006e6502, 0x00000000,
+            0x00000000, 0x99c1d49d, 0x1cb5c415, 0x00000001, 0xc0de1bd9, 0x5f7a7409, 0x7366666f, 0x00007465,
+            0x2be0dfa4, 0x00000000, 0x40c51800, 0xa677244f, 0x30392b0d, 0x32373335, 0x33303531, 0x00003233,
+            0x0001716f, 0x34336120, 0x65643630, 0x37316438, 0x34626231, 0x62623232, 0x66646436, 0x64626233,
+            0x65303038, 0x00000032, 0x8a6469c2, 0x00000000, 0xb3538f44, 0x62570c6f, 0x00000006, 0x00000014,
+            0x62d6b459, 0x1cb5c415, 0x00000001, 0x00000005, 0x62570c65
+        };
+
+        Span<byte> dataBytes = MemoryMarshal.Cast<uint, byte>(data);
+
+        var container = BuildIoCContainer();
+
+        var factory = container.Resolve<TLObjectFactory>();
+
+        SequenceReader reader = IAsyncBinaryReader.Create(dataBytes.ToArray());
+
+        var obj = (MsgContainer)factory.Read(reader.ReadInt32(true), ref reader);
+
+        Assert.Equal(3, obj.Messages.Count);
+        Assert.IsType<TL.layer139.InvokeWithLayer>(obj.Messages[0].Body);
+        Assert.IsType<TL.layer139.auth.SendCode>(obj.Messages[1].Body);
+        Assert.IsType<TL.mtproto.MsgsAck>(obj.Messages[2].Body);
+    }
+
+    private IContainer BuildIoCContainer()
+    {
+        var tl = Assembly.Load("Ferrite.TL");
+        var builder = new ContainerBuilder();
+        builder.RegisterType<FakeTime>().As<IMTProtoTime>().SingleInstance();
+        builder.RegisterType<FakeRandom>().As<IRandomGenerator>();
+        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
+        builder.RegisterType<LangPackService>().As<ILangPackService>()
+            .SingleInstance();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
+            .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyOpenGenericTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
+            .AsSelf();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
+        builder.RegisterType<MTProtoConnection>();
+        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
+        builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
+        builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
+        builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
+        builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
+        builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
+        builder.RegisterType<AuthKeyProcessor>();
+        builder.RegisterType<MsgContainerProcessor>();
+        builder.RegisterType<ServiceMessagesProcessor>();
+        builder.RegisterType<AuthorizationProcessor>();
+        builder.RegisterType<MTProtoRequestProcessor>();
+        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
+        builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
+
+        var container = builder.Build();
+
+        return container;
+    }
+}
 
 class FakeTime : IMTProtoTime
 {
@@ -78,7 +157,7 @@ class FakeRandom : IRandomGenerator
 
     public byte[] GetRandomBytes(int count)
     {
-        if(count == 16)
+        if (count == 16)
         {
             return new byte[]
             {
@@ -171,7 +250,7 @@ class FakeRandom : IRandomGenerator
 
     public long NextLong()
     {
-        return 0;
+        throw new NotImplementedException();
     }
 }
 class FakeRedis : IDistributedStore
@@ -415,62 +494,62 @@ class FakeLogger : ILogger
 {
     public void Debug(string message)
     {
-        
+
     }
 
     public void Debug(Exception exception, string message)
     {
-        
+
     }
 
     public void Error(string message)
     {
-        
+
     }
 
     public void Error(Exception exception, string message)
     {
-        
+
     }
 
     public void Fatal(string message)
     {
-        
+
     }
 
     public void Fatal(Exception exception, string message)
     {
-        
+
     }
 
     public void Information(string message)
     {
-        
+
     }
 
     public void Information(Exception exception, string message)
     {
-        
+
     }
 
     public void Verbose(string message)
     {
-        
+
     }
 
     public void Verbose(Exception exception, string message)
     {
-        
+
     }
 
     public void Warning(string message)
     {
-        
+
     }
 
     public void Warning(Exception exception, string message)
     {
-        
+
     }
 }
 class FakeDistributedPipe : IDistributedPipe
@@ -484,7 +563,7 @@ class FakeDistributedPipe : IDistributedPipe
 
     public void Subscribe(string channel)
     {
-        
+
     }
 
     public async Task UnSubscribeAsync()
@@ -498,214 +577,4 @@ class FakeDistributedPipe : IDistributedPipe
     }
 }
 
-public class MTProtoConnectionTests
-{
-    [Fact]
-    public void ReceivesUnencryptedMessages()
-    {
-        var container = BuildIoCContainer();
-        ITransportConnection connection = new FakeTransportConnection();
-        connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s,e) => {
-            received.Add(e.Message);
-        };
-        mtProtoConnection.Start();
-        Assert.IsType<ReqPqMulti>(received[0]);
-        Assert.IsType<ReqDhParams>(received[1]);
-        Assert.IsType<SetClientDhParams>(received[2]);
-    }
-
-    [Fact]
-    public void ReceivesMessagesFromWebSocket()
-    {
-        var container = BuildIoCContainer();
-        ITransportConnection connection = new FakeTransportConnection("testdata/websocketSession.bin");
-        connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
-        mtProtoConnection.Start();
-
-        Assert.IsType<ReqPqMulti>(received[0]);
-        Assert.IsType<ReqDhParams>(received[1]);
-        Assert.IsType<SetClientDhParams>(received[2]);
-        Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(received[3]);
-        Assert.IsType<Ferrite.TL.layer139.updates.GetState>(received[4]);
-        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(received[5]);
-        Assert.IsType<Ferrite.TL.mtproto.MsgContainer>(received[6]);
-        Assert.IsType<Ferrite.TL.mtproto.PingDelayDisconnect>(received[7]);
-    }
-
-    [Fact]
-    public async Task SendsWebSocketHeader()
-    {
-        var container = BuildIoCContainer();
-        FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
-        connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
-        mtProtoConnection.Start();
-        var webSocketResult = await connection.Application.Input.ReadAsync();
-        string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
-        string wsExpected = "HTTP/1.1 101 Switching Protocols\r\nConnection: upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: AJivmihbVG1JSXhoiKaZkpv82+s=\r\nSec-WebSocket-Protocol: binary\r\n\r\n";
-        connection.Application.Input.AdvanceTo(webSocketResult.Buffer.End);
-        Assert.Equal(wsExpected, webSocketResponse);
-    }
-
-
-    [Fact]
-    public async Task SendsUnencryptedMessages()
-    {
-        var container = BuildIoCContainer();
-        FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
-        connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
-        mtProtoConnection.Start();
-        var webSocketResult = await connection.Application.Input.ReadAsync();
-        string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
-        connection.Application.Input.AdvanceTo(webSocketResult.Buffer.End);
-        
-        byte[] data = File.ReadAllBytes("testdata/message_0");
-        byte[] expected = File.ReadAllBytes("testdata/sent_0");
-        var message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        var result = await connection.Application.Input.ReadAsync();
-        Assert.Equal(expected, result.Buffer.ToSpan().Slice(2).ToArray());
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        data = File.ReadAllBytes("testdata/message_1");
-        expected = File.ReadAllBytes("testdata/sent_1");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        result = await connection.Application.Input.ReadAsync();
-        Assert.Equal(expected, result.Buffer.ToSpan().Slice(4).ToArray());
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        data = File.ReadAllBytes("testdata/message_2");
-        expected = File.ReadAllBytes("testdata/sent_2");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        result = await connection.Application.Input.ReadAsync();
-        Assert.Equal(expected, result.Buffer.ToSpan().Slice(2).ToArray());
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-    }
-
-    [Fact]
-    public async Task SendsEncryptedMessage()
-    {
-        var container = BuildIoCContainer();
-        FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
-        connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
-        mtProtoConnection.Start();
-        var webSocketResult = await connection.Application.Input.ReadAsync();
-        string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
-        connection.Application.Input.AdvanceTo(webSocketResult.Buffer.End);
-        
-        byte[] data = File.ReadAllBytes("testdata/message_0");
-        var message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        var result = await connection.Application.Input.ReadAsync();
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        await connection.Receive("testdata/websocketSession_encrypted");
-
-        data = File.ReadAllBytes("testdata/message_1");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        result = await connection.Application.Input.ReadAsync();
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        data = File.ReadAllBytes("testdata/message_2");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        result = await connection.Application.Input.ReadAsync();
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        data = File.ReadAllBytes("testdata/message_3");
-        var expected = File.ReadAllBytes("testdata/sent_3");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        int wait = 20;
-        while (!mtProtoConnection.IsEncrypted)
-        {
-            await Task.Delay(wait).ContinueWith(async (a) =>
-            {
-                if (mtProtoConnection.IsEncrypted)
-                {
-                    await mtProtoConnection.SendAsync(message);
-                    result = await connection.Application.Input.ReadAsync();
-                    var actual = result.Buffer.ToSpan().Slice(4).ToArray();
-                    Assert.Equal(expected, actual);
-                    connection.Application.Input.AdvanceTo(result.Buffer.End);
-                }
-            });
-        }
-    }
-
-
-    private IContainer BuildIoCContainer()
-    {
-        var tl = Assembly.Load("Ferrite.TL");
-        var builder = new ContainerBuilder();
-        builder.RegisterType<FakeTime>().As<IMTProtoTime>().SingleInstance();
-        builder.RegisterType<FakeRandom>().As<IRandomGenerator>();
-        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
-        builder.RegisterType<LangPackService>().As<ILangPackService>()
-            .SingleInstance();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
-            .AsSelf();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL")
-            .AsSelf();
-        builder.RegisterAssemblyOpenGenericTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL")
-            .AsSelf();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
-            .AsSelf();
-        builder.Register(_ => new Int128());
-        builder.Register(_ => new Int256());
-        builder.RegisterType<MTProtoConnection>();
-        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
-        builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
-        builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
-        builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
-        builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
-        builder.RegisterType<AuthKeyProcessor>();
-        builder.RegisterType<MsgContainerProcessor>();
-        builder.RegisterType<ServiceMessagesProcessor>();
-        builder.RegisterType<AuthorizationProcessor>();
-        builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
-        builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
-
-        var container = builder.Build();
-
-        return container;
-    }
-
-}
 

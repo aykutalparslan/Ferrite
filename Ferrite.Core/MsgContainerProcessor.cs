@@ -42,13 +42,15 @@ public class MsgContainerProcessor : IProcessor
         if (input.Constructor == TLConstructor.MsgContainer &&
             input is MsgContainer container)
         {
-            foreach (var msg in container.Messages)
-            {
-                output.Enqueue(msg);
-            }
             var ack = _scope.Resolve<MsgsAck>();
             ack.MsgIds = new VectorOfLong(1);
             ack.MsgIds.Add(ctx.MessageId);
+            foreach (var msg in container.Messages)
+            {
+                //ack.MsgIds.Add(msg.MsgId);
+                output.Enqueue(msg);
+            }
+            
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;

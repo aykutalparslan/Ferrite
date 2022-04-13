@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -41,7 +41,7 @@ public class Message : ITLObject
             if (serialized)
                 return writer.ToReadOnlySequence();
             writer.Clear();
-            writer.WriteInt32(Constructor, true);
+            //writer.WriteInt32(Constructor, true); //this is a bare type
             writer.WriteInt64(msgId, true);
             writer.WriteInt32(seqno, true);
             writer.WriteInt32(bytes, true);
@@ -101,12 +101,8 @@ public class Message : ITLObject
         msgId = buff.ReadInt64(true);
         seqno = buff.ReadInt32(true);
         bytes = buff.ReadInt32(true);
-        int rem = (int)buff.RemainingSequence.Length;
         int constructor = buff.ReadInt32(true);
         body = factory.Read(constructor, ref buff);
-        int skip = bytes - (rem - (int)buff.RemainingSequence.Length);
-        buff.Skip(skip);//TODO: Investigate why we need this.
-                        // I must have missed something in the spec.
     }
 
     public void WriteTo(Span<byte> buff)

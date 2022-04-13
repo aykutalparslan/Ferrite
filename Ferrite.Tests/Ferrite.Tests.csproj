@@ -42,6 +42,7 @@
     <None Remove="testdata\crypto\" />
     <None Remove="Utils\" />
     <None Remove="Transport\" />
+    <None Remove="Deserialization\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="PQ\" />
@@ -53,6 +54,7 @@
     <Folder Include="testdata\crypto\" />
     <Folder Include="Utils\" />
     <Folder Include="Transport\" />
+    <Folder Include="Deserialization\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="testdata\obfuscatedIntermediateSession.bin">

@@ -283,6 +283,13 @@ namespace Ferrite.Crypto
         {
             RandomNumberGenerator.Fill(data);
         }
+
+        public long NextLong()
+        {
+            Span<byte> randomBytes = stackalloc byte[8];
+            RandomNumberGenerator.Fill(randomBytes);
+            return BitConverter.ToInt64(randomBytes);
+        }
     }
 }
 
