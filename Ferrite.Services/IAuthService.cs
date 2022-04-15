@@ -32,24 +32,24 @@ public interface IAuthService
 	/// <param name="apiHash">Application secret hash</param>
 	/// <param name="settings">Settings for the code type to send</param>
 	/// <returns>The method returns an auth.SentCode object with information on the message sent.</returns>
-    public SentCode SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings);
-    public Authorization SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName);
-    public Authorization SignIn(string phoneNumber, string phoneCodeHash, string phoneCode);
-    public bool LogOut(out byte[] futureAuthToken);
-    public bool ResetAuthorizations();
-    public (long id, byte[] bytes) ExportAuthorization(int dcId);
-    public Authorization ImportAuthorization(long id, byte[] bytes);
-    public bool BindTempAuthKey(long permAuthKeyId, long nonce, int expiresAt, byte[] encryptedMessage);
-    public Authorization ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
-    public Authorization CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
-    public string RequestPasswordRecovery();
-    public Authorization RecoverPassword(string code, PasswordInputSettings newSettings);
-    public SentCode ResendCode(string phoneNumber, string phoneCodeHash);
-    public bool CancelCode(string phoneNumber, string phoneCodeHash);
-    public bool DropTempAuthKeys(ICollection<long> exceptAuthKeys);
-    public LoginToken ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds);
-    public LoginToken ImportLoginToken(byte[] token);
-    public Authorization AcceptLoginToken(byte[] token);
-    public bool CheckRecoveryPassword(string code);
+    public Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings);
+    public Task<Authorization> SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName);
+    public Task<Authorization> SignIn(string phoneNumber, string phoneCodeHash, string phoneCode);
+    public Task<bool> LogOut(out byte[] futureAuthToken);
+    public Task<bool> ResetAuthorizations();
+    public Task<ExportedAuthorization> ExportAuthorization(int dcId);
+    public Task<Authorization> ImportAuthorization(long id, byte[] bytes);
+    public Task<bool> BindTempAuthKey(long permAuthKeyId, long nonce, int expiresAt, byte[] encryptedMessage);
+    public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
+    public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
+    public Task<string> RequestPasswordRecovery();
+    public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings);
+    public Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash);
+    public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash);
+    public Task<bool> DropTempAuthKeys(ICollection<long> exceptAuthKeys);
+    public Task<LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds);
+    public Task<LoginToken> ImportLoginToken(byte[] token);
+    public Task<Authorization> AcceptLoginToken(byte[] token);
+    public Task<bool> CheckRecoveryPassword(string code);
 }
 

@@ -18,6 +18,7 @@
 
 using System;
 using System.Buffers.Binary;
+using Ferrite.Data.Auth;
 using StackExchange.Redis;
 
 namespace Ferrite.Data;
@@ -54,7 +55,7 @@ public class RedisDataStore: IDistributedStore
         return await db.StringGetAsync(key);
     }
 
-    public async Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    public async Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);

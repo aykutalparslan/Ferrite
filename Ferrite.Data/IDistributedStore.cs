@@ -16,6 +16,8 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 using System;
+using Ferrite.Data.Auth;
+
 namespace Ferrite.Data;
 
 public interface IDistributedStore
@@ -27,7 +29,7 @@ public interface IDistributedStore
     public Task<byte[]> GetAuthKeySessionAsync(byte[] nonce);
     public Task<bool> PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData);
     public Task<bool> RemoveSessionAsync(long sessionId);
-    public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash);
+    public Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash);
     public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn);
     public Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn);
     /// <summary>

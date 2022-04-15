@@ -95,7 +95,7 @@ public class Program
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<SessionManager>().As<ISessionManager>().SingleInstance();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>();
-
+        builder.RegisterType<AuthService>().As<IAuthService>();
         var container = builder.Build();
 
         return container;
