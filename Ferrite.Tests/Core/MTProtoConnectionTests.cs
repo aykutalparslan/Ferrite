@@ -250,6 +250,11 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {

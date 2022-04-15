@@ -134,6 +134,11 @@ class FakeRedis : IDistributedStore
         sessions.Remove(sessionId);
         return false;
     }
+
+    Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
