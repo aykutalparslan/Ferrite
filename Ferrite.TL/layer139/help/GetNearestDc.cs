@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.help;
@@ -49,7 +50,14 @@ public class GetNearestDc : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var nearestDc = factory.Resolve<NearestDcImpl>();
+        nearestDc.Country = "tr";
+        nearestDc.ThisDc = 1;
+        nearestDc.NearestDc = 1;
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = nearestDc;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
