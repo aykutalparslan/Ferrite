@@ -43,6 +43,7 @@
     <None Remove="Utils\" />
     <None Remove="Transport\" />
     <None Remove="Deserialization\" />
+    <None Remove="TL\" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="PQ\" />
@@ -55,6 +56,7 @@
     <Folder Include="Utils\" />
     <Folder Include="Transport\" />
     <Folder Include="Deserialization\" />
+    <Folder Include="TL\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="testdata\obfuscatedIntermediateSession.bin">

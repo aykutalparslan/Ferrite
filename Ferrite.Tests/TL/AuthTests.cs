@@ -22,13 +22,10 @@ using System.IO;
 using System.IO.Pipelines;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
-using DotNext.IO;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -36,44 +33,36 @@ using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.layer139.auth;
 using Ferrite.TL.mtproto;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
 using Xunit;
 
-namespace Ferrite.Tests.Deserialization;
+namespace Ferrite.Tests.TL;
 
-public class MsgContainerTests
+public class AuthTests
 {
     [Fact]
-    public void Deserializez_MsgContainer()
+    public async Task SendCode_Returns_SentCode()
     {
-        Span<uint> data = new uint[] {
-            0x73f1f8dc, 0x00000002, 0xb2e1df30, 0x62570c6f, 0x00000005, 0x000000b8, 0xda9b0d0d, 0x0000008b,
-            0x785188b8, 0x00000002, 0x0001716f, 0x73654407, 0x706f746b, 0x63616d0c, 0x3120534f, 0x2e332e32,
-            0x00000031, 0x302e3110, 0x4454202c, 0x2062694c, 0x2e382e31, 0x00000032, 0x006e6502, 0x00000000,
-            0x00000000, 0x99c1d49d, 0x1cb5c415, 0x00000001, 0xc0de1bd9, 0x5f7a7409, 0x7366666f, 0x00007465,
-            0x2be0dfa4, 0x00000000, 0x40c51800, 0xa677244f, 0x30392b0d, 0x32373335, 0x33303531, 0x00003233,
-            0x0001716f, 0x34336120, 0x65643630, 0x37316438, 0x34626231, 0x62623232, 0x66646436, 0x64626233,
-            0x65303038, 0x00000032, 0x8a6469c2, 0x00000000, 0xb3538f44, 0x62570c6f, 0x00000006, 0x00000014,
-            0x62d6b459, 0x1cb5c415, 0x00000001, 0x00000005, 0x62570c65
-        };
-
-        Span<byte> dataBytes = MemoryMarshal.Cast<uint, byte>(data);
-
         var container = BuildIoCContainer();
-
         var factory = container.Resolve<TLObjectFactory>();
-
-        SequenceReader reader = IAsyncBinaryReader.Create(dataBytes.ToArray());
-
-        var obj = (MsgContainer)factory.Read(reader.ReadInt32(true), ref reader);
-
-        Assert.Equal(3, obj.Messages.Count);
-        Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(obj.Messages[0].Body);
-        Assert.IsType<Ferrite.TL.layer139.auth.SendCode>(obj.Messages[1].Body);
-        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(obj.Messages[2].Body);
+        var sendCode = factory.Resolve<SendCode>();
+        var result = await sendCode.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<SentCodeImpl>(rslt.Result);
+        var sntCode = (SentCodeImpl)rslt.Result;
+        Assert.IsType<SentCodeTypeSmsImpl>(sntCode.Type);
+        Assert.NotNull(sntCode.NextType);
+        Assert.Equal(60, sntCode.Timeout);
+        Assert.Equal("acabadef", sntCode.PhoneCodeHash);
     }
 
     private IContainer BuildIoCContainer()
@@ -83,7 +72,7 @@ public class MsgContainerTests
         builder.RegisterType<FakeTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<FakeRandom>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
-        builder.RegisterType<LangPackService>().As<ILangPackService>()
+        builder.RegisterType<FakeAuthService>().As<IAuthService>()
             .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
@@ -99,21 +88,10 @@ public class MsgContainerTests
             .AsSelf();
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
-        builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
-        builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.RegisterType<FakeAuthService>().As<IAuthService>();
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
         builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
-        builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
-        builder.RegisterType<AuthKeyProcessor>();
-        builder.RegisterType<MsgContainerProcessor>();
-        builder.RegisterType<ServiceMessagesProcessor>();
-        builder.RegisterType<AuthorizationProcessor>();
-        builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
 
         var container = builder.Build();
@@ -121,7 +99,6 @@ public class MsgContainerTests
         return container;
     }
 }
-
 class FakeAuthService : IAuthService
 {
     public Task<Data.Auth.Authorization> AcceptLoginToken(byte[] token)
@@ -230,7 +207,6 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 }
-
 class FakeTime : IMTProtoTime
 {
     public long FiveMinutesAgo => long.MinValue;
@@ -362,7 +338,7 @@ class FakeRandom : IRandomGenerator
 
     public long NextLong()
     {
-        throw new NotImplementedException();
+        return 0;
     }
 }
 class FakeRedis : IDistributedStore
@@ -693,5 +669,3 @@ class FakeDistributedPipe : IDistributedPipe
         _channel.Enqueue(message);
     }
 }
-
-
