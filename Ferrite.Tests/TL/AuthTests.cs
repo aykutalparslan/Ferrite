@@ -33,6 +33,7 @@ using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.layer139;
 using Ferrite.TL.layer139.auth;
 using Ferrite.TL.mtproto;
 using Ferrite.Transport;
@@ -65,6 +66,88 @@ public class AuthTests
         Assert.Equal("acabadef", sntCode.PhoneCodeHash);
     }
 
+    [Fact]
+    public async Task SignIn_Returns_SignUpRequired()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var signIn = factory.Resolve<SignIn>();
+        signIn.PhoneCode = "12345";
+        signIn.PhoneCodeHash = "acabadef";
+        signIn.PhoneNumber = "5554443322";
+        var result = await signIn.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
+
+    public async Task SignIn_Returns_Authorization()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var signUp = factory.Resolve<SignUp>();
+        signUp.PhoneCodeHash = "acabadef";
+        signUp.PhoneNumber = "5554443322";
+        signUp.FirstName = "a";
+        signUp.LastName = "b";
+        await signUp.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        var signIn = factory.Resolve<SignIn>();
+        signIn.PhoneCode = "12345";
+        signIn.PhoneCodeHash = "acabadef";
+        signIn.PhoneNumber = "5554443322";
+        var result = await signIn.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1224
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1224, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+
+    [Fact]
+    public async Task SignUp_Returns_Authorization()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.Resolve<TLObjectFactory>();
+        var signUp = factory.Resolve<SignUp>();
+        signUp.PhoneCodeHash = "acabadef";
+        signUp.PhoneNumber = "5554443322";
+        signUp.FirstName = "a";
+        signUp.LastName = "b";
+        var result = await signUp.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+
     private IContainer BuildIoCContainer()
     {
         var tl = Assembly.Load("Ferrite.TL");
@@ -72,8 +155,7 @@ public class AuthTests
         builder.RegisterType<FakeTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<FakeRandom>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
-        builder.RegisterType<FakeAuthService>().As<IAuthService>()
-            .SingleInstance();
+        builder.RegisterType<FakeAuthService>().As<IAuthService>().InstancePerLifetimeScope();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -101,6 +183,10 @@ public class AuthTests
 }
 class FakeAuthService : IAuthService
 {
+    bool _signupComplete = false;
+    private string _firstName = default!;
+    private string _lastName = default!;
+
     public Task<Data.Auth.Authorization> AcceptLoginToken(byte[] token)
     {
         throw new NotImplementedException();
@@ -186,25 +272,71 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public async Task<Data.Auth.SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings)
+    public async Task<Data.Auth.SentCode> SendCode(string phoneNumber, int apiId, string apiHash, Data.Auth.CodeSettings settings)
     {
         return new Data.Auth.SentCode()
         {
             CodeType = Data.Auth.SentCodeType.Sms,
+            NextType = Data.Auth.SentCodeType.Sms,
             CodeLength = 5,
             Timeout = 60,
             PhoneCodeHash = "acabadef"
         };
     }
 
-    public Task<Data.Auth.Authorization> SignIn(string phoneNumber, string phoneCodeHash, string phoneCode)
+    public async Task<Data.Auth.Authorization> SignIn(string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        throw new NotImplementedException();
+        if (!_signupComplete)
+        {
+            return new Data.Auth.Authorization()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired
+            };
+        }
+        else
+        {
+            return new Data.Auth.Authorization()
+            {
+                AuthorizationType = AuthorizationType.Authorization,
+                User = new Data.User()
+                {
+                    Id = 123,
+                    FirstName = _firstName,
+                    LastName = _lastName,
+                    Phone = phoneNumber,
+                    Status = Data.UserStatus.Empty,
+                    Self = true,
+                    Photo = new Data.UserProfilePhoto()
+                    {
+                        Empty = true
+                    }
+                }
+            };
+        }
     }
-
-    public Task<Data.Auth.Authorization> SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName)
+    
+    public async Task<Data.Auth.Authorization> SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName)
     {
-        throw new NotImplementedException();
+        _firstName = firstName;
+        _lastName = lastName;
+        _signupComplete = true;
+        return new Data.Auth.Authorization()
+        {
+            AuthorizationType = AuthorizationType.Authorization,
+            User = new Data.User()
+            {
+                Id = 123,
+                FirstName = firstName,
+                LastName = lastName,
+                Phone = phoneNumber,
+                Status = Data.UserStatus.Empty,
+                Self = true,
+                Photo = new Data.UserProfilePhoto()
+                {
+                    Empty = true
+                }
+            }
+        };
     }
 }
 class FakeTime : IMTProtoTime

@@ -20,6 +20,7 @@ namespace Ferrite.Data;
 
 public record UserProfilePhoto
 {
+    public bool Empty { get; init; }
     public bool HasVideo { get; init; }
     public long PhotoId { get; init; }
     public byte[] StrippedThumb { get; init; } = default!;
