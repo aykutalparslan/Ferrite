@@ -90,7 +90,7 @@ public class SignIn : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var singInResult = await _auth.SignIn(_phoneNumber, _phoneCodeHash, _phoneCode);
+        var singInResult = await _auth.SignIn(ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _phoneCode);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         if (singInResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)

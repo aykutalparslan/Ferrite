@@ -1,19 +1,19 @@
 ﻿//
-//    Project Ferrite is an Implementation Telegram Server API
-//    Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
+//  Project Ferrite is an Implementation of the Telegram Server API
+//  Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
 //
-//    This program is free software: you can redistribute it and/or modify
-//    it under the terms of the GNU Affero General Public License as published by
-//    the Free Software Foundation, either version 3 of the License, or
-//    (at your option) any later version.
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Affero General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
 //
-//    This program is distributed in the hope that it will be useful,
-//    but WITHOUT ANY WARRANTY; without even the implied warranty of
-//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//    GNU Affero General Public License for more details.
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU Affero General Public License for more details.
 //
-//    You should have received a copy of the GNU Affero General Public License
-//    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+//  You should have received a copy of the GNU Affero General Public License
+//  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
 using Cassandra;
@@ -22,7 +22,6 @@ namespace Ferrite.Data
 {
     public class CassandraDataStore :IPersistentStore
     {
-        // Configure the builder with your cluster's contact points
         private readonly Cluster cluster;
         private readonly ISession session;
         private readonly string keySpace;
@@ -48,6 +47,9 @@ namespace Ferrite.Data
                 "CREATE TABLE IF NOT EXISTS ferrite.auth_keys (" +
                             "auth_key_id bigint," +
                             "auth_key blob," +
+                            "phone text," +
+                            "user_id bigint," +
+                            "api_layer int," +
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
@@ -56,6 +58,28 @@ namespace Ferrite.Data
                             "server_salt bigint," +
                             "valid_since bigint," +
                             "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.users (" +
+                            "user_id bigint," +
+                            "access_hash bigint," +
+                            "first_name text," +
+                            "last_name text," +
+                            "username text," +
+                            "phone text," +
+                            "PRIMARY KEY (id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE MATERIALIZED VIEW IF NOT EXISTS ferrite.users_by_phone AS " +
+                        "SELECT * FROM telegram.users " +
+                        "WHERE phone IS NOT NULL AND user_id IS NOT NULL " +
+                        "PRIMARY KEY (phone, user_id);");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE MATERIALIZED VIEW IF NOT EXISTS ferrite.users_by_username AS " +
+                        "SELECT * FROM telegram.users " +
+                        "WHERE username IS NOT NULL AND user_id IS NOT NULL " +
+                        "PRIMARY KEY (username, user_id);");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -88,7 +112,7 @@ namespace Ferrite.Data
         public async Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
         {
             var statement = new SimpleStatement(
-                $"INSERT INTO ferrite.server_salts(auth_key_id, server_salt, valid_since) VALUES(?,?,?) USING TTL ?;",
+                "INSERT INTO ferrite.server_salts(auth_key_id, server_salt, valid_since) VALUES(?,?,?) USING TTL ?;",
                 authKeyId, serverSalt, validSince, TTL).SetKeyspace(keySpace);
 
             await session.ExecuteAsync(statement);
@@ -114,6 +138,133 @@ namespace Ferrite.Data
                 });
             }
             return serverSalts;
+        }
+
+        public async Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.auth_keys SET phone = ?, user_id = ?, api_layer = ?  WHERE auth_key_id = ?;",
+                details.Phone, details.UserId, details.ApiLayer, details.AuthKeyId).SetKeyspace(keySpace);
+
+            await session.ExecuteAsync(statement);
+        }
+
+        public async Task<AuthKeyDetails?> GetAuthKeyDetailsAsync(long authKeyId)
+        {
+            AuthKeyDetails? details = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.auth_keys WHERE auth_key_id = ?;",
+                authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                details = new AuthKeyDetails()
+                {
+                    AuthKeyId = row.GetValue<long>("auth_key_id"),
+                    Phone = row.GetValue<string>("phone"),
+                    UserId = row.GetValue<long>("user_id"),
+                    ApiLayer = row.GetValue<int>("api_layer"),
+                };
+            }
+            return details;
+        }
+
+        public async Task<bool> SaveUserAsync(User user)
+        {
+            var statement = new SimpleStatement(
+                "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
+                "last_name, username, phone) VALUES(?,?,?,?,?,?);",
+                user.Id, user.AccessHash, user.FirstName, user.LastName,
+                user.Username, user.Phone).SetKeyspace(keySpace);
+
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<bool> UpdateUserAsync(User user)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.users SET access_hash = =, first_name = ?, " +
+                "last_name = ?, username = ?, phone = ?) WHERE user_id = ?;",
+                user.AccessHash, user.FirstName, user.LastName,
+                user.Username, user.Phone, user.Id).SetKeyspace(keySpace);
+
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<User?> GetUserAsync(long userId)
+        {
+            User? user = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.users WHERE user_id = ?;",
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                user = new User()
+                {
+                    Id = row.GetValue<long>("user_id"),
+                    AccessHash = row.GetValue<long>("acces_hash"),
+                    FirstName = row.GetValue<string>("first_name"),
+                    LastName = row.GetValue<string>("last_name"),
+                    Phone = row.GetValue<string>("phone"),
+                    Username = row.GetValue<string>("username"),
+                };
+            }
+            return user;
+        }
+
+        public async Task<User?> GetUserAsync(string phone)
+        {
+            User? user = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.users_by_phone WHERE phone = ?;",
+                phone);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                user = new User()
+                {
+                    Id = row.GetValue<long>("user_id"),
+                    AccessHash = row.GetValue<long>("acces_hash"),
+                    FirstName = row.GetValue<string>("first_name"),
+                    LastName = row.GetValue<string>("last_name"),
+                    Phone = row.GetValue<string>("phone"),
+                    Username = row.GetValue<string>("username"),
+                };
+            }
+            return user;
+        }
+
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+            User? user = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.users_by_username WHERE username = ?;",
+                username);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                user = new User()
+                {
+                    Id = row.GetValue<long>("user_id"),
+                    AccessHash = row.GetValue<long>("acces_hash"),
+                    FirstName = row.GetValue<string>("first_name"),
+                    LastName = row.GetValue<string>("last_name"),
+                    Phone = row.GetValue<string>("phone"),
+                    Username = row.GetValue<string>("username"),
+                };
+            }
+            return user;
         }
     }
 }

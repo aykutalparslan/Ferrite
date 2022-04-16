@@ -29,13 +29,15 @@ public class AuthService : IAuthService
 {
     private readonly IRandomGenerator _random;
     private readonly IDistributedStore _cache;
+    private readonly IPersistentStore _store;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
-    public AuthService(IRandomGenerator random, IDistributedStore cache)
+    public AuthService(IRandomGenerator random, IDistributedStore cache, IPersistentStore store)
     {
         _random = random;
         _cache = cache;
+        _store = store;
     }
 
     public Task<Authorization> AcceptLoginToken(byte[] token)
@@ -68,7 +70,7 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<ExportedAuthorization> ExportAuthorization(int dcId)
+    public Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
     {
         throw new NotImplementedException();
     }
@@ -98,7 +100,7 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> LogOut(out byte[] futureAuthToken)
+    public Task<bool> LogOut(long authKeyId, out byte[] futureAuthToken)
     {
         throw new NotImplementedException();
     }
@@ -141,12 +143,12 @@ public class AuthService : IAuthService
         };
     }
 
-    public Task<Authorization> SignIn(string phoneNumber, string phoneCodeHash, string phoneCode)
+    public Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName)
+    public Task<Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
     {
         throw new NotImplementedException();
     }

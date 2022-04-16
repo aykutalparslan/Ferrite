@@ -268,7 +268,27 @@ class FakeCassandra : IPersistentStore
         return authKeys[authKeyId];
     }
 
+    public Task<AuthKeyDetails?> GetAuthKeyDetailsAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<User?> GetUserAsync(long userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<User?> GetUserAsync(string phone)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<User?> GetUserByUsernameAsync(string username)
     {
         throw new NotImplementedException();
     }
@@ -278,7 +298,22 @@ class FakeCassandra : IPersistentStore
         authKeys.Add(authKeyId, authKey);
     }
 
+    public Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveUserAsync(User user)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> UpdateUserAsync(User user)
     {
         throw new NotImplementedException();
     }

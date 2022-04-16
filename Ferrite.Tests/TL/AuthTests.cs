@@ -90,7 +90,7 @@ public class AuthTests
         var scope = BuildIoCContainer().BeginLifetimeScope();
         var factory = scope.Resolve<TLObjectFactory>();
         var authService = scope.Resolve<IAuthService>();
-        await authService.SignUp("5554443322", "acabadef", "a", "b");
+        await authService.SignUp(0,"5554443322", "acabadef", "a", "b");
         
         var signIn = factory.Resolve<SignIn>();
         signIn.PhoneCode = "12345";
@@ -211,7 +211,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Data.Auth.ExportedAuthorization> ExportAuthorization(int dcId)
+    public Task<Data.Auth.ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
     {
         throw new NotImplementedException();
     }
@@ -241,7 +241,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> LogOut(out byte[] futureAuthToken)
+    public Task<bool> LogOut(long authKeyId, out byte[] futureAuthToken)
     {
         throw new NotImplementedException();
     }
@@ -278,7 +278,7 @@ class FakeAuthService : IAuthService
         };
     }
 
-    public async Task<Data.Auth.Authorization> SignIn(string phoneNumber, string phoneCodeHash, string phoneCode)
+    public async Task<Data.Auth.Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
         if (!_signupComplete)
         {
@@ -309,7 +309,7 @@ class FakeAuthService : IAuthService
         }
     }
     
-    public async Task<Data.Auth.Authorization> SignUp(string phoneNumber, string phoneCodeHash, string firstName, string lastName)
+    public async Task<Data.Auth.Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
     {
         _firstName = firstName;
         _lastName = lastName;
@@ -561,7 +561,27 @@ class FakeCassandra : IPersistentStore
         return authKeys[authKeyId];
     }
 
+    public Task<AuthKeyDetails?> GetAuthKeyDetailsAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Data.User?> GetUserAsync(long userId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Data.User?> GetUserAsync(string phone)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Data.User?> GetUserByUsernameAsync(string username)
     {
         throw new NotImplementedException();
     }
@@ -571,7 +591,22 @@ class FakeCassandra : IPersistentStore
         authKeys.Add(authKeyId, authKey);
     }
 
+    public Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveUserAsync(Data.User user)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> UpdateUserAsync(Data.User user)
     {
         throw new NotImplementedException();
     }
