@@ -84,7 +84,7 @@ public class AuthTests
         Assert.Equal(1223, rslt.ReqMsgId);
         Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
     }
-
+    [Fact]
     public async Task SignIn_Returns_Authorization()
     {
         var container = BuildIoCContainer();
