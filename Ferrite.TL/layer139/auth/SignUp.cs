@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +29,12 @@ public class SignUp : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public SignUp(ITLObjectFactory objectFactory)
+    public SignUp(ITLObjectFactory objectFactory, IAuthService auth)
     {
         factory = objectFactory;
+        _auth = auth;
     }
 
     public int Constructor => -2131827673;
@@ -97,7 +101,29 @@ public class SignUp : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var signUpResult = await _auth.SignUp(_phoneNumber, _phoneCodeHash, _firstName, _lastName);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (signUpResult != null)
+        {
+            var authorization = factory.Resolve<AuthorizationImpl>();
+            var user = factory.Resolve<UserImpl>();
+            user.FirstName = signUpResult.User.FirstName;
+            user.LastName = signUpResult.User.LastName;
+            user.Phone = signUpResult.User.Phone;
+            user.Self = signUpResult.User.Self;
+            if (signUpResult.User.Status == Data.UserStatus.Empty)
+            {
+                user.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (signUpResult.User.Photo.Empty)
+            {
+                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            authorization.User = user;
+            result.Result = authorization;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
