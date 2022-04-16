@@ -129,7 +129,8 @@ public class AuthService : IAuthService
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(), new TimeSpan(0, 0, PhoneCodeTimeout));
+        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
+            new TimeSpan(0, 0, PhoneCodeTimeout*2));
         
         return new SentCode()
         {

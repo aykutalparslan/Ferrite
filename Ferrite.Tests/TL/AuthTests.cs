@@ -87,17 +87,11 @@ public class AuthTests
     [Fact]
     public async Task SignIn_Returns_Authorization()
     {
-        var container = BuildIoCContainer();
-        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
-        var signUp = factory.Resolve<SignUp>();
-        signUp.PhoneCodeHash = "acabadef";
-        signUp.PhoneNumber = "5554443322";
-        signUp.FirstName = "a";
-        signUp.LastName = "b";
-        await signUp.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
-        {
-            MessageId = 1223
-        });
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var authService = scope.Resolve<IAuthService>();
+        await authService.SignUp("5554443322", "acabadef", "a", "b");
+        
         var signIn = factory.Resolve<SignIn>();
         signIn.PhoneCode = "12345";
         signIn.PhoneCodeHash = "acabadef";

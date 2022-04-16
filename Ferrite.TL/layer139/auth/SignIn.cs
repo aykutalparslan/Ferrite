@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.layer139.help;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +30,12 @@ public class SignIn : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public SignIn(ITLObjectFactory objectFactory)
+    public SignIn(ITLObjectFactory objectFactory, IAuthService auth)
     {
         factory = objectFactory;
+        _auth = auth;
     }
 
     public int Constructor => -1126886015;
@@ -85,7 +90,34 @@ public class SignIn : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var singInResult = await _auth.SignIn(_phoneNumber, _phoneCodeHash, _phoneCode);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (singInResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)
+        {
+            var signUpRequired = factory.Resolve<AuthorizationSignUpRequiredImpl>();
+            result.Result = signUpRequired;
+        }
+        else
+        {
+            var authorization = factory.Resolve<AuthorizationImpl>();
+            var user = factory.Resolve<UserImpl>();
+            user.FirstName = singInResult.User.FirstName;
+            user.LastName = singInResult.User.LastName;
+            user.Phone = singInResult.User.Phone;
+            user.Self = singInResult.User.Self;
+            if(singInResult.User.Status == Data.UserStatus.Empty)
+            {
+                user.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (singInResult.User.Photo.Empty)
+            {
+                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            authorization.User = user;
+            result.Result = authorization;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
