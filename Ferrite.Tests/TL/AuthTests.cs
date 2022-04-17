@@ -114,7 +114,25 @@ public class AuthTests
         Assert.IsType<UserStatusEmptyImpl>(user.Status);
         Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
     }
-
+    [Fact]
+    public async Task SignUp_Returns_SignUpRequired()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.Resolve<TLObjectFactory>();
+        var signUp = factory.Resolve<SignUp>();
+        signUp.PhoneCodeHash = "xxx";
+        signUp.PhoneNumber = "5554443322";
+        signUp.FirstName = "a";
+        signUp.LastName = "b";
+        var result = await signUp.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
     [Fact]
     public async Task SignUp_Returns_Authorization()
     {
@@ -313,6 +331,13 @@ class FakeAuthService : IAuthService
     
     public async Task<Data.Auth.Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
     {
+        if(phoneCodeHash!= "acabadef")
+        {
+            return new Data.Auth.Authorization()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired
+            };
+        }
         _firstName = firstName;
         _lastName = lastName;
         _signupComplete = true;

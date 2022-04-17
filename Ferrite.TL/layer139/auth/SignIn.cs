@@ -93,12 +93,13 @@ public class SignIn : ITLObject, ITLMethod
         var signInResult = await _auth.SignIn(ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _phoneCode);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        if (signInResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)
+        if (signInResult != null &&
+            signInResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)
         {
             var signUpRequired = factory.Resolve<AuthorizationSignUpRequiredImpl>();
             result.Result = signUpRequired;
         }
-        else
+        else if(signInResult != null)
         {
             var authorization = factory.Resolve<AuthorizationImpl>();
             var user = factory.Resolve<UserImpl>();

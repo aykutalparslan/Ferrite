@@ -104,7 +104,13 @@ public class SignUp : ITLObject, ITLMethod
         var signUpResult = await _auth.SignUp(ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _firstName, _lastName);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        if (signUpResult != null)
+        if (signUpResult != null &&
+          signUpResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)
+        {
+            var signUpRequired = factory.Resolve<AuthorizationSignUpRequiredImpl>();
+            result.Result = signUpRequired;
+        }
+        else if (signUpResult != null)
         {
             var authorization = factory.Resolve<AuthorizationImpl>();
             var user = factory.Resolve<UserImpl>();
@@ -124,6 +130,7 @@ public class SignUp : ITLObject, ITLMethod
             authorization.User = user;
             result.Result = authorization;
         }
+        
         return result;
     }
 
