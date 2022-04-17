@@ -1,8 +1,17 @@
 # Project Ferrite [![.NET](https://github.com/aykutalparslan/ferrite/actions/workflows/dotnet.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/dotnet.yml) [![CodeQL](https://github.com/aykutalparslan/ferrite/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/codeql-analysis.yml) [![DevSkim](https://github.com/aykutalparslan/ferrite/actions/workflows/devskim.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/devskim.yml)
-An implementation of the Telegram Server API in C#
+Project Ferrite is an implementation of the Telegram Server API in C#. 
 
-This project is a reincarnation of my previous [Telegram-Server] project. 
-It is currently in a very early stage of development. 
-It is licensed under GNU AGPL-3.0.
+## What works?
+
+The project is currently in a very early stage of development so very little works. The following are the features that are implemented and working so far:
+- All MTProto transports are implemented (only Abridged and Intermediate transports are tested)
+- Websockets and Obfuscation
+- Creation of an Auth Key
+- MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
+- TL Serialization/Deserialization
+
+## License
+
+Project Ferrite is licensed under GNU AGPL-3.0
 
 [Telegram-Server]: <https://github.com/aykutalparslan/Telegram-Server/>
