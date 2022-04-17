@@ -47,7 +47,7 @@ public class MsgContainerProcessor : IProcessor
             ack.MsgIds.Add(ctx.MessageId);
             foreach (var msg in container.Messages)
             {
-                //ack.MsgIds.Add(msg.MsgId);
+                ack.MsgIds.Add(msg.MsgId);
                 output.Enqueue(msg);
             }
             
