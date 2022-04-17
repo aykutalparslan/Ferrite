@@ -104,6 +104,12 @@ class FakeRedis : IDistributedStore
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
     Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
+
+    public Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))

@@ -206,7 +206,7 @@ public class AuthTests
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<BoolTrue>(rslt.Result);
+        Assert.IsType<BoolFalse>(rslt.Result);
     }
     [Fact]
     public async Task ExportAuthorization_Returns_ExportedAuthorization()
@@ -302,7 +302,7 @@ public class AuthTests
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+        Assert.IsType<BoolFalse>(rslt.Result);
     }
     [Fact]
     public async Task ImportBotAuthorization_Returns_Authorization()
@@ -511,7 +511,7 @@ public class AuthTests
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<BoolTrue>(rslt.Result);
+        Assert.IsType<BoolFalse>(rslt.Result);
     }
     [Fact]
     public async Task DropTempAuthKeys_Returns_True()
@@ -547,7 +547,7 @@ public class AuthTests
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<BoolTrue>(rslt.Result);
+        Assert.IsType<BoolFalse>(rslt.Result);
     }
     [Fact]
     public async Task ExportLoginToken_Returns_LoginToken()
@@ -747,7 +747,7 @@ public class AuthTests
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<BoolTrue>(rslt.Result);
+        Assert.IsType<BoolFalse>(rslt.Result);
     }
 
     private IContainer BuildIoCContainer()
@@ -805,9 +805,9 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
+    public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
     {
-        throw new NotImplementedException();
+        return phoneCodeHash == "acabadef";
     }
 
     public Task<Data.Auth.Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
@@ -1171,6 +1171,11 @@ class FakeRedis : IDistributedStore
     }
 
     public IAtomicCounter GetCounter(string name)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();
     }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +29,12 @@ public class CancelCode : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public CancelCode(ITLObjectFactory objectFactory)
+    public CancelCode(ITLObjectFactory objectFactory, IAuthService auth)
     {
         factory = objectFactory;
+        _auth = auth;
     }
 
     public int Constructor => 520357240;
@@ -73,7 +77,11 @@ public class CancelCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var deleted = await _auth.CancelCode(_phoneNumber, _phoneCodeHash);
+        result.Result = deleted ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

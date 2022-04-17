@@ -52,9 +52,9 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
+    public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
     {
-        throw new NotImplementedException();
+        return await _cache.DeletePhoneCodeAsync(phoneNumber, phoneCodeHash);
     }
 
     public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)

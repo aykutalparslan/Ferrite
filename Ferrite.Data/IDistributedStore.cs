@@ -31,6 +31,7 @@ public interface IDistributedStore
     public Task<bool> PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData);
     public Task<bool> RemoveSessionAsync(long sessionId);
     public Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash);
+    public Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash);
     public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn);
     public Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn);
     /// <summary>

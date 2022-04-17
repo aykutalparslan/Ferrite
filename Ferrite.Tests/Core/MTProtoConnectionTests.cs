@@ -260,6 +260,11 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    public Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
