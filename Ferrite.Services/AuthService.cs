@@ -117,9 +117,24 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash)
+    public async Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash)
     {
-        throw new NotImplementedException();
+        var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        if (phoneCode != null)
+        {
+            Console.WriteLine("auth.sentCode=>" + phoneCode);
+            await _cache.PutPhoneCodeAsync(phoneNumber, phoneCodeHash, phoneCode,
+                new TimeSpan(0, 0, PhoneCodeTimeout * 2));
+
+            return new SentCode()
+            {
+                CodeType = SentCodeType.Sms,
+                CodeLength = 5,
+                Timeout = PhoneCodeTimeout,
+                PhoneCodeHash = phoneCodeHash
+            };
+        }
+        return null;//this is tested
     }
 
     public Task<bool> ResetAuthorizations()

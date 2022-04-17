@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +29,12 @@ public class ResendCode : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public ResendCode(ITLObjectFactory objectFactory)
+    public ResendCode(ITLObjectFactory objectFactory, IAuthService auth)
     {
         factory = objectFactory;
+        _auth = auth;
     }
 
     public int Constructor => 1056025023;
@@ -73,7 +77,26 @@ public class ResendCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var sent = await _auth.ResendCode(_phoneNumber, _phoneCodeHash);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (sent == null)
+        {
+            var error = factory.Resolve<RpcError>();
+            error.ErrorCode = 500;
+            error.ErrorMessage = "Internal Server Error";
+            result.Result = error;
+            return result;
+        }
+        var sentCode = factory.Resolve<SentCodeImpl>();
+        var codeType = factory.Resolve<SentCodeTypeSmsImpl>();
+        var nextType = factory.Resolve<CodeTypeSmsImpl>();
+        sentCode.NextType = nextType;
+        sentCode.PhoneCodeHash = sent.PhoneCodeHash;
+        sentCode.Timeout = sent.Timeout;
+        sentCode.Type = codeType;
+        result.Result = sentCode;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

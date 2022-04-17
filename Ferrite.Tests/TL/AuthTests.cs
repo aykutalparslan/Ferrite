@@ -480,6 +480,23 @@ public class AuthTests
         Assert.Equal("acabadef", sntCode.PhoneCodeHash);
     }
     [Fact]
+    public async Task ResendCode_Returns_Error()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ResendCode>();
+        rpc.PhoneNumber = "5554443322";
+        rpc.PhoneCodeHash = "x";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<RpcError>(rslt.Result);
+    }
+    [Fact]
     public async Task CancelCode_Returns_True()
     {
         var container = BuildIoCContainer();
@@ -870,9 +887,20 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Data.Auth.SentCode> ResendCode(string phoneNumber, string phoneCodeHash)
+    public async Task<Data.Auth.SentCode> ResendCode(string phoneNumber, string phoneCodeHash)
     {
-        throw new NotImplementedException();
+        if(phoneCodeHash!= "acabadef")
+        {
+            return null;
+        }
+        return new Data.Auth.SentCode()
+        {
+            CodeType = Data.Auth.SentCodeType.Sms,
+            NextType = Data.Auth.SentCodeType.Sms,
+            CodeLength = 5,
+            Timeout = 60,
+            PhoneCodeHash = "acabadef"
+        };
     }
 
     public Task<bool> ResetAuthorizations()
