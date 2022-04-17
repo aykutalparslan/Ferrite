@@ -108,6 +108,7 @@ public class SignUp : ITLObject, ITLMethod
         {
             var authorization = factory.Resolve<AuthorizationImpl>();
             var user = factory.Resolve<UserImpl>();
+            user.Id = signUpResult.User.Id;
             user.FirstName = signUpResult.User.FirstName;
             user.LastName = signUpResult.User.LastName;
             user.Phone = signUpResult.User.Phone;

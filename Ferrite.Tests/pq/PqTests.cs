@@ -118,6 +118,11 @@ class FakeRedis : IDistributedStore
         throw new NotImplementedException();
     }
 
+    public IAtomicCounter GetCounter(string name)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();

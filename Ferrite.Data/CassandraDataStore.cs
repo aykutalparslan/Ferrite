@@ -53,6 +53,14 @@ namespace Ferrite.Data
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.auth_key_details (" +
+                            "auth_key_id bigint," +
+                            "phone text," +
+                            "user_id bigint," +
+                            "api_layer int," +
+                            "PRIMARY KEY (auth_key_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.server_salts (" +
                             "auth_key_id bigint," +
                             "server_salt bigint," +
@@ -67,19 +75,27 @@ namespace Ferrite.Data
                             "last_name text," +
                             "username text," +
                             "phone text," +
-                            "PRIMARY KEY (id));");
+                            "PRIMARY KEY (user_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            //https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useWhenIndex.html
+            //If you create an index on a high-cardinality column, which has many
+            //distinct values, a query between the fields will incur many seeks
+            //for very few results.In the table with a billion songs, looking up
+            //songs by writer(a value that is typically unique for each song)
+            //instead of by their artist, is likely to be very inefficient.It would
+            //probably be more efficient to manually maintain the table as a form of
+            //an index instead of using the Cassandra built -in index.
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.users_by_phone (" +
+                            "phone text," +
+                            "user_id bigint," +
+                            "PRIMARY KEY (phone));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
-                "CREATE MATERIALIZED VIEW IF NOT EXISTS ferrite.users_by_phone AS " +
-                        "SELECT * FROM telegram.users " +
-                        "WHERE phone IS NOT NULL AND user_id IS NOT NULL " +
-                        "PRIMARY KEY (phone, user_id);");
-            session.Execute(statement.SetKeyspace(keySpace));
-            statement = new SimpleStatement(
-                "CREATE MATERIALIZED VIEW IF NOT EXISTS ferrite.users_by_username AS " +
-                        "SELECT * FROM telegram.users " +
-                        "WHERE username IS NOT NULL AND user_id IS NOT NULL " +
-                        "PRIMARY KEY (username, user_id);");
+                "CREATE TABLE IF NOT EXISTS ferrite.users_by_username (" +
+                            "username text," +
+                            "user_id bigint," +
+                            "PRIMARY KEY (username));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -143,7 +159,7 @@ namespace Ferrite.Data
         public async Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.auth_keys SET phone = ?, user_id = ?, api_layer = ?  WHERE auth_key_id = ?;",
+                "UPDATE ferrite.auth_key_details SET phone = ?, user_id = ?, api_layer = ?  WHERE auth_key_id = ?;",
                 details.Phone, details.UserId, details.ApiLayer, details.AuthKeyId).SetKeyspace(keySpace);
 
             await session.ExecuteAsync(statement);
@@ -153,7 +169,7 @@ namespace Ferrite.Data
         {
             AuthKeyDetails? details = null;
             var statement = new SimpleStatement(
-                "SELECT * FROM ferrite.auth_keys WHERE auth_key_id = ?;",
+                "SELECT * FROM ferrite.auth_key_details WHERE auth_key_id = ?;",
                 authKeyId);
             statement = statement.SetKeyspace(keySpace);
 
@@ -228,6 +244,17 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            long userId = -1;
+            foreach (var row in results)
+            {
+                userId = row.GetValue<long>("user_id");
+            }
+            statement = new SimpleStatement(
+                "SELECT * FROM ferrite.users WHERE user_id = ?;",
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
                 user = new User()
@@ -252,6 +279,17 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            long userId = -1;
+            foreach (var row in results)
+            {
+                userId = row.GetValue<long>("user_id");
+            }
+            statement = new SimpleStatement(
+                "SELECT * FROM ferrite.users WHERE user_id = ?;",
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
                 user = new User()

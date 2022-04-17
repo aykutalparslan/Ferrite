@@ -446,6 +446,11 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    public IAtomicCounter GetCounter(string name)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {

@@ -30,6 +30,7 @@ public class AuthService : IAuthService
     private readonly IRandomGenerator _random;
     private readonly IDistributedStore _cache;
     private readonly IPersistentStore _store;
+    private readonly IAtomicCounter _userIdCnt;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
@@ -38,6 +39,7 @@ public class AuthService : IAuthService
         _random = random;
         _cache = cache;
         _store = store;
+        _userIdCnt = _cache.GetCounter("counter_user_id");
     }
 
     public Task<Authorization> AcceptLoginToken(byte[] token)
@@ -143,14 +145,93 @@ public class AuthService : IAuthService
         };
     }
 
-    public Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    public async Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        throw new NotImplementedException();
+        var user = await _store.GetUserAsync(phoneNumber);
+        if(user == null)
+        {
+            return new Authorization()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired,
+            };
+        }
+        var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        if (code != phoneCode)
+        {
+            return new Authorization()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired,
+            };
+        }
+        return new Authorization()
+        {
+            AuthorizationType = AuthorizationType.Authorization,
+            User = new User()
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Phone = user.Phone,
+                Status = UserStatus.Empty,
+                Self = true,
+                Photo = new UserProfilePhoto()
+                {
+                    Empty = true
+                }
+            }
+        };
     }
 
-    public Task<Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
+    public async Task<Authorization> SignUp(long authKeyId, string phoneNumber,
+        string phoneCodeHash, string firstName, string lastName)
     {
-        throw new NotImplementedException();
+        long userId = await _userIdCnt.IncrementAndGet();
+        if(userId == 0)
+        {
+            userId = await _userIdCnt.IncrementAndGet();
+        }
+        var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        if(phoneCode == null)
+        {
+            return new Authorization()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired,
+            };
+        }
+        var user = new User()
+        {
+            Id = userId,
+            Phone = phoneNumber,
+            FirstName = firstName,
+            LastName = lastName,
+            AccessHash = _random.NextLong()
+        };
+        await _store.SaveUserAsync(user);
+        var authKeyDetails = await _store.GetAuthKeyDetailsAsync(authKeyId);
+        await _store.SaveAuthKeyDetailsAsync(new AuthKeyDetails()
+        {
+            AuthKeyId = authKeyId,
+            Phone = phoneNumber,
+            UserId = user.Id,
+            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer
+        });
+        return new Authorization()
+        {
+            AuthorizationType = AuthorizationType.Authorization,
+            User = new User()
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Phone = user.Phone,
+                Status = UserStatus.Empty,
+                Self = true,
+                Photo = new UserProfilePhoto()
+                {
+                    Empty = true
+                }
+            }
+        };
     }
 }
 

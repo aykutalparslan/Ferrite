@@ -55,6 +55,11 @@ public class RedisDataStore: IDistributedStore
         return await db.StringGetAsync(key);
     }
 
+    public IAtomicCounter GetCounter(string name)
+    {
+        return new RedisCounter(redis, name);
+    }
+
     public async Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         object _asyncState = new object();

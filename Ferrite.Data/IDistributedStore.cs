@@ -22,6 +22,7 @@ namespace Ferrite.Data;
 
 public interface IDistributedStore
 {
+    public IAtomicCounter GetCounter(string name);
     public Task<byte[]> GetAuthKeyAsync(long authKeyId);
     public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
     public Task<byte[]> GetSessionAsync(long sessionId);

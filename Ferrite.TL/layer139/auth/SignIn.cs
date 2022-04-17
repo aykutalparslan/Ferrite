@@ -90,10 +90,10 @@ public class SignIn : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var singInResult = await _auth.SignIn(ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _phoneCode);
+        var signInResult = await _auth.SignIn(ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _phoneCode);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        if (singInResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)
+        if (signInResult.AuthorizationType == Data.Auth.AuthorizationType.SignUpRequired)
         {
             var signUpRequired = factory.Resolve<AuthorizationSignUpRequiredImpl>();
             result.Result = signUpRequired;
@@ -102,15 +102,16 @@ public class SignIn : ITLObject, ITLMethod
         {
             var authorization = factory.Resolve<AuthorizationImpl>();
             var user = factory.Resolve<UserImpl>();
-            user.FirstName = singInResult.User.FirstName;
-            user.LastName = singInResult.User.LastName;
-            user.Phone = singInResult.User.Phone;
-            user.Self = singInResult.User.Self;
-            if(singInResult.User.Status == Data.UserStatus.Empty)
+            user.Id = signInResult.User.Id;
+            user.FirstName = signInResult.User.FirstName;
+            user.LastName = signInResult.User.LastName;
+            user.Phone = signInResult.User.Phone;
+            user.Self = signInResult.User.Self;
+            if(signInResult.User.Status == Data.UserStatus.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }
-            if (singInResult.User.Photo.Empty)
+            if (signInResult.User.Photo.Empty)
             {
                 user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
             }

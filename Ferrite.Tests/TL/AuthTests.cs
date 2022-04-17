@@ -107,6 +107,7 @@ public class AuthTests
         var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
         Assert.IsType<UserImpl>(auth.User);
         var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
         Assert.Equal("a", user.FirstName);
         Assert.Equal("b", user.LastName);
         Assert.Equal("5554443322", user.Phone);
@@ -135,6 +136,7 @@ public class AuthTests
         var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
         Assert.IsType<UserImpl>(auth.User);
         var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
         Assert.Equal("a", user.FirstName);
         Assert.Equal("b", user.LastName);
         Assert.Equal("5554443322", user.Phone);
@@ -545,6 +547,11 @@ class FakeRedis : IDistributedStore
     }
 
     Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    public IAtomicCounter GetCounter(string name)
     {
         throw new NotImplementedException();
     }
