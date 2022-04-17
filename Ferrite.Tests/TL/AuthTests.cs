@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -65,7 +66,6 @@ public class AuthTests
         Assert.Equal(60, sntCode.Timeout);
         Assert.Equal("acabadef", sntCode.PhoneCodeHash);
     }
-
     [Fact]
     public async Task SignIn_Returns_SignUpRequired()
     {
@@ -161,6 +161,594 @@ public class AuthTests
         Assert.IsType<UserStatusEmptyImpl>(user.Status);
         Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
     }
+    [Fact]
+    public async Task Logout_Returns_LoggedOut()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var logout = factory.Resolve<LogOut>();
+        var result = await logout.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoggedOutImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task ResetAuthorizations_Returns_True()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ResetAuthorizations>();
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task ResetAuthorizations_Returns_False()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        FakeAuthService authService = (FakeAuthService)scope.Resolve<IAuthService>();
+        authService.ResetAuthorizationsResult = false;
+        var rpc = factory.Resolve<ResetAuthorizations>();
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task ExportAuthorization_Returns_ExportedAuthorization()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ExportAuthorization>();
+        rpc.DcId = 1;
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<ExportedAuthorizationImpl>(rslt.Result);
+        var exported = (ExportedAuthorizationImpl)rslt.Result;
+        Assert.NotEqual(0, exported.Id);
+        Assert.NotNull(exported.Bytes);
+    }
+    [Fact]
+    public async Task ImportAuthorization_Returns_Authorization()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ImportAuthorization>();
+        rpc.Id = 112233;
+        rpc.Bytes = new byte[] { 1, 2, 3, 4, 5, 6 };
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+    [Fact]
+    public async Task ImportAuthorization_Returns_SignUpRequired()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        FakeAuthService authService = (FakeAuthService)scope.Resolve<IAuthService>();
+        authService.ImportAuthorizationFailed = true;
+        var rpc = factory.Resolve<ImportAuthorization>();
+        rpc.Id = 112233;
+        rpc.Bytes = new byte[] { 1, 2, 3, 4, 5, 6 };
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task BindTempAuthKey_Returns_True()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<BindTempAuthKey>();
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task BindTempAuthKey_Returns_False()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        FakeAuthService authService = (FakeAuthService)scope.Resolve<IAuthService>();
+        authService.BindTempAuthKeyFailed = true;
+        var rpc = factory.Resolve<BindTempAuthKey>();
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task ImportBotAuthorization_Returns_Authorization()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ImportBotAuthorization>();
+        rpc.ApiId = 1;
+        rpc.ApiHash = "a";
+        rpc.BotAuthToken = "bot1";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+    [Fact]
+    public async Task ImportBotAuthorization_Returns_SignUpRequired()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        FakeAuthService authService = (FakeAuthService)scope.Resolve<IAuthService>();
+        authService.ImportAuthorizationFailed = true;
+        var rpc = factory.Resolve<ImportBotAuthorization>();
+        rpc.ApiId = 1;
+        rpc.ApiHash = "a";
+        rpc.BotAuthToken = "bot1";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task CheckPassword_Returns_Authorization()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<CheckPassword>();
+        var password = factory.Resolve<InputCheckPasswordSRPImpl>();
+        password.A = new byte[] { 1, 2, 3, 4, 5, 6 };
+        password.M1 = new byte[] { 2, 3, 4, 5, 6, 7 };
+        password.SrpId = 5555;
+        rpc.Password = password;
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+    [Fact]
+    public async Task CheckPassword_Returns_SignUpRequired()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<CheckPassword>();
+        var password = factory.Resolve<InputCheckPasswordEmptyImpl>();
+        rpc.Password = password;
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task RequestPasswordRecovery_Returns_PasswordRecovery()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<RequestPasswordRecovery>();
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<PasswordRecoveryImpl>(rslt.Result);
+        var rec = (PasswordRecoveryImpl)rslt.Result;
+        Assert.Equal("a@b.com", rec.EmailPattern);
+    }
+    [Fact]
+    public async Task RecoverPassword_Returns_Authorization()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<RecoverPassword>();
+        rpc.Code = "1234";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)rslt.Result;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+    [Fact]
+    public async Task RecoverPassword_Returns_SignUpRequired()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        FakeAuthService authService = (FakeAuthService)scope.Resolve<IAuthService>();
+        authService.RecoverPasswordFailed = true;
+        var rpc = factory.Resolve<RecoverPassword>();
+        rpc.Code = "1234";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task ResendCode_Returns_SentCode()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ResendCode>();
+        rpc.PhoneNumber = "5554443322";
+        rpc.PhoneCodeHash = "acabadef";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<SentCodeImpl>(rslt.Result);
+        var sntCode = (SentCodeImpl)rslt.Result;
+        Assert.IsType<SentCodeTypeSmsImpl>(sntCode.Type);
+        Assert.NotNull(sntCode.NextType);
+        Assert.Equal(60, sntCode.Timeout);
+        Assert.Equal("acabadef", sntCode.PhoneCodeHash);
+    }
+    [Fact]
+    public async Task CancelCode_Returns_True()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<CancelCode>();
+        rpc.PhoneNumber = "5554443322";
+        rpc.PhoneCodeHash = "acabadef";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task CancelCode_Returns_False()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<CancelCode>();
+        rpc.PhoneNumber = "5554443322";
+        rpc.PhoneCodeHash = "xxx";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task DropTempAuthKeys_Returns_True()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<DropTempAuthKeys>();
+        rpc.ExceptAuthKeys = new VectorOfLong();
+        rpc.ExceptAuthKeys.Add(777);
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task DropTempAuthKeys_Returns_False()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        FakeAuthService authService = (FakeAuthService)scope.Resolve<IAuthService>();
+        authService.DropTempAuthKeysFailed = true;
+        var rpc = factory.Resolve<DropTempAuthKeys>();
+        rpc.ExceptAuthKeys = new VectorOfLong();
+        rpc.ExceptAuthKeys.Add(777);
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task ExportLoginToken_Returns_LoginToken()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ExportLoginToken>();
+        rpc.ApiId = 1;
+        rpc.ApiHash = "a";
+        rpc.ExceptIds = new VectorOfLong();
+        rpc.ExceptIds.Add(9876);
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoginTokenImpl>(rslt.Result);
+        var token = (LoginTokenImpl)rslt.Result;
+        Assert.NotNull(token.Token);
+        Assert.True(token.Expires>0);
+    }
+    [Fact]
+    public async Task ExportLoginToken_Returns_LoginTokenMigrateTo()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ExportLoginToken>();
+        rpc.ApiId = 1;
+        rpc.ApiHash = "a";
+        rpc.ExceptIds = new VectorOfLong();
+        rpc.ExceptIds.Add(9876);
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoginTokenMigrateToImpl>(rslt.Result);
+        var token = (LoginTokenMigrateToImpl)rslt.Result;
+        Assert.NotNull(token.Token);
+        Assert.True(token.DcId > 0);
+    }
+    [Fact]
+    public async Task ExportLoginToken_Returns_LoginTokenSuccess()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ExportLoginToken>();
+        rpc.ApiId = 1;
+        rpc.ApiHash = "a";
+        rpc.ExceptIds = new VectorOfLong();
+        rpc.ExceptIds.Add(9876);
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoginTokenSuccessImpl>(rslt.Result);
+        var token = (LoginTokenSuccessImpl)rslt.Result;
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(token.Authorization);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)token.Authorization;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+    [Fact]
+    public async Task ImportLoginToken_Returns_LoginToken()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ImportLoginToken>();
+        rpc.Token = new byte[] { 1, 2, 3 };
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoginTokenImpl>(rslt.Result);
+        var token = (LoginTokenImpl)rslt.Result;
+        Assert.NotNull(token.Token);
+        Assert.True(token.Expires > 0);
+    }
+    [Fact]
+    public async Task ImportLoginToken_Returns_LoginTokenMigrateTo()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ImportLoginToken>();
+        rpc.Token = new byte[] { 1, 2, 3 };
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoginTokenMigrateToImpl>(rslt.Result);
+        var token = (LoginTokenMigrateToImpl)rslt.Result;
+        Assert.NotNull(token.Token);
+        Assert.True(token.DcId > 0);
+    }
+    [Fact]
+    public async Task ImportLoginToken_Returns_LoginTokenSuccess()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<ImportLoginToken>();
+        rpc.Token = new byte[] { 1, 2, 3 };
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<LoginTokenSuccessImpl>(rslt.Result);
+        var token = (LoginTokenSuccessImpl)rslt.Result;
+        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(token.Authorization);
+        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)token.Authorization;
+        Assert.IsType<UserImpl>(auth.User);
+        var user = (UserImpl)auth.User;
+        Assert.NotEqual(0, user.Id);
+        Assert.Equal("a", user.FirstName);
+        Assert.Equal("b", user.LastName);
+        Assert.Equal("5554443322", user.Phone);
+        Assert.IsType<UserStatusEmptyImpl>(user.Status);
+        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
+    }
+    [Fact]
+    public async Task AcceptLoginToken_Returns_Authorization()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<AcceptLoginToken>();
+        rpc.Token = new byte[] { 1, 2, 3 };
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<Ferrite.TL.layer139.AuthorizationImpl>(rslt.Result);
+        var auth = (Ferrite.TL.layer139.AuthorizationImpl)rslt.Result;
+        Assert.True(auth.Hash > 0);
+        Assert.NotNull(auth.DeviceModel);
+        Assert.NotNull(auth.Platform);
+        Assert.NotNull(auth.SystemVersion);
+        Assert.True(auth.ApiId > 0);
+        Assert.NotNull(auth.AppName);
+        Assert.NotNull(auth.AppVersion);
+        Assert.True(auth.DateCreated > 0);
+        Assert.True(auth.DateActive > 0);
+        Assert.True(IPAddress.TryParse(auth.Ip, out var a));
+        Assert.NotNull(auth.Country);
+        Assert.NotNull(auth.Region);
+    }
+    [Fact]
+    public async Task CheckRecoveryPassword_Returns_True()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<CheckRecoveryPassword>();
+        rpc.Code = "1234";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
+    [Fact]
+    public async Task CheckRecoveryPassword_Returns_False()
+    {
+        var scope = BuildIoCContainer().BeginLifetimeScope();
+        var factory = scope.Resolve<TLObjectFactory>();
+        var rpc = factory.Resolve<CheckRecoveryPassword>();
+        rpc.Code = "1111";
+        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
+        {
+            MessageId = 1223
+        });
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<BoolTrue>(rslt.Result);
+    }
 
     private IContainer BuildIoCContainer()
     {
@@ -200,6 +788,12 @@ class FakeAuthService : IAuthService
     bool _signupComplete = false;
     private string _firstName = default!;
     private string _lastName = default!;
+    public bool ResetAuthorizationsResult = true;
+    public bool ImportAuthorizationFailed = false;
+    internal bool RecoverPasswordFailed;
+    internal bool DropTempAuthKeysFailed;
+
+    public bool BindTempAuthKeyFailed { get; internal set; }
 
     public Task<Data.Auth.Authorization> AcceptLoginToken(byte[] token)
     {
