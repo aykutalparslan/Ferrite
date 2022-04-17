@@ -16,14 +16,10 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-namespace Ferrite.Data;
+namespace Ferrite.Data.Auth;
 
-public record AuthKeyDetails
+public record LoggedOut
 {
-    public long AuthKeyId { get; init; }
-    public long UserId { get; init; }
-    public string Phone { get; init; } = default!;
-    public int ApiLayer { get; init; }
-    public byte[] FutureAuthToken { get; init; } = default!;
+    public byte[]? FutureAuthToken { get; set; }
 }
 

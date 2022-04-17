@@ -102,9 +102,26 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> LogOut(long authKeyId, out byte[] futureAuthToken)
+    public async Task<LoggedOut?> LogOut(long authKeyId)
     {
-        throw new NotImplementedException();
+        var futureAuthToken = _random.GetRandomBytes(32);
+        var info = await _store.GetAuthKeyDetailsAsync(authKeyId);
+        if(info == null)
+        {
+            return null;
+        }
+        await _store.SaveAuthKeyDetailsAsync(new AuthKeyDetails()
+        {
+            AuthKeyId = info.AuthKeyId,
+            ApiLayer = info.ApiLayer,
+            FutureAuthToken = futureAuthToken,
+            Phone = "",
+            UserId = 0
+        });
+        return new LoggedOut()
+        {
+            FutureAuthToken = futureAuthToken
+        };
     }
 
     public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings)

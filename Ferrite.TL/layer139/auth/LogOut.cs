@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +29,12 @@ public class LogOut : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public LogOut(ITLObjectFactory objectFactory)
+    public LogOut(ITLObjectFactory objectFactory, IAuthService auth)
     {
         factory = objectFactory;
+        _auth = auth;
     }
 
     public int Constructor => 1047706137;
@@ -49,7 +53,24 @@ public class LogOut : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var loggedout = await _auth.LogOut(ctx.AuthKeyId);
+        if (loggedout == null)
+        {
+            var error = factory.Resolve<RpcError>();
+            error.ErrorCode = 500;
+            error.ErrorMessage = "Internal Server Error";
+            result.Result = error;
+            return result;
+        }
+        var logoutResult = factory.Resolve<LoggedOutImpl>();
+        if(loggedout.FutureAuthToken != null)
+        {
+            logoutResult.FutureAuthToken = loggedout.FutureAuthToken;
+        }
+        result.Result =  logoutResult;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

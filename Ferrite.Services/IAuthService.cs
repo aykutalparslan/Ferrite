@@ -35,7 +35,7 @@ public interface IAuthService
     public Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings);
     public Task<Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName);
     public Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
-    public Task<bool> LogOut(long authKeyId, out byte[] futureAuthToken);
+    public Task<LoggedOut?> LogOut(long authKeyId);
     public Task<bool> ResetAuthorizations();
     public Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId);
     public Task<Authorization> ImportAuthorization(long id, byte[] bytes);

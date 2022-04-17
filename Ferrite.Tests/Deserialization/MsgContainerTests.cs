@@ -184,7 +184,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> LogOut(long authKeyId, out byte[] futureAuthToken)
+    public async Task<LoggedOut?> LogOut(long authKeyId)
     {
         throw new NotImplementedException();
     }

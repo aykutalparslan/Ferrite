@@ -167,14 +167,29 @@ public class AuthTests
         var container = BuildIoCContainer();
         var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
         var logout = factory.Resolve<LogOut>();
-        var result = await logout.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
-        {
-            MessageId = 1223
-        });
+        var ctx = new TLExecutionContext(new Dictionary<string, object>());
+        ctx.AuthKeyId = 111;
+        ctx.MessageId = 1223;
+        var result = await logout.ExecuteAsync(ctx);
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
         Assert.IsType<LoggedOutImpl>(rslt.Result);
+    }
+    [Fact]
+    public async Task Logout_Returns_RpcError()
+    {
+        var container = BuildIoCContainer();
+        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
+        var logout = factory.Resolve<LogOut>();
+        var ctx = new TLExecutionContext(new Dictionary<string, object>());
+        ctx.AuthKeyId = 0;
+        ctx.MessageId = 1223;
+        var result = await logout.ExecuteAsync(ctx);
+        Assert.IsType<RpcResult>(result);
+        var rslt = (RpcResult)result;
+        Assert.Equal(1223, rslt.ReqMsgId);
+        Assert.IsType<RpcError>(rslt.Result);
     }
     [Fact]
     public async Task ResetAuthorizations_Returns_True()
@@ -872,9 +887,16 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> LogOut(long authKeyId, out byte[] futureAuthToken)
+    public async Task<Data.Auth.LoggedOut?> LogOut(long authKeyId)
     {
-        throw new NotImplementedException();
+        if(authKeyId == 0)
+        {
+            return null;
+        }
+        return new Data.Auth.LoggedOut()
+        {
+            FutureAuthToken = new byte[] { 1, 2, 3 }
+        };
     }
 
     public Task<Data.Auth.Authorization> RecoverPassword(string code, PasswordInputSettings newSettings)
