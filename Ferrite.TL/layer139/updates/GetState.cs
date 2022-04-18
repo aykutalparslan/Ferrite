@@ -28,10 +28,12 @@ public class GetState : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMTProtoTime _time;
     private bool serialized = false;
-    public GetState(ITLObjectFactory objectFactory)
+    public GetState(ITLObjectFactory objectFactory, IMTProtoTime time)
     {
         factory = objectFactory;
+        _time = time;
     }
 
     public int Constructor => -304838614;
@@ -52,9 +54,12 @@ public class GetState : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<RpcError>();
-        resp.ErrorCode = 501;
-        resp.ErrorMessage = "Not Implemented";
+        var resp = factory.Resolve<StateImpl>();
+        resp.Date = (int)_time.GetUnixTimeInSeconds();
+        resp.Pts = 0;
+        resp.Qts = 0;
+        resp.Seq = 0;
+        resp.UnreadCount = 0;
         result.Result = resp;
         return result;
     }
