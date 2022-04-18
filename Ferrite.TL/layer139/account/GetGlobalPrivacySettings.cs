@@ -53,6 +53,7 @@ public class GetGlobalPrivacySettings : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var resp = factory.Resolve<GlobalPrivacySettingsImpl>();
+        resp.ArchiveAndMuteNewNoncontactPeers = false;
         result.Result = resp;
         return result;
     }
