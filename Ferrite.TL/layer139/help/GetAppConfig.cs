@@ -50,10 +50,11 @@ public class GetAppConfig : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var jsonNull = factory.Resolve<JsonNullImpl>();
+        var json = factory.Resolve<JsonObjectImpl>();
+        json.Value = new Vector<JSONObjectValue>(factory);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        result.Result = jsonNull;
+        result.Result = json;
         return result;
     }
 
