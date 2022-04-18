@@ -52,13 +52,9 @@ public class GetPromoData : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<PromoDataImpl>();
-        resp.Expires = 3600;
-        resp.Chats = new Vector<Chat>(factory);
-        resp.Users = new Vector<User>(factory);
-        var peer = factory.Resolve<PeerUserImpl>();
-        peer.UserId = 1;
-        resp.Peer = peer;
+        var resp = factory.Resolve<RpcError>();
+        resp.ErrorCode = 501;
+        resp.ErrorMessage = "Not Implemented";
         result.Result = resp;
         return result;
     }
