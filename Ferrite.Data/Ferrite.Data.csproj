@@ -18,6 +18,7 @@
     <None Remove="Auth\" />
     <None Remove="Help\" />
     <None Remove="Confluent.Kafka" />
+    <None Remove="Updates\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
@@ -30,5 +31,6 @@
     <Folder Include="Account\" />
     <Folder Include="Auth\" />
     <Folder Include="Help\" />
+    <Folder Include="Updates\" />
   </ItemGroup>
 </Project>

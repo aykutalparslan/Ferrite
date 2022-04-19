@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.Exceptions;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139;
@@ -27,10 +28,12 @@ public class InvokeAfterMsg : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly ILogger _log;
     private bool serialized = false;
-    public InvokeAfterMsg(ITLObjectFactory objectFactory)
+    public InvokeAfterMsg(ITLObjectFactory objectFactory, ILogger log)
     {
         factory = objectFactory;
+        _log = log;
     }
 
     public int Constructor => -878758099;
@@ -73,7 +76,16 @@ public class InvokeAfterMsg : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (_query is ITLMethod medhod)
+        {
+            _log.Information($"Invoke {medhod.ToString()} after msg.");
+            //TODO: Investigate if we actually can invoke after the msg?
+            return await medhod.ExecuteAsync(ctx);
+        }
+        var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");
+        var ex = new TLExecutionException("Invocation failed for invokeAfterMsgs", inner);
+        _log.Error(ex, ex.Message);
+        throw ex;
     }
 
     public void Parse(ref SequenceReader buff)

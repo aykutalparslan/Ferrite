@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.layer139.updates;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.messages;
@@ -27,10 +30,12 @@ public class GetPinnedDialogs : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IUpdatesService _updates;
     private bool serialized = false;
-    public GetPinnedDialogs(ITLObjectFactory objectFactory)
+    public GetPinnedDialogs(ITLObjectFactory objectFactory, IUpdatesService updates)
     {
         factory = objectFactory;
+        _updates = updates;
     }
 
     public int Constructor => -692498958;
@@ -61,7 +66,23 @@ public class GetPinnedDialogs : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var resp = factory.Resolve<PeerDialogsImpl>();
+        resp.Chats = new Vector<Chat>(factory);
+        resp.Dialogs = new Vector<Dialog>(factory);
+        resp.Messages = new Vector<Message>(factory);
+        resp.Users = new Vector<User>(factory);
+        var state = await _updates.GetState();
+        var currentState = factory.Resolve<StateImpl>();
+        currentState.Date = state.Date;
+        currentState.Pts = state.Pts;
+        currentState.Qts = state.Qts;
+        currentState.Seq = state.Seq;
+        currentState.UnreadCount = state.UnreadCount;
+        resp.State = currentState;
+        result.Result = resp;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

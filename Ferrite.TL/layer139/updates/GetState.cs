@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
@@ -28,11 +29,13 @@ public class GetState : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IUpdatesService _updates;
     private readonly IMTProtoTime _time;
     private bool serialized = false;
-    public GetState(ITLObjectFactory objectFactory, IMTProtoTime time)
+    public GetState(ITLObjectFactory objectFactory, IUpdatesService updates, IMTProtoTime time)
     {
         factory = objectFactory;
+        _updates = updates;
         _time = time;
     }
 
@@ -52,14 +55,15 @@ public class GetState : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
+        var state = await _updates.GetState();
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var resp = factory.Resolve<StateImpl>();
-        resp.Date = (int)_time.GetUnixTimeInSeconds();
-        resp.Pts = 0;
-        resp.Qts = 0;
-        resp.Seq = 0;
-        resp.UnreadCount = 0;
+        resp.Date = state.Date;
+        resp.Pts = state.Pts;
+        resp.Qts = state.Qts;
+        resp.Seq = state.Seq;
+        resp.UnreadCount = state.UnreadCount;
         result.Result = resp;
         return result;
     }
