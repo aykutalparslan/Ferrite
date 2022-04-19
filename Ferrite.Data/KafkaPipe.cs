@@ -36,7 +36,7 @@ public class KafkaPipe : IDistributedPipe
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = config,
-            ClientId = Dns.GetHostName(),
+            ClientId = Dns.GetHostName()
         };
         _producer = new ProducerBuilder<Null, byte[]>(producerConfig).Build();
         var consumerConfig = new ConsumerConfig
