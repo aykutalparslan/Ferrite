@@ -1229,10 +1229,26 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> RemoveAuthKeySessionAsync(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+
+    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))
@@ -1423,6 +1439,11 @@ class FakeSessionManager : ISessionManager
         _authKeySessionStates.Remove((Int128)nonce);
         _authKeySessionStates.Add((Int128)nonce, MessagePackSerializer.Serialize(state));
         return true;
+    }
+
+    public bool RemoveAuthSession(byte[] nonce)
+    {
+        throw new NotImplementedException();
     }
 }
 class FakeLogger : ILogger

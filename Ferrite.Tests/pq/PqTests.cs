@@ -39,6 +39,11 @@ namespace Ferrite.Tests.PQ;
 
 class FakeDataStore : IPersistentStore
 {
+    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         return RandomNumberGenerator.GetBytes(192);
@@ -181,7 +186,77 @@ class FakeRedis : IDistributedStore
         return false;
     }
 
+    Task<bool> IDistributedStore.DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IDistributedStore.DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<byte[]> IDistributedStore.GetAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<byte[]> IDistributedStore.GetAuthKeySessionAsync(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
+
+    IAtomicCounter IDistributedStore.GetCounter(string name)
+    {
+        throw new NotImplementedException();
+    }
+
     Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<long> IDistributedStore.GetServerSaltValidityAsync(long authKeyId, long serverSalt)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<byte[]> IDistributedStore.GetSessionAsync(long sessionId)
+    {
+        throw new NotImplementedException();
+    }
+
+    async Task<bool> IDistributedStore.PutAuthKeyAsync(long authKeyId, byte[] authKey)
+    {
+        return true;
+    }
+
+    Task<bool> IDistributedStore.PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IDistributedStore.PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IDistributedStore.PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IDistributedStore.PutSessionAsync(long sessionId, byte[] sessionData)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IDistributedStore.RemoveAuthKeySessionAsync(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<bool> IDistributedStore.RemoveSessionAsync(long sessionId)
     {
         throw new NotImplementedException();
     }
@@ -189,6 +264,12 @@ class FakeRedis : IDistributedStore
 class FakeCassandra : IPersistentStore
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+
+    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))

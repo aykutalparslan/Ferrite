@@ -30,6 +30,8 @@ using Autofac;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Data.Account;
+using Ferrite.Data.Auth;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
@@ -265,10 +267,26 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> RemoveAuthKeySessionAsync(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+
+    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))
@@ -460,6 +478,11 @@ class FakeSessionManager : ISessionManager
         _authKeySessionStates.Add((Int128)nonce, MessagePackSerializer.Serialize(state));
         return true;
     }
+
+    public bool RemoveAuthSession(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeLogger : ILogger
 {
@@ -548,6 +571,109 @@ class FakeDistributedPipe : IDistributedPipe
     }
 }
 
+class FakeAuthService : IAuthService
+{
+    public Task<Authorization> AcceptLoginToken(byte[] token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> BindTempAuthKey(long permAuthKeyId, long nonce, int expiresAt, byte[] encryptedMessage)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> CheckRecoveryPassword(string code)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DropTempAuthKeys(ICollection<long> exceptAuthKeys)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Authorization> ImportAuthorization(long id, byte[] bytes)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginToken> ImportLoginToken(byte[] token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> IsAuthorized(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoggedOut?> LogOut(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<string> RequestPasswordRecovery()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> ResetAuthorizations()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class MTProtoConnectionTests
 {
     [Fact]
@@ -586,10 +712,10 @@ public class MTProtoConnectionTests
         Assert.IsType<ReqDhParams>(received[1]);
         Assert.IsType<SetClientDhParams>(received[2]);
         Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(received[3]);
-        Assert.IsType<Ferrite.TL.layer139.updates.GetState>(received[4]);
-        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(received[5]);
-        Assert.IsType<Ferrite.TL.mtproto.MsgContainer>(received[6]);
-        Assert.IsType<Ferrite.TL.mtproto.PingDelayDisconnect>(received[7]);
+        //Assert.IsType<Ferrite.TL.layer139.updates.GetState>(received[4]);
+        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(received[4]);
+        Assert.IsType<Ferrite.TL.mtproto.MsgContainer>(received[5]);
+        Assert.IsType<Ferrite.TL.mtproto.PingDelayDisconnect>(received[6]);
     }
 
     [Fact]
@@ -750,6 +876,7 @@ public class MTProtoConnectionTests
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
+        builder.RegisterType<FakeAuthService>().As<IAuthService>().SingleInstance();
 
         var container = builder.Build();
 
