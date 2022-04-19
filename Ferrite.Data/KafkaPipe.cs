@@ -61,12 +61,7 @@ public class KafkaPipe : IDistributedPipe
         }
         _channel = channel;
         _unsubscribed = false;
-        consumeTask = Consume();
-    }
-
-    private async Task Consume()
-    {
-        try
+        consumeTask = Task.Run(() =>
         {
             using (_consumer)
             {
@@ -78,11 +73,7 @@ public class KafkaPipe : IDistributedPipe
                 }
                 _consumer.Close();
             }
-        }
-        catch (Exception ex)
-        {
-
-        }
+        });
     }
 
     public async Task UnSubscribeAsync()
