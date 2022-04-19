@@ -13,8 +13,7 @@ public class RedisPipe: IDistributedPipe
         redis = ConnectionMultiplexer.Connect(config);
     }
 
-    //TODO: Optimize probable hot code path!
-    public async Task<byte[]> ReadAsync(CancellationToken cancellationToken=default)
+    public async ValueTask<byte[]> ReadAsync(CancellationToken cancellationToken=default)
     {
         if(messageQueue == null)
         {

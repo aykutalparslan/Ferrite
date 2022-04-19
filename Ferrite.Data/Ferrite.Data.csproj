@@ -17,12 +17,14 @@
     <None Remove="Account\" />
     <None Remove="Auth\" />
     <None Remove="Help\" />
+    <None Remove="Confluent.Kafka" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.17.1" />
     <PackageReference Include="MessagePack" Version="2.3.85" />
     <PackageReference Include="MessagePackAnalyzer" Version="2.3.85" />
+    <PackageReference Include="Confluent.Kafka" Version="1.8.2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Account\" />

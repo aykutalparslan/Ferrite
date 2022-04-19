@@ -92,6 +92,7 @@ public class Program
         builder.Register(_=> new RedisDataStore("redis:6379"))
             .As<IDistributedStore>().SingleInstance();
         builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
+        //builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<SessionManager>().As<ISessionManager>().SingleInstance();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>();

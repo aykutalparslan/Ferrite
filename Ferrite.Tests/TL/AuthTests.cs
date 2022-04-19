@@ -1490,7 +1490,7 @@ class FakeLogger : ILogger
 class FakeDistributedPipe : IDistributedPipe
 {
     ConcurrentQueue<byte[]> _channel = new();
-    public async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
         _channel.TryDequeue(out var result);
         return result;

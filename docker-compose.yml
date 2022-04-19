@@ -1,4 +1,4 @@
-version: '3.4'
+﻿version: '3.4'
 
 services:
   ferrite:
@@ -12,6 +12,8 @@ services:
       redis:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     ports:
       - 5222:5222
@@ -46,15 +48,46 @@ services:
       - 9000:9000
       - 9001:9001
     environment:
-       MINIO_ROOT_USER: minioadmin
-       MINIO_ROOT_PASSWORD: minioadmin
-       MINIO_REGION: us-east-1
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_REGION: us-east-1
     healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-        interval: 30s
-        timeout: 10s
-        retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    volumes:
+      - data-zookeper:/data
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    volumes:
+      - data-kafka:/data
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 volumes:
   data-cassandra:
   data-redis:
   data-minio:
+  data-zookeper:
+  data-kafka:
