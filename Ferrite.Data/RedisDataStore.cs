@@ -37,6 +37,15 @@ public class RedisDataStore: IDistributedStore
         redis = ConnectionMultiplexer.Connect(config);
     }
 
+    public async Task<bool> DeleteAuthKeyAsync(long authKeyId)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(authKeyId);
+        key.Prepend(AuthKeyPrefix);
+        return await db.KeyDeleteAsync(key);
+    }
+
     public async Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         object _asyncState = new object();

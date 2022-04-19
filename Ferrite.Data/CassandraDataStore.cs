@@ -309,6 +309,17 @@ namespace Ferrite.Data
             }
             return user;
         }
+
+        public async Task<bool> DeleteAuthKeyAsync(long authKeyId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.auth_key_details WHERE auth_key_id = ?;",
+                authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            return true;
+        }
     }
 }
 

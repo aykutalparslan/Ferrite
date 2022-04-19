@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
@@ -27,10 +28,14 @@ public class DestroyAuthKey : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IDistributedStore _store;
+    private readonly IPersistentStore _cache;
     private bool serialized = false;
-    public DestroyAuthKey(ITLObjectFactory objectFactory)
+    public DestroyAuthKey(ITLObjectFactory objectFactory, IDistributedStore store, IPersistentStore cache)
     {
         factory = objectFactory;
+        _store = store;
+        _cache = cache;
     }
 
     public int Constructor => -784117408;
@@ -49,7 +54,15 @@ public class DestroyAuthKey : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        bool deleteCache = await _cache.DeleteAuthKeyAsync(ctx.AuthKeyId);
+        bool deleteDatabase = await _store.DeleteAuthKeyAsync(ctx.AuthKeyId);
+        if(deleteCache && deleteDatabase)
+        {
+            var resp = factory.Resolve<DestroyAuthKeyOk>();
+            return resp;
+        }
+        var fail = factory.Resolve<DestroyAuthKeyFail>();
+        return fail;
     }
 
     public void Parse(ref SequenceReader buff)

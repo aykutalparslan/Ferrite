@@ -151,8 +151,11 @@ public class GetDialogs : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<DialogsNotModifiedImpl>();
-        resp.Count = 0;
+        var resp = factory.Resolve<DialogsImpl>();
+        resp.Chats = factory.Resolve<Vector<Chat>>();
+        resp.Dialogs = factory.Resolve<Vector<Dialog>>();
+        resp.Messages = factory.Resolve<Vector<Message>>();
+        resp.Users = factory.Resolve<Vector<User>>();
         result.Result = resp;
         return result;
     }
