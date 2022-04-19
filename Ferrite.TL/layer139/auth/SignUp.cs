@@ -110,6 +110,14 @@ public class SignUp : ITLObject, ITLMethod
             var signUpRequired = factory.Resolve<AuthorizationSignUpRequiredImpl>();
             result.Result = signUpRequired;
         }
+        if (signUpResult != null &&
+         signUpResult.AuthorizationType == Data.Auth.AuthorizationType.PhoneCodeExpired)
+        {
+            var resp = factory.Resolve<RpcError>();
+            resp.ErrorCode = 400;
+            resp.ErrorMessage = "PHONE_CODE_EXPIRED";
+            result.Result = resp;
+        }
         else if (signUpResult != null)
         {
             var authorization = factory.Resolve<AuthorizationImpl>();

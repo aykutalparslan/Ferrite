@@ -25,5 +25,6 @@ public record AuthKeyDetails
     public string Phone { get; init; } = default!;
     public int ApiLayer { get; init; }
     public byte[] FutureAuthToken { get; init; } = default!;
+    public bool LoggedIn { get; init; }
 }
 

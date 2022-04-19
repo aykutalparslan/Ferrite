@@ -58,8 +58,6 @@ services:
       retries: 5
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
-    volumes:
-      - data-zookeper:/data
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -67,8 +65,6 @@ services:
       - 22181:2181
   kafka:
     image: confluentinc/cp-kafka:latest
-    volumes:
-      - data-kafka:/data
     depends_on:
       - zookeeper
     ports:
@@ -89,5 +85,3 @@ volumes:
   data-cassandra:
   data-redis:
   data-minio:
-  data-zookeper:
-  data-kafka:

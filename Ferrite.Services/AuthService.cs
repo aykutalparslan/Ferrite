@@ -97,9 +97,10 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> IsAuthorized(long authKeyId)
+    public async Task<bool> IsAuthorized(long authKeyId)
     {
-        throw new NotImplementedException();
+        var authKeyDetails = await _store.GetAuthKeyDetailsAsync(authKeyId);
+        return authKeyDetails == null ? false : authKeyDetails.LoggedIn;
     }
 
     public async Task<LoggedOut?> LogOut(long authKeyId)
@@ -116,7 +117,8 @@ public class AuthService : IAuthService
             ApiLayer = info.ApiLayer,
             FutureAuthToken = futureAuthToken,
             Phone = "",
-            UserId = 0
+            UserId = 0,
+            LoggedIn = false
         });
         return new LoggedOut()
         {
@@ -192,9 +194,18 @@ public class AuthService : IAuthService
         {
             return new Authorization()
             {
-                AuthorizationType = AuthorizationType.SignUpRequired,
+                AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
+        var authKeyDetails = await _store.GetAuthKeyDetailsAsync(authKeyId);
+        await _store.SaveAuthKeyDetailsAsync(new AuthKeyDetails()
+        {
+            AuthKeyId = authKeyId,
+            Phone = phoneNumber,
+            UserId = user.Id,
+            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
+            LoggedIn = true
+        });
         return new Authorization()
         {
             AuthorizationType = AuthorizationType.Authorization,

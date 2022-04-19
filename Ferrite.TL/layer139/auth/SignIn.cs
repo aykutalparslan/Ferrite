@@ -98,6 +98,13 @@ public class SignIn : ITLObject, ITLMethod
         {
             var signUpRequired = factory.Resolve<AuthorizationSignUpRequiredImpl>();
             result.Result = signUpRequired;
+        }else if(signInResult != null &&
+            signInResult.AuthorizationType == Data.Auth.AuthorizationType.PhoneCodeInvalid)
+        {
+            var resp = factory.Resolve<RpcError>();
+            resp.ErrorCode = 400;
+            resp.ErrorMessage = "PHONE_CODE_INVALID";
+            result.Result = resp;
         }
         else if(signInResult != null)
         {

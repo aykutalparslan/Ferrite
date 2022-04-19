@@ -129,5 +129,11 @@ public class SessionManager : ISessionManager
     {
         return _localAuthSessions.TryGetValue((Int128)nonce, out session);
     }
+
+    public bool RemoveAuthSession(byte[] nonce)
+    {
+        _store.RemoveAuthKeySessionAsync(nonce);
+        return _localAuthSessions.TryRemove((Int128)nonce, out var a);
+    }
 }
 

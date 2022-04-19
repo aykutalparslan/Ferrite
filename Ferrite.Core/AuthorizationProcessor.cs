@@ -19,6 +19,7 @@ using System;
 using System.Buffers;
 using Autofac;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using MessagePack;
@@ -29,56 +30,114 @@ public class AuthorizationProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionManager _sessionManager;
+    private readonly IAuthService _auth;
     private readonly IDistributedPipe _pipe;
-    public AuthorizationProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe)
+    private readonly SortedSet<int> _unauthorizedMethods = new();
+    public AuthorizationProcessor(ILifetimeScope scope, ISessionManager sessionManager,
+        IAuthService auth, IDistributedPipe pipe)
     {
         _scope = scope;
         _sessionManager = sessionManager;
+        _auth = auth;
         _pipe = pipe;
+        AddUnauthorizedMethods();
     }
+
+    private void AddUnauthorizedMethods()
+    {
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_SendCode);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_ResendCode);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Account_GetPassword);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_CheckPassword);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_SignUp);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_SignIn);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_ImportAuthorization);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetConfig);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetNearestDc);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetAppUpdate);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCdnConfig);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLangPack);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetStrings);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetDifference);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguages);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguage);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.InitConnection);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.JsonObject);
+        _unauthorizedMethods.Add(TLConstructor.GetFutureSalts);
+        _unauthorizedMethods.Add(2018609336);//initConnection
+    }
+
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        //if(input.Constructor != TL.layer139.TLConstructor.Auth_SendCode ||
-        //    input.Constructor != TL.layer139.TLConstructor.Auth_ResendCode ||
-        //    input.Constructor != TL.layer139.TLConstructor.Account_GetPassword ||
-        //    input.Constructor != TL.layer139.TLConstructor.Auth_CheckPassword ||
-        //    input.Constructor != TL.layer139.TLConstructor.Auth_SignUp ||
-        //    input.Constructor != TL.layer139.TLConstructor.Auth_SignIn ||
-        //    input.Constructor != TL.layer139.TLConstructor.Auth_ImportAuthorization ||
-        //    input.Constructor != TL.layer139.TLConstructor.Help_GetConfig ||
-        //    input.Constructor != TL.layer139.TLConstructor.Help_GetNearestDc ||
-        //    input.Constructor != TL.layer139.TLConstructor.Help_GetAppUpdate ||
-        //    input.Constructor != TL.layer139.TLConstructor.Help_GetCdnConfig ||
-        //    input.Constructor != TL.layer139.TLConstructor.Langpack_GetLangPack ||
-        //    input.Constructor != TL.layer139.TLConstructor.Auth_SendCode ||
-        //    input.Constructor != TL.layer139.TLConstructor.Langpack_GetStrings ||
-        //    input.Constructor != TL.layer139.TLConstructor.Langpack_GetDifference ||
-        //    input.Constructor != TL.layer139.TLConstructor.Langpack_GetLanguages ||
-        //    input.Constructor != TL.layer139.TLConstructor.Langpack_GetLanguage)
-        //{
-        //    var response = _scope.Resolve<RpcError>();
-        //    response.ErrorCode = 401;
-        //    response.ErrorMessage = "UNAUTHORIZED";
-        //    MTProtoMessage message = new MTProtoMessage();
-        //    message.SessionId = ctx.SessionId;
-        //    message.IsResponse = true;
-        //    message.IsContentRelated = true;
-        //    message.Data = response.TLBytes.ToArray();
-
-        //    if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-        //        is SessionState session)
-        //    {
-        //        var bytes = MessagePackSerializer.Serialize(message);
-        //        _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
-        //    }
-
-        //    Console.WriteLine("-->" + response.ToString());
-        //    return;
-        //}
-        //else
-        //{
+        output.Enqueue(input);
+        bool isAuthorized = await _auth.IsAuthorized(ctx.AuthKeyId);
+        if (isAuthorized || _unauthorizedMethods.Contains(input.Constructor))
+        {
             output.Enqueue(input);
-        //}
+        }
+        else if (input is Message message2)
+        {
+            if (_unauthorizedMethods.Contains(message2.Body.Constructor))
+            {
+                output.Enqueue(input);
+            }
+            else if (message2.Body is TL.layer139.InvokeWithLayer invoke2 &&
+                _unauthorizedMethods.Contains(invoke2.Query.Constructor))
+            {
+                output.Enqueue(input);
+            }
+            else if (message2.Body is TL.layer139.InvokeAfterMsg invokeAfter &&
+                _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
+            {
+                output.Enqueue(input);
+            }
+            else if (message2.Body is TL.layer139.InvokeAfterMsgs invokeAfter2 &&
+                _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
+            {
+                output.Enqueue(input);
+            }
+        }
+        else if (input is TL.layer139.InvokeWithLayer invoke &&
+            _unauthorizedMethods.Contains(invoke.Query.Constructor))
+        {
+            output.Enqueue(input);
+        }
+        else if (input is TL.layer139.InvokeAfterMsg invokeAfter &&
+            _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
+        {
+            output.Enqueue(input);
+        }
+        else if (input is TL.layer139.InvokeAfterMsgs invokeAfter2 &&
+            _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
+        {
+            output.Enqueue(input);
+        }
+        else if (input is TL.layer139.InvokeWithLayer invokeWithLayer &&
+            _unauthorizedMethods.Contains(invokeWithLayer.Query.Constructor))
+        {
+            output.Enqueue(input);
+        }
+        else
+        {
+            var response = _scope.Resolve<RpcError>();
+            response.ErrorCode = 401;
+            response.ErrorMessage = "UNAUTHORIZED";
+            MTProtoMessage message = new MTProtoMessage();
+            message.SessionId = ctx.SessionId;
+            message.IsResponse = true;
+            message.IsContentRelated = true;
+            message.Data = response.TLBytes.ToArray();
+
+            if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                is SessionState session)
+            {
+                var bytes = MessagePackSerializer.Serialize(message);
+                _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+            }
+
+            Console.WriteLine("-->" + response.ToString());
+            return;
+        }
     }
 }
 

@@ -76,7 +76,9 @@ public class GetStickerSet : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<StickerSetNotModifiedImpl>();
+        var resp = factory.Resolve<RpcError>();
+        resp.ErrorCode = 501;
+        resp.ErrorMessage = "Not Implemented";
         result.Result = resp;
         return result;
     }

@@ -59,6 +59,7 @@ namespace Ferrite.Data
                             "user_id bigint," +
                             "api_layer int," +
                             "future_auth_token blob," +
+                            "logged_in boolean," +
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
@@ -160,8 +161,10 @@ namespace Ferrite.Data
         public async Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.auth_key_details SET phone = ?, user_id = ?, api_layer = ?, future_auth_token = ?  WHERE auth_key_id = ?;",
-                details.Phone, details.UserId, details.ApiLayer, details.FutureAuthToken, details.AuthKeyId).SetKeyspace(keySpace);
+                "UPDATE ferrite.auth_key_details SET phone = ?, user_id = ?, " +
+                "api_layer = ?, future_auth_token = ?, logged_in = ?  WHERE auth_key_id = ?;",
+                details.Phone, details.UserId, details.ApiLayer,
+                details.FutureAuthToken, details.LoggedIn, details.AuthKeyId).SetKeyspace(keySpace);
 
             await session.ExecuteAsync(statement);
         }

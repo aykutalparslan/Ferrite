@@ -31,6 +31,7 @@ namespace Ferrite.Core
         bool LocalSessionExists(long sessionId);
         bool LocalAuthSessionExists(byte[] nonce);
         bool RemoveSession(long sessionId);
+        bool RemoveAuthSession(byte[] nonce);
         bool TryGetLocalSession(long sessionId, out MTProtoSession session);
         bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session);
     }

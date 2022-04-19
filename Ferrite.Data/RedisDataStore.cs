@@ -148,6 +148,15 @@ public class RedisDataStore: IDistributedStore
         return await db.StringSetAsync(key, (RedisValue)sessionData);
     }
 
+    public async Task<bool> RemoveAuthKeySessionAsync(byte[] nonce)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = nonce;
+        key.Prepend(AuthSessionPrefix);
+        return await db.KeyDeleteAsync(key);
+    }
+
     public async Task<bool> RemoveSessionAsync(long sessionId)
     {
         object _asyncState = new object();

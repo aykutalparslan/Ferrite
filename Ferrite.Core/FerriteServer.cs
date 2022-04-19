@@ -84,7 +84,8 @@ public class FerriteServer : IFerriteServer
                 {
                     var sessionExists = _sessionManager.TryGetLocalAuthSession(message.Nonce, out var protoSession);
                     if (sessionExists &&
-                        protoSession.TryGetConnection(out var connection))
+                        protoSession.TryGetConnection(out var connection) &&
+                        !connection.IsEncrypted)
                     {
                         _ = connection.SendAsync(message);
                     }

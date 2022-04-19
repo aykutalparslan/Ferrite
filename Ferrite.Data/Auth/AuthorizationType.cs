@@ -21,6 +21,8 @@ namespace Ferrite.Data.Auth;
 public enum AuthorizationType
 {
     Authorization,
-    SignUpRequired
+    SignUpRequired,
+    PhoneCodeInvalid,
+    PhoneCodeExpired
 }
 
