@@ -1,4 +1,7 @@
-# Project Ferrite [![.NET](https://github.com/aykutalparslan/ferrite/actions/workflows/dotnet.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/dotnet.yml) [![CodeQL](https://github.com/aykutalparslan/ferrite/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/codeql-analysis.yml) [![DevSkim](https://github.com/aykutalparslan/ferrite/actions/workflows/devskim.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/devskim.yml)
+# Project Ferrite (Telegram Server)
+
+ [![.NET](https://github.com/aykutalparslan/ferrite/actions/workflows/dotnet.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/dotnet.yml) [![CodeQL](https://github.com/aykutalparslan/ferrite/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/codeql-analysis.yml) [![DevSkim](https://github.com/aykutalparslan/ferrite/actions/workflows/devskim.yml/badge.svg)](https://github.com/aykutalparslan/ferrite/actions/workflows/devskim.yml)
+
 Project Ferrite is an implementation of the Telegram Server API in C#. 
 
 ## What works?
