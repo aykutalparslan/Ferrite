@@ -18,7 +18,7 @@
 using System;
 namespace Ferrite.Data;
 
-public record AuthKeyDetails
+public record AuthInfo
 {
     public long AuthKeyId { get; init; }
     public long UserId { get; init; }

@@ -99,19 +99,19 @@ public class AuthService : IAuthService
 
     public async Task<bool> IsAuthorized(long authKeyId)
     {
-        var authKeyDetails = await _store.GetAuthKeyDetailsAsync(authKeyId);
+        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
         return authKeyDetails == null ? false : authKeyDetails.LoggedIn;
     }
 
     public async Task<LoggedOut?> LogOut(long authKeyId)
     {
         var futureAuthToken = _random.GetRandomBytes(32);
-        var info = await _store.GetAuthKeyDetailsAsync(authKeyId);
+        var info = await _store.GetAuthorizationAsync(authKeyId);
         if(info == null)
         {
             return null;
         }
-        await _store.SaveAuthKeyDetailsAsync(new AuthKeyDetails()
+        await _store.SaveAuthorizationAsync(new AuthInfo()
         {
             AuthKeyId = info.AuthKeyId,
             ApiLayer = info.ApiLayer,
@@ -197,8 +197,8 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
-        var authKeyDetails = await _store.GetAuthKeyDetailsAsync(authKeyId);
-        await _store.SaveAuthKeyDetailsAsync(new AuthKeyDetails()
+        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
+        await _store.SaveAuthorizationAsync(new AuthInfo()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
@@ -250,8 +250,8 @@ public class AuthService : IAuthService
             AccessHash = _random.NextLong()
         };
         await _store.SaveUserAsync(user);
-        var authKeyDetails = await _store.GetAuthKeyDetailsAsync(authKeyId);
-        await _store.SaveAuthKeyDetailsAsync(new AuthKeyDetails()
+        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
+        await _store.SaveAuthorizationAsync(new AuthInfo()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,

@@ -287,6 +287,11 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
+    public Task DeleteAuthorizationAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))
@@ -296,7 +301,12 @@ class FakeCassandra : IPersistentStore
         return authKeys[authKeyId];
     }
 
-    public Task<AuthKeyDetails?> GetAuthKeyDetailsAsync(long authKeyId)
+    public Task<AuthInfo?> GetAuthorizationAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone)
     {
         throw new NotImplementedException();
     }
@@ -326,7 +336,7 @@ class FakeCassandra : IPersistentStore
         authKeys.Add(authKeyId, authKey);
     }
 
-    public Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
+    public Task SaveAuthorizationAsync(AuthInfo details)
     {
         throw new NotImplementedException();
     }

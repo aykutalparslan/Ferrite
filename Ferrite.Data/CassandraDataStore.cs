@@ -20,7 +20,7 @@ using Cassandra;
 
 namespace Ferrite.Data
 {
-    public class CassandraDataStore :IPersistentStore
+    public class CassandraDataStore : IPersistentStore
     {
         private readonly Cluster cluster;
         private readonly ISession session;
@@ -53,7 +53,7 @@ namespace Ferrite.Data
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
-                "CREATE TABLE IF NOT EXISTS ferrite.auth_key_details (" +
+                "CREATE TABLE IF NOT EXISTS ferrite.authorizations (" +
                             "auth_key_id bigint," +
                             "phone text," +
                             "user_id bigint," +
@@ -91,13 +91,19 @@ namespace Ferrite.Data
                 "CREATE TABLE IF NOT EXISTS ferrite.users_by_phone (" +
                             "phone text," +
                             "user_id bigint," +
-                            "PRIMARY KEY (phone));");
+                            "PRIMARY KEY (phone, user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users_by_username (" +
                             "username text," +
                             "user_id bigint," +
-                            "PRIMARY KEY (username));");
+                            "PRIMARY KEY (username, user_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.authorizations_by_phone (" +
+                            "phone text," +
+                            "auth_key_id bigint," +
+                            "PRIMARY KEY (phone, auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -158,29 +164,44 @@ namespace Ferrite.Data
             return serverSalts;
         }
 
-        public async Task SaveAuthKeyDetailsAsync(AuthKeyDetails details)
+        public async Task SaveAuthorizationAsync(AuthInfo info)
         {
+            var oldAuth = await GetAuthorizationAsync(info.AuthKeyId);
             var statement = new SimpleStatement(
-                "UPDATE ferrite.auth_key_details SET phone = ?, user_id = ?, " +
+                "UPDATE ferrite.authorizations SET phone = ?, user_id = ?, " +
                 "api_layer = ?, future_auth_token = ?, logged_in = ?  WHERE auth_key_id = ?;",
-                details.Phone, details.UserId, details.ApiLayer,
-                details.FutureAuthToken, details.LoggedIn, details.AuthKeyId).SetKeyspace(keySpace);
-
+                info.Phone, info.UserId, info.ApiLayer,
+                info.FutureAuthToken, info.LoggedIn, info.AuthKeyId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
+            if((oldAuth?.Phone.Length ?? 0) > 0)
+            {
+                statement = new SimpleStatement(
+                "DELETE FROM ferrite.authorizations_by_phone WHERE phone = ? AND auth_key_id = ?;",
+                oldAuth?.Phone, oldAuth?.AuthKeyId);
+                statement = statement.SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            }
+            if (info.Phone.Length > 0)
+            {
+                statement = new SimpleStatement(
+                "INSERT INTO ferrite.authorizations_by_phone (phone, auth_key_id) VALUES (?,?);",
+                info.Phone, info.AuthKeyId).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
         }
 
-        public async Task<AuthKeyDetails?> GetAuthKeyDetailsAsync(long authKeyId)
+        public async Task<AuthInfo?> GetAuthorizationAsync(long authKeyId)
         {
-            AuthKeyDetails? details = null;
+            AuthInfo? info = null;
             var statement = new SimpleStatement(
-                "SELECT * FROM ferrite.auth_key_details WHERE auth_key_id = ?;",
+                "SELECT * FROM ferrite.authorizations WHERE auth_key_id = ?;",
                 authKeyId);
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
-                details = new AuthKeyDetails()
+                info = new AuthInfo()
                 {
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     Phone = row.GetValue<string>("phone"),
@@ -189,7 +210,41 @@ namespace Ferrite.Data
                     FutureAuthToken = row.GetValue<byte[]>("future_auth_token"),
                 };
             }
-            return details;
+            return info;
+        }
+
+        public async Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone)
+        {
+            List<AuthInfo> result = new List<AuthInfo>();
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.authorizations_by_phone WHERE phone = ?;",
+                phone);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                var authKeyId = row.GetValue<long>("auth_key_id");
+                var statement2 = new SimpleStatement(
+                    "SELECT * FROM ferrite.authorizations WHERE auth_key_id = ?;",
+                    authKeyId);
+                statement = statement.SetKeyspace(keySpace);
+
+                var results2 = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+                foreach (var row2 in results2)
+                {
+                    AuthInfo info = new AuthInfo()
+                    {
+                        AuthKeyId = row2.GetValue<long>("auth_key_id"),
+                        Phone = row2.GetValue<string>("phone"),
+                        UserId = row2.GetValue<long>("user_id"),
+                        ApiLayer = row2.GetValue<int>("api_layer"),
+                        FutureAuthToken = row2.GetValue<byte[]>("future_auth_token"),
+                    };
+                    result.Add(info);
+                }
+            }
+            return result;
         }
 
         public async Task<bool> SaveUserAsync(User user)
@@ -199,20 +254,64 @@ namespace Ferrite.Data
                 "last_name, username, phone) VALUES(?,?,?,?,?,?);",
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone).SetKeyspace(keySpace);
-
             await session.ExecuteAsync(statement);
+            if (user.Phone.Length > 0)
+            {
+                statement = new SimpleStatement(
+                "INSERT INTO ferrite.users_by_phone (phone, user_id) VALUES (?,?);",
+                user.Phone, user.Id).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
+            if (user.Username.Length > 0)
+            {
+                statement = new SimpleStatement(
+                "INSERT INTO ferrite.users_by_username (username, user_id) VALUES (?,?);",
+                user.Username, user.Id).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
             return true;
         }
 
         public async Task<bool> UpdateUserAsync(User user)
         {
+            var oldUser = await GetUserAsync(user.Id);
+            if ((oldUser?.Phone.Length ?? 0) > 0)
+            {
+                var stmt = new SimpleStatement(
+                "DELETE FROM ferrite.users_by_phone WHERE phone = ? AND user_id = ?;",
+                oldUser.Phone, oldUser.Id);
+                stmt = stmt.SetKeyspace(keySpace);
+                await session.ExecuteAsync(stmt);
+            }
+            if ((oldUser?.Username.Length ?? 0) > 0)
+            {
+                var stmt = new SimpleStatement(
+                "DELETE FROM ferrite.users_by_username WHERE username = ? AND user_id = ?;",
+                oldUser.Username, oldUser.Id);
+                stmt = stmt.SetKeyspace(keySpace);
+                await session.ExecuteAsync(stmt);
+            }
             var statement = new SimpleStatement(
                 "UPDATE ferrite.users SET access_hash = =, first_name = ?, " +
                 "last_name = ?, username = ?, phone = ?) WHERE user_id = ?;",
                 user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone, user.Id).SetKeyspace(keySpace);
-
+            
             await session.ExecuteAsync(statement);
+            if (user.Phone.Length > 0)
+            {
+                statement = new SimpleStatement(
+                "INSERT INTO ferrite.users_by_phone (phone, user_id) VALUES (?,?);",
+                user.Phone, user.Id).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
+            if (user.Username.Length > 0)
+            {
+                statement = new SimpleStatement(
+                "INSERT INTO ferrite.users_by_username (username, user_id) VALUES (?,?);",
+                user.Username, user.Id).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
             return true;
         }
 
@@ -265,7 +364,7 @@ namespace Ferrite.Data
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
-                    AccessHash = row.GetValue<long>("acces_hash"),
+                    AccessHash = row.GetValue<long>("access_hash"),
                     FirstName = row.GetValue<string>("first_name"),
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
@@ -313,12 +412,44 @@ namespace Ferrite.Data
         public async Task<bool> DeleteAuthKeyAsync(long authKeyId)
         {
             var statement = new SimpleStatement(
-                "DELETE FROM ferrite.auth_key_details WHERE auth_key_id = ?;",
+                "DELETE FROM ferrite.auth_keys WHERE auth_key_id = ?;",
                 authKeyId);
             statement = statement.SetKeyspace(keySpace);
-
-            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            var oldAuthorization = await GetAuthorizationAsync(authKeyId);
+            statement = new SimpleStatement(
+                "DELETE FROM ferrite.authorizations WHERE auth_key_id = ?;",
+                authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            if((oldAuthorization?.Phone.Length ?? 0) > 0)
+            {
+                statement = new SimpleStatement(
+                "DELETE FROM ferrite.authorizations_by_phone WHERE phone = ? AND auth_key_id = ?;",
+                oldAuthorization?.Phone, authKeyId);
+                statement = statement.SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            }
+            
             return true;
+        }
+
+        public async Task DeleteAuthorizationAsync(long authKeyId)
+        {
+            var oldAuthorization = await GetAuthorizationAsync(authKeyId);
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.authorizations WHERE auth_key_id = ?;",
+                authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            if((oldAuthorization?.Phone.Length ?? 0) > 0)
+            {
+                statement = new SimpleStatement(
+                "DELETE FROM ferrite.authorizations_by_phone WHERE phone = ? AND auth_key_id = ?;",
+                oldAuthorization?.Phone, authKeyId);
+                statement = statement.SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            }
         }
     }
 }
