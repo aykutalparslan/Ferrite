@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
@@ -27,10 +28,12 @@ public class DestroySession : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IDistributedStore _cache;
     private bool serialized = false;
-    public DestroySession(ITLObjectFactory objectFactory)
+    public DestroySession(ITLObjectFactory objectFactory, IDistributedStore cache)
     {
         factory = objectFactory;
+        _cache = cache;
     }
 
     public int Constructor => -414113498;
@@ -61,7 +64,14 @@ public class DestroySession : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var destroyed = await _cache.RemoveSessionAsync(sessionId);
+        if (destroyed)
+        {
+            var resp = factory.Resolve<DestroySessionOk>();
+            return resp;
+        }
+        var none = factory.Resolve<DestroySessionNone>();
+        return none;
     }
 
     public void Parse(ref SequenceReader buff)
