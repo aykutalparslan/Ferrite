@@ -23,7 +23,7 @@ public class RedisPipe: IDistributedPipe
         return (byte[])message.Message;
     }
 
-    public void Subscribe(string channel)
+    public async Task SubscribeAsync(string channel)
     {
         Interlocked.CompareExchange<ChannelMessageQueue>(ref messageQueue,
             redis.GetSubscriber().Subscribe(channel),

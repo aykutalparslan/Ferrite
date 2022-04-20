@@ -40,7 +40,7 @@ public class FerriteServer : IFerriteServer
         _socketListener = _scope.Resolve<IConnectionListener>();
         _sessionManager = _scope.Resolve<ISessionManager>();
         _pipe = _scope.Resolve<IDistributedPipe>();
-        _pipe.Subscribe(_sessionManager.NodeId.ToString());
+        _ = _pipe.SubscribeAsync(_sessionManager.NodeId.ToString());
         _pipeReceiveTask = DoReceive();
         _log = _scope.Resolve<ILogger>();
     }

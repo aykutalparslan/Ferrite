@@ -759,6 +759,11 @@ class FakeDistributedPipe : IDistributedPipe
 
     }
 
+    public Task SubscribeAsync(string channel)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task UnSubscribeAsync()
     {
 

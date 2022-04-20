@@ -19,6 +19,7 @@ using System;
 using System.Net;
 using System.Threading.Channels;
 using Confluent.Kafka;
+using Confluent.Kafka.Admin;
 
 namespace Ferrite.Data;
 
@@ -26,6 +27,7 @@ public class KafkaPipe : IDistributedPipe
 {
     private readonly IProducer<Null,byte[]> _producer;
     private readonly IConsumer<Ignore,byte[]> _consumer;
+    private readonly IAdminClient _adminClient;
     private string _channel;
     private bool _unsubscribed = true;
     private Task? consumeTask;
@@ -46,6 +48,7 @@ public class KafkaPipe : IDistributedPipe
             AutoOffsetReset = AutoOffsetReset.Earliest
         };
         _consumer = new ConsumerBuilder<Ignore, byte[]>(consumerConfig).Build();
+        _adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = config }).Build();
     }
 
     public async ValueTask<byte[]> ReadAsync(CancellationToken cancellationToken = default)
@@ -53,12 +56,13 @@ public class KafkaPipe : IDistributedPipe
         return await _consumed.Reader.ReadAsync(cancellationToken);
     }
 
-    public void Subscribe(string channel)
+    public async Task SubscribeAsync(string channel)
     {
         if(_consumer == null)
         {
             throw new ObjectDisposedException("IConsumer");
         }
+        await CreateChannelAsync(channel);
         _channel = channel;
         _unsubscribed = false;
         consumeTask = Task.Run(() =>
@@ -74,6 +78,19 @@ public class KafkaPipe : IDistributedPipe
                 _consumer.Close();
             }
         });
+    }
+
+    private async Task CreateChannelAsync(string channel)
+    {
+        try
+        {
+            await _adminClient.CreateTopicsAsync(new TopicSpecification[] {
+                    new TopicSpecification { Name = channel, ReplicationFactor = 1, NumPartitions = 1 } });
+        }
+        catch (CreateTopicsException e)
+        {
+            Console.WriteLine($"An error occured creating channel {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
+        }
     }
 
     public async Task UnSubscribeAsync()
