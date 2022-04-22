@@ -269,7 +269,7 @@ public class AuthTests
         Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
     }
     [Fact]
-    public async Task ImportAuthorization_Returns_SignUpRequired()
+    public async Task ImportAuthorization_Returns_AuthBytesInvalid()
     {
         var scope = BuildIoCContainer().BeginLifetimeScope();
         var factory = scope.Resolve<TLObjectFactory>();
@@ -285,7 +285,10 @@ public class AuthTests
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
         Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
+        Assert.IsType<RpcError>(rslt.Result);
+        var err = (RpcError)rslt.Result;
+        Assert.Equal(400, err.ErrorCode);
+        Assert.Equal("AUTH_BYTES_INVALID", err.ErrorMessage);
     }
     [Fact]
     public async Task BindTempAuthKey_Returns_True()
@@ -871,9 +874,35 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Data.Auth.Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
+    public async Task<Data.Auth.Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
     {
-        throw new NotImplementedException();
+        if (ImportAuthorizationFailed)
+        {
+            return new Data.Auth.Authorization()
+            {
+                AuthorizationType = AuthorizationType.AuthBytesInvalid
+            };
+        }
+        else
+        {
+            return new Data.Auth.Authorization()
+            {
+                AuthorizationType = AuthorizationType.Authorization,
+                User = new Data.User()
+                {
+                    Id = 123,
+                    FirstName = "a",
+                    LastName = "b",
+                    Phone = "5554443322",
+                    Status = Data.UserStatus.Empty,
+                    Self = true,
+                    Photo = new Data.UserProfilePhoto()
+                    {
+                        Empty = true
+                    }
+                }
+            };
+        }
     }
 
     public Task<Data.Auth.Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)

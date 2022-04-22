@@ -38,7 +38,7 @@ public interface IAuthService
     public Task<LoggedOut?> LogOut(long authKeyId);
     public Task<bool> ResetAuthorizations(long authKeyId);
     public Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId);
-    public Task<Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes);
+    public Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes);
     public Task<bool> BindTempAuthKey(long permAuthKeyId, long nonce, int expiresAt, byte[] encryptedMessage);
     public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
     public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);

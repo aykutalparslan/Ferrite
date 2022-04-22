@@ -23,6 +23,8 @@ public enum AuthorizationType
     Authorization,
     SignUpRequired,
     PhoneCodeInvalid,
-    PhoneCodeExpired
+    PhoneCodeExpired,
+    AuthBytesInvalid,
+    UserIdInvalid
 }
 

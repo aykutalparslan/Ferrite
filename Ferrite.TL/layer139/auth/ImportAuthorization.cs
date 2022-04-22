@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +29,12 @@ public class ImportAuthorization : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _service;
     private bool serialized = false;
-    public ImportAuthorization(ITLObjectFactory objectFactory)
+    public ImportAuthorization(ITLObjectFactory objectFactory, IAuthService service)
     {
         factory = objectFactory;
+        _service = service;
     }
 
     public int Constructor => -1518699091;
@@ -73,7 +77,44 @@ public class ImportAuthorization : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var auth = await _service.ImportAuthorization(_id, ctx.AuthKeyId, _bytes);
+        if(auth.AuthorizationType == Data.Auth.AuthorizationType.AuthBytesInvalid)
+        {
+            var resp = factory.Resolve<RpcError>();
+            resp.ErrorCode = 400;
+            resp.ErrorMessage = "AUTH_BYTES_INVALID";
+            result.Result = resp;
+        }
+        else if (auth.AuthorizationType == Data.Auth.AuthorizationType.UserIdInvalid)
+        {
+            var resp = factory.Resolve<RpcError>();
+            resp.ErrorCode = 400;
+            resp.ErrorMessage = "USER_ID_INVALID";
+            result.Result = resp;
+        }
+        else
+        {
+            var authorization = factory.Resolve<AuthorizationImpl>();
+            var user = factory.Resolve<UserImpl>();
+            user.Id = auth.User.Id;
+            user.FirstName = auth.User.FirstName;
+            user.LastName = auth.User.LastName;
+            user.Phone = auth.User.Phone;
+            user.Self = auth.User.Self;
+            if (auth.User.Status == Data.UserStatus.Empty)
+            {
+                user.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (auth.User.Photo.Empty)
+            {
+                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            authorization.User = user;
+            result.Result = authorization;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

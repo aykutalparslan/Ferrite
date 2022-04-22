@@ -90,9 +90,44 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
+    public async Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var exported = await _store.GetExportedAuthorizationAsync(userId, authKeyId);
+        
+        if (auth != null && exported != null &&
+            auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
+        {
+            var user = await _store.GetUserAsync(auth.UserId);
+            if(user == null)
+            {
+                return new Authorization()
+                {
+                    AuthorizationType = AuthorizationType.UserIdInvalid
+                };
+            }
+            return new Authorization()
+            {
+                AuthorizationType = AuthorizationType.Authorization,
+                User = new User()
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Phone = user.Phone,
+                    Status = UserStatus.Empty,
+                    Self = true,
+                    Photo = new UserProfilePhoto()
+                    {
+                        Empty = true
+                    }
+                }
+            };
+        }
+        return new Authorization()
+        {
+            AuthorizationType = AuthorizationType.AuthBytesInvalid
+        };
     }
 
     public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)
