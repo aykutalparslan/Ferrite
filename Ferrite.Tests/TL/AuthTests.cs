@@ -857,9 +857,13 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Data.Auth.ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
+    public async Task<Data.Auth.ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
     {
-        throw new NotImplementedException();
+        return new Data.Auth.ExportedAuthorization()
+        {
+            Id = 111,
+            Bytes = new byte[] {1,2,3}
+        };
     }
 
     public Task<Data.Auth.LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
@@ -867,7 +871,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Data.Auth.Authorization> ImportAuthorization(long id, byte[] bytes)
+    public Task<Data.Auth.Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
     {
         throw new NotImplementedException();
     }
@@ -925,9 +929,9 @@ class FakeAuthService : IAuthService
         };
     }
 
-    public Task<bool> ResetAuthorizations()
+    public async Task<bool> ResetAuthorizations(long authKeyId)
     {
-        throw new NotImplementedException();
+        return ResetAuthorizationsResult;
     }
 
     public async Task<Data.Auth.SentCode> SendCode(string phoneNumber, int apiId, string apiHash, Data.Auth.CodeSettings settings)
@@ -1273,6 +1277,11 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
+    public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
     {
         throw new NotImplementedException();
@@ -1299,6 +1308,11 @@ class FakeCassandra : IPersistentStore
     }
 
     public Task SaveAuthorizationAsync(AuthInfo details)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
     {
         throw new NotImplementedException();
     }

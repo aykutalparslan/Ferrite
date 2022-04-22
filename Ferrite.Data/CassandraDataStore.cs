@@ -63,6 +63,16 @@ namespace Ferrite.Data
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.exported_authorizations (" +
+                            "user_id bigint," +
+                            "auth_key_id bigint," +
+                            "phone text," +
+                            "previous_dc_id int," +
+                            "next_dc_id int," +
+                            "data blob," +
+                            "PRIMARY KEY (user_id, auth_key_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.server_salts (" +
                             "auth_key_id bigint," +
                             "server_salt bigint," +
@@ -442,7 +452,15 @@ namespace Ferrite.Data
                 authKeyId);
             statement = statement.SetKeyspace(keySpace);
             await session.ExecuteAsync(statement.SetKeyspace(keySpace));
-            if((oldAuthorization?.Phone.Length ?? 0) > 0)
+            if (oldAuthorization != null)
+            {
+                statement = new SimpleStatement(
+                "DELETE FROM ferrite.exported_authorizations WHERE user_id = ? AND auth_key_id = ?;",
+                oldAuthorization.UserId, authKeyId);
+                statement = statement.SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            }
+            if ((oldAuthorization?.Phone.Length ?? 0) > 0)
             {
                 statement = new SimpleStatement(
                 "DELETE FROM ferrite.authorizations_by_phone WHERE phone = ? AND auth_key_id = ?;",
@@ -450,6 +468,40 @@ namespace Ferrite.Data
                 statement = statement.SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             }
+        }
+
+        public async Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.exported_authorizations phone = ?, " +
+                "previous_dc_id = ?, next_dc_id = ?, data = ?  WHERE user_id = ? AND auth_key_id = ?;",
+                info.Phone, info.UserId, info.ApiLayer,
+                info.FutureAuthToken, info.LoggedIn, info.AuthKeyId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+        }
+
+        public async Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id)
+        {
+            ExportedAuthInfo? info = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.authorizations WHERE user_id = ? AND auth_key_id = ?;",
+                user_id, auth_key_id);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                info = new ExportedAuthInfo()
+                {
+                    AuthKeyId = row.GetValue<long>("auth_key_id"),
+                    Phone = row.GetValue<string>("phone"),
+                    UserId = row.GetValue<long>("user_id"),
+                    PreviousDcId = row.GetValue<int>("previous_dc_id"),
+                    NextDcId = row.GetValue<int>("next_dc_id"),
+                    Data = row.GetValue<byte[]>("data"),
+                };
+            }
+            return info;
         }
     }
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +29,12 @@ public class ExportAuthorization : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _service;
     private bool serialized = false;
-    public ExportAuthorization(ITLObjectFactory objectFactory)
+    public ExportAuthorization(ITLObjectFactory objectFactory, IAuthService service)
     {
         factory = objectFactory;
+        _service = service;
     }
 
     public int Constructor => -440401971;
@@ -61,7 +65,24 @@ public class ExportAuthorization : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var exported = await _service.ExportAuthorization(ctx.AuthKeyId, _dcId);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (exported == null)
+        {
+            var resp = factory.Resolve<RpcError>();
+            resp.ErrorCode = 400;
+            resp.ErrorMessage = "DC_ID_INVALID";
+            result.Result = resp;
+        }
+        else
+        {
+            var resp = factory.Resolve<ExportedAuthorizationImpl>();
+            resp.Id = exported.Id;
+            resp.Bytes = exported.Bytes;
+            result.Result = resp;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

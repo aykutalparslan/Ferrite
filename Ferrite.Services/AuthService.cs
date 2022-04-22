@@ -72,9 +72,17 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
+    public async Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var data = _random.GetRandomBytes(128);
+        //TODO: get current dc id
+        await _store.SaveExportedAuthorizationAsync(auth, 1, dcId, data);
+        return new ExportedAuthorization()
+        {
+            Id = auth.UserId,
+            Bytes = data
+        };
     }
 
     public Task<LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
@@ -82,7 +90,7 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> ImportAuthorization(long id, byte[] bytes)
+    public Task<Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
     {
         throw new NotImplementedException();
     }
@@ -156,9 +164,22 @@ public class AuthService : IAuthService
         return null;//this is tested
     }
 
-    public Task<bool> ResetAuthorizations()
+    public async Task<bool> ResetAuthorizations(long authKeyId)
     {
-        throw new NotImplementedException();
+        var currentAuth = await _store.GetAuthorizationAsync(authKeyId);
+        if (currentAuth != null)
+        {
+            var authorizations = await _store.GetAuthorizationsAsync(currentAuth.Phone);
+            foreach (var auth in authorizations)
+            {
+                if(auth.AuthKeyId != authKeyId)
+                {
+                    await _store.DeleteAuthorizationAsync(authKeyId);
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     public async Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings)

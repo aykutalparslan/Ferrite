@@ -22,7 +22,9 @@ public interface IPersistentStore
 {
     public Task SaveAuthKeyAsync(long authKeyId, byte[] authKey);
     public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
-    public Task SaveAuthorizationAsync(AuthInfo details);
+    public Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data);
+    public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id);
+    public Task SaveAuthorizationAsync(AuthInfo info);
     public Task<AuthInfo?> GetAuthorizationAsync(long authKeyId);
     public Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone);
     public Task DeleteAuthorizationAsync(long authKeyId);
