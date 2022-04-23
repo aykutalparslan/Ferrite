@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -225,6 +225,7 @@ public class ReqDhParams : ITLObject, ITLMethod
         }
         else if (constructor == TLConstructor.PQInnerDataTempDc)
         {
+            ctx.SessionData.Add("temp_auth_key", true);
             var obj = factory.Read<PQInnerDataTempDc>(ref reader);
             ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
             if (nonce != obj.Nonce ||

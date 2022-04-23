@@ -27,6 +27,10 @@ public interface IDistributedStore
     public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
     public Task<bool> DeleteAuthKeyAsync(long authKeyId);
     public Task<byte[]> GetSessionAsync(long sessionId);
+    public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
+    public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
+    public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
+    public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
     public Task<bool> PutSessionAsync(long sessionId, byte[] sessionData);
     public Task<bool> RemoveSessionAsync(long sessionId);
     public Task<byte[]> GetAuthKeySessionAsync(byte[] nonce);

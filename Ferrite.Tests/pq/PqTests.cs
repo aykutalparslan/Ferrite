@@ -149,6 +149,11 @@ class FakeRedis : IDistributedStore
         throw new NotImplementedException();
     }
 
+    public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public IAtomicCounter GetCounter(string name)
     {
         throw new NotImplementedException();
@@ -173,6 +178,11 @@ class FakeRedis : IDistributedStore
         return sessions[sessionId];
     }
 
+    public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         authKeys.Add(authKeyId, authKey);
@@ -180,6 +190,11 @@ class FakeRedis : IDistributedStore
     }
 
     public Task<bool> PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
     {
         throw new NotImplementedException();
     }
@@ -198,6 +213,11 @@ class FakeRedis : IDistributedStore
     {
         sessions.Add(sessionId, sessionData);
         return true;
+    }
+
+    public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<bool> RemoveSessionAsync(long sessionId)

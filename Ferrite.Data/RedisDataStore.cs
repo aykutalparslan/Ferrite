@@ -27,6 +27,9 @@ public class RedisDataStore: IDistributedStore
 {
     private readonly ConnectionMultiplexer redis;
     private readonly byte[] AuthKeyPrefix = new byte[] { (byte)'A', (byte)'U', (byte)'T', (byte)'H', (byte)'-', (byte)'-' };
+    private readonly byte[] TempAuthKeyPrefix = new byte[] { (byte)'T', (byte)'A', (byte)'U', (byte)'T', (byte)'-', (byte)'-' };
+    private readonly byte[] BoundAuthKeyPrefix = new byte[] { (byte)'B', (byte)'A', (byte)'U', (byte)'T', (byte)'-', (byte)'-' };
+    private readonly byte[] BoundTempAuthKeyPrefix = new byte[] { (byte)'B', (byte)'T', (byte)'A', (byte)'U', (byte)'-', (byte)'-' };
     private readonly byte[] SessionPrefix = new byte[] { (byte)'S', (byte)'E', (byte)'S', (byte)'S', (byte)'-', (byte)'-' };
     private readonly byte[] PhoneCodePrefix = new byte[] { (byte)'P', (byte)'C', (byte)'D', (byte)'E', (byte)'-', (byte)'-' };
     private readonly byte[] AuthSessionPrefix = new byte[] { (byte)'A', (byte)'K', (byte)'C', (byte)'R', (byte)'-', (byte)'-' };
@@ -73,6 +76,23 @@ public class RedisDataStore: IDistributedStore
         return await db.StringGetAsync(key);
     }
 
+    public async Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
+        key.Prepend(BoundTempAuthKeyPrefix);
+        var bound =  (long)await db.StringGetAsync(key);
+        key = BitConverter.GetBytes(bound);
+        key.Prepend(BoundAuthKeyPrefix);
+        var temp = (long)await db.StringGetAsync(key);
+        if(temp == tempAuthKeyId)
+        {
+            return bound;
+        }
+        return null;
+    }
+
     public IAtomicCounter GetCounter(string name)
     {
         return new RedisCounter(redis, name);
@@ -111,6 +131,15 @@ public class RedisDataStore: IDistributedStore
         return await db.StringGetAsync(key);
     }
 
+    public async Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
+        key.Prepend(TempAuthKeyPrefix);
+        return await db.StringGetAsync(key);
+    }
+
     public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         object _asyncState = new object();
@@ -127,6 +156,19 @@ public class RedisDataStore: IDistributedStore
         RedisKey key = nonce;
         key.Prepend(AuthSessionPrefix);
         return await db.StringSetAsync(key, (RedisValue)sessionData, new TimeSpan(0,0,600));
+    }
+
+    public async Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
+        key.Prepend(BoundTempAuthKeyPrefix);
+        await db.StringSetAsync(key, authKeyId, expiresIn);
+        key = BitConverter.GetBytes(authKeyId);
+        key.Prepend(BoundAuthKeyPrefix);
+        await db.StringSetAsync(key, tempAuthKeyId, expiresIn);
+        return true;
     }
 
     public async Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
@@ -155,6 +197,15 @@ public class RedisDataStore: IDistributedStore
         RedisKey key = BitConverter.GetBytes(sessionId);
         key.Prepend(SessionPrefix);
         return await db.StringSetAsync(key, (RedisValue)sessionData);
+    }
+
+    public async Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
+        key.Prepend(TempAuthKeyPrefix);
+        return await db.StringSetAsync(key, (RedisValue)tempAuthKey);
     }
 
     public async Task<bool> RemoveAuthKeySessionAsync(byte[] nonce)

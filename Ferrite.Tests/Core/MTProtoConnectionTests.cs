@@ -277,6 +277,26 @@ class FakeRedis : IDistributedStore
     {
         throw new NotImplementedException();
     }
+
+    public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
