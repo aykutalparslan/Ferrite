@@ -272,7 +272,7 @@ namespace Ferrite.Data
                 user.Phone, user.Id).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
             }
-            if (user.Username.Length > 0)
+            if ((user.Username?.Length ?? 0)> 0)
             {
                 statement = new SimpleStatement(
                 "INSERT INTO ferrite.users_by_username (username, user_id) VALUES (?,?);",
