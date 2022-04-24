@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -45,7 +45,6 @@ public class TLObjectFactory : ITLObjectFactory
         1003222836 => Read<DhGenOk>(ref buff),
         1188831161 => Read<DhGenRetry>(ref buff),
         -1499615742 => Read<DhGenFail>(ref buff),
-        1973679973 => Read<BindAuthKeyInner>(ref buff),
         -212046591 => Read<RpcResult>(ref buff),
         558156313 => Read<RpcError>(ref buff),
         1579864942 => Read<RpcAnswerUnknown>(ref buff),
@@ -83,6 +82,7 @@ public class TLObjectFactory : ITLObjectFactory
         -414113498 => Read<DestroySession>(ref buff),
         -1835453025 => Read<HttpWait>(ref buff),
         -784117408 => Read<DestroyAuthKey>(ref buff),
+        1973679973 => Read<layer139.BindAuthKeyInnerImpl>(ref buff),
         2134579434 => Read<layer139.InputPeerEmptyImpl>(ref buff),
         2107670217 => Read<layer139.InputPeerSelfImpl>(ref buff),
         900291769 => Read<layer139.InputPeerChatImpl>(ref buff),

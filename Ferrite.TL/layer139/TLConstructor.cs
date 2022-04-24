@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -21,6 +21,7 @@ using System;
 namespace Ferrite.TL.layer139;
 public class TLConstructor
 {
+    public static readonly int BindAuthKeyInner = 1973679973;
     public static readonly int BoolFalse = -1132882121;
     public static readonly int BoolTrue = -1720552011;
     public static readonly int True = 1072550713;
