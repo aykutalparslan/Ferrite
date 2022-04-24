@@ -87,7 +87,8 @@ services:
       test: ["CMD", "nc", "-vz", "localhost", "9092"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+
 volumes:
   data-cassandra:
   data-redis:
@@ -97,3 +98,5 @@ volumes:
   data-zookeper-secrets:
   data-kafka:
   data-kafka-secrets:
+
+

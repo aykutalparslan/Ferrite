@@ -265,7 +265,7 @@ namespace Ferrite.Data
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
-            if (user.Phone.Length > 0)
+            if ((user.Phone?.Length ?? 0) > 0)
             {
                 statement = new SimpleStatement(
                 "INSERT INTO ferrite.users_by_phone (phone, user_id) VALUES (?,?);",
@@ -293,7 +293,7 @@ namespace Ferrite.Data
                 stmt = stmt.SetKeyspace(keySpace);
                 await session.ExecuteAsync(stmt);
             }
-            if ((oldUser?.Username.Length ?? 0) > 0)
+            if ((oldUser?.Username?.Length ?? 0) > 0)
             {
                 var stmt = new SimpleStatement(
                 "DELETE FROM ferrite.users_by_username WHERE username = ? AND user_id = ?;",
@@ -308,14 +308,14 @@ namespace Ferrite.Data
                 user.Username, user.Phone, user.Id).SetKeyspace(keySpace);
             
             await session.ExecuteAsync(statement);
-            if (user.Phone.Length > 0)
+            if ((user.Phone?.Length ?? 0) > 0)
             {
                 statement = new SimpleStatement(
                 "INSERT INTO ferrite.users_by_phone (phone, user_id) VALUES (?,?);",
                 user.Phone, user.Id).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
             }
-            if (user.Username.Length > 0)
+            if ((user.Username?.Length ?? 0) > 0)
             {
                 statement = new SimpleStatement(
                 "INSERT INTO ferrite.users_by_username (username, user_id) VALUES (?,?);",
