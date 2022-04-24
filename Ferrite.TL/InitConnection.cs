@@ -35,6 +35,7 @@ public class InitConnection : ITLObject, ITLMethod
     public InitConnection(ITLObjectFactory objectFactory, ILogger logger)
     {
         factory = objectFactory;
+        _log = logger;
     }
 
     public int Constructor => 2018609336;
@@ -57,6 +58,11 @@ public class InitConnection : ITLObject, ITLMethod
             if (_flags[0])
             {
                 writer.Write(_proxy.TLBytes, false);
+            }
+
+            if (_flags[1])
+            {
+                writer.Write(_params.TLBytes, false);
             }
 
             writer.Write(_query.TLBytes, false);
@@ -165,6 +171,18 @@ public class InitConnection : ITLObject, ITLMethod
         }
     }
 
+    private JSONValue _params;
+    public JSONValue Params
+    {
+        get => _params;
+        set
+        {
+            serialized = false;
+            _flags[1] = true;
+            _params = value;
+        }
+    }
+
     private ITLObject _query;
     public ITLObject Query
     {
@@ -190,10 +208,11 @@ public class InitConnection : ITLObject, ITLMethod
             _log.Information(String.Format("Execute {0}", medhod.ToString()));
             return await medhod.ExecuteAsync(ctx);
         }
-        var ack = factory.Resolve<MsgsAck>();
-        ack.MsgIds = new VectorOfLong(1);
-        ack.MsgIds.Add(ctx.MessageId);
-        return ack;
+        //var ack = factory.Resolve<MsgsAck>();
+        //ack.MsgIds = new VectorOfLong(1);
+        //ack.MsgIds.Add(ctx.MessageId);
+        //return ack;
+        return null;
     }
 
     public void Parse(ref SequenceReader buff)
@@ -210,6 +229,11 @@ public class InitConnection : ITLObject, ITLMethod
         if (_flags[0])
         {
             _proxy = (InputClientProxy)factory.Read(buff.ReadInt32(true), ref buff);
+        }
+
+        if (_flags[1])
+        {
+            _params = (JSONValue)factory.Read(buff.ReadInt32(true), ref buff);
         }
 
         _query = factory.Read(buff.ReadInt32(true), ref buff);
