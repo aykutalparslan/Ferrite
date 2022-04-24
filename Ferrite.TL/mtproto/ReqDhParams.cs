@@ -227,6 +227,7 @@ public class ReqDhParams : ITLObject, ITLMethod
         {
             ctx.SessionData.Add("temp_auth_key", true);
             var obj = factory.Read<PQInnerDataTempDc>(ref reader);
+            ctx.SessionData.Add("temp_auth_key_expires_in", obj.ExpiresIn);
             ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
             if (nonce != obj.Nonce ||
                 nonce != sessionNonce ||

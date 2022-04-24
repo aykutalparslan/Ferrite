@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -147,12 +147,25 @@ public class SetClientDhParams : ITLObject, ITLMethod
                 dhGenFail.NewNonceHash3 = (Int128)newNonceHash3;
                 return dhGenFail;
             }
-            var existingKey = await dataStore.GetAuthKeyAsync(authKeyHash);
+            bool temp_auth_key = ctx.SessionData.ContainsKey("temp_auth_key") &&
+                (bool)ctx.SessionData["temp_auth_key"];
+            var existingKey = temp_auth_key ?
+                await distributedStore.GetTempAuthKeyAsync(authKeyHash) :
+                await dataStore.GetAuthKeyAsync(authKeyHash);
             if (existingKey == null)
             {
                 var authKeyTrimmed = authKey.AsSpan().Slice(0, 192).ToArray();
-                await dataStore.SaveAuthKeyAsync(authKeyHash, authKeyTrimmed);
-                _ = distributedStore.PutAuthKeyAsync(authKeyHash, authKeyTrimmed);
+                if (temp_auth_key)
+                {
+                    int expiresIn = (int)ctx.SessionData["temp_auth_key_expires_in"];
+                    _ = distributedStore.PutTempAuthKeyAsync(authKeyHash, authKeyTrimmed, new TimeSpan(0, 0, expiresIn));
+                }
+                else
+                {
+                    await dataStore.SaveAuthKeyAsync(authKeyHash, authKeyTrimmed);
+                    _ = distributedStore.PutAuthKeyAsync(authKeyHash, authKeyTrimmed);
+                }
+                
                 var dhGenOk = factory.Resolve<DhGenOk>();
                 dhGenOk.Nonce = sessionNonce;
                 dhGenOk.ServerNonce = sessionServerNonce;

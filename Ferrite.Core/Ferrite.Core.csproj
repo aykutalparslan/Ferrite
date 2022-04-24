@@ -21,9 +21,9 @@
     <None Remove="MessagePackAnalyzer" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="4.4.0" />
-    <PackageReference Include="DotNext.IO" Version="4.4.0" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.4.0" />
+    <PackageReference Include="DotNext" Version="4.4.1" />
+    <PackageReference Include="DotNext.IO" Version="4.4.1" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
     <PackageReference Include="MessagePack" Version="2.3.85" />
     <PackageReference Include="MessagePackAnalyzer" Version="2.3.85" />
   </ItemGroup>
