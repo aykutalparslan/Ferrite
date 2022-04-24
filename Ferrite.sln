@@ -29,6 +29,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE.md = LICENSE.md
 		README.md = README.md
 		.editorconfig = .editorconfig
+		logo.jpeg = logo.jpeg
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Services", "Ferrite.Services\Ferrite.Services.csproj", "{F16083E5-FEAC-4C4F-B028-50CCE671047E}"
