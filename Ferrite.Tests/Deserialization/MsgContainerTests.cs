@@ -129,7 +129,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> BindTempAuthKey(long permAuthKeyId, long nonce, int expiresAt, byte[] encryptedMessage)
+    public Task<bool> BindTempAuthKey(long authKeyId, long permAuthKeyId, int expiresAt)
     {
         throw new NotImplementedException();
     }

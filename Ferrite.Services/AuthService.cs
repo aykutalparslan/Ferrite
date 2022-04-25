@@ -17,6 +17,7 @@
 //
 using System;
 using System.Threading.Tasks.Sources;
+using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -47,9 +48,9 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> BindTempAuthKey(long permAuthKeyId, long nonce, int expiresAt, byte[] encryptedMessage)
+    public async Task<bool> BindTempAuthKey(long tempAuthKeyId, long permAuthKeyId, int expiresAt)
     {
-        throw new NotImplementedException();
+        return await _cache.PutBoundAuthKeyAsync(tempAuthKeyId, permAuthKeyId, new TimeSpan(0, 0, expiresAt));
     }
 
     public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
