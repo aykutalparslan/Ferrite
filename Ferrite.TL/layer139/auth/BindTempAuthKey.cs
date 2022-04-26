@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Crypto;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +31,14 @@ public class BindTempAuthKey : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMTProtoService _mtproto;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public BindTempAuthKey(ITLObjectFactory objectFactory)
+    public BindTempAuthKey(ITLObjectFactory objectFactory, IMTProtoService mtproto, IAuthService auth)
     {
         factory = objectFactory;
+        _mtproto = mtproto;
+        _auth = auth;
     }
 
     public int Constructor => -841733627;
@@ -97,7 +105,39 @@ public class BindTempAuthKey : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var authKey = await _mtproto.GetAuthKeyAsync(ctx.AuthKeyId);
+        var resp = factory.Resolve<RpcError>();
+        if (authKey == null)
+        {
+            resp.ErrorCode = 501;
+            resp.ErrorMessage = "INTERNAL_SERVER_ERROR";
+            result.Result = resp;
+        }
+        var bindingMessage = DecryptBindingMessage(authKey);
+        if (bindingMessage != null && bindingMessage.PermAuthKeyId == ctx.AuthKeyId &&
+            bindingMessage.Nonce == _nonce)
+        {
+            var success = await _auth.BindTempAuthKey(bindingMessage.TempAuthKeyId,
+            bindingMessage.PermAuthKeyId, _expiresAt);
+            result.Result = success ? new BoolTrue() : new BoolFalse();
+        }
+        resp.ErrorCode = 400;
+        resp.ErrorMessage = "ENCRYPTED_MESSAGE_INVALID";
+        result.Result = resp;
+        return result;
+    }
+
+    private BindAuthKeyInnerImpl DecryptBindingMessage(Span<byte> authKey)
+    {
+        var encrypted = _encryptedMessage.AsSpan();
+        Span<byte> messageKey = encrypted.Slice(8, 16);
+        AesIgeV1 aesIge = new AesIgeV1(authKey, messageKey);
+        aesIge.Decrypt(encrypted.Slice(24));
+        SequenceReader reader = IAsyncBinaryReader.Create(_encryptedMessage);
+        reader.Skip(28);
+        return factory.Read<BindAuthKeyInnerImpl>(ref reader);
     }
 
     public void Parse(ref SequenceReader buff)

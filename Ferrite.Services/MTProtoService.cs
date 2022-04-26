@@ -72,5 +72,15 @@ public class MTProtoService : IMTProtoService
         }
         return validSince;
     }
+
+    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
+    {
+        var authKey = await _cache.GetAuthKeyAsync(authKeyId);
+        if (authKey == null)
+        {
+            authKey = await _store.GetAuthKeyAsync(authKeyId);
+        }
+        return authKey;
+    }
 }
 
