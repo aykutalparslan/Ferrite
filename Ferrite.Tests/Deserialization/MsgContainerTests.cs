@@ -47,7 +47,7 @@ namespace Ferrite.Tests.Deserialization;
 public class MsgContainerTests
 {
     [Fact]
-    public void Deserializez_MsgContainer()
+    public void Deserializes_MsgContainer()
     {
         Span<uint> data = new uint[] {
             0x73f1f8dc, 0x00000002, 0xb2e1df30, 0x62570c6f, 0x00000005, 0x000000b8, 0xda9b0d0d, 0x0000008b,
@@ -70,10 +70,9 @@ public class MsgContainerTests
 
         var obj = (MsgContainer)factory.Read(reader.ReadInt32(true), ref reader);
 
-        Assert.Equal(3, obj.Messages.Count);
+        Assert.Equal(2, obj.Messages.Count);
         Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(obj.Messages[0].Body);
-        Assert.IsType<Ferrite.TL.layer139.auth.SendCode>(obj.Messages[1].Body);
-        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(obj.Messages[2].Body);
+        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(obj.Messages[1].Body);
     }
 
     private IContainer BuildIoCContainer()
@@ -105,7 +104,7 @@ public class MsgContainerTests
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<FakeAuthService>().As<IAuthService>();
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
-        builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
+        builder.RegisterType<FakeRedis>().As<IDistributedCache>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
         builder.RegisterType<AuthKeyProcessor>();
@@ -365,7 +364,7 @@ class FakeRandom : IRandomGenerator
         throw new NotImplementedException();
     }
 }
-class FakeRedis : IDistributedStore
+class FakeRedis : IDistributedCache
 {
     public FakeRedis()
     {
@@ -442,7 +441,7 @@ class FakeRedis : IDistributedStore
         throw new NotImplementedException();
     }
 
-    Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    Task<string> IDistributedCache.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();
     }
@@ -483,6 +482,11 @@ class FakeRedis : IDistributedStore
     }
 
     public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
     {
         throw new NotImplementedException();
     }

@@ -36,7 +36,7 @@ public class MTProtoConnection
     public MTProtoTransport TransportType { get; private set; }
     public bool IsEncrypted => _authKeyId != 0;
     private readonly ITransportDetector transportDetector;
-    private readonly IDistributedStore _store;
+    private readonly IDistributedCache _store;
     private readonly IPersistentStore _db;
     private readonly ILogger _log;
     private readonly IRandomGenerator _random;
@@ -68,7 +68,7 @@ public class MTProtoConnection
 
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
-        IDistributedStore store, IPersistentStore persistentStore,
+        IDistributedCache store, IPersistentStore persistentStore,
         ILogger logger, IRandomGenerator random, ISessionManager sessionManager,
         IMTProtoTime protoTime, IProcessorManager processorManager)
     {

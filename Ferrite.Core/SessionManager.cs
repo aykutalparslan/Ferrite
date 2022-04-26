@@ -30,7 +30,7 @@ public class SessionManager : ISessionManager
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
     private readonly ConcurrentDictionary<Int128, MTProtoSession> _localAuthSessions = new();
-    private readonly IDistributedStore _store;
+    private readonly IDistributedCache _store;
     private Guid GetNodeId()
     {
         if (File.Exists("node.guid"))
@@ -45,7 +45,7 @@ public class SessionManager : ISessionManager
             return guid;
         }
     }
-    public SessionManager(IDistributedStore store)
+    public SessionManager(IDistributedCache store)
     {
         NodeId = GetNodeId();
         _store = store;

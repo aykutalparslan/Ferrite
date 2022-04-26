@@ -125,12 +125,17 @@ class FakeDataStore : IPersistentStore
     }
 }
 
-class FakeRedis : IDistributedStore
+class FakeRedis : IDistributedCache
 {
     Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
     Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
 
     public Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
     {
         throw new NotImplementedException();
     }
@@ -226,77 +231,77 @@ class FakeRedis : IDistributedStore
         return false;
     }
 
-    Task<bool> IDistributedStore.DeleteAuthKeyAsync(long authKeyId)
+    Task<bool> IDistributedCache.DeleteAuthKeyAsync(long authKeyId)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedStore.DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    Task<bool> IDistributedCache.DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();
     }
 
-    Task<byte[]> IDistributedStore.GetAuthKeyAsync(long authKeyId)
+    Task<byte[]> IDistributedCache.GetAuthKeyAsync(long authKeyId)
     {
         throw new NotImplementedException();
     }
 
-    Task<byte[]> IDistributedStore.GetAuthKeySessionAsync(byte[] nonce)
+    Task<byte[]> IDistributedCache.GetAuthKeySessionAsync(byte[] nonce)
     {
         throw new NotImplementedException();
     }
 
-    IAtomicCounter IDistributedStore.GetCounter(string name)
+    IAtomicCounter IDistributedCache.GetCounter(string name)
     {
         throw new NotImplementedException();
     }
 
-    Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    Task<string> IDistributedCache.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();
     }
 
-    Task<long> IDistributedStore.GetServerSaltValidityAsync(long authKeyId, long serverSalt)
+    Task<long> IDistributedCache.GetServerSaltValidityAsync(long authKeyId, long serverSalt)
     {
         throw new NotImplementedException();
     }
 
-    Task<byte[]> IDistributedStore.GetSessionAsync(long sessionId)
+    Task<byte[]> IDistributedCache.GetSessionAsync(long sessionId)
     {
         throw new NotImplementedException();
     }
 
-    async Task<bool> IDistributedStore.PutAuthKeyAsync(long authKeyId, byte[] authKey)
+    async Task<bool> IDistributedCache.PutAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         return true;
     }
 
-    Task<bool> IDistributedStore.PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
+    Task<bool> IDistributedCache.PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedStore.PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    Task<bool> IDistributedCache.PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedStore.PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
+    Task<bool> IDistributedCache.PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedStore.PutSessionAsync(long sessionId, byte[] sessionData)
+    Task<bool> IDistributedCache.PutSessionAsync(long sessionId, byte[] sessionData)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedStore.RemoveAuthKeySessionAsync(byte[] nonce)
+    Task<bool> IDistributedCache.RemoveAuthKeySessionAsync(byte[] nonce)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedStore.RemoveSessionAsync(long sessionId)
+    Task<bool> IDistributedCache.RemoveSessionAsync(long sessionId)
     {
         throw new NotImplementedException();
     }
@@ -586,7 +591,7 @@ public class PqTests
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>();
-        builder.RegisterType<FakeRedis>().As<IDistributedStore>();
+        builder.RegisterType<FakeRedis>().As<IDistributedCache>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         return container;
@@ -931,7 +936,7 @@ public class PqTests
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<FakeDataStore>().As<IPersistentStore>();
-        builder.RegisterType<FakeRedis>().As<IDistributedStore>();
+        builder.RegisterType<FakeRedis>().As<IDistributedCache>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
         

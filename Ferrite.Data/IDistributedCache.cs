@@ -20,7 +20,7 @@ using Ferrite.Data.Auth;
 
 namespace Ferrite.Data;
 
-public interface IDistributedStore
+public interface IDistributedCache
 {
     public IAtomicCounter GetCounter(string name);
     public Task<byte[]> GetAuthKeyAsync(long authKeyId);
@@ -29,6 +29,7 @@ public interface IDistributedStore
     public Task<byte[]> GetSessionAsync(long sessionId);
     public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
     public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
+    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId);
     public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
     public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
     public Task<bool> PutSessionAsync(long sessionId, byte[] sessionData);

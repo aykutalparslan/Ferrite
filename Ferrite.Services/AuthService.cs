@@ -29,13 +29,13 @@ namespace Ferrite.Services;
 public class AuthService : IAuthService
 {
     private readonly IRandomGenerator _random;
-    private readonly IDistributedStore _cache;
+    private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
     private readonly IAtomicCounter _userIdCnt;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
-    public AuthService(IRandomGenerator random, IDistributedStore cache, IPersistentStore store)
+    public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store)
     {
         _random = random;
         _cache = cache;

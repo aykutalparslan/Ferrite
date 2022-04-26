@@ -23,7 +23,7 @@ using StackExchange.Redis;
 
 namespace Ferrite.Data;
 
-public class RedisDataStore: IDistributedStore
+public class RedisCache: IDistributedCache
 {
     private readonly ConnectionMultiplexer redis;
     private readonly byte[] AuthKeyPrefix = new byte[] { (byte)'A', (byte)'U', (byte)'T', (byte)'H', (byte)'-', (byte)'-' };
@@ -35,7 +35,7 @@ public class RedisDataStore: IDistributedStore
     private readonly byte[] AuthSessionPrefix = new byte[] { (byte)'A', (byte)'K', (byte)'C', (byte)'R', (byte)'-', (byte)'-' };
     private readonly byte[] ServerSaltPrefix = new byte[] { (byte)'S', (byte)'A', (byte)'L', (byte)'T', (byte)'-', (byte)'-' };
 
-    public RedisDataStore(string config)
+    public RedisCache(string config)
     {
         redis = ConnectionMultiplexer.Connect(config);
     }
@@ -56,6 +56,11 @@ public class RedisDataStore: IDistributedStore
         RedisKey key = phoneNumber + phoneCodeHash;
         key.Prepend(PhoneCodePrefix);
         return await db.KeyDeleteAsync(key);
+    }
+
+    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
     }
 
     public async Task<byte[]> GetAuthKeyAsync(long authKeyId)

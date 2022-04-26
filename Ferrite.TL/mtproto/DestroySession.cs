@@ -28,9 +28,9 @@ public class DestroySession : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IDistributedStore _cache;
+    private readonly IDistributedCache _cache;
     private bool serialized = false;
-    public DestroySession(ITLObjectFactory objectFactory, IDistributedStore cache)
+    public DestroySession(ITLObjectFactory objectFactory, IDistributedCache cache)
     {
         factory = objectFactory;
         _cache = cache;

@@ -176,7 +176,7 @@ class FakeRandom : IRandomGenerator
         return 0;
     }
 }
-class FakeRedis : IDistributedStore
+class FakeRedis : IDistributedCache
 {
     public FakeRedis()
     {
@@ -253,7 +253,7 @@ class FakeRedis : IDistributedStore
         throw new NotImplementedException();
     }
 
-    Task<string> IDistributedStore.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
+    Task<string> IDistributedCache.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();
     }
@@ -294,6 +294,11 @@ class FakeRedis : IDistributedStore
     }
 
     public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
     {
         throw new NotImplementedException();
     }
@@ -911,7 +916,7 @@ public class MTProtoConnectionTests
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
-        builder.RegisterType<FakeRedis>().As<IDistributedStore>().SingleInstance();
+        builder.RegisterType<FakeRedis>().As<IDistributedCache>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
         builder.RegisterType<AuthKeyProcessor>();

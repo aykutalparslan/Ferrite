@@ -28,10 +28,10 @@ public class DestroyAuthKey : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IDistributedStore _store;
+    private readonly IDistributedCache _store;
     private readonly IPersistentStore _cache;
     private bool serialized = false;
-    public DestroyAuthKey(ITLObjectFactory objectFactory, IDistributedStore store, IPersistentStore cache)
+    public DestroyAuthKey(ITLObjectFactory objectFactory, IDistributedCache store, IPersistentStore cache)
     {
         factory = objectFactory;
         _store = store;
