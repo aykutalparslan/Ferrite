@@ -48,8 +48,8 @@ public class MsgContainer : ITLObject
         }
     }
 
-    private VectorOfMessage messages;
-    public VectorOfMessage Messages
+    private VectorBare<Message> messages;
+    public VectorBare<Message> Messages
     {
         get => messages;
         set
@@ -62,7 +62,7 @@ public class MsgContainer : ITLObject
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        messages = factory.Read<VectorOfMessage>(ref buff);
+        messages = factory.Read<VectorBare<Message>>(ref buff);
     }
 
     public void WriteTo(Span<byte> buff)
