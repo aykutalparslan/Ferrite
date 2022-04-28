@@ -302,6 +302,16 @@ class FakeRedis : IDistributedCache
     {
         throw new NotImplementedException();
     }
+
+    public Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginViaQR?> GetLoginTokenAsync(byte[] token)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeCassandra : IPersistentStore
 {
@@ -658,7 +668,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
+    public Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
         throw new NotImplementedException();
     }

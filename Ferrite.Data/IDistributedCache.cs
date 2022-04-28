@@ -48,5 +48,7 @@ public interface IDistributedCache
     /// <param name="serverSalt"></param>
     /// <returns>ValidSince</returns>
     public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
+    public Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn);
+    public Task<LoginViaQR?> GetLoginTokenAsync(byte[] token);
 }
 

@@ -164,6 +164,11 @@ class FakeRedis : IDistributedCache
         throw new NotImplementedException();
     }
 
+    public Task<Data.Auth.LoginViaQR?> GetLoginTokenAsync(byte[] token)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
     {
         throw new NotImplementedException();
@@ -200,6 +205,11 @@ class FakeRedis : IDistributedCache
     }
 
     public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutLoginTokenAsync(Data.Auth.LoginViaQR login, TimeSpan expiresIn)
     {
         throw new NotImplementedException();
     }

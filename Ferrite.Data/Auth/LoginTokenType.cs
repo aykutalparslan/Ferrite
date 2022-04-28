@@ -22,6 +22,6 @@ public enum LoginTokenType
 {
     Token,
     TokenMigrateTo,
-    ToeknSuccess
+    TokenSuccess
 }
 

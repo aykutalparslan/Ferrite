@@ -607,58 +607,6 @@ public class AuthTests
         Assert.True(token.Expires>0);
     }
     [Fact]
-    public async Task ExportLoginToken_Returns_LoginTokenMigrateTo()
-    {
-        var container = BuildIoCContainer();
-        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
-        var rpc = factory.Resolve<ExportLoginToken>();
-        rpc.ApiId = 1;
-        rpc.ApiHash = "a";
-        rpc.ExceptIds = new VectorOfLong();
-        rpc.ExceptIds.Add(9876);
-        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
-        {
-            MessageId = 1223
-        });
-        Assert.IsType<RpcResult>(result);
-        var rslt = (RpcResult)result;
-        Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<LoginTokenMigrateToImpl>(rslt.Result);
-        var token = (LoginTokenMigrateToImpl)rslt.Result;
-        Assert.NotNull(token.Token);
-        Assert.True(token.DcId > 0);
-    }
-    [Fact]
-    public async Task ExportLoginToken_Returns_LoginTokenSuccess()
-    {
-        var container = BuildIoCContainer();
-        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
-        var rpc = factory.Resolve<ExportLoginToken>();
-        rpc.ApiId = 1;
-        rpc.ApiHash = "a";
-        rpc.ExceptIds = new VectorOfLong();
-        rpc.ExceptIds.Add(9876);
-        var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
-        {
-            MessageId = 1223
-        });
-        Assert.IsType<RpcResult>(result);
-        var rslt = (RpcResult)result;
-        Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<LoginTokenSuccessImpl>(rslt.Result);
-        var token = (LoginTokenSuccessImpl)rslt.Result;
-        Assert.IsType<Ferrite.TL.layer139.auth.AuthorizationImpl>(token.Authorization);
-        var auth = (Ferrite.TL.layer139.auth.AuthorizationImpl)token.Authorization;
-        Assert.IsType<UserImpl>(auth.User);
-        var user = (UserImpl)auth.User;
-        Assert.NotEqual(0, user.Id);
-        Assert.Equal("a", user.FirstName);
-        Assert.Equal("b", user.LastName);
-        Assert.Equal("5554443322", user.Phone);
-        Assert.IsType<UserStatusEmptyImpl>(user.Status);
-        Assert.IsType<UserProfilePhotoEmptyImpl>(user.Photo);
-    }
-    [Fact]
     public async Task ImportLoginToken_Returns_LoginToken()
     {
         var container = BuildIoCContainer();
@@ -793,6 +741,7 @@ public class AuthTests
         builder.RegisterType<FakeRandom>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterType<FakeAuthService>().As<IAuthService>().InstancePerLifetimeScope();
+        builder.RegisterType<FakeMTProtoService>().As<IMTProtoService>().InstancePerLifetimeScope();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -818,6 +767,23 @@ public class AuthTests
         return container;
     }
 }
+class FakeMTProtoService : IMTProtoService
+{
+    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
+    {
+        return new byte[3] { 1, 2, 3 };
+    }
+
+    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
+    {
+        throw new NotImplementedException();
+    }
+}
 class FakeAuthService : IAuthService
 {
     bool _signupComplete = false;
@@ -835,9 +801,9 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> BindTempAuthKey(long authKeyId, long permAuthKeyId, int expiresAt)
+    public async Task<bool> BindTempAuthKey(long authKeyId, long permAuthKeyId, int expiresAt)
     {
-        throw new NotImplementedException();
+        return !BindTempAuthKeyFailed;
     }
 
     public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
@@ -869,9 +835,14 @@ class FakeAuthService : IAuthService
         };
     }
 
-    public Task<Data.Auth.LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
+    public async Task<Data.Auth.LoginToken> ExportLoginToken(long atuhKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
-        throw new NotImplementedException();
+        return new Data.Auth.LoginToken()
+        {
+            LoginTokenType = LoginTokenType.Token,
+            Expires = 30,
+            Token = new byte[] { 1, 2, 3, 4 }
+        };
     }
 
     public async Task<Data.Auth.Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
@@ -1294,6 +1265,16 @@ class FakeRedis : IDistributedCache
     }
 
     public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginViaQR?> GetLoginTokenAsync(byte[] token)
     {
         throw new NotImplementedException();
     }

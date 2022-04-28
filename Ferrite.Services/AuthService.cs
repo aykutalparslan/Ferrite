@@ -86,9 +86,23 @@ public class AuthService : IAuthService
         };
     }
 
-    public Task<LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
+    public async Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
-        throw new NotImplementedException();
+        var token = _random.GetRandomBytes(16);
+        LoginViaQR login = new LoginViaQR()
+        {
+            Token = token,
+            AuthKeyId = authKeyId,
+            SessionId = sessionId,
+            Status = false
+        };
+        await _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 30));
+        return new LoginToken()
+        {
+            LoginTokenType = LoginTokenType.Token,
+            Token = token,
+            Expires = 30
+        };
     }
 
     public async Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes)

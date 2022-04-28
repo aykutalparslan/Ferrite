@@ -26,6 +26,5 @@ public record LoginToken
     public int DcId { get; init; }
     public Authorization Authorization { get; init; } = default!;
     public ICollection<long> ExceptIds { get; init; } = default!;
-
 }
 

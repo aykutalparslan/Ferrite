@@ -19,6 +19,7 @@
 using System;
 using System.Buffers.Binary;
 using Ferrite.Data.Auth;
+using MessagePack;
 using StackExchange.Redis;
 
 namespace Ferrite.Data;
@@ -34,6 +35,7 @@ public class RedisCache: IDistributedCache
     private readonly byte[] PhoneCodePrefix = new byte[] { (byte)'P', (byte)'C', (byte)'D', (byte)'E', (byte)'-', (byte)'-' };
     private readonly byte[] AuthSessionPrefix = new byte[] { (byte)'A', (byte)'K', (byte)'C', (byte)'R', (byte)'-', (byte)'-' };
     private readonly byte[] ServerSaltPrefix = new byte[] { (byte)'S', (byte)'A', (byte)'L', (byte)'T', (byte)'-', (byte)'-' };
+    private readonly byte[] LoginTokenPrefix = new byte[] { (byte)'L', (byte)'T', (byte)'K', (byte)'N', (byte)'-', (byte)'-' };
 
     public RedisCache(string config)
     {
@@ -101,6 +103,21 @@ public class RedisCache: IDistributedCache
     public IAtomicCounter GetCounter(string name)
     {
         return new RedisCounter(redis, name);
+    }
+
+    public async Task<LoginViaQR?> GetLoginTokenAsync(byte[] token)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = token;
+        key.Prepend(LoginTokenPrefix);
+        var result =  await db.StringGetAsync(key);
+        if(result == RedisValue.Null)
+        {
+            return null;
+        }
+        var login = MessagePackSerializer.Deserialize<LoginViaQR>(result);
+        return login;
     }
 
     public async Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
@@ -174,6 +191,16 @@ public class RedisCache: IDistributedCache
         key.Prepend(BoundAuthKeyPrefix);
         await db.StringSetAsync(key, tempAuthKeyId, expiresIn);
         return true;
+    }
+
+    public async Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = login.Token;
+        key.Prepend(LoginTokenPrefix);
+        var loginBytes = MessagePackSerializer.Serialize<LoginViaQR>(login);
+        return await db.StringSetAsync(key, loginBytes, expiresIn);
     }
 
     public async Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)

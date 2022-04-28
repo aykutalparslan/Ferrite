@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data.Auth;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -27,10 +30,12 @@ public class ExportLoginToken : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public ExportLoginToken(ITLObjectFactory objectFactory)
+    public ExportLoginToken(ITLObjectFactory objectFactory, IAuthService auth)
     {
         factory = objectFactory;
+        _auth = auth;
     }
 
     public int Constructor => -1210022402;
@@ -85,7 +90,14 @@ public class ExportLoginToken : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var token = await _auth.ExportLoginToken(ctx.AuthKeyId, ctx.SessionId, _apiId, _apiHash, _exceptIds);
+        var resp = factory.Resolve<LoginTokenImpl>();
+        resp.Expires = token.Expires;
+        resp.Token = token.Token;
+        result.Result = resp;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

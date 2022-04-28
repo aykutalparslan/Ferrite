@@ -158,7 +158,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Data.Auth.LoginToken> ExportLoginToken(int apiId, string apiHash, ICollection<long> exceptIds)
+    public Task<Data.Auth.LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
         throw new NotImplementedException();
     }
@@ -487,6 +487,16 @@ class FakeRedis : IDistributedCache
     }
 
     public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<LoginViaQR?> GetLoginTokenAsync(byte[] token)
     {
         throw new NotImplementedException();
     }
