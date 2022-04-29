@@ -21,6 +21,7 @@ using Autofac;
 using Ferrite.Data;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.Utils;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -30,11 +31,13 @@ public class MsgContainerProcessor : IProcessor
     private readonly ILifetimeScope _scope;
     private readonly ISessionManager _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public MsgContainerProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe)
+    private readonly ILogger _log;
+    public MsgContainerProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe, ILogger log)
     {
         _scope = scope;
         _sessionManager = sessionManager;
         _pipe = pipe;
+        _log = log;
     }
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
@@ -42,21 +45,25 @@ public class MsgContainerProcessor : IProcessor
         if (input.Constructor == TLConstructor.MsgContainer &&
             input is MsgContainer container)
         {
+            _log.Information(String.Format($"MsgContainer reecived with Id: {ctx.MessageId}"));
             var ack = _scope.Resolve<MsgsAck>();
-            ack.MsgIds = new VectorOfLong(1);
+            ack.MsgIds = new VectorOfLong(container.Messages.Count+1);
             ack.MsgIds.Add(ctx.MessageId);
             foreach (var msg in container.Messages)
             {
                 ack.MsgIds.Add(msg.MsgId);
                 output.Enqueue(msg);
             }
-            
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = ack.TLBytes.ToArray();
-            if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+            if(sender is MTProtoConnection connection)
+            {
+                await connection.SendAsync(message);
+            }
+            else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
                     is SessionState session)
             {
                 var bytes = MessagePackSerializer.Serialize(message);

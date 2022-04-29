@@ -69,7 +69,6 @@ public class AuthorizationProcessor : IProcessor
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        output.Enqueue(input);
         bool isAuthorized = await _auth.IsAuthorized(ctx.AuthKeyId);
         if (isAuthorized || _unauthorizedMethods.Contains(input.Constructor))
         {
