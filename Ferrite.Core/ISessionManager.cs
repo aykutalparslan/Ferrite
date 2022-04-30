@@ -30,7 +30,8 @@ namespace Ferrite.Core
         Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce);
         bool LocalSessionExists(long sessionId);
         bool LocalAuthSessionExists(byte[] nonce);
-        bool RemoveSession(long sessionId);
+        Task<bool> RemoveSession(long authKeyId, long sessionId);
+        Task<bool> OnPing(long authKeyId, long sessionId);
         bool RemoveAuthSession(byte[] nonce);
         bool TryGetLocalSession(long sessionId, out MTProtoSession session);
         bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session);

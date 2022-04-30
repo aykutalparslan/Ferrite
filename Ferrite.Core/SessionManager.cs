@@ -30,7 +30,7 @@ public class SessionManager : ISessionManager
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
     private readonly ConcurrentDictionary<Int128, MTProtoSession> _localAuthSessions = new();
-    private readonly IDistributedCache _store;
+    private readonly IDistributedCache _cache;
     private Guid GetNodeId()
     {
         if (File.Exists("node.guid"))
@@ -45,24 +45,26 @@ public class SessionManager : ISessionManager
             return guid;
         }
     }
-    public SessionManager(IDistributedCache store)
+    public SessionManager(IDistributedCache cache)
     {
         NodeId = GetNodeId();
-        _store = store;
+        _cache = cache;
     }
     public async Task<bool> AddSessionAsync(SessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
-        var remoteAdd = await _store.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state));
+        var remoteAdd = await _cache.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state),
+            new TimeSpan(0,0, FerriteConfig.SessionTTL));
+        var authKeyAdd = await _cache.PutSessionForAuthKeyAsync(state.AuthKeyId, state.SessionId);
         if (_localSessions.ContainsKey(state.SessionId))
         {
             _localSessions.Remove(state.SessionId, out var value);
         }
-        return remoteAdd && _localSessions.TryAdd(state.SessionId, session);
+        return remoteAdd && authKeyAdd && _localSessions.TryAdd(state.SessionId, session);
     }
     public async Task<SessionState?> GetSessionStateAsync(long sessionId)
     {
-        var rawSession = await _store.GetSessionAsync(sessionId);
+        var rawSession = await _cache.GetSessionAsync(sessionId);
         if (rawSession != null)
         {
             var state = MessagePackSerializer.Deserialize<SessionState>(rawSession);
@@ -71,15 +73,17 @@ public class SessionManager : ISessionManager
                 state.ServerSaltOld = state.ServerSalt;
                 var salt = new ServerSalt();
                 state.ServerSalt = salt;
-                await _store.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state));
+                await _cache.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state),
+                    new TimeSpan(0, 0, FerriteConfig.SessionTTL));
             }
             return state;
         }
         return null;
     }
-    public bool RemoveSession(long sessionId)
+    public async Task<bool> RemoveSession(long authKeyId, long sessionId)
     {
-        _store.RemoveSessionAsync(sessionId);
+        await _cache.DeleteSessionAsync(sessionId);
+        await _cache.DeleteSessionForAuthKeyAsync(authKeyId, sessionId);
         return _localSessions.TryRemove(sessionId, out var session);
     }
     public bool LocalSessionExists(long sessionId)
@@ -94,7 +98,7 @@ public class SessionManager : ISessionManager
     public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
-        var remoteAdd = await _store.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
+        var remoteAdd = await _cache.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
         var key = (Int128)nonce;
         if (_localAuthSessions.ContainsKey(key))
         {
@@ -105,12 +109,12 @@ public class SessionManager : ISessionManager
 
     public async Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state)
     {
-        return await _store.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
+        return await _cache.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
     }
 
     public async Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce)
     {
-        var rawSession = await _store.GetAuthKeySessionAsync(nonce);
+        var rawSession = await _cache.GetAuthKeySessionAsync(nonce);
         if (rawSession != null)
         {
             var state = MessagePackSerializer.Deserialize<AuthSessionState>(rawSession);
@@ -132,8 +136,14 @@ public class SessionManager : ISessionManager
 
     public bool RemoveAuthSession(byte[] nonce)
     {
-        _store.RemoveAuthKeySessionAsync(nonce);
+        _cache.RemoveAuthKeySessionAsync(nonce);
         return _localAuthSessions.TryRemove((Int128)nonce, out var a);
+    }
+
+    public async Task<bool> OnPing(long authKeyId, long sessionId)
+    {
+        var ttlSet = await _cache.SetSessionTTLAsync(sessionId, new TimeSpan(0, 0, FerriteConfig.SessionTTL));
+        return ttlSet && await _cache.PutSessionForAuthKeyAsync(authKeyId, sessionId);
     }
 }
 

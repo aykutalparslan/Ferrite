@@ -64,7 +64,7 @@ public class DestroySession : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var destroyed = await _cache.RemoveSessionAsync(sessionId);
+        var destroyed = await _cache.DeleteSessionAsync(sessionId);
         if (destroyed)
         {
             var resp = factory.Resolve<DestroySessionOk>();

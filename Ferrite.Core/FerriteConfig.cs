@@ -16,24 +16,13 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using MessagePack;
+namespace Ferrite.Core;
 
-namespace Ferrite.Data.Auth;
-
-[MessagePackObject]
-public record LoginViaQR
+public static class FerriteConfig
 {
-    [Key(0)]
-    public byte[] Token { get; init; } = default!;
-    [Key(1)]
-    public long SessionId { get; set; }
-    [Key(2)]
-    public long AuthKeyId { get; set; }
-    [Key(3)]
-    public bool Status { get; set; }
-    [Key(4)]
-    public long AcceptedByUserId { get; set; }
-    [Key(5)]
-    public ICollection<long> ExceptUserIds { get; set; } = default!;
+    /// <summary>
+    /// Session TTL in seconds.
+    /// </summary>
+    public static int SessionTTL = 600;
 }
 

@@ -25,6 +25,7 @@ public enum AuthorizationType
     PhoneCodeInvalid,
     PhoneCodeExpired,
     AuthBytesInvalid,
-    UserIdInvalid
+    UserIdInvalid,
+    AuthTokenExpired
 }
 

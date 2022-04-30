@@ -43,9 +43,56 @@ public class AuthService : IAuthService
         _userIdCnt = _cache.GetCounter("counter_user_id");
     }
 
-    public Task<Authorization> AcceptLoginToken(byte[] token)
+    public async Task<Authorization> AcceptLoginToken(long authKeyId, byte[] token)
     {
-        throw new NotImplementedException();
+        var t = await _cache.GetLoginTokenAsync(token);
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth != null && t != null&& t.ExceptUserIds.Contains(auth.UserId))
+        {
+            var login = new LoginViaQR()
+            {
+                AuthKeyId = t.AuthKeyId,
+                SessionId = t.SessionId,
+                Token = t.Token,
+                ExceptUserIds = t.ExceptUserIds,
+                AcceptedByUserId = auth.UserId,
+                Status = true
+            };
+            _ = _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 60));
+            await _store.SaveAuthorizationAsync(new AuthInfo()
+            {
+                AuthKeyId = t.AuthKeyId,
+                Phone = auth.Phone,
+                UserId = auth.UserId,
+                ApiLayer = -1,
+                LoggedIn = true
+            });
+            var user = await _store.GetUserAsync(auth.UserId);
+            if(user != null)
+            {
+                return new Authorization()
+                {
+                    AuthorizationType = AuthorizationType.Authorization,
+                    User = new User()
+                    {
+                        Id = user.Id,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Phone = user.Phone,
+                        Status = UserStatus.Empty,
+                        Self = true,
+                        Photo = new UserProfilePhoto()
+                        {
+                            Empty = true
+                        }
+                    }
+                };
+            }
+        }
+        return new Authorization()
+        {
+            AuthorizationType = AuthorizationType.AuthTokenExpired
+        };
     }
 
     public async Task<bool> BindTempAuthKey(long tempAuthKeyId, long permAuthKeyId, int expiresAt)
@@ -94,7 +141,8 @@ public class AuthService : IAuthService
             Token = token,
             AuthKeyId = authKeyId,
             SessionId = sessionId,
-            Status = false
+            Status = false,
+            ExceptUserIds = exceptIds
         };
         await _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 30));
         return new LoginToken()

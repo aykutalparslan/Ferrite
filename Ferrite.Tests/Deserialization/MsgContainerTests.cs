@@ -123,7 +123,7 @@ public class MsgContainerTests
 
 class FakeAuthService : IAuthService
 {
-    public Task<Data.Auth.Authorization> AcceptLoginToken(byte[] token)
+    public Task<Data.Auth.Authorization> AcceptLoginToken(long authKeyId, byte[] token)
     {
         throw new NotImplementedException();
     }
@@ -399,13 +399,13 @@ class FakeRedis : IDistributedCache
         return true;
     }
 
-    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)
+    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData, TimeSpan expire)
     {
         sessions.Add(sessionId, sessionData);
         return true;
     }
 
-    public async Task<bool> RemoveSessionAsync(long sessionId)
+    public async Task<bool> DeleteSessionAsync(long sessionId)
     {
         sessions.Remove(sessionId);
         return false;
@@ -497,6 +497,26 @@ class FakeRedis : IDistributedCache
     }
 
     public Task<LoginViaQR?> GetLoginTokenAsync(byte[] token)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> PutSessionForAuthKeyAsync(long authKeyId, long sessionId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> DeleteSessionForAuthKeyAsync(long authKeyId, long sessionId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<ICollection<long>> GetSessionsByAuthKeyAsync(long authKeyId, TimeSpan expire)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SetSessionTTLAsync(long sessionId, TimeSpan expire)
     {
         throw new NotImplementedException();
     }
@@ -700,7 +720,7 @@ class FakeSessionManager : ISessionManager
         throw new NotImplementedException();
     }
 
-    public bool RemoveSession(long sessionId)
+    public Task<bool> RemoveSession(long authKeyId, long sessionId)
     {
         throw new NotImplementedException();
     }
@@ -723,6 +743,11 @@ class FakeSessionManager : ISessionManager
     }
 
     public bool RemoveAuthSession(byte[] nonce)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> OnPing(long authKeyId, long sessionId)
     {
         throw new NotImplementedException();
     }

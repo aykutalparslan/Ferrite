@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -79,7 +79,7 @@ public class InvokeWithLayer : ITLObject, ITLMethod
         if(_layer == 139 &&
             _query is ITLMethod medhod)
         {
-            _log.Information(String.Format("Invoke {0} with Layer {1}", medhod.ToString(), _layer));
+            _log.Information(String.Format("Invoke {0} with Layer {1} MessageId: {2}", medhod.ToString(), _layer, ctx.MessageId));
             return await medhod.ExecuteAsync(ctx);
         }
         var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");

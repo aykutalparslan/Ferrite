@@ -135,6 +135,11 @@ class FakeRedis : IDistributedCache
         throw new NotImplementedException();
     }
 
+    public Task<bool> DeleteSessionForAuthKeyAsync(long authKeyId, long sessionId)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
     {
         throw new NotImplementedException();
@@ -188,6 +193,11 @@ class FakeRedis : IDistributedCache
         return sessions[sessionId];
     }
 
+    public Task<ICollection<long>> GetSessionsByAuthKeyAsync(long authKeyId, TimeSpan expire)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
     {
         throw new NotImplementedException();
@@ -224,10 +234,15 @@ class FakeRedis : IDistributedCache
         throw new NotImplementedException();
     }
 
-    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData)
+    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData, TimeSpan expire)
     {
         sessions.Add(sessionId, sessionData);
         return true;
+    }
+
+    public Task<bool> PutSessionForAuthKeyAsync(long authKeyId, long sessionId)
+    {
+        throw new NotImplementedException();
     }
 
     public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
@@ -301,17 +316,17 @@ class FakeRedis : IDistributedCache
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedCache.PutSessionAsync(long sessionId, byte[] sessionData)
-    {
-        throw new NotImplementedException();
-    }
-
     Task<bool> IDistributedCache.RemoveAuthKeySessionAsync(byte[] nonce)
     {
         throw new NotImplementedException();
     }
 
-    Task<bool> IDistributedCache.RemoveSessionAsync(long sessionId)
+    Task<bool> IDistributedCache.DeleteSessionAsync(long sessionId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SetSessionTTLAsync(long sessionId, TimeSpan expire)
     {
         throw new NotImplementedException();
     }

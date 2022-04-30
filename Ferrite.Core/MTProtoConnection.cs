@@ -123,6 +123,7 @@ public class MTProtoConnection
             _connectionAborted = true;
             try
             {
+                _sessionManager.RemoveSession(_authKeyId, _sessionId);
                 _outgoing.Writer.Complete();
                 socketConnection.Abort(abortReason);
                 socketConnection.DisposeAsync();
