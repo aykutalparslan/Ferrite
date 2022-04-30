@@ -48,7 +48,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(AuthKeyPrefix);
+        key = key.Prepend(AuthKeyPrefix);
         return await db.KeyDeleteAsync(key);
     }
 
@@ -57,7 +57,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = phoneNumber + phoneCodeHash;
-        key.Prepend(PhoneCodePrefix);
+        key = key.Prepend(PhoneCodePrefix);
         return await db.KeyDeleteAsync(key);
     }
 
@@ -66,7 +66,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(SessionByAuthKeyPrefix);
+        key = key.Prepend(SessionByAuthKeyPrefix);
         return await db.SortedSetRemoveAsync(key, sessionId);
     }
 
@@ -80,7 +80,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(AuthKeyPrefix);
+        key = key.Prepend(AuthKeyPrefix);
         return await db.StringGetAsync(key);
     }
 
@@ -89,7 +89,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = nonce;
-        key.Prepend(AuthSessionPrefix);
+        key = key.Prepend(AuthSessionPrefix);
         return await db.StringGetAsync(key);
     }
 
@@ -98,10 +98,10 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
-        key.Prepend(BoundTempAuthKeyPrefix);
+        key = key.Prepend(BoundTempAuthKeyPrefix);
         var bound =  (long)await db.StringGetAsync(key);
         key = BitConverter.GetBytes(bound);
-        key.Prepend(BoundAuthKeyPrefix);
+        key = key.Prepend(BoundAuthKeyPrefix);
         var temp = (long)await db.StringGetAsync(key);
         if(temp == tempAuthKeyId)
         {
@@ -120,7 +120,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = token;
-        key.Prepend(LoginTokenPrefix);
+        key = key.Prepend(LoginTokenPrefix);
         var result =  await db.StringGetAsync(key);
         if(result == RedisValue.Null)
         {
@@ -135,7 +135,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = phoneNumber + phoneCodeHash;
-        key.Prepend(PhoneCodePrefix);     
+        key = key.Prepend(PhoneCodePrefix);     
         return await db.StringGetAsync(key);
     }
 
@@ -144,8 +144,8 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = ServerSaltPrefix;
-        key.Append(BitConverter.GetBytes(authKeyId));
-        key.Append(BitConverter.GetBytes(serverSalt));
+        key = key.Append(BitConverter.GetBytes(authKeyId));
+        key = key.Append(BitConverter.GetBytes(serverSalt));
         var val = (byte[])await db.StringGetAsync(key);
         if(val == null)
         {
@@ -159,7 +159,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(sessionId);
-        key.Prepend(SessionPrefix);
+        key = key.Prepend(SessionPrefix);
         return await db.StringGetAsync(key);
     }
 
@@ -168,7 +168,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(SessionByAuthKeyPrefix);
+        key = key.Prepend(SessionByAuthKeyPrefix);
         await db.SortedSetRemoveRangeByScoreAsync(key, 0, (DateTimeOffset.Now - expire).ToUnixTimeMilliseconds());
         var result = await db.SortedSetRangeByScoreAsync(key);
         var resultLong = Array.ConvertAll<RedisValue, long>(result, item => (long)item);
@@ -180,7 +180,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
-        key.Prepend(TempAuthKeyPrefix);
+        key = key.Prepend(TempAuthKeyPrefix);
         return await db.StringGetAsync(key);
     }
 
@@ -189,7 +189,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(AuthKeyPrefix);
+        key = key.Prepend(AuthKeyPrefix);
         return await db.StringSetAsync(key, (RedisValue)authKey);
     }
 
@@ -198,7 +198,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = nonce;
-        key.Prepend(AuthSessionPrefix);
+        key = key.Prepend(AuthSessionPrefix);
         return await db.StringSetAsync(key, (RedisValue)sessionData, new TimeSpan(0,0,600));
     }
 
@@ -207,10 +207,10 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
-        key.Prepend(BoundTempAuthKeyPrefix);
+        key = key.Prepend(BoundTempAuthKeyPrefix);
         await db.StringSetAsync(key, authKeyId, expiresIn);
         key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(BoundAuthKeyPrefix);
+        key = key.Prepend(BoundAuthKeyPrefix);
         await db.StringSetAsync(key, tempAuthKeyId, expiresIn);
         return true;
     }
@@ -220,7 +220,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = login.Token;
-        key.Prepend(LoginTokenPrefix);
+        key = key.Prepend(LoginTokenPrefix);
         var loginBytes = MessagePackSerializer.Serialize<LoginViaQR>(login);
         return await db.StringSetAsync(key, loginBytes, expiresIn);
     }
@@ -230,7 +230,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = phoneNumber + phoneCodeHash;
-        key.Prepend(PhoneCodePrefix);
+        key = key.Prepend(PhoneCodePrefix);
         return await db.StringSetAsync(key, phoneCode, expiresIn);
     }
 
@@ -239,8 +239,8 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = ServerSaltPrefix;
-        key.Append(BitConverter.GetBytes(authKeyId));
-        key.Append(BitConverter.GetBytes(serverSalt));
+        key = key.Append(BitConverter.GetBytes(authKeyId));
+        key = key.Append(BitConverter.GetBytes(serverSalt));
         return await db.StringSetAsync(key, BitConverter.GetBytes(validSince), expiresIn);
     }
 
@@ -249,7 +249,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(sessionId);
-        key.Prepend(SessionPrefix);
+        key = key.Prepend(SessionPrefix);
         return await db.StringSetAsync(key, (RedisValue)sessionData, expire);
     }
 
@@ -258,7 +258,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
-        key.Prepend(SessionByAuthKeyPrefix);
+        key = key.Prepend(SessionByAuthKeyPrefix);
         return await db.SortedSetAddAsync(key, (RedisValue)sessionId, DateTimeOffset.Now.ToUnixTimeMilliseconds());
     }
 
@@ -267,7 +267,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
-        key.Prepend(TempAuthKeyPrefix);
+        key = key.Prepend(TempAuthKeyPrefix);
         return await db.StringSetAsync(key, (RedisValue)tempAuthKey);
     }
 
@@ -276,7 +276,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = nonce;
-        key.Prepend(AuthSessionPrefix);
+        key = key.Prepend(AuthSessionPrefix);
         return await db.KeyDeleteAsync(key);
     }
 
@@ -285,7 +285,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(sessionId);
-        key.Prepend(SessionPrefix);
+        key = key.Prepend(SessionPrefix);
         return await db.KeyDeleteAsync(key);
     }
 
@@ -294,7 +294,7 @@ public class RedisCache: IDistributedCache
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(sessionId);
-        key.Prepend(SessionPrefix);
+        key = key.Prepend(SessionPrefix);
         return await db.KeyExpireAsync(key, expire);
     }
 }
