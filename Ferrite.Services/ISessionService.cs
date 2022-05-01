@@ -19,7 +19,7 @@
 
 namespace Ferrite.Core
 {
-    public interface ISessionManager
+    public interface ISessionService
     {
         Guid NodeId { get; }
 

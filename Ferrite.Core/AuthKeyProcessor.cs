@@ -26,9 +26,9 @@ namespace Ferrite.Core;
 
 public class AuthKeyProcessor : IProcessor
 {
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public AuthKeyProcessor(ISessionManager sessionManager, IDistributedPipe pipe)
+    public AuthKeyProcessor(ISessionService sessionManager, IDistributedPipe pipe)
     {
         _sessionManager = sessionManager;
         _pipe = pipe;

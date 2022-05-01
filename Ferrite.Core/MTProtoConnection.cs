@@ -32,7 +32,7 @@ using System.Net;
 
 namespace Ferrite.Core;
 
-public class MTProtoConnection
+public class MTProtoConnection : IMTProtoConnection
 {
     public MTProtoTransport TransportType { get; private set; }
     public bool IsEncrypted => _authKeyId != 0;
@@ -41,7 +41,7 @@ public class MTProtoConnection
     private readonly IPersistentStore _db;
     private readonly ILogger _log;
     private readonly IRandomGenerator _random;
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly IMTProtoTime _time;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
@@ -70,7 +70,7 @@ public class MTProtoConnection
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedCache store, IPersistentStore persistentStore,
-        ILogger logger, IRandomGenerator random, ISessionManager sessionManager,
+        ILogger logger, IRandomGenerator random, ISessionService sessionManager,
         IMTProtoTime protoTime, IProcessorManager processorManager)
     {
         socketConnection = connection;
@@ -139,7 +139,7 @@ public class MTProtoConnection
     }
     public async Task Ping(long pingId, int delayDisconnectInSeconds = 75)
     {
-        DelayDisconnect(delayDisconnectInSeconds*1000);
+        DelayDisconnect(delayDisconnectInSeconds * 1000);
         var pong = factory.Resolve<Pong>();
         pong.PingId = pingId;
         pong.MsgId = NextMessageId(true);
@@ -154,7 +154,7 @@ public class MTProtoConnection
         };
         await SendAsync(message);
     }
-    
+
     private async Task DoReceive()
     {
         try
@@ -218,7 +218,7 @@ public class MTProtoConnection
                 {
                     SendUnencrypted(data, NextMessageId(msg.IsResponse));
                 }
-                else if(await _sessionManager.GetSessionStateAsync(_sessionId)
+                else if (await _sessionManager.GetSessionStateAsync(_sessionId)
                     is SessionState state)
                 {
                     SendEncrypted(msg, state);
@@ -236,7 +236,7 @@ public class MTProtoConnection
             _log.Error(ex, ex.Message);
         }
     }
-    
+
     private void SendUnencrypted(Span<byte> data, long messageId)
     {
         writer.Clear();
@@ -255,12 +255,12 @@ public class MTProtoConnection
 
     private void SendEncrypted(MTProtoMessage message, SessionState state)
     {
-        if(message.Data == null) { return; }
+        if (message.Data == null) { return; }
         writer.Clear();
         writer.WriteInt64(state.ServerSalt.Salt, true);
         writer.WriteInt64(state.SessionId, true);
         writer.WriteInt64(message.MessageType == MTProtoMessageType.Pong ?
-            message.MessageId:
+            message.MessageId :
             NextMessageId(message.IsResponse), true);
         writer.WriteInt32(GenerateSeqNo(message.IsContentRelated), true);
         writer.WriteInt32(message.Data.Length, true);
@@ -290,7 +290,7 @@ public class MTProtoConnection
                 webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
             }
             socketConnection.Transport.Output.Write(encoded);
-        }      
+        }
     }
 
     public delegate Task AsyncEventHandler<MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
@@ -329,13 +329,13 @@ public class MTProtoConnection
                 ProcessFrame(frame);
             }
         } while (hasMore);
-        
+
         return reader.Position;
     }
 
     private void ProcessWebSocketHandshake(ref SequenceReader<byte> reader)
     {
-        if(webSocketHandler == null)
+        if (webSocketHandler == null)
         {
             webSocketHandler = new();
         }
@@ -345,7 +345,7 @@ public class MTProtoConnection
             parser.ParseRequestLine(webSocketHandler, ref reader);
         }
         parser.ParseHeaders(webSocketHandler, ref reader);
-        if (webSocketHandler.HeadersComplete )
+        if (webSocketHandler.HeadersComplete)
         {
             webSocketHandler.WriteHandshakeResponseTo(socketConnection.Transport.Output);
             socketConnection.Transport.Output.FlushAsync();
@@ -358,14 +358,14 @@ public class MTProtoConnection
         {
             return;
         }
-        
+
         if (_authKeyId != 0)
         {
-            if(_authKey == null)
+            if (_authKey == null)
             {
                 _authKey = await _store.GetAuthKeyAsync(_authKeyId);
             }
-            if(_authKey == null)
+            if (_authKey == null)
             {
                 var authKey = await _db.GetAuthKeyAsync(_authKeyId);
                 if (authKey != null)
@@ -374,7 +374,7 @@ public class MTProtoConnection
                     _ = _store.PutAuthKeyAsync(_authKeyId, _authKey);
                 }
             }
-            
+
             DecryptAndRaiseEvent(in bytes);
         }
     }
@@ -404,7 +404,7 @@ public class MTProtoConnection
             _context.AuthKeyId = _authKeyId;
             _context.MessageId = rd.ReadInt64(true);
             _context.SequenceNo = rd.ReadInt32(true);
-            if(socketConnection.RemoteEndPoint is IPEndPoint endpoint)
+            if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
             {
                 _context.IP = endpoint.Address.ToString();
             }
@@ -469,7 +469,7 @@ public class MTProtoConnection
             return;
         }
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        long msgId  = reader.ReadInt64(true);
+        long msgId = reader.ReadInt64(true);
         int messageDataLength = reader.ReadInt32(true);
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);

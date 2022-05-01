@@ -107,7 +107,7 @@ public class MsgContainerTests
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
         builder.RegisterType<FakeRedis>().As<IDistributedCache>().SingleInstance();
         builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
-        builder.RegisterType<FakeSessionManager>().As<ISessionManager>().SingleInstance();
+        builder.RegisterType<FakeSessionManager>().As<ISessionService>().SingleInstance();
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
         builder.RegisterType<ServiceMessagesProcessor>();
@@ -696,7 +696,7 @@ class FakeTransportConnection : ITransportConnection
         throw new NotImplementedException();
     }
 }
-class FakeSessionManager : ISessionManager
+class FakeSessionManager : ISessionService
 {
     public Guid NodeId => Guid.NewGuid();
 

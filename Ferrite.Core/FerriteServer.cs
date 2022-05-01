@@ -32,13 +32,13 @@ public class FerriteServer : IFerriteServer
     private readonly IConnectionListener _socketListener;
     private readonly IDistributedPipe _pipe;
     private readonly Task? _pipeReceiveTask;
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly ILogger _log;
     public FerriteServer(ILifetimeScope scope)
     {
         _scope = scope;
         _socketListener = _scope.Resolve<IConnectionListener>();
-        _sessionManager = _scope.Resolve<ISessionManager>();
+        _sessionManager = _scope.Resolve<ISessionService>();
         _pipe = _scope.Resolve<IDistributedPipe>();
         _ = _pipe.SubscribeAsync(_sessionManager.NodeId.ToString());
         _pipeReceiveTask = DoReceive();

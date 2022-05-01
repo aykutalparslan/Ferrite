@@ -28,9 +28,9 @@ namespace Ferrite.Core;
 public class ServiceMessagesProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public ServiceMessagesProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe)
+    public ServiceMessagesProcessor(ILifetimeScope scope, ISessionService sessionManager, IDistributedPipe pipe)
     {
         _scope = scope;
         _sessionManager = sessionManager;

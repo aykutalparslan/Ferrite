@@ -25,7 +25,7 @@ using MessagePack;
 
 namespace Ferrite.Core;
 
-public class SessionManager : ISessionManager
+public class SessionManager : ISessionService
 {
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();

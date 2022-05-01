@@ -29,11 +29,11 @@ namespace Ferrite.Core;
 public class AuthorizationProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly IAuthService _auth;
     private readonly IDistributedPipe _pipe;
     private readonly SortedSet<int> _unauthorizedMethods = new();
-    public AuthorizationProcessor(ILifetimeScope scope, ISessionManager sessionManager,
+    public AuthorizationProcessor(ILifetimeScope scope, ISessionService sessionManager,
         IAuthService auth, IDistributedPipe pipe)
     {
         _scope = scope;

@@ -16,23 +16,16 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Ferrite.Core
 {
-    public class MTProtoSession
+    public interface IMTProtoConnection
     {
-        private readonly WeakReference<MTProtoConnection> _ref;
-        public MTProtoSession(MTProtoConnection connection)
-        {
-            _ref = new(connection);
-        }
-
-        public bool TryGetConnection([NotNullWhen(true)] out MTProtoConnection? connection)
-        {
-            return _ref.TryGetTarget(out connection);
-        }
+        MTProtoTransport TransportType { get; }
+        bool IsEncrypted { get; }
+        void Abort(Exception abortReason);
+        Task Ping(long pingId, int delayDisconnectInSeconds = 75);
+        Task SendAsync(MTProtoMessage message);
+        void Start();
     }
 }
-

@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
     <ProjectReference Include="..\Ferrite.Transport\Ferrite.Transport.csproj" />
     <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
+    <ProjectReference Include="..\Ferrite.Services\Ferrite.Services.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Exceptions\" />

@@ -96,7 +96,7 @@ public class Program
         //builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
         builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        builder.RegisterType<SessionManager>().As<ISessionManager>().SingleInstance();
+        builder.RegisterType<SessionManager>().As<ISessionService>().SingleInstance();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>();
         builder.RegisterType<AuthService>().As<IAuthService>();
         var container = builder.Build();

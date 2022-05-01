@@ -67,7 +67,7 @@ public class AuthService : IAuthService
                 ApiLayer = -1,
                 LoggedIn = true
             });
-            var app = await _store.GetAppInfoAsync(authKeyId);
+            var app = await _store.GetAppInfoAsync(t.AuthKeyId);
             return app;
         }
         return null;

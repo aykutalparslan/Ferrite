@@ -16,7 +16,6 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using Ferrite.TL;
 using MessagePack;
 
 namespace Ferrite.Core;

@@ -29,10 +29,10 @@ namespace Ferrite.Core;
 public class MsgContainerProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
     private readonly ILogger _log;
-    public MsgContainerProcessor(ILifetimeScope scope, ISessionManager sessionManager, IDistributedPipe pipe, ILogger log)
+    public MsgContainerProcessor(ILifetimeScope scope, ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
     {
         _scope = scope;
         _sessionManager = sessionManager;

@@ -1485,7 +1485,7 @@ class FakeTransportConnection : ITransportConnection
         throw new NotImplementedException();
     }
 }
-class FakeSessionManager : ISessionManager
+class FakeSessionManager : ISessionService
 {
     public Guid NodeId => Guid.NewGuid();
 

@@ -26,9 +26,9 @@ namespace Ferrite.Core;
 
 public class MTProtoRequestProcessor : IProcessor
 {
-    private readonly ISessionManager _sessionManager;
+    private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public MTProtoRequestProcessor(ISessionManager sessionManager, IDistributedPipe pipe)
+    public MTProtoRequestProcessor(ISessionService sessionManager, IDistributedPipe pipe)
     {
         _sessionManager = sessionManager;
         _pipe = pipe;
