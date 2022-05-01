@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
 using Ferrite.TL.Exceptions;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
@@ -30,11 +31,13 @@ public class InitConnection : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ILogger _log;
     private readonly ITLObjectFactory factory;
+    private readonly IAuthService _auth;
     private bool serialized = false;
-    public InitConnection(ITLObjectFactory objectFactory, ILogger logger)
+    public InitConnection(ITLObjectFactory objectFactory, ILogger logger, IAuthService auth)
     {
         factory = objectFactory;
         _log = logger;
+        _auth = auth;
     }
 
     public int Constructor => -1043505495;
@@ -195,6 +198,18 @@ public class InitConnection : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
+        _ = _auth.SaveAppInfo(new Data.AppInfo()
+        {
+            ApiId = _apiId,
+            AppVersion = _appVersion,
+            AuthKeyId = ctx.AuthKeyId,
+            DeviceModel = _deviceModel,
+            IP = ctx.IP,
+            LangCode = _langCode,
+            LangPack = _langPack,
+            SystemLangCode = _systemLangCode,
+            SystemVersion = _systemVersion
+        });
         //if ((int)ctx.SessionData["layer"] != 139)
         //{
         //    var err = factory.Resolve<RpcError>();

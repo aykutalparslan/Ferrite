@@ -395,5 +395,15 @@ public class AuthService : IAuthService
             }
         };
     }
+
+    public async Task<bool> SaveAppInfo(AppInfo info)
+    {
+        return await _store.SaveAppInfoAsync(info);
+    }
+
+    public async Task<AppInfo?> GetAppInfo(long authKeyId)
+    {
+        return await _store.GetAppInfoAsync(authKeyId);
+    }
 }
 

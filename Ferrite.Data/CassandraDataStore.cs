@@ -115,6 +115,19 @@ namespace Ferrite.Data
                             "auth_key_id bigint," +
                             "PRIMARY KEY (phone, auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.app_infos (" +
+                            "auth_key_id bigint," +
+                            "api_id int," +
+                            "device_model text," +
+                            "system_version text," +
+                            "app_version text," +
+                            "system_lang_code text," +
+                            "lang_pack text," +
+                            "lang_code text," +
+                            "ip_address text," +
+                            "PRIMARY KEY (auth_key_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -303,7 +316,7 @@ namespace Ferrite.Data
             }
             var statement = new SimpleStatement(
                 "UPDATE ferrite.users SET access_hash = =, first_name = ?, " +
-                "last_name = ?, username = ?, phone = ?) WHERE user_id = ?;",
+                "last_name = ?, username = ?, phone = ? WHERE user_id = ?;",
                 user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone, user.Id).SetKeyspace(keySpace);
             
@@ -473,7 +486,7 @@ namespace Ferrite.Data
         public async Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.exported_authorizations phone = ?, " +
+                "UPDATE ferrite.exported_authorizations SET phone = ?, " +
                 "previous_dc_id = ?, next_dc_id = ?, data = ?  WHERE user_id = ? AND auth_key_id = ?;",
                 info.Phone, info.UserId, info.ApiLayer,
                 info.FutureAuthToken, info.LoggedIn, info.AuthKeyId).SetKeyspace(keySpace);
@@ -499,6 +512,47 @@ namespace Ferrite.Data
                     PreviousDcId = row.GetValue<int>("previous_dc_id"),
                     NextDcId = row.GetValue<int>("next_dc_id"),
                     Data = row.GetValue<byte[]>("data"),
+                };
+            }
+            return info;
+        }
+
+        public async Task<bool> SaveAppInfoAsync(AppInfo appInfo)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.app_infos SET api_id = ?, device_model = ?, " +
+                "system_version = ?, app_version = ?, " +
+                "system_lang_code = ?, lang_pack = ?, " +
+                "lang_code = ?, ip_address = ? " +
+                "WHERE auth_key_id = ?;",
+                appInfo.ApiId, appInfo.DeviceModel, appInfo.SystemVersion,
+                appInfo.AppVersion, appInfo.SystemLangCode, appInfo.LangPack,
+                appInfo.LangCode, appInfo.IP, appInfo.AuthKeyId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<AppInfo?> GetAppInfoAsync(long authKeyId)
+        {
+            AppInfo? info = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.app_infos WHERE auth_key_id = ?;", authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                info = new AppInfo()
+                {
+                    AuthKeyId = row.GetValue<long>("auth_key_id"),
+                    ApiId = row.GetValue<int>("api_id"),
+                    DeviceModel = row.GetValue<string>("device_model"),
+                    SystemVersion = row.GetValue<string>("system_version"),
+                    AppVersion = row.GetValue<string>("app_version"),
+                    SystemLangCode = row.GetValue<string>("system_lang_code"),
+                    LangPack = row.GetValue<string>("lang_pack"),
+                    LangCode = row.GetValue<string>("lang_code"),
+                    IP = row.GetValue<string>("ip_address"),
                 };
             }
             return info;

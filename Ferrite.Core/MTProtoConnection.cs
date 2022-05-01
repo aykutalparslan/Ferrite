@@ -28,6 +28,7 @@ using Ferrite.Crypto;
 using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
 using Ferrite.TL.mtproto;
+using System.Net;
 
 namespace Ferrite.Core;
 
@@ -403,7 +404,10 @@ public class MTProtoConnection
             _context.AuthKeyId = _authKeyId;
             _context.MessageId = rd.ReadInt64(true);
             _context.SequenceNo = rd.ReadInt32(true);
-
+            if(socketConnection.RemoteEndPoint is IPEndPoint endpoint)
+            {
+                _context.IP = endpoint.Address.ToString();
+            }
 
             int messageDataLength = rd.ReadInt32(true);
             int constructor = rd.ReadInt32(true);
@@ -471,6 +475,10 @@ public class MTProtoConnection
         var msg = factory.Read(constructor, ref reader);
         //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
         TLExecutionContext _context = new TLExecutionContext(new Dictionary<string, object>());
+        if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
+        {
+            _context.IP = endpoint.Address.ToString();
+        }
         _context.MessageId = msgId;
         _context.AuthKeyId = _authKeyId;
         _processorManager.Process(this, msg, _context);

@@ -49,6 +49,11 @@ class FakeDataStore : IPersistentStore
         throw new NotImplementedException();
     }
 
+    public Task<AppInfo?> GetAppInfoAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         return RandomNumberGenerator.GetBytes(192);
@@ -85,6 +90,11 @@ class FakeDataStore : IPersistentStore
     }
 
     public Task<User?> GetUserByUsernameAsync(string username)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveAppInfoAsync(AppInfo appInfo)
     {
         throw new NotImplementedException();
     }
@@ -345,6 +355,11 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
+    public Task<AppInfo?> GetAppInfoAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))
@@ -385,6 +400,11 @@ class FakeCassandra : IPersistentStore
     }
 
     public Task<User?> GetUserByUsernameAsync(string username)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveAppInfoAsync(AppInfo appInfo)
     {
         throw new NotImplementedException();
     }

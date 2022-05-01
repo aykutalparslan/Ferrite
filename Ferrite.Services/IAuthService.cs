@@ -18,11 +18,14 @@
 using System;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Account;
+using Ferrite.Data;
 
 namespace Ferrite.Services;
 
 public interface IAuthService
 {
+    public Task<bool> SaveAppInfo(AppInfo info);
+    public Task<AppInfo?> GetAppInfo(long authKeyId);
     public Task<bool> IsAuthorized(long authKeyId);
     /// <summary>
 	/// Send the verification code for login

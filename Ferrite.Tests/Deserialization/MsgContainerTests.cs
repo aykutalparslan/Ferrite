@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -163,6 +164,11 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
+    public Task<AppInfo?> GetAppInfo(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<Data.Auth.Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
     {
         throw new NotImplementedException();
@@ -204,6 +210,11 @@ class FakeAuthService : IAuthService
     }
 
     public Task<bool> ResetAuthorizations(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveAppInfo(AppInfo info)
     {
         throw new NotImplementedException();
     }
@@ -535,6 +546,11 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
+    public Task<AppInfo?> GetAppInfoAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))
@@ -575,6 +591,11 @@ class FakeCassandra : IPersistentStore
     }
 
     public Task<User?> GetUserByUsernameAsync(string username)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveAppInfoAsync(AppInfo appInfo)
     {
         throw new NotImplementedException();
     }
@@ -627,6 +648,9 @@ class FakeTransportConnection : ITransportConnection
     public IDuplexPipe Application { get; set; }
     public Pipe Input { get; set; }
     public Pipe Output { get; set; }
+
+    public EndPoint? RemoteEndPoint => throw new NotImplementedException();
+
     private string[] _file;
 
     public FakeTransportConnection(string file = "testdata/obfuscatedIntermediateSession.bin")

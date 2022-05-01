@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipelines;
+using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -347,6 +348,11 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
+    public Task<AppInfo?> GetAppInfoAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         if (!authKeys.ContainsKey(authKeyId))
@@ -387,6 +393,11 @@ class FakeCassandra : IPersistentStore
     }
 
     public Task<User?> GetUserByUsernameAsync(string username)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<bool> SaveAppInfoAsync(AppInfo appInfo)
     {
         throw new NotImplementedException();
     }
@@ -439,6 +450,9 @@ class FakeTransportConnection : ITransportConnection
     public IDuplexPipe Application { get; set; }
     public Pipe Input { get; set; }
     public Pipe Output { get; set; }
+
+    public EndPoint? RemoteEndPoint => throw new NotImplementedException();
+
     private string[] _file;
 
     public FakeTransportConnection(string file = "testdata/obfuscatedIntermediateSession.bin")
@@ -658,7 +672,7 @@ class FakeDistributedPipe : IDistributedPipe
 
 class FakeAuthService : IAuthService
 {
-    public Task<Authorization> AcceptLoginToken(long authKeyId, byte[] token)
+    public Task<Data.Auth.Authorization> AcceptLoginToken(long authKeyId, byte[] token)
     {
         throw new NotImplementedException();
     }
@@ -673,7 +687,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
+    public Task<Data.Auth.Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
     {
         throw new NotImplementedException();
     }
@@ -698,12 +712,17 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
+    public Task<AppInfo?> GetAppInfo(long authKeyId)
     {
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)
+    public Task<Data.Auth.Authorization> ImportAuthorization(long user_id, long auth_key_id, byte[] bytes)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Data.Auth.Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)
     {
         throw new NotImplementedException();
     }
@@ -723,7 +742,7 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings)
+    public Task<Data.Auth.Authorization> RecoverPassword(string code, PasswordInputSettings newSettings)
     {
         throw new NotImplementedException();
     }
@@ -743,17 +762,22 @@ class FakeAuthService : IAuthService
         throw new NotImplementedException();
     }
 
+    public Task<bool> SaveAppInfo(AppInfo info)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings)
     {
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    public Task<Data.Auth.Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
         throw new NotImplementedException();
     }
 
-    public Task<Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
+    public Task<Data.Auth.Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName)
     {
         throw new NotImplementedException();
     }

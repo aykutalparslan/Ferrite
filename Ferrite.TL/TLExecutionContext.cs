@@ -27,6 +27,7 @@ namespace Ferrite.TL
         public long SessionId { get; set; }
         public long MessageId { get; set; }
         public int SequenceNo { get; set; }
+        public string IP { get; set; }
         public TLExecutionContext(Dictionary<string, object> sessionData)
         {
             SessionData = sessionData;
@@ -34,6 +35,7 @@ namespace Ferrite.TL
             SessionId = 0;
             MessageId = 0;
             SequenceNo = 0;
+            IP = "";
         }
     }
 }

@@ -18,12 +18,14 @@
 
 using System;
 using System.IO.Pipelines;
+using System.Net;
 
 namespace Ferrite.Transport;
 
 public interface ITransportConnection
 {
     public IDuplexPipe Transport { get; }
+    public EndPoint? RemoteEndPoint { get; }
     public void Start();
     public void Abort(Exception abortReason);
     public ValueTask DisposeAsync();
