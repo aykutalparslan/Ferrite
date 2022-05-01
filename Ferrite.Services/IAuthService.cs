@@ -52,7 +52,7 @@ public interface IAuthService
     public Task<bool> DropTempAuthKeys(ICollection<long> exceptAuthKeys);
     public Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
     public Task<LoginToken> ImportLoginToken(byte[] token);
-    public Task<Authorization> AcceptLoginToken(long authKeyId, byte[] token);
+    public Task<AppInfo?> AcceptLoginToken(long authKeyId, byte[] token);
     public Task<bool> CheckRecoveryPassword(string code);
 }
 

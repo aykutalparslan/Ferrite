@@ -43,7 +43,7 @@ public class AuthService : IAuthService
         _userIdCnt = _cache.GetCounter("counter_user_id");
     }
 
-    public async Task<Authorization> AcceptLoginToken(long authKeyId, byte[] token)
+    public async Task<AppInfo?> AcceptLoginToken(long authKeyId, byte[] token)
     {
         var t = await _cache.GetLoginTokenAsync(token);
         var auth = await _store.GetAuthorizationAsync(authKeyId);
@@ -67,32 +67,10 @@ public class AuthService : IAuthService
                 ApiLayer = -1,
                 LoggedIn = true
             });
-            var user = await _store.GetUserAsync(auth.UserId);
-            if(user != null)
-            {
-                return new Authorization()
-                {
-                    AuthorizationType = AuthorizationType.Authorization,
-                    User = new User()
-                    {
-                        Id = user.Id,
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        Phone = user.Phone,
-                        Status = UserStatus.Empty,
-                        Self = true,
-                        Photo = new UserProfilePhoto()
-                        {
-                            Empty = true
-                        }
-                    }
-                };
-            }
+            var app = await _store.GetAppInfoAsync(authKeyId);
+            return app;
         }
-        return new Authorization()
-        {
-            AuthorizationType = AuthorizationType.AuthTokenExpired
-        };
+        return null;
     }
 
     public async Task<bool> BindTempAuthKey(long tempAuthKeyId, long permAuthKeyId, int expiresAt)

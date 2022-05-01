@@ -451,7 +451,7 @@ class FakeTransportConnection : ITransportConnection
     public Pipe Input { get; set; }
     public Pipe Output { get; set; }
 
-    public EndPoint? RemoteEndPoint => throw new NotImplementedException();
+    public EndPoint? RemoteEndPoint => new IPEndPoint(IPAddress.Any,13579);
 
     private string[] _file;
 
@@ -672,7 +672,7 @@ class FakeDistributedPipe : IDistributedPipe
 
 class FakeAuthService : IAuthService
 {
-    public Task<Data.Auth.Authorization> AcceptLoginToken(long authKeyId, byte[] token)
+    public Task<Data.AppInfo?> AcceptLoginToken(long authKeyId, byte[] token)
     {
         throw new NotImplementedException();
     }

@@ -124,7 +124,7 @@ public class MsgContainerTests
 
 class FakeAuthService : IAuthService
 {
-    public Task<Data.Auth.Authorization> AcceptLoginToken(long authKeyId, byte[] token)
+    public Task<Data.AppInfo?> AcceptLoginToken(long authKeyId, byte[] token)
     {
         throw new NotImplementedException();
     }

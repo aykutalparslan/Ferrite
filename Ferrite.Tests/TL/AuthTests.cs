@@ -680,7 +680,8 @@ public class AuthTests
         rpc.Token = new byte[] { 1, 2, 3 };
         var result = await rpc.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
         {
-            MessageId = 1223
+            MessageId = 1223,
+            SessionId = 123
         });
         Assert.IsType<RpcResult>(result);
         var rslt = (RpcResult)result;
@@ -796,9 +797,20 @@ class FakeAuthService : IAuthService
 
     public bool BindTempAuthKeyFailed { get; internal set; }
 
-    public Task<Data.Auth.Authorization> AcceptLoginToken(long authKeyId, byte[] token)
+    public async Task<Data.AppInfo?> AcceptLoginToken(long authKeyId, byte[] token)
     {
-        throw new NotImplementedException();
+        return new AppInfo()
+        {
+            ApiId = 1,
+            AppVersion = "1.1",
+            AuthKeyId = 444,
+            SystemVersion = "1.0",
+            DeviceModel = "1.2",
+            IP = "127.0.0.1",
+            LangCode = "tr",
+            LangPack = "Android",
+            SystemLangCode = "tr"
+        };
     }
 
     public async Task<bool> BindTempAuthKey(long authKeyId, long permAuthKeyId, int expiresAt)

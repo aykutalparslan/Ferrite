@@ -21,6 +21,7 @@ using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.auth;
@@ -64,7 +65,39 @@ public class AcceptLoginToken : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var acceptResult = await _auth.AcceptLoginToken(ctx.AuthKeyId, _token);
+
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (acceptResult != null)
+        {
+            var resp = factory.Resolve<Ferrite.TL.layer139.AuthorizationImpl>();
+            resp.ApiId = acceptResult.ApiId;
+            resp.AppName = "Unknown";
+            resp.AppVersion = acceptResult.AppVersion;
+            resp.CallRequestsDisabled = false;
+            resp.Country = "Turkey";
+            resp.Current = true;
+            resp.DateActive = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+            resp.DateCreated = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+            resp.DeviceModel = acceptResult.DeviceModel;
+            resp.EncryptedRequestsDisabled = false;
+            resp.Hash = ctx.SessionId;
+            resp.Ip = acceptResult.IP;
+            resp.OfficialApp = true;
+            resp.Platform = "Unknown";
+            resp.Region = "Unknown";
+            resp.SystemVersion = acceptResult.SystemVersion;
+            result.Result = resp;
+        }
+        else
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = 501;
+            err.ErrorMessage = "INTERNAL_SERVER_ERROR";
+            result.Result = err;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
