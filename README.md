@@ -6,7 +6,7 @@ Project Ferrite is an implementation of the Telegram Server API in C#.
 
 ## What works?
 
-The project is currently in a very early stage of development so very little works. The following are the features that are implemented and working so far:
+The project is currently in a very early stage of development. The following are the features that are implemented and working so far:
 - All MTProto transports are implemented (only Abridged and Intermediate transports are tested)
 - Websockets and Obfuscation
 - Creation of an Auth Key
