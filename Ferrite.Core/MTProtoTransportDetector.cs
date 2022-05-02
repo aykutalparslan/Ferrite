@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using Ferrite.Crypto;
+using Ferrite.Services;
 
 namespace Ferrite.Core;
 

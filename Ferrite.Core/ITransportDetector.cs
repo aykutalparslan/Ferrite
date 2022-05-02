@@ -18,6 +18,7 @@
 
 using System;
 using System.Buffers;
+using Ferrite.Services;
 
 namespace Ferrite.Core
 {

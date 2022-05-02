@@ -21,7 +21,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MessagePack;
 
-namespace Ferrite.Core;
+namespace Ferrite.Services;
 
 [MessagePackObject]
 public class AuthSessionState

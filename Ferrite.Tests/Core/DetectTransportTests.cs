@@ -25,6 +25,7 @@ using Autofac;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.Utils;
 using Xunit;

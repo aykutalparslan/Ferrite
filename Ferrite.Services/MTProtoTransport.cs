@@ -17,7 +17,7 @@
  */
 
 using System;
-namespace Ferrite.Core;
+namespace Ferrite.Services;
 
 public enum MTProtoTransport
 {

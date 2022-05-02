@@ -29,6 +29,7 @@ using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
 using Ferrite.TL.mtproto;
 using System.Net;
+using Ferrite.Services;
 
 namespace Ferrite.Core;
 

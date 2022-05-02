@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 using Ferrite.Data;
 using MessagePack;
 
-namespace Ferrite.Core;
+namespace Ferrite.Services;
 
 [MessagePackObject]
 public class SessionState

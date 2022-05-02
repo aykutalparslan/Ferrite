@@ -19,6 +19,7 @@ using System;
 using System.Net;
 using Autofac;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.Transport;
 using Ferrite.Utils;

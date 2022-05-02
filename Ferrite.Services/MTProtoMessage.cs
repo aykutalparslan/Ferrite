@@ -18,7 +18,7 @@
 using System;
 using MessagePack;
 
-namespace Ferrite.Core;
+namespace Ferrite.Services;
 
 [MessagePackObject]
 public class MTProtoMessage

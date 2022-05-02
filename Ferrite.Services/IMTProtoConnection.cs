@@ -17,15 +17,14 @@
  */
 
 
-namespace Ferrite.Core
+namespace Ferrite.Services;
+
+public interface IMTProtoConnection
 {
-    public interface IMTProtoConnection
-    {
-        MTProtoTransport TransportType { get; }
-        bool IsEncrypted { get; }
-        void Abort(Exception abortReason);
-        Task Ping(long pingId, int delayDisconnectInSeconds = 75);
-        Task SendAsync(MTProtoMessage message);
-        void Start();
-    }
+    MTProtoTransport TransportType { get; }
+    bool IsEncrypted { get; }
+    void Abort(Exception abortReason);
+    Task Ping(long pingId, int delayDisconnectInSeconds = 75);
+    Task SendAsync(MTProtoMessage message);
+    void Start();
 }

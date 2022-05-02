@@ -19,20 +19,19 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Ferrite.Core
-{
-    public class MTProtoSession
-    {
-        private readonly WeakReference<IMTProtoConnection> _ref;
-        public MTProtoSession(IMTProtoConnection connection)
-        {
-            _ref = new(connection);
-        }
+namespace Ferrite.Services;
 
-        public bool TryGetConnection([NotNullWhen(true)] out IMTProtoConnection? connection)
-        {
-            return _ref.TryGetTarget(out connection);
-        }
+public class MTProtoSession
+{
+    private readonly WeakReference<IMTProtoConnection> _ref;
+    public MTProtoSession(IMTProtoConnection connection)
+    {
+        _ref = new(connection);
+    }
+
+    public bool TryGetConnection([NotNullWhen(true)] out IMTProtoConnection? connection)
+    {
+        return _ref.TryGetTarget(out connection);
     }
 }
 

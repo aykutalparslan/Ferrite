@@ -17,23 +17,22 @@
  */
 
 
-namespace Ferrite.Core
-{
-    public interface ISessionService
-    {
-        Guid NodeId { get; }
+namespace Ferrite.Services;
 
-        Task<bool> AddSessionAsync(SessionState state, MTProtoSession session);
-        Task<SessionState?> GetSessionStateAsync(long sessionId);
-        Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session);
-        public Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state);
-        Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce);
-        bool LocalSessionExists(long sessionId);
-        bool LocalAuthSessionExists(byte[] nonce);
-        Task<bool> RemoveSession(long authKeyId, long sessionId);
-        Task<bool> OnPing(long authKeyId, long sessionId);
-        bool RemoveAuthSession(byte[] nonce);
-        bool TryGetLocalSession(long sessionId, out MTProtoSession session);
-        bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session);
-    }
+public interface ISessionService
+{
+    Guid NodeId { get; }
+
+    Task<bool> AddSessionAsync(SessionState state, MTProtoSession session);
+    Task<SessionState?> GetSessionStateAsync(long sessionId);
+    Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session);
+    public Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state);
+    Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce);
+    bool LocalSessionExists(long sessionId);
+    bool LocalAuthSessionExists(byte[] nonce);
+    Task<bool> RemoveSession(long authKeyId, long sessionId);
+    Task<bool> OnPing(long authKeyId, long sessionId);
+    bool RemoveAuthSession(byte[] nonce);
+    bool TryGetLocalSession(long sessionId, out MTProtoSession session);
+    bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session);
 }

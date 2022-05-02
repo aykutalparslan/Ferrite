@@ -18,6 +18,7 @@
 using System;
 using System.Buffers;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using MessagePack;
