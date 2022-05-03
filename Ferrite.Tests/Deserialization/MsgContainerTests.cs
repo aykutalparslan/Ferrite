@@ -775,6 +775,11 @@ class FakeSessionManager : ISessionService
     {
         throw new NotImplementedException();
     }
+
+    public Task<ICollection<SessionState>> GetSessionsAsync(long authKeyId)
+    {
+        throw new NotImplementedException();
+    }
 }
 class FakeLogger : ILogger
 {

@@ -65,6 +65,11 @@ public class SessionManager : ISessionService
     }
     public async Task<SessionState?> GetSessionStateAsync(long sessionId)
     {
+        return await GetSessionState(sessionId);
+    }
+
+    private async Task<SessionState> GetSessionState(long sessionId)
+    {
         var rawSession = await _cache.GetSessionAsync(sessionId);
         if (rawSession != null)
         {
@@ -81,6 +86,7 @@ public class SessionManager : ISessionService
         }
         return null;
     }
+
     public async Task<bool> RemoveSession(long authKeyId, long sessionId)
     {
         await _cache.DeleteSessionAsync(sessionId);
@@ -145,6 +151,23 @@ public class SessionManager : ISessionService
     {
         var ttlSet = await _cache.SetSessionTTLAsync(sessionId, new TimeSpan(0, 0, FerriteConfig.SessionTTL));
         return ttlSet && await _cache.PutSessionForAuthKeyAsync(authKeyId, sessionId);
+    }
+
+    public async Task<ICollection<SessionState>> GetSessionsAsync(long authKeyId)
+    {
+        var sessionIds = await _cache.GetSessionsByAuthKeyAsync(authKeyId,
+            new TimeSpan(0, 0, FerriteConfig.SessionTTL));
+
+        List<SessionState> result = new();
+        foreach (var sessionId in sessionIds)
+        {
+            var state = await GetSessionState(sessionId);
+            if (state != null)
+            {
+                result.Add(state);
+            }
+        }
+        return result;
     }
 }
 

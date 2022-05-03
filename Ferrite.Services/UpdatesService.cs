@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using Ferrite.Data;
 using Ferrite.Data.Updates;
 using Ferrite.Utils;
 
@@ -24,9 +25,13 @@ namespace Ferrite.Services;
 public class UpdatesService : IUpdatesService
 {
     private readonly IMTProtoTime _time;
-    public UpdatesService(IMTProtoTime time)
+    private readonly ISessionService _sessions;
+    private readonly IDistributedPipe _pipe;
+    public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe)
     {
         _time = time;
+        _sessions = sessions;
+        _pipe = pipe;
     }
 
     public async Task<State> GetState()
