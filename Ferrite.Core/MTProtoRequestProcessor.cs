@@ -52,6 +52,7 @@ public class MTProtoRequestProcessor : IProcessor
                     is SessionState session)
                 {
                     var bytes = MessagePackSerializer.Serialize(message);
+                    //TODO: maybe don't queue if the client is connected to the same server 
                     _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
                 }
 
@@ -80,6 +81,7 @@ public class MTProtoRequestProcessor : IProcessor
                     is SessionState session)
                 {
                     var bytes = MessagePackSerializer.Serialize(message);
+                    //TODO: maybe don't queue if the client is connected to the same server 
                     _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
                 }
 

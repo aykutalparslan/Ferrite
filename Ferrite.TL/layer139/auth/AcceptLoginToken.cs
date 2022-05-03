@@ -30,11 +30,13 @@ public class AcceptLoginToken : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAuthService _auth;
+    private readonly IUpdatesManager _updatesManager;
     private bool serialized = false;
-    public AcceptLoginToken(ITLObjectFactory objectFactory, IAuthService auth)
+    public AcceptLoginToken(ITLObjectFactory objectFactory, IAuthService auth, IUpdatesManager updatesManager)
     {
         factory = objectFactory;
         _auth = auth;
+        _updatesManager = updatesManager;
     }
 
     public int Constructor => -392909491;
@@ -89,6 +91,7 @@ public class AcceptLoginToken : ITLObject, ITLMethod
             resp.Region = "Unknown";
             resp.SystemVersion = acceptResult.SystemVersion;
             result.Result = resp;
+            _ = _updatesManager.SendUpdateLoginToken(acceptResult.AuthKeyId);
         }
         else
         {
