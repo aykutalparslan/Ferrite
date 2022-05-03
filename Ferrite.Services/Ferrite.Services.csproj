@@ -16,7 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="SessionManager.cs" />
-    <Compile Remove="FerriteConfig.cs" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

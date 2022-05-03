@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Concurrent;
 using Ferrite.Data;
-using Ferrite.Services;
 using MessagePack;
 
 namespace Ferrite.Services;
