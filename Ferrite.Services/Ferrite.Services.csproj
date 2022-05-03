@@ -14,6 +14,10 @@
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="SessionManager.cs" />
+    <Compile Remove="FerriteConfig.cs" />
+  </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
       <Properties>
