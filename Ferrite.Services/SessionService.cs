@@ -18,19 +18,17 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Security.Cryptography;
 using Ferrite.Data;
 using Ferrite.Services;
-using Ferrite.TL;
 using MessagePack;
 
-namespace Ferrite.Core;
+namespace Ferrite.Services;
 
-public class SessionManager : ISessionService
+public class SessionService : ISessionService
 {
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
-    private readonly ConcurrentDictionary<Int128, MTProtoSession> _localAuthSessions = new();
+    private readonly ConcurrentDictionary<Nonce, MTProtoSession> _localAuthSessions = new();
     private readonly IDistributedCache _cache;
     private Guid GetNodeId()
     {
@@ -46,7 +44,7 @@ public class SessionManager : ISessionService
             return guid;
         }
     }
-    public SessionManager(IDistributedCache cache)
+    public SessionService(IDistributedCache cache)
     {
         NodeId = GetNodeId();
         _cache = cache;
@@ -106,12 +104,12 @@ public class SessionManager : ISessionService
     {
         state.NodeId = NodeId;
         var remoteAdd = await _cache.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
-        var key = (Int128)nonce;
+        var key = (Nonce)nonce;
         if (_localAuthSessions.ContainsKey(key))
         {
             _localAuthSessions.Remove(key, out var value);
         }
-        return remoteAdd && _localAuthSessions.TryAdd((Int128)nonce, session);
+        return remoteAdd && _localAuthSessions.TryAdd((Nonce)nonce, session);
     }
 
     public async Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state)
@@ -133,18 +131,18 @@ public class SessionManager : ISessionService
 
     public bool LocalAuthSessionExists(byte[] nonce)
     {
-        return _localAuthSessions.ContainsKey((Int128)nonce);
+        return _localAuthSessions.ContainsKey((Nonce)nonce);
     }
 
     public bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session)
     {
-        return _localAuthSessions.TryGetValue((Int128)nonce, out session);
+        return _localAuthSessions.TryGetValue((Nonce)nonce, out session);
     }
 
     public bool RemoveAuthSession(byte[] nonce)
     {
         _cache.RemoveAuthKeySessionAsync(nonce);
-        return _localAuthSessions.TryRemove((Int128)nonce, out var a);
+        return _localAuthSessions.TryRemove((Nonce)nonce, out var a);
     }
 
     public async Task<bool> OnPing(long authKeyId, long sessionId)

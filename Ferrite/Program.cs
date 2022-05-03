@@ -77,7 +77,7 @@ public class Program
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
             .AsSelf();
-        builder.Register(_ => new Int128());
+        builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<AuthKeyProcessor>();
@@ -96,7 +96,7 @@ public class Program
         //builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
         builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        builder.RegisterType<SessionManager>().As<ISessionService>().SingleInstance();
+        builder.RegisterType<SessionService>().As<ISessionService>().SingleInstance();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>();
         builder.RegisterType<AuthService>().As<IAuthService>();
         var container = builder.Build();

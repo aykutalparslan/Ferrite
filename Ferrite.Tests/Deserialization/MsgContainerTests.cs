@@ -700,8 +700,8 @@ class FakeSessionManager : ISessionService
 {
     public Guid NodeId => Guid.NewGuid();
 
-    private Dictionary<Int128, byte[]> _authKeySessionStates = new();
-    private Dictionary<Int128, MTProtoSession> _authKeySessions = new();
+    private Dictionary<Ferrite.TL.Int128, byte[]> _authKeySessionStates = new();
+    private Dictionary<Ferrite.TL.Int128, MTProtoSession> _authKeySessions = new();
 
     public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session)
     {

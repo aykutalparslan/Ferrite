@@ -502,14 +502,14 @@ class FakeSessionManager : ISessionService
 {
     public Guid NodeId => Guid.NewGuid();
 
-    private Dictionary<Int128, byte[]> _authKeySessionStates = new();
-    private Dictionary<Int128, MTProtoSession> _authKeySessions = new();
+    private Dictionary<Ferrite.TL.Int128, byte[]> _authKeySessionStates = new();
+    private Dictionary<Ferrite.TL.Int128, MTProtoSession> _authKeySessions = new();
 
     public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session)
     {
         var stateBytes = MessagePackSerializer.Serialize(state);
-        _authKeySessions.Add((Int128)nonce, session);
-        _authKeySessionStates.Add((Int128)nonce, stateBytes);
+        _authKeySessions.Add((Ferrite.TL.Int128)nonce, session);
+        _authKeySessionStates.Add((Ferrite.TL.Int128)nonce, stateBytes);
         return true;
     }
 
