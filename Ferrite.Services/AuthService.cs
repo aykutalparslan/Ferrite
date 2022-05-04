@@ -113,6 +113,32 @@ public class AuthService : IAuthService
 
     public async Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth!= null && auth.LoggedIn &&
+            await _store.GetUserAsync(auth.UserId) is User user)
+        {
+            return new LoginToken()
+            {
+                LoginTokenType = LoginTokenType.TokenSuccess,
+                Authorization = new Authorization()
+                {
+                    AuthorizationType = AuthorizationType.Authorization,
+                    User = new User()
+                    {
+                        Id = user.Id,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Phone = user.Phone,
+                        Status = UserStatus.Empty,
+                        Self = true,
+                        Photo = new UserProfilePhoto()
+                        {
+                            Empty = true
+                        }
+                    }
+                }
+        };
+        }
         var token = _random.GetRandomBytes(16);
         LoginViaQR login = new LoginViaQR()
         {

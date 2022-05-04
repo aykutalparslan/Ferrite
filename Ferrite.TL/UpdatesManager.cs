@@ -50,6 +50,7 @@ public class UpdatesManager : IUpdatesManager
             message.Data = update.TLBytes.ToArray();
 
             var bytes = MessagePackSerializer.Serialize(message);
+            //TODO: maybe don't queue if the client is connected to the same server 
             _ = _pipe.WriteAsync(sess.NodeId.ToString(), bytes);
         }
         return result;

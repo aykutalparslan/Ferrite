@@ -93,10 +93,35 @@ public class ExportLoginToken : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var token = await _auth.ExportLoginToken(ctx.AuthKeyId, ctx.SessionId, _apiId, _apiHash, _exceptIds);
-        var resp = factory.Resolve<LoginTokenImpl>();
-        resp.Expires = token.Expires;
-        resp.Token = token.Token;
-        result.Result = resp;
+        if(token.LoginTokenType == LoginTokenType.TokenSuccess)
+        {
+            var resp = factory.Resolve<LoginTokenSuccessImpl>();
+            var authorization = factory.Resolve<AuthorizationImpl>();
+            var user = factory.Resolve<UserImpl>();
+            user.Id = token.Authorization.User.Id;
+            user.FirstName = token.Authorization.User.FirstName;
+            user.LastName = token.Authorization.User.LastName;
+            user.Phone = token.Authorization.User.Phone;
+            user.Self = token.Authorization.User.Self;
+            if (token.Authorization.User.Status == Data.UserStatus.Empty)
+            {
+                user.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (token.Authorization.User.Photo.Empty)
+            {
+                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            authorization.User = user;
+            resp.Authorization = authorization;
+            result.Result = resp;
+        }
+        else
+        {
+            var resp = factory.Resolve<LoginTokenImpl>();
+            resp.Expires = token.Expires;
+            resp.Token = token.Token;
+            result.Result = resp;
+        }
         return result;
     }
 
