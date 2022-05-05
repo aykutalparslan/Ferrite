@@ -56,7 +56,7 @@ public class KafkaPipe : IDistributedPipe
         return await _consumed.Reader.ReadAsync(cancellationToken);
     }
 
-    public async Task SubscribeAsync(string channel)
+    public async Task<bool> SubscribeAsync(string channel)
     {
         if(_consumer == null)
         {
@@ -78,9 +78,10 @@ public class KafkaPipe : IDistributedPipe
                 _consumer.Close();
             }
         });
+        return true;
     }
 
-    private async Task CreateChannelAsync(string channel)
+    private async Task<bool> CreateChannelAsync(string channel)
     {
         try
         {
@@ -91,20 +92,23 @@ public class KafkaPipe : IDistributedPipe
         {
             Console.WriteLine($"An error occured creating channel {e.Results[0].Topic}: {e.Results[0].Error.Reason}");
         }
+        return true;
     }
 
-    public async Task UnSubscribeAsync()
+    public async Task<bool> UnSubscribeAsync()
     {
         if (!_unsubscribed)
         {
             _unsubscribed = true;
             _consumeCts.Cancel();
         }
+        return true;
     }
 
-    public async Task WriteAsync(string channel, byte[] message)
+    public async Task<bool> WriteAsync(string channel, byte[] message)
     {
         await _producer.ProduceAsync(channel, new Message<Null, byte[]> { Value = message });
+        return true;
     }
 }
 

@@ -858,19 +858,20 @@ class FakeDistributedPipe : IDistributedPipe
 
     }
 
-    public Task SubscribeAsync(string channel)
+    public Task<bool> SubscribeAsync(string channel)
     {
         throw new NotImplementedException();
     }
 
-    public async Task UnSubscribeAsync()
+    public async Task<bool> UnSubscribeAsync()
     {
-
+        return true;
     }
 
-    public async Task WriteAsync(string channel, byte[] message)
+    public async Task<bool> WriteAsync(string channel, byte[] message)
     {
         _channel.Enqueue(message);
+        return true;
     }
 }
 
