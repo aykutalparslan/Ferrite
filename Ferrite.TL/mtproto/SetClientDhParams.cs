@@ -152,7 +152,7 @@ public class SetClientDhParams : ITLObject, ITLMethod
             var existingKey = temp_auth_key ?
                 await distributedStore.GetTempAuthKeyAsync(authKeyHash) :
                 await dataStore.GetAuthKeyAsync(authKeyHash);
-            if (existingKey == null)
+            if (existingKey == null || existingKey.Length == 0)
             {
                 var authKeyTrimmed = authKey.AsSpan().Slice(0, 192).ToArray();
                 if (temp_auth_key)

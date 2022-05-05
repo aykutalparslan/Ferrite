@@ -147,22 +147,24 @@ namespace Ferrite.Data
             return null;
         }
 
-        public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
+        public async Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey)
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.auth_keys(auth_key_id, auth_key) VALUES(?,?);",
                 authKeyId, authKey).SetKeyspace(keySpace);
 
             await session.ExecuteAsync(statement);
+            return true;
         }
 
-        public async Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+        public async Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.server_salts(auth_key_id, server_salt, valid_since) VALUES(?,?,?) USING TTL ?;",
                 authKeyId, serverSalt, validSince, TTL).SetKeyspace(keySpace);
 
-            await session.ExecuteAsync(statement);
+            var set = await session.ExecuteAsync(statement);
+            return true;
         }
 
         public async Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
@@ -187,7 +189,7 @@ namespace Ferrite.Data
             return serverSalts;
         }
 
-        public async Task SaveAuthorizationAsync(AuthInfo info)
+        public async Task<bool> SaveAuthorizationAsync(AuthInfo info)
         {
             var oldAuth = await GetAuthorizationAsync(info.AuthKeyId);
             var statement = new SimpleStatement(
@@ -211,6 +213,7 @@ namespace Ferrite.Data
                 info.Phone, info.AuthKeyId).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
             }
+            return true;
         }
 
         public async Task<AuthInfo?> GetAuthorizationAsync(long authKeyId)
@@ -457,7 +460,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task DeleteAuthorizationAsync(long authKeyId)
+        public async Task<bool> DeleteAuthorizationAsync(long authKeyId)
         {
             var oldAuthorization = await GetAuthorizationAsync(authKeyId);
             var statement = new SimpleStatement(
@@ -481,9 +484,10 @@ namespace Ferrite.Data
                 statement = statement.SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             }
+            return true;
         }
 
-        public async Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
+        public async Task<bool> SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.exported_authorizations SET phone = ?, " +
@@ -491,6 +495,7 @@ namespace Ferrite.Data
                 info.Phone, info.UserId, info.ApiLayer,
                 info.FutureAuthToken, info.LoggedIn, info.AuthKeyId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
+            return true;
         }
 
         public async Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id)

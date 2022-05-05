@@ -541,7 +541,7 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
-    public Task DeleteAuthorizationAsync(long authKeyId)
+    public Task<bool> DeleteAuthorizationAsync(long authKeyId)
     {
         throw new NotImplementedException();
     }
@@ -600,22 +600,23 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
-    public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
+    public async Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         authKeys.Add(authKeyId, authKey);
+        return true;
     }
 
-    public Task SaveAuthorizationAsync(AuthInfo details)
+    public Task<bool> SaveAuthorizationAsync(AuthInfo details)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
+    public Task<bool> SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+    public Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
     {
         throw new NotImplementedException();
     }

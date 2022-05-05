@@ -34,483 +34,10 @@ using DotNext.Buffers;
 using Ferrite.Data;
 using System.Globalization;
 using System.Threading.Tasks;
+using Autofac.Extras.Moq;
+using Moq;
 
 namespace Ferrite.Tests.PQ;
-
-class FakeDataStore : IPersistentStore
-{
-    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteAuthorizationAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<AppInfo?> GetAppInfoAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
-    {
-        return RandomNumberGenerator.GetBytes(192);
-    }
-
-    public Task<AuthInfo?> GetAuthorizationAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<User?> GetUserAsync(long userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<User?> GetUserAsync(string phone)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<User?> GetUserByUsernameAsync(string username)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> SaveAppInfoAsync(AppInfo appInfo)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task SaveAuthKeyAysnc(byte[] authKeyId, byte[] authKey)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveAuthorizationAsync(AuthInfo details)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> SaveUserAsync(User user)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> UpdateUserAsync(User user)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-class FakeRedis : IDistributedCache
-{
-    Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
-    Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
-
-    public Task<bool> DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> DeleteSessionForAuthKeyAsync(long authKeyId, long sessionId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
-    {
-        if (!authKeys.ContainsKey(authKeyId))
-        {
-            return null;
-        }
-        return authKeys[authKeyId];
-    }
-
-    public Task<byte[]> GetAuthKeySessionAsync(byte[] nonce)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IAtomicCounter GetCounter(string name)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<Data.Auth.LoginViaQR?> GetLoginTokenAsync(byte[] token)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<byte[]> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<byte[]> GetSessionAsync(long sessionId)
-    {
-        if (!sessions.ContainsKey(sessionId))
-        {
-            return null;
-        }
-        return sessions[sessionId];
-    }
-
-    public Task<ICollection<long>> GetSessionsByAuthKeyAsync(long authKeyId, TimeSpan expire)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
-    {
-        authKeys.Add(authKeyId, authKey);
-        return true;
-    }
-
-    public Task<bool> PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> PutLoginTokenAsync(Data.Auth.LoginViaQR login, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> PutSessionAsync(long sessionId, byte[] sessionData, TimeSpan expire)
-    {
-        sessions.Add(sessionId, sessionData);
-        return true;
-    }
-
-    public Task<bool> PutSessionForAuthKeyAsync(long authKeyId, long sessionId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> RemoveSessionAsync(long sessionId)
-    {
-        sessions.Remove(sessionId);
-        return false;
-    }
-
-    Task<bool> IDistributedCache.DeleteAuthKeyAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<bool> IDistributedCache.DeletePhoneCodeAsync(string phoneNumber, string phoneCodeHash)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<byte[]> IDistributedCache.GetAuthKeyAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<byte[]> IDistributedCache.GetAuthKeySessionAsync(byte[] nonce)
-    {
-        throw new NotImplementedException();
-    }
-
-    IAtomicCounter IDistributedCache.GetCounter(string name)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<string> IDistributedCache.GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<long> IDistributedCache.GetServerSaltValidityAsync(long authKeyId, long serverSalt)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<byte[]> IDistributedCache.GetSessionAsync(long sessionId)
-    {
-        throw new NotImplementedException();
-    }
-
-    async Task<bool> IDistributedCache.PutAuthKeyAsync(long authKeyId, byte[] authKey)
-    {
-        return true;
-    }
-
-    Task<bool> IDistributedCache.PutAuthKeySessionAsync(byte[] nonce, byte[] sessionData)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<bool> IDistributedCache.PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<bool> IDistributedCache.PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<bool> IDistributedCache.RemoveAuthKeySessionAsync(byte[] nonce)
-    {
-        throw new NotImplementedException();
-    }
-
-    Task<bool> IDistributedCache.DeleteSessionAsync(long sessionId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> SetSessionTTLAsync(long sessionId, TimeSpan expire)
-    {
-        throw new NotImplementedException();
-    }
-}
-class FakeCassandra : IPersistentStore
-{
-    Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
-
-    public Task<bool> DeleteAuthKeyAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task DeleteAuthorizationAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<AppInfo?> GetAppInfoAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
-    {
-        if (!authKeys.ContainsKey(authKeyId))
-        {
-            return null;
-        }
-        return authKeys[authKeyId];
-    }
-
-    public Task<AuthInfo?> GetAuthorizationAsync(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<User?> GetUserAsync(long userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<User?> GetUserAsync(string phone)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<User?> GetUserByUsernameAsync(string username)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> SaveAppInfoAsync(AppInfo appInfo)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
-    {
-        authKeys.Add(authKeyId, authKey);
-    }
-
-    public Task SaveAuthorizationAsync(AuthInfo details)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> SaveUserAsync(User user)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> UpdateUserAsync(User user)
-    {
-        throw new NotImplementedException();
-    }
-}
-class FakeRandomGenerator : IRandomGenerator
-{
-    byte[] random = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
-        0x77, 0xBA, 0x4A, 0xA5, 0x73, 0x90, 0x73, 0x30 };
-
-    public byte[] GetRandomBytes(int count)
-    {
-        return random;
-    }
-
-    public int GetRandomNumber(int toExclusive)
-    {
-        return 0;
-    }
-
-    
-    public int GetRandomNumber(int fromInclusive, int toExclusive)
-    {
-        return 0;
-    }
-
-    int[] primes = new int[] { 0x494C553B, 0x53911073 };
-    bool first = true;
-    public int GetRandomPrime()
-    {
-        if (first)
-        {
-            first = false;
-            return primes[0];
-            
-        } else
-        {
-            first = true;
-            return primes[1];
-        }
-    }
-
-    public BigInteger GetRandomInteger(BigInteger min, BigInteger max)
-    {
-        throw new NotImplementedException();
-    }
-
-    public int GetNext(int fromInclusive, int toExclusive)
-    {
-        throw new NotImplementedException();
-    }
-
-    public void Fill(Span<byte> data)
-    {
-        throw new NotImplementedException();
-    }
-
-    public long NextLong()
-    {
-        throw new NotImplementedException();
-    }
-}
-
-class FakeKeyPairProvider : IKeyProvider
-{
-    public IRSAKey? GetKey(long fingerprint)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IList<long> GetRSAFingerprints()
-    {
-        List<long> l= new();
-        l.Add(unchecked((long)0xc3b42b026ce86b21));
-        return l;
-    }
-}
 
 public class PqTests
 {
@@ -521,35 +48,41 @@ public class PqTests
     [Fact]
     public async Task ReqPqMulti_ShouldReturnResPqAsync()
     {
-        var tl = Assembly.Load("Ferrite.TL");
-        var builder = new ContainerBuilder();
-        builder.RegisterType<FakeRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<FakeKeyPairProvider>().As<IKeyProvider>();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
-            .AsSelf();
-        builder.Register(_ => new Int128());
-        builder.Register(_ => new Int256());
-        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        var container = builder.Build();
+        using(var mock = AutoMock.GetLoose())
+        {
+            var random = mock.Mock<IRandomGenerator>();
+            byte[] rnd = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
+                0x77, 0xBA, 0x4A, 0xA5, 0x73, 0x90, 0x73, 0x30 };
+            random.Setup(x => x.GetRandomBytes(It.IsAny<int>())).Returns(() => rnd);
+            Queue<int> primes = new();
+            primes.Enqueue(0x494C553B);
+            primes.Enqueue(0x53911073);
+            random.Setup(x => x.GetRandomPrime()).Returns(() => primes.Dequeue());
+            List<long> fingerprints = new();
+            fingerprints.Add(unchecked((long)0xc3b42b026ce86b21));
+            var keyProvider = mock.Mock<IKeyProvider>();
+            keyProvider.Setup(x => x.GetRSAFingerprints()).Returns(() => fingerprints);
+            var factory = mock.Mock<ITLObjectFactory>();
+            factory.Setup(x => x.Resolve<ITLObject>()).Returns(new ResPQ(factory.Object));
+            mock.Mock<ILogger>();
 
-        var reqpq = container.Resolve<ReqPqMulti>();
-        reqpq.Nonce = (Int128)(new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
+            var reqpq = mock.Create<ReqPqMulti>();
+            reqpq.Nonce = (Int128)(new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
             0x66, 0xB3, 0x01, 0xA4, 0x8F, 0xEC, 0xE2, 0xFC });
 
-        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-        var respq = await reqpq.ExecuteAsync(context);
+            TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
+            var respq = await reqpq.ExecuteAsync(context);
 
-        byte[] expected = new byte[]
-        {
+            byte[] expected = new byte[]
+            {
             0x63, 0x24, 0x16, 0x05, 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9, 0x66, 0xB3, 0x01, 0xA4,
             0x8F, 0xEC, 0xE2, 0xFC, 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8, 0x77, 0xBA, 0x4A, 0xA5,
             0x73, 0x90, 0x73, 0x30, 0x08, 0x17, 0xED, 0x48, 0x94, 0x1A, 0x08, 0xF9, 0x81, 0x00, 0x00, 0x00,
             0x15, 0xC4, 0xB5, 0x1C, 0x01, 0x00, 0x00, 0x00, 0x21, 0x6B, 0xE8, 0x6C, 0x02, 0x2B, 0xB4, 0xC3
-        };
-        byte[] val = respq.TLBytes.ToArray();
-        Assert.Equal(expected, val);
+            };
+            byte[] val = respq.TLBytes.ToArray();
+            Assert.Equal(expected, val);
+        }
     }
 
     byte[] nonce = new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
@@ -563,68 +96,130 @@ public class PqTests
     [Fact]
     public void ReqPqMulti_ShouldModifyTLExecutionContext()
     {
-        var tl = Assembly.Load("Ferrite.TL");
-        var builder = new ContainerBuilder();
-        builder.RegisterType<FakeRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<FakeKeyPairProvider>().As<IKeyProvider>();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
-            .AsSelf();
-        builder.Register(_ => new Int128());
-        builder.Register(_ => new Int256());
-        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        var container = builder.Build();
+        using (var mock = AutoMock.GetLoose())
+        {
+            var random = mock.Mock<IRandomGenerator>();
+            byte[] rnd = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
+                0x77, 0xBA, 0x4A, 0xA5, 0x73, 0x90, 0x73, 0x30 };
+            random.Setup(x => x.GetRandomBytes(It.IsAny<int>())).Returns(() => rnd);
+            Queue<int> primes = new();
+            primes.Enqueue(0x494C553B);
+            primes.Enqueue(0x53911073);
+            random.Setup(x => x.GetRandomPrime()).Returns(() => primes.Dequeue());
+            List<long> fingerprints = new();
+            fingerprints.Add(unchecked((long)0xc3b42b026ce86b21));
+            var keyProvider = mock.Mock<IKeyProvider>();
+            keyProvider.Setup(x => x.GetRSAFingerprints()).Returns(() => fingerprints);
+            var factory = mock.Mock<ITLObjectFactory>();
+            factory.Setup(x => x.Resolve<ITLObject>()).Returns(new ResPQ(factory.Object));
+            mock.Mock<ILogger>();
 
-        var reqpq = container.Resolve<ReqPqMulti>();
-        reqpq.Nonce = (Int128)nonce;
+            var reqpq = mock.Create<ReqPqMulti>();
+            reqpq.Nonce = (Int128)nonce;
 
-        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-        var respq = reqpq.ExecuteAsync(context);
+            TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
+            var respq = reqpq.ExecuteAsync(context);
 
-        Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
-        Assert.Equal(0x53911073, (int)context.SessionData["q"]);
+            Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
+            Assert.Equal(0x53911073, (int)context.SessionData["q"]);
 
-        Assert.Equal(nonce, context.SessionData["nonce"]);
-        Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
+            Assert.Equal(nonce, context.SessionData["nonce"]);
+            Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
+        }
     }
 
     [Fact]
     public void ReqPqMulti_ShouldNotModifyTLExecutionContext()
     {
-        var tl = Assembly.Load("Ferrite.TL");
-        var builder = new ContainerBuilder();
-        builder.RegisterType<FakeRandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<FakeKeyPairProvider>().As<IKeyProvider>();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
-            .AsSelf();
-        builder.Register(_ => new Int128());
-        builder.Register(_ => new Int256());
-        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        var container = builder.Build();
+        using (var mock = AutoMock.GetLoose())
+        {
+            var random = mock.Mock<IRandomGenerator>();
+            byte[] rnd = new byte[] { 0xA5, 0xCF, 0x4D, 0x33, 0xF4, 0xA1, 0x1E, 0xA8,
+                0x77, 0xBA, 0x4A, 0xA5, 0x73, 0x90, 0x73, 0x30 };
+            random.Setup(x => x.GetRandomBytes(It.IsAny<int>())).Returns(() => rnd);
+            Queue<int> primes = new();
+            primes.Enqueue(0x494C553B);
+            primes.Enqueue(0x53911073);
+            random.Setup(x => x.GetRandomPrime()).Returns(() => primes.Dequeue());
+            List<long> fingerprints = new();
+            fingerprints.Add(unchecked((long)0xc3b42b026ce86b21));
+            var keyProvider = mock.Mock<IKeyProvider>();
+            keyProvider.Setup(x => x.GetRSAFingerprints()).Returns(() => fingerprints);
+            var factory = mock.Mock<ITLObjectFactory>();
+            factory.Setup(x => x.Resolve<ITLObject>()).Returns(new ResPQ(factory.Object));
+            mock.Mock<ILogger>();
 
-        var reqpq = container.Resolve<ReqPqMulti>();
-        reqpq.Nonce = (Int128)nonce;
+            var reqpq = mock.Create<ReqPqMulti>();
+            reqpq.Nonce = (Int128)nonce;
 
-        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-        var respq = reqpq.ExecuteAsync(context);
+            TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
+            var respq = reqpq.ExecuteAsync(context);
 
-        Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
-        Assert.Equal(0x53911073, (int)context.SessionData["q"]);
+            Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
+            Assert.Equal(0x53911073, (int)context.SessionData["q"]);
 
-        Assert.Equal(nonce, context.SessionData["nonce"]);
-        Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
+            Assert.Equal(nonce, context.SessionData["nonce"]);
+            Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
 
-        var reqpqNew = container.Resolve<ReqPqMulti>();
-        reqpqNew.Nonce = (Int128)nonce;
-        var respqNew = reqpqNew.ExecuteAsync(context);
-        Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
+            var reqpqNew = mock.Create<ReqPqMulti>();
+            reqpqNew.Nonce = (Int128)nonce;
+            var respqNew = reqpqNew.ExecuteAsync(context);
+            Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
+        }
     }
 
     private static IContainer BuildContainer()
     {
+        var logger = new Mock<ILogger>();
+        Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+        Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
+        var redis = new Mock<IDistributedCache>();
+        redis.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        {
+            authKeys.Add(a, b);
+            return true;
+        });
+        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
+        {
+            sessions.Add(a, b);
+            return true;
+        });
+        redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
+        redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!sessions.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return sessions[a];
+        });
+        redis.Setup(x => x.DeleteSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            sessions.Remove(a);
+            return true;
+        });
+        Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
+        var cassandra = new Mock<IPersistentStore>();
+        cassandra.Setup(x => x.SaveAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        {
+            authKeys2.Add(a, b);
+            return true;
+        });
+        cassandra.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!authKeys2.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -635,13 +230,70 @@ public class PqTests
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<FakeCassandra>().As<IPersistentStore>();
-        builder.RegisterType<FakeRedis>().As<IDistributedCache>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        builder.RegisterMock(cassandra);
+        builder.RegisterMock(redis);
+        builder.RegisterMock(logger);
         var container = builder.Build();
         return container;
     }
-
+    private static IContainer BuildContainer2()
+    {
+        var logger = new Mock<ILogger>();
+        Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+        Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
+        var redis = new Mock<IDistributedCache>();
+        redis.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        {
+            authKeys.Add(a, b);
+            return true;
+        });
+        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
+        {
+            sessions.Add(a, b);
+            return true;
+        });
+        redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
+        redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!sessions.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return sessions[a];
+        });
+        redis.Setup(x => x.DeleteSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            sessions.Remove(a);
+            return true;
+        });
+        var cassandra = new Mock<IPersistentStore>();
+        cassandra.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            return RandomNumberGenerator.GetBytes(192);
+        });
+        var tl = Assembly.Load("Ferrite.TL");
+        var builder = new ContainerBuilder();
+        builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
+        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
+            .AsSelf();
+        builder.Register(_ => new Int128());
+        builder.Register(_ => new Int256());
+        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterMock(cassandra);
+        builder.RegisterMock(redis);
+        builder.RegisterMock(logger);
+        var container = builder.Build();
+        return container;
+    }
     [Fact]
     public void RSAEncryptionWorks()
     {
@@ -681,6 +333,7 @@ public class PqTests
     [Fact]
     public async Task ReqDhParams_ShouldReturnServerDhParamsAsync()
     {
+        
         IContainer container = BuildContainer();
 
         TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
@@ -970,20 +623,7 @@ public class PqTests
     [Fact]
     public async Task SetClientDhParams_ShouldReturnDhGenRetryAsync()
     {
-        var tl = Assembly.Load("Ferrite.TL");
-        var builder = new ContainerBuilder();
-        builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
-        builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace == "Ferrite.TL.mtproto")
-            .AsSelf();
-        builder.Register(_ => new Int128());
-        builder.Register(_ => new Int256());
-        builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<FakeDataStore>().As<IPersistentStore>();
-        builder.RegisterType<FakeRedis>().As<IDistributedCache>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
-        var container = builder.Build();
+        var container = BuildContainer2();
         
         var random = container.Resolve<IRandomGenerator>();
         byte[] n = new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,

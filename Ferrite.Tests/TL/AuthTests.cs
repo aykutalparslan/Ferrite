@@ -27,6 +27,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
+using Autofac.Extras.Moq;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -40,6 +41,7 @@ using Ferrite.TL.mtproto;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
+using Moq;
 using Xunit;
 
 namespace Ferrite.Tests.TL;
@@ -736,13 +738,18 @@ public class AuthTests
 
     private IContainer BuildIoCContainer()
     {
+        var mock = AutoMock.GetLoose();
+        var mtProtoService = mock.Mock<IMTProtoService>();
+        mtProtoService.Setup(x => x.GetAuthKeyAsync(It.IsAny<int>()))
+                .ReturnsAsync(() => new byte[] { 1, 2, 3  });
+        var log = mock.Mock<ILogger>();
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<FakeTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<FakeRandom>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterType<FakeAuthService>().As<IAuthService>().InstancePerLifetimeScope();
-        builder.RegisterType<FakeMTProtoService>().As<IMTProtoService>().InstancePerLifetimeScope();
+        builder.RegisterMock(mtProtoService);
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -760,7 +767,7 @@ public class AuthTests
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<FakeCassandra>().As<IPersistentStore>().SingleInstance();
         builder.RegisterType<FakeRedis>().As<IDistributedCache>().SingleInstance();
-        builder.RegisterType<FakeLogger>().As<ILogger>().SingleInstance();
+        builder.RegisterMock(log);
         builder.RegisterType<FakeDistributedPipe>().As<IDistributedPipe>().SingleInstance();
 
         var container = builder.Build();
@@ -768,23 +775,7 @@ public class AuthTests
         return container;
     }
 }
-class FakeMTProtoService : IMTProtoService
-{
-    public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
-    {
-        return new byte[3] { 1, 2, 3 };
-    }
 
-    public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
-    {
-        throw new NotImplementedException();
-    }
-}
 class FakeAuthService : IAuthService
 {
     bool _signupComplete = false;
@@ -1330,7 +1321,7 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
-    public Task DeleteAuthorizationAsync(long authKeyId)
+    public Task<bool> DeleteAuthorizationAsync(long authKeyId)
     {
         throw new NotImplementedException();
     }
@@ -1389,22 +1380,23 @@ class FakeCassandra : IPersistentStore
         throw new NotImplementedException();
     }
 
-    public async Task SaveAuthKeyAsync(long authKeyId, byte[] authKey)
+    public async Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey)
     {
         authKeys.Add(authKeyId, authKey);
+        return true;
     }
 
-    public Task SaveAuthorizationAsync(AuthInfo details)
+    public Task<bool> SaveAuthorizationAsync(AuthInfo details)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
+    public Task<bool> SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
     {
         throw new NotImplementedException();
     }
 
-    public Task SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
+    public Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL)
     {
         throw new NotImplementedException();
     }
@@ -1570,68 +1562,7 @@ class FakeSessionManager : ISessionService
         throw new NotImplementedException();
     }
 }
-class FakeLogger : ILogger
-{
-    public void Debug(string message)
-    {
 
-    }
-
-    public void Debug(Exception exception, string message)
-    {
-
-    }
-
-    public void Error(string message)
-    {
-
-    }
-
-    public void Error(Exception exception, string message)
-    {
-
-    }
-
-    public void Fatal(string message)
-    {
-
-    }
-
-    public void Fatal(Exception exception, string message)
-    {
-
-    }
-
-    public void Information(string message)
-    {
-
-    }
-
-    public void Information(Exception exception, string message)
-    {
-
-    }
-
-    public void Verbose(string message)
-    {
-
-    }
-
-    public void Verbose(Exception exception, string message)
-    {
-
-    }
-
-    public void Warning(string message)
-    {
-
-    }
-
-    public void Warning(Exception exception, string message)
-    {
-
-    }
-}
 class FakeDistributedPipe : IDistributedPipe
 {
     ConcurrentQueue<byte[]> _channel = new();
