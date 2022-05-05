@@ -38,7 +38,7 @@ public class MTProtoConnection : IMTProtoConnection
     public MTProtoTransport TransportType { get; private set; }
     public bool IsEncrypted => _authKeyId != 0;
     private readonly ITransportDetector transportDetector;
-    private readonly IDistributedCache _store;
+    private readonly IDistributedCache _cache;
     private readonly IPersistentStore _db;
     private readonly ILogger _log;
     private readonly IRandomGenerator _random;
@@ -70,7 +70,7 @@ public class MTProtoConnection : IMTProtoConnection
 
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
-        IDistributedCache store, IPersistentStore persistentStore,
+        IDistributedCache cache, IPersistentStore persistentStore,
         ILogger logger, IRandomGenerator random, ISessionService sessionManager,
         IMTProtoTime protoTime, IProcessorManager processorManager)
     {
@@ -78,7 +78,7 @@ public class MTProtoConnection : IMTProtoConnection
         TransportType = MTProtoTransport.Unknown;
         factory = objectFactory;
         transportDetector = detector;
-        _store = store;
+        _cache = cache;
         _db = persistentStore;
         _log = logger;
         _random = random;
@@ -364,7 +364,11 @@ public class MTProtoConnection : IMTProtoConnection
         {
             if (_authKey == null)
             {
-                _authKey = await _store.GetAuthKeyAsync(_authKeyId);
+                _authKey = await _cache.GetAuthKeyAsync(_authKeyId);
+            }
+            if (_authKey == null)
+            {
+                _authKey = await _cache.GetTempAuthKeyAsync(_authKeyId);
             }
             if (_authKey == null)
             {
@@ -372,7 +376,7 @@ public class MTProtoConnection : IMTProtoConnection
                 if (authKey != null)
                 {
                     _authKey = authKey;
-                    _ = _store.PutAuthKeyAsync(_authKeyId, _authKey);
+                    _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
                 }
             }
 

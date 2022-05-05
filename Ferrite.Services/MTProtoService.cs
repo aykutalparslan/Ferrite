@@ -78,6 +78,10 @@ public class MTProtoService : IMTProtoService
         var authKey = await _cache.GetAuthKeyAsync(authKeyId);
         if (authKey == null)
         {
+            authKey = await _cache.GetTempAuthKeyAsync(authKeyId);
+        }
+        if (authKey == null)
+        {
             authKey = await _store.GetAuthKeyAsync(authKeyId);
         }
         return authKey;
