@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +30,12 @@ public class RegisterDevice : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public RegisterDevice(ITLObjectFactory objectFactory)
+    public RegisterDevice(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => -326762118;
@@ -131,7 +136,20 @@ public class RegisterDevice : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var success = await _account.RegisterDevice(new DeviceInfo()
+        {
+            AuthKeyId = ctx.AuthKeyId,
+            Secret = _secret,
+            Token = _token,
+            AppSandbox = _appSandbox,
+            NoMuted = NoMuted,
+            TokenType = _tokenType,
+            OtherUserIds = _otherUids
+        });
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
