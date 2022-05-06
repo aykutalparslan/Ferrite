@@ -38,5 +38,7 @@ public interface IPersistentStore
     public Task<User?> GetUserByUsernameAsync(string username);
     public Task<bool> SaveAppInfoAsync(AppInfo appInfo);
     public Task<AppInfo?> GetAppInfoAsync(long authKeyId);
+    public Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo);
+    public Task<DeviceInfo?> GetDeviceInfoAsync(long authKeyId);
 }
 

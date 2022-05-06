@@ -128,6 +128,23 @@ namespace Ferrite.Data
                             "ip_address text," +
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.devices (" +
+                "auth_key_id bigint," +
+                "no_muted boolean," +
+                "token_type int," +
+                "token text," +
+                "app_sandbox boolean," +
+                "app_version text," +
+                "secret blob," +
+                "PRIMARY KEY (auth_key_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.device_other_users (" +
+                "auth_key_id bigint," +
+                "user_id long," +
+                "PRIMARY KEY (auth_key_id, user_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -467,14 +484,14 @@ namespace Ferrite.Data
                 "DELETE FROM ferrite.authorizations WHERE auth_key_id = ?;",
                 authKeyId);
             statement = statement.SetKeyspace(keySpace);
-            await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            await session.ExecuteAsync(statement);
             if (oldAuthorization != null)
             {
                 statement = new SimpleStatement(
                 "DELETE FROM ferrite.exported_authorizations WHERE user_id = ? AND auth_key_id = ?;",
                 oldAuthorization.UserId, authKeyId);
                 statement = statement.SetKeyspace(keySpace);
-                await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+                await session.ExecuteAsync(statement);
             }
             if ((oldAuthorization?.Phone.Length ?? 0) > 0)
             {
@@ -482,7 +499,7 @@ namespace Ferrite.Data
                 "DELETE FROM ferrite.authorizations_by_phone WHERE phone = ? AND auth_key_id = ?;",
                 oldAuthorization?.Phone, authKeyId);
                 statement = statement.SetKeyspace(keySpace);
-                await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+                await session.ExecuteAsync(statement);
             }
             return true;
         }
@@ -506,7 +523,7 @@ namespace Ferrite.Data
                 user_id, auth_key_id);
             statement = statement.SetKeyspace(keySpace);
 
-            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
                 info = new ExportedAuthInfo()
@@ -544,7 +561,7 @@ namespace Ferrite.Data
                 "SELECT * FROM ferrite.app_infos WHERE auth_key_id = ?;", authKeyId);
             statement = statement.SetKeyspace(keySpace);
 
-            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
                 info = new AppInfo()
@@ -558,6 +575,58 @@ namespace Ferrite.Data
                     LangPack = row.GetValue<string>("lang_pack"),
                     LangCode = row.GetValue<string>("lang_code"),
                     IP = row.GetValue<string>("ip_address"),
+                };
+            }
+            return info;
+        }
+
+        public async Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.devices SET no_muted = ?, token_type = ?, " +
+                "token = ?, app_sandbox = ?, " +
+                "secret = ? " +
+                "WHERE auth_key_id = ?;",
+                deviceInfo.NoMuted, deviceInfo.TokenType, deviceInfo.Token,
+                deviceInfo.AppSandbox, deviceInfo.Secret, deviceInfo.AuthKeyId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            foreach (var userId in deviceInfo.OtherUserIds)
+            {
+                statement = new SimpleStatement(
+                    "INSERT INTO ferrite.device_other_users (auth_key_id, user_id) VALUES (?,?);",
+                    deviceInfo.AuthKeyId, userId).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
+            return true;
+        }
+
+        public async Task<DeviceInfo?> GetDeviceInfoAsync(long authKeyId)
+        {
+            DeviceInfo? info = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.devices WHERE auth_key_id = ?;", authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                var statement2 = new SimpleStatement(
+                    "SELECT * FROM ferrite.device_other_users WHERE auth_key_id = ?;", authKeyId);
+                statement2 = statement2.SetKeyspace(keySpace);
+                var results2 = await session.ExecuteAsync(statement2);
+                List<long> userIds = new();
+                foreach (var row2 in results2)
+                {
+                    userIds.Add(row2.GetValue<long>("user_id"));
+                }
+                info = new DeviceInfo()
+                {
+                    AuthKeyId = row.GetValue<long>("auth_key_id"),
+                    TokenType = row.GetValue<int>("token_type"),
+                    Token = row.GetValue<string>("token"),
+                    NoMuted = row.GetValue<bool>("no_muted"),
+                    Secret = row.GetValue<byte[]>("secret"),
+                    AppSandbox = row.GetValue<bool>("app_sandbox"),
+                    OtherUserIds = userIds,
                 };
             }
             return info;
