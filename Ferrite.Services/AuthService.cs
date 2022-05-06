@@ -93,9 +93,9 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public Task<bool> DropTempAuthKeys(ICollection<long> exceptAuthKeys)
+    public async Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys)
     {
-        throw new NotImplementedException();
+        return await _cache.DeleteTempAuthKeysAsync(authKeyId, exceptAuthKeys);
     }
 
     public async Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)

@@ -49,7 +49,7 @@ public interface IAuthService
     public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings);
     public Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash);
     public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash);
-    public Task<bool> DropTempAuthKeys(ICollection<long> exceptAuthKeys);
+    public Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
     public Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
     public Task<LoginToken> ImportLoginToken(byte[] token);
     public Task<AppInfo?> AcceptLoginToken(long authKeyId, byte[] token);

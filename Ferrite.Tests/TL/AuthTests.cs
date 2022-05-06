@@ -856,7 +856,7 @@ public class AuthTests
     {
         var builder = GetBuilder();
         var authStub = new Mock<IAuthService>();
-        authStub.Setup(x => x.DropTempAuthKeys(It.IsAny<ICollection<long>>()))
+        authStub.Setup(x => x.DropTempAuthKeys(It.IsAny<long>(), It.IsAny<ICollection<long>>()))
             .ReturnsAsync(() =>
                 true
             );
@@ -880,7 +880,7 @@ public class AuthTests
     {
         var builder = GetBuilder();
         var authStub = new Mock<IAuthService>();
-        authStub.Setup(x => x.DropTempAuthKeys(It.IsAny<ICollection<long>>()))
+        authStub.Setup(x => x.DropTempAuthKeys(It.IsAny<long>(), It.IsAny<ICollection<long>>()))
             .ReturnsAsync(() =>
                 false
             );

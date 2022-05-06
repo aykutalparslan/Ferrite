@@ -27,16 +27,18 @@ namespace Ferrite.Data;
 public class RedisCache: IDistributedCache
 {
     private readonly ConnectionMultiplexer redis;
-    private readonly byte[] AuthKeyPrefix = new byte[] { (byte)'A', (byte)'U', (byte)'T', (byte)'H', (byte)'-', (byte)'-' };
-    private readonly byte[] TempAuthKeyPrefix = new byte[] { (byte)'T', (byte)'A', (byte)'U', (byte)'T', (byte)'-', (byte)'-' };
-    private readonly byte[] BoundAuthKeyPrefix = new byte[] { (byte)'B', (byte)'A', (byte)'U', (byte)'T', (byte)'-', (byte)'-' };
-    private readonly byte[] BoundTempAuthKeyPrefix = new byte[] { (byte)'B', (byte)'T', (byte)'A', (byte)'U', (byte)'-', (byte)'-' };
-    private readonly byte[] SessionPrefix = new byte[] { (byte)'S', (byte)'E', (byte)'S', (byte)'S', (byte)'-', (byte)'-' };
-    private readonly byte[] SessionByAuthKeyPrefix = new byte[] { (byte)'S', (byte)'A', (byte)'T', (byte)'K', (byte)'-', (byte)'-' };
-    private readonly byte[] PhoneCodePrefix = new byte[] { (byte)'P', (byte)'C', (byte)'D', (byte)'E', (byte)'-', (byte)'-' };
-    private readonly byte[] AuthSessionPrefix = new byte[] { (byte)'A', (byte)'K', (byte)'C', (byte)'R', (byte)'-', (byte)'-' };
-    private readonly byte[] ServerSaltPrefix = new byte[] { (byte)'S', (byte)'A', (byte)'L', (byte)'T', (byte)'-', (byte)'-' };
-    private readonly byte[] LoginTokenPrefix = new byte[] { (byte)'L', (byte)'T', (byte)'K', (byte)'N', (byte)'-', (byte)'-' };
+    private const int ExpiryMaxSeconds = 3600;
+    private const string AuthKeyPrefix = "auth-";
+    private const string TempAuthKeyPrefix = "tauth-";
+    private const string BoundAuthKeyPrefix = "bauth-";
+    private const string BoundTempAuthKeyPrefix = "btauth-";
+    private const string BoundTempKeysPrefix = "bkeys-";
+    private const string SessionPrefix = "ses-s";
+    private const string SessionByAuthKeyPrefix = "sbauth-";
+    private const string PhoneCodePrefix = "pcode-";
+    private const string AuthSessionPrefix = "asess-";
+    private const string ServerSaltPrefix = "salt-";
+    private const string LoginTokenPrefix = "ltoken-";
 
     public RedisCache(string config)
     {
@@ -70,9 +72,28 @@ public class RedisCache: IDistributedCache
         return await db.SortedSetRemoveAsync(key, sessionId);
     }
 
-    public Task<bool> DeleteTempAuthKeyAsync(long tempAuthKeyId)
+    public async Task<bool> DeleteTempAuthKeysAsync(long authKeyId, ICollection<long> exceptIds)
     {
-        throw new NotImplementedException();
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BoundTempKeysPrefix;
+        key = key.Append(BitConverter.GetBytes(authKeyId));
+        await db.SortedSetRemoveRangeByScoreAsync(key, 0, 
+            (DateTimeOffset.Now - new TimeSpan(0,0,ExpiryMaxSeconds)).ToUnixTimeMilliseconds());
+        var result = await db.SortedSetRangeByScoreAsync(key);
+        List<RedisValue> toBeDeleted = new();
+        foreach (var v in result)
+        {
+            if (!exceptIds.Contains((long)v))
+            {
+                RedisKey tkey = BitConverter.GetBytes((long)v);
+                tkey = tkey.Prepend(TempAuthKeyPrefix);
+                _ = db.KeyDeleteAsync(tkey);
+                toBeDeleted.Add(v);
+            }
+        }
+        _ = db.SortedSetRemoveAsync(key, toBeDeleted.ToArray());
+        return true;
     }
 
     public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
@@ -204,6 +225,10 @@ public class RedisCache: IDistributedCache
 
     public async Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
     {
+        if (expiresIn.TotalSeconds > ExpiryMaxSeconds)
+        {
+            expiresIn = new TimeSpan(0, 0, ExpiryMaxSeconds);
+        }
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
@@ -212,11 +237,20 @@ public class RedisCache: IDistributedCache
         key = BitConverter.GetBytes(authKeyId);
         key = key.Prepend(BoundAuthKeyPrefix);
         await db.StringSetAsync(key, tempAuthKeyId, expiresIn);
+        key = BoundTempKeysPrefix;
+        key = key.Append(BitConverter.GetBytes(authKeyId));
+        await db.SortedSetRemoveRangeByScoreAsync(key, 0, 
+            (DateTimeOffset.Now - new TimeSpan(0,0,ExpiryMaxSeconds)).ToUnixTimeMilliseconds());
+        await db.SortedSetAddAsync(key, tempAuthKeyId, DateTimeOffset.Now.ToUnixTimeMilliseconds());
         return true;
     }
 
     public async Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn)
     {
+        if (expiresIn.TotalSeconds > ExpiryMaxSeconds)
+        {
+            expiresIn = new TimeSpan(0, 0, ExpiryMaxSeconds);
+        }
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = login.Token;
@@ -227,6 +261,10 @@ public class RedisCache: IDistributedCache
 
     public async Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
     {
+        if (expiresIn.TotalSeconds > ExpiryMaxSeconds)
+        {
+            expiresIn = new TimeSpan(0, 0, ExpiryMaxSeconds);
+        }
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = phoneNumber + phoneCodeHash;
@@ -235,7 +273,7 @@ public class RedisCache: IDistributedCache
     }
 
     public async Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)
-    {
+    { 
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = ServerSaltPrefix;
@@ -264,6 +302,10 @@ public class RedisCache: IDistributedCache
 
     public async Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
     {
+        if (expiresIn.TotalSeconds > ExpiryMaxSeconds)
+        {
+            expiresIn = new TimeSpan(0, 0, ExpiryMaxSeconds);
+        }
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
