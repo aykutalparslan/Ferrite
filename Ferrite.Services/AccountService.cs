@@ -15,4 +15,9 @@ public class AccountService : IAccountService
     {
         return await _store.SaveDeviceInfoAsync(deviceInfo);
     }
+
+    public async Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds)
+    {
+        return await _store.DeleteDeviceInfoAsync(authKeyId, token, otherUserIds);
+    }
 }
