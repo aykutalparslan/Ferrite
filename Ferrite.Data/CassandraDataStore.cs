@@ -137,13 +137,14 @@ namespace Ferrite.Data
                 "app_sandbox boolean," +
                 "app_version text," +
                 "secret blob," +
-                "PRIMARY KEY (auth_key_id));");
+                "PRIMARY KEY (auth_key_id, token));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.device_other_users (" +
                 "auth_key_id bigint," +
                 "user_id long," +
-                "PRIMARY KEY (auth_key_id, user_id));");
+                "token text," +
+                "PRIMARY KEY (auth_key_id, user_id, token));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -593,8 +594,9 @@ namespace Ferrite.Data
             foreach (var userId in deviceInfo.OtherUserIds)
             {
                 statement = new SimpleStatement(
-                    "INSERT INTO ferrite.device_other_users (auth_key_id, user_id) VALUES (?,?);",
-                    deviceInfo.AuthKeyId, userId).SetKeyspace(keySpace);
+                    "UPDATE ferrite.device_other_users SET token = ? " +
+                    "WHERE auth_key_id = ? AND user_id = ?;",
+                    deviceInfo.Token, deviceInfo.AuthKeyId, userId).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
             }
             return true;
@@ -630,6 +632,24 @@ namespace Ferrite.Data
                 };
             }
             return info;
+        }
+
+        public async Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds)
+        {
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.devices WHERE auth_key_id = ? AND token = ?;",
+                authKeyId, token);
+            statement = statement.SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            foreach (var userId in otherUserIds)
+            {
+                statement = new SimpleStatement(
+                    "DELETE FROM ferrite.device_other_users WHERE auth_key_id = ? AND user_id = ?, AND token = ?;",
+                    authKeyId, userId, token);
+                statement = statement.SetKeyspace(keySpace);
+            }
+            await session.ExecuteAsync(statement);
+            return true;
         }
     }
 }

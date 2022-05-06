@@ -40,5 +40,7 @@ public interface IPersistentStore
     public Task<AppInfo?> GetAppInfoAsync(long authKeyId);
     public Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo);
     public Task<DeviceInfo?> GetDeviceInfoAsync(long authKeyId);
+    public Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds);
+
 }
 
