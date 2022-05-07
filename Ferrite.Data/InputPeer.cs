@@ -25,7 +25,6 @@ public record InputPeer
     public long UserId { get; init; }
     public long ChannelId { get; init; }
     public long AccessHash { get; init; }
-    public InputPeer Peer { get; init; } = default!;
     public int MsgId { get; init; }
 }
 

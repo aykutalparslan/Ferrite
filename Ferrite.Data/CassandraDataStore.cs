@@ -146,6 +146,18 @@ namespace Ferrite.Data
                 "token text," +
                 "PRIMARY KEY (auth_key_id, user_id, token));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.notify_settings (" +
+                "auth_key_id bigint," +
+                "notify_peer_type int," +
+                "peer_type int," +
+                "peer_id long," +
+                "show_previews boolean," +
+                "silent boolean," +
+                "mute_until int," +
+                "sound text," +
+                "PRIMARY KEY (auth_key_id, notify_peer_type, peer_type, peer_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -648,6 +660,72 @@ namespace Ferrite.Data
                     authKeyId, userId, token);
                 statement = statement.SetKeyspace(keySpace);
             }
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeer peer, InputPeerNotifySettings settings)
+        {
+            long peerId = 0;
+            if (peer.Peer.InputPeerType == InputPeerType.User)
+            {
+                peerId = peer.Peer.UserId;
+            } else if (peer.Peer.InputPeerType == InputPeerType.Self)
+            {
+                peerId = peer.Peer.UserId;
+            } else if (peer.Peer.InputPeerType == InputPeerType.Chat)
+            {
+                peerId = peer.Peer.ChatId;
+            }
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.notify_settings SET peer_type = ?, peer_id = ?, " +
+                "show_previews = ?, silent = ?, " +
+                "mute_until = ?, sound = ? " +
+                "WHERE auth_key_id = ? AND notify_peer_type = ?;",
+                (int)peer.Peer.InputPeerType, peerId,settings.ShowPreviews, settings.Silent,
+                settings.MuteUntil, settings.Sound, authKeyId, (int)peer.NotifyPeerType).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<InputPeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
+        {
+            long peerId = 0;
+            if (peer.Peer.InputPeerType == InputPeerType.User)
+            {
+                peerId = peer.Peer.UserId;
+            } else if (peer.Peer.InputPeerType == InputPeerType.Self)
+            {
+                peerId = peer.Peer.UserId;
+            } else if (peer.Peer.InputPeerType == InputPeerType.Chat)
+            {
+                peerId = peer.Peer.ChatId;
+            }
+            InputPeerNotifySettings? settings = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.app_infos WHERE auth_key_id = ? AND notify_peer_type = ? " +
+                "AND peer_type = ? AND peer_id = ?;", authKeyId, (int)peer.NotifyPeerType, 
+                (int)peer.Peer.InputPeerType, peerId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                settings = new InputPeerNotifySettings()
+                {
+                    Silent = row.GetValue<bool>("silent"),
+                    Sound = row.GetValue<string>("sound"),
+                    MuteUntil = row.GetValue<int>("mute_until"),
+                    ShowPreviews = row.GetValue<bool>("show_previews")
+                };
+            }
+            return settings;
+        }
+
+        public async Task<bool> DeleteNotifySettingsAsync(long authKeyId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.notify_settings WHERE auth_key_id = ?;", authKeyId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }

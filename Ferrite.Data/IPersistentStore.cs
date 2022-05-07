@@ -41,6 +41,8 @@ public interface IPersistentStore
     public Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo);
     public Task<DeviceInfo?> GetDeviceInfoAsync(long authKeyId);
     public Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds);
-
+    public Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeer peer, InputPeerNotifySettings settings);
+    public Task<InputPeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer);
+    public Task<bool> DeleteNotifySettingsAsync(long authKeyId);
 }
 
