@@ -920,8 +920,7 @@ class Compiler
                             .VariableDeclarator(fieldname).WithInitializer(
                                 SyntaxFactory.EqualsValueClause(SyntaxFactory.ParseExpression(item.Id)))))
                         .AddModifiers(SyntaxFactory.Token(SyntaxKind.PublicKeyword),
-                            SyntaxFactory.Token(SyntaxKind.StaticKeyword),
-                            SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));
+                            SyntaxFactory.Token(SyntaxKind.ConstKeyword));
             cls = cls.AddMembers(field);
         }
         foreach (var item in schema.Methods)

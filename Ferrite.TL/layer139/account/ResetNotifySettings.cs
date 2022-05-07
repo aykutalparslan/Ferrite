@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +29,12 @@ public class ResetNotifySettings : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public ResetNotifySettings(ITLObjectFactory objectFactory)
+    public ResetNotifySettings(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => -612493497;
@@ -49,7 +53,11 @@ public class ResetNotifySettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var success = await _account.ResetNotifySettings(ctx.AuthKeyId);
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

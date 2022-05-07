@@ -20,17 +20,23 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
+using StackExchange.Redis;
 
 namespace Ferrite.TL.layer139.account;
 public class UpdateNotifySettings : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public UpdateNotifySettings(ITLObjectFactory objectFactory)
+    public UpdateNotifySettings(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => -2067899501;
@@ -73,7 +79,53 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var peer = (InputNotifyPeerImpl)_peer;
+        var settings = (InputPeerNotifySettingsImpl)_settings;
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var success = await _account.UpdateNotifySettings(ctx.AuthKeyId,
+            new Data.InputNotifyPeer()
+            {
+                NotifyPeerType = peer.Constructor switch
+                {
+                    TLConstructor.InputNotifyChats => InputNotifyPeerType.Chats,
+                    TLConstructor.InputNotifyUsers => InputNotifyPeerType.Users,
+                    TLConstructor.InputNotifyBroadcasts => InputNotifyPeerType.Broadcasts,
+                    _ => InputNotifyPeerType.Peer
+                },
+                Peer = new Data.InputPeer()
+                {
+                    InputPeerType = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerChat => InputPeerType.Chat,
+                        _ => InputPeerType.User
+                    },
+                    UserId = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
+                        TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)peer.Peer).UserId,
+                        _ => 0
+                    },
+                    AccessHash = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
+                        TLConstructor.InputPeerUserFromMessage => 
+                            ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)peer.Peer).Peer).AccessHash,
+                        _ => 0
+                    },
+                    ChatId = peer.Peer.Constructor == TLConstructor.InputPeerChat ? 
+                        ((InputPeerChatImpl)peer.Peer).ChatId : 0,
+                }
+            },
+            new Data.InputPeerNotifySettings()
+            {
+                Silent = settings.Silent,
+                Sound = settings.Sound,
+                MuteUntil = settings.MuteUntil,
+                ShowPreviews = settings.ShowPreviews
+            });
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

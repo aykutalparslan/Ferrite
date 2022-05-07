@@ -20,4 +20,21 @@ public class AccountService : IAccountService
     {
         return await _store.DeleteDeviceInfoAsync(authKeyId, token, otherUserIds);
     }
+
+    public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeer peer, InputPeerNotifySettings settings)
+    {
+        return await _store.SaveNotifySettingsAsync(authKeyId, peer, settings);
+    }
+
+    public async Task<InputPeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer)
+    {
+        var settings = await _store.GetNotifySettingsAsync(authKeyId, peer) ?? new InputPeerNotifySettings();
+
+        return settings;
+    }
+
+    public async Task<bool> ResetNotifySettings(long authKeyId)
+    {
+        return await _store.DeleteNotifySettingsAsync(authKeyId);
+    }
 }
