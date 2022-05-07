@@ -20,17 +20,22 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
+using StackExchange.Redis;
 
 namespace Ferrite.TL.layer139.account;
 public class UpdateProfile : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public UpdateProfile(ITLObjectFactory objectFactory)
+    public UpdateProfile(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => 2018596725;
@@ -112,7 +117,27 @@ public class UpdateProfile : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var userNew = await _account.UpdateProfile(ctx.AuthKeyId, _firstName, _lastName, _about);
+        if (userNew == null)
+        {
+            var userEmpty = factory.Resolve<UserEmptyImpl>();
+            result.Result = userEmpty;
+        }
+        else
+        {
+            var user = factory.Resolve<UserImpl>();
+            user.FirstName = userNew.FirstName;
+            user.LastName = userNew.LastName;
+            user.Phone = userNew.Phone;
+            user.Self = true;
+            //TODO: get user status
+            user.Status = factory.Resolve<UserStatusEmptyImpl>();
+            //TODO: get user photo
+            user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

@@ -41,6 +41,7 @@ public record User
     public string LastName { get; init; } = default!;
     public string Username { get; init; } = default!;
     public string Phone { get; init; } = default!;
+    public string About { get; init; } = default!;
     public UserProfilePhoto Photo { get; init; } = default!;
     public UserStatus Status { get; init; }
     public int Expires { get; init; }

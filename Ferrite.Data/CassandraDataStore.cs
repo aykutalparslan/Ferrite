@@ -81,13 +81,14 @@ namespace Ferrite.Data
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users (" +
-                            "user_id bigint," +
-                            "access_hash bigint," +
-                            "first_name text," +
-                            "last_name text," +
-                            "username text," +
-                            "phone text," +
-                            "PRIMARY KEY (user_id));");
+                "user_id bigint," +
+                "access_hash bigint," +
+                "first_name text," +
+                "last_name text," +
+                "username text," +
+                "phone text," +
+                "about text," +
+                "PRIMARY KEY (user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             //https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useWhenIndex.html
             //If you create an index on a high-cardinality column, which has many
@@ -307,9 +308,9 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
-                "last_name, username, phone) VALUES(?,?,?,?,?,?);",
+                "last_name, username, phone, about) VALUES(?,?,?,?,?,?);",
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
-                user.Username, user.Phone).SetKeyspace(keySpace);
+                user.Username, user.Phone, user.About).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             if ((user.Phone?.Length ?? 0) > 0)
             {
@@ -349,9 +350,9 @@ namespace Ferrite.Data
             }
             var statement = new SimpleStatement(
                 "UPDATE ferrite.users SET access_hash = =, first_name = ?, " +
-                "last_name = ?, username = ?, phone = ? WHERE user_id = ?;",
+                "last_name = ?, username = ?, phone = ?, about = ? WHERE user_id = ?;",
                 user.AccessHash, user.FirstName, user.LastName,
-                user.Username, user.Phone, user.Id).SetKeyspace(keySpace);
+                user.Username, user.Phone, user.About, user.Id).SetKeyspace(keySpace);
             
             await session.ExecuteAsync(statement);
             if ((user.Phone?.Length ?? 0) > 0)
