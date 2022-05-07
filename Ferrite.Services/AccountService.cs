@@ -75,4 +75,15 @@ public class AccountService : IAccountService
 
         return null;
     }
+
+    public async Task<bool> UpdateStatus(long authKeyId, bool status)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth != null)
+        {
+            return await _cache.PutUserStatusAsync(auth.UserId, status);
+        }
+
+        return false;
+    }
 }

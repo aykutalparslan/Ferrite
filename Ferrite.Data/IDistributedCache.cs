@@ -54,5 +54,7 @@ public interface IDistributedCache
     public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
     public Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn);
     public Task<LoginViaQR?> GetLoginTokenAsync(byte[] token);
+    public Task<bool> PutUserStatusAsync(long userId, bool status);
+    public Task<(int wasOnline, bool online)> GetUserStatusAsync(long userId);
 }
 

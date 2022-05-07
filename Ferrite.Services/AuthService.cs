@@ -210,7 +210,7 @@ public class AuthService : IAuthService
     public async Task<bool> IsAuthorized(long authKeyId)
     {
         var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
-        return authKeyDetails == null ? false : authKeyDetails.LoggedIn;
+        return authKeyDetails?.LoggedIn ?? false;
     }
 
     public async Task<LoggedOut?> LogOut(long authKeyId)

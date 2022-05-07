@@ -91,7 +91,7 @@ public class Program
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.Register(_ => new CassandraDataStore("ferrite","cassandra"))
             .As<IPersistentStore>().SingleInstance();
-        builder.Register(_=> new RedisCache("redis:6379"))
+        builder.Register(_=> new RedisCache("redis:6379", new MTProtoTime()))
             .As<IDistributedCache>().SingleInstance();
         //builder.Register(_=> new RedisPipe("redis:6379")).As<IDistributedPipe>();
         builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();

@@ -40,4 +40,7 @@
     <Folder Include="Help\" />
     <Folder Include="Updates\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+  </ItemGroup>
 </Project>

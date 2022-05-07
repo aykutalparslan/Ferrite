@@ -28,4 +28,5 @@ public interface IAccountService
     public Task<InputPeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer);
     public Task<bool> ResetNotifySettings(long authKeyId);
     public Task<User?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
+    public Task<bool> UpdateStatus(long authKeyId, bool status);
 }

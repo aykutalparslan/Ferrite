@@ -19,6 +19,7 @@
 using System;
 using System.Buffers.Binary;
 using Ferrite.Data.Auth;
+using Ferrite.Utils;
 using MessagePack;
 using StackExchange.Redis;
 
@@ -27,6 +28,7 @@ namespace Ferrite.Data;
 public class RedisCache: IDistributedCache
 {
     private readonly ConnectionMultiplexer redis;
+    private readonly IMTProtoTime _time;
     private const int ExpiryMaxSeconds = 3600;
     private const string AuthKeyPrefix = "auth-";
     private const string TempAuthKeyPrefix = "tauth-";
@@ -39,10 +41,12 @@ public class RedisCache: IDistributedCache
     private const string AuthSessionPrefix = "asess-";
     private const string ServerSaltPrefix = "salt-";
     private const string LoginTokenPrefix = "ltoken-";
+    private const string UserStatusPrefix = "ustat-";
 
-    public RedisCache(string config)
+    public RedisCache(string config, IMTProtoTime time)
     {
         redis = ConnectionMultiplexer.Connect(config);
+        _time = time;
     }
 
     public async Task<bool> DeleteAuthKeyAsync(long authKeyId)
@@ -149,6 +153,44 @@ public class RedisCache: IDistributedCache
         }
         var login = MessagePackSerializer.Deserialize<LoginViaQR>(result);
         return login;
+    }
+
+    public async Task<bool> PutUserStatusAsync(long userId, bool status)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(userId);
+        key = key.Prepend(UserStatusPrefix);
+        bool success = await db.HashSetAsync(key, "status", status);
+        if (status)
+        {
+            success = await db.HashSetAsync(key, "wasOnline", _time.GetUnixTimeInSeconds());
+        }
+        
+        return success;
+    }
+
+    public async Task<(int wasOnline, bool online)> GetUserStatusAsync(long userId)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(userId);
+        key = key.Prepend(UserStatusPrefix);
+        var entries = await db.HashGetAllAsync(key);
+        int wasOnline = 0;
+        bool status = false;
+        foreach (var entry in entries)
+        {
+            if (entry.Name == "wasOnline")
+            {
+                wasOnline = (int)entry.Value;
+            } else if (entry.Name == "status")
+            {
+                status = (bool)entry.Value;
+            }
+        }
+
+        return (wasOnline, status);
     }
 
     public async Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)
