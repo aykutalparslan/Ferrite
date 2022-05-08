@@ -76,6 +76,14 @@ public class RedisCache: IDistributedCache
         return await db.SortedSetRemoveAsync(key, sessionId);
     }
 
+    public byte[]? GetTempAuthKey(long tempAuthKeyId)
+    {
+        IDatabase db = redis.GetDatabase();
+        RedisKey key = BitConverter.GetBytes(tempAuthKeyId);
+        key = key.Prepend(TempAuthKeyPrefix);
+        return db.StringGet(key);
+    }
+
     public async Task<bool> DeleteTempAuthKeysAsync(long authKeyId, ICollection<long> exceptIds)
     {
         object _asyncState = new object();
@@ -109,7 +117,7 @@ public class RedisCache: IDistributedCache
         return await db.StringGetAsync(key);
     }
 
-    public byte[] GetAuthKey(long authKeyId)
+    public byte[]? GetAuthKey(long authKeyId)
     {
         IDatabase db = redis.GetDatabase();
         RedisKey key = BitConverter.GetBytes(authKeyId);
