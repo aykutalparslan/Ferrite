@@ -24,7 +24,7 @@ namespace Ferrite.TL;
 
 public interface ITLObject
 {
-    public abstract int Constructor { get; }
+    public int Constructor { get; }
 
     public void Parse(ref SequenceReader buff);
     public void WriteTo(Span<byte> buff);
