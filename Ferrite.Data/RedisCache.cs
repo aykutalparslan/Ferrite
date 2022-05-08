@@ -109,6 +109,14 @@ public class RedisCache: IDistributedCache
         return await db.StringGetAsync(key);
     }
 
+    public byte[] GetAuthKey(long authKeyId)
+    {
+        IDatabase db = redis.GetDatabase();
+        RedisKey key = BitConverter.GetBytes(authKeyId);
+        key = key.Prepend(AuthKeyPrefix);
+        return db.StringGet(key);
+    }
+
     public async Task<byte[]> GetAuthKeySessionAsync(byte[] nonce)
     {
         object _asyncState = new object();
