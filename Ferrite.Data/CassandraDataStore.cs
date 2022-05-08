@@ -178,6 +178,23 @@ namespace Ferrite.Data
             return null;
         }
 
+        public byte[]? GetAuthKey(long authKeyId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.auth_keys WHERE auth_key_id = ?;",
+                authKeyId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = session.Execute(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                var authKey = row.GetValue<byte[]>("auth_key");
+                return authKey;
+            }
+
+            return null;
+        }
+
         public async Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey)
         {
             var statement = new SimpleStatement(

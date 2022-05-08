@@ -22,6 +22,7 @@ public interface IPersistentStore
 {
     public Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey);
     public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
+    public byte[]? GetAuthKey(long authKeyId);
     public Task<bool> SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data);
     public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id);
     public Task<bool> SaveAuthorizationAsync(AuthInfo info);
