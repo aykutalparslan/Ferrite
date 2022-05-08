@@ -117,5 +117,35 @@ public readonly ref struct AesIge
         Span<byte> messageKey = messageKeyLarge.Slice(8, 16);
         return messageKey;
     }
+    public static void GenerateAesKeyAndIV(Span<byte> authKey, Span<byte> messageKey, 
+        bool fromClient, Span<byte> aesKey, Span<byte> aesIV)
+    {
+        //x = 0 for messages from client to server and x = 8 for those from server to client.
+        int x = 0;
+        if (!fromClient)
+        {
+            x = 8;
+        }
+        Span<byte> tmp = stackalloc byte[52];
+        //sha256_a = SHA256(msg_key + substr(auth_key, x, 36));
+        Span<byte> sha256a = stackalloc byte[32];
+        //sha256_b = SHA256 (substr (auth_key, 40+x, 36) + msg_key);
+        Span<byte> sha256b = stackalloc byte[32];
+        messageKey.CopyTo(tmp);
+        authKey.Slice(0+x, 36).CopyTo(tmp.Slice(16));
+        SHA256.HashData(tmp, sha256a);
+        tmp.Clear();
+        authKey.Slice(40+x, 36).CopyTo(tmp);
+        messageKey.CopyTo(tmp.Slice(36));
+        SHA256.HashData(tmp, sha256b);
+        //aes_key = substr(sha256_a, 0, 8) + substr(sha256_b, 8, 16) + substr(sha256_a, 24, 8);
+        sha256a.Slice(0, 8).CopyTo(aesKey);
+        sha256b.Slice(8, 16).CopyTo(aesKey.Slice(8));
+        sha256a.Slice(24, 8).CopyTo(aesKey.Slice(24));
+        //aes_iv = substr(sha256_b, 0, 8) + substr(sha256_a, 8, 16) + substr(sha256_b, 24, 8);
+        sha256b.Slice(0, 8).CopyTo(aesIV);
+        sha256a.Slice(8, 16).CopyTo(aesIV.Slice(8));
+        sha256b.Slice(24, 8).CopyTo(aesIV.Slice(24));
+    }
 }
 
