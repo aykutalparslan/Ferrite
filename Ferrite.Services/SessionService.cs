@@ -60,6 +60,20 @@ public class SessionService : ISessionService
         }
         return remoteAdd && authKeyAdd && _localSessions.TryAdd(state.SessionId, session);
     }
+
+    public bool AddSession(SessionState state, MTProtoSession session)
+    {
+        state.NodeId = NodeId;
+        var remoteAdd = _cache.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
+            new TimeSpan(0,0, FerriteConfig.SessionTTL));
+        var authKeyAdd = _cache.PutSessionForAuthKey(state.AuthKeyId, state.SessionId);
+        if (_localSessions.ContainsKey(state.SessionId))
+        {
+            _localSessions.Remove(state.SessionId, out var value);
+        }
+        return remoteAdd && authKeyAdd && _localSessions.TryAdd(state.SessionId, session);
+    }
+
     public async Task<SessionState?> GetSessionStateAsync(long sessionId)
     {
         return await GetSessionState(sessionId);
