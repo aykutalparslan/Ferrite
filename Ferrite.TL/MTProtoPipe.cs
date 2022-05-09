@@ -21,18 +21,21 @@ using System.IO.Pipelines;
 using System.Security.Cryptography;
 using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.IO.Pipelines;
 using Ferrite.Crypto;
 
 namespace Ferrite.TL;
 
 public class MTProtoPipe : IDisposable
 {
+    private readonly Pipe _encryptedPipe;
     private readonly Pipe _pipe;
     private readonly Aes _aes;
     private readonly byte[] _aesKey;
     private readonly byte[] _aesIV;
     private readonly IMemoryOwner<byte> _buff;
     private readonly bool _encrypt;
+    private readonly Task? _decryptTask;
     public MTProtoPipe(Span<byte> aesKey, Span<byte> aesIV, bool encrypt)
     {
         _buff = UnmanagedMemoryAllocator.Allocate<byte>(16, false);
@@ -40,39 +43,58 @@ public class MTProtoPipe : IDisposable
         _aesIV = new byte[32];
         aesKey.CopyTo(_aesKey);
         aesIV.CopyTo(_aesIV);
+        _encryptedPipe = new Pipe();
         _pipe = new Pipe();
         _aes = Aes.Create();
         _aes.Key = _aesKey;
         _encrypt = encrypt;
+        _decryptTask = DoDecrypt();
         
         Input = _pipe.Reader;
     }
-    public void Write(ref SequenceReader reader)
+    public async ValueTask<FlushResult> WriteAsync(SequenceReader reader)
     {
-        while (reader.RemainingSequence.Length >= 16)
+        int count = (int)reader.RemainingSequence.Length;
+        var encBuff = _encryptedPipe.Writer.GetMemory(count);
+        reader.Read(encBuff.Span.Slice(0, count));
+        _encryptedPipe.Writer.Advance(count);
+        return await _encryptedPipe.Writer.FlushAsync();
+    }
+
+    private async Task DoDecrypt()
+    {
+        while (true)
         {
-            reader.Read(_buff.Memory.Span);
-            if (_encrypt)
+            var readResult = await _encryptedPipe.Reader.ReadAtLeastAsync(16);
+            if (readResult.Buffer.Length >= 16)
             {
-                _aes.EncryptIge(_buff.Memory.Span, _aesIV);
-            }
-            else
-            {
-                _aes.DecryptIge(_buff.Memory.Span, _aesIV);
+                var slice = readResult.Buffer.Slice(0,16);
+                slice.CopyTo(_buff.Memory.Span);
+                _encryptedPipe.Reader.AdvanceTo(slice.End);
+                if (_encrypt)
+                {
+                    _aes.EncryptIge(_buff.Memory.Span, _aesIV);
+                }
+                else
+                {
+                    _aes.DecryptIge(_buff.Memory.Span, _aesIV);
+                }
+
+                var buffer = _pipe.Writer.GetMemory(16);
+                _buff.Memory.CopyTo(buffer);
+                _pipe.Writer.Advance(16);
+
+                await _pipe.Writer.FlushAsync();
             }
 
-            var buffer = _pipe.Writer.GetMemory(16);
-            _buff.Memory.CopyTo(buffer);
-            _pipe.Writer.Advance(16);
+            if (readResult.IsCompleted)
+            {
+                break;
+            }
         }
-        _pipe.Writer.FlushAsync();
     }
-    public PipeReader Input { get; }
 
-    public void Complete()
-    {
-        _pipe.Writer.Complete();
-    }
+    public PipeReader Input { get; }
 
     public void Dispose()
     {

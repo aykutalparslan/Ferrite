@@ -86,10 +86,11 @@ public class AbridgedFrameDecoder : IFrameDecoder
                 if (_decryptor != null)
                 {
                     _decryptor.Transform(_lengthBytes.AsSpan().Slice(1, 3));
-                    _length = (_lengthBytes[1]) |
-                              (_lengthBytes[2] << 8) |
-                              (_lengthBytes[3] << 16);
                 }
+                _length = (_lengthBytes[1]) |
+                          (_lengthBytes[2] << 8) |
+                          (_lengthBytes[3] << 16);
+                _length *= 4;
             }
             _remaining = _length;
         }
@@ -121,13 +122,10 @@ public class AbridgedFrameDecoder : IFrameDecoder
                 _length = 0;
                 _isStream = false;
                 Array.Clear(_lengthBytes);
+                return false;
             }
-            if (reader.Remaining != 0)
-            {
-                return true;
-            }
-
-            return false;
+            
+            return true;
         }
         if (reader.Remaining < _length)
         {

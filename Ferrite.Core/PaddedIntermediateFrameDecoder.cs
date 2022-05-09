@@ -101,13 +101,10 @@ public class PaddedIntermediateFrameDecoder : IFrameDecoder
                 _length = 0;
                 _isStream = false;
                 Array.Clear(_lengthBytes);
-            }
-            if (reader.Remaining != 0)
-            {
-                return true;
+                return false;
             }
 
-            return false;
+            return true;
         }
         if (reader.Remaining < _length)
         {

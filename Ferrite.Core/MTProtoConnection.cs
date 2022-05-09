@@ -344,7 +344,7 @@ public class MTProtoConnection : IMTProtoConnection
         return reader.Position;
     }
 
-    private void ProcessStream(ReadOnlySequence<byte> frame, bool hasMore)
+    private async Task ProcessStream(ReadOnlySequence<byte> frame, bool hasMore)
     {
         SequenceReader reader = IAsyncBinaryReader.Create(frame);
         if (_currentRequest == null)
@@ -372,17 +372,16 @@ public class MTProtoConnection : IMTProtoConnection
             var aesIV = new byte[32];
             AesIge.GenerateAesKeyAndIV(_authKey,incomingMessageKey,true,aesKey,aesIV);
             _currentRequest = new MTProtoPipe(aesKey, aesIV, false);
-            _currentRequest.Write(ref reader);
-            _ = ProcessPipe(_currentRequest);
+            await _currentRequest.WriteAsync(reader);
+            await ProcessPipe(_currentRequest);
         }
         else
         { 
-            _currentRequest.Write(ref reader);
+            await _currentRequest.WriteAsync(reader);
         }
 
         if (!hasMore)
         {
-            _currentRequest.Complete();
             _currentRequest = null;
         }
     }
@@ -441,10 +440,10 @@ public class MTProtoConnection : IMTProtoConnection
 
             try
             {
-                //var msg = new SaveFilePart();
-                //await msg.SetPipe(_currentRequest);
+                var msg = factory.Resolve<SaveFilePart>();
+                await msg.SetPipe(_currentRequest);
                 //_ = _processorManager.Process(this, msg, context);
-                //OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
+                OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
             }
             catch (Exception ex)
             {

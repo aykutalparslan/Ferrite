@@ -52,12 +52,6 @@ public static class IgeExtensions
         Span<byte> x = iv.Slice(16);
         Span<byte> buf = stackalloc byte[16];
 
-        for (int i = 0; i < 16; i++)
-        {
-            y[i] = iv[i];
-            x[i] = iv[i + 16];
-        }
-
         EncryptIge(aes, plaintext, plaintext, len, y, x, buf);
     }
 
@@ -75,12 +69,6 @@ public static class IgeExtensions
         Span<byte> x = iv.Slice(16);
         Span<byte> buf = stackalloc byte[16];
 
-        for (int i = 0; i < 16; i++)
-        {
-            y[i] = iv[i];
-            x[i] = iv[i + 16];
-        }
-
         EncryptIge(aes, plaintext, ciphertext, len, y, x, buf);
     }
     /// <summary>
@@ -96,9 +84,9 @@ public static class IgeExtensions
     private static void EncryptIge(Aes aes, Span<byte> plaintext,
         Span<byte> ciphertext, int len, Span<byte> y, Span<byte> x, Span<byte> buf)
     {
+        Span<byte> block = stackalloc byte[16];
         for (int b = 0; b < len; b++)
         {
-            Span<byte> block = new byte[16];
             for (int i = 0; i < 16; i++)
             {
                 block[i] = plaintext[i + b * 16];
@@ -109,7 +97,7 @@ public static class IgeExtensions
             {
                 ciphertext[i + b * 16] = y[i] = (byte)(buf[i] ^ x[i]);
             }
-            x = block;
+            block.CopyTo(x);
         }
     }
     /// <summary>
@@ -126,12 +114,6 @@ public static class IgeExtensions
         Span<byte> x = iv.Slice(0, 16);
         Span<byte> y = iv.Slice(16);
         Span<byte> buf = stackalloc byte[16];
-
-        for (int i = 0; i < 16; i++)
-        {
-            x[i] = iv[i];
-            y[i] = iv[i + 16];
-        }
 
         DecryptIge(aes, ciphertext, ciphertext, len, x, y, buf);
     }
@@ -150,12 +132,6 @@ public static class IgeExtensions
         Span<byte> y = iv.Slice(16);
         Span<byte> buf = stackalloc byte[16];
 
-        for (int i = 0; i < 16; i++)
-        {
-            x[i] = iv[i];
-            y[i] = iv[i + 16];
-        }
-
         DecryptIge(aes, ciphertext, plaintext, len, x, y, buf);
     }
     /// <summary>
@@ -171,9 +147,9 @@ public static class IgeExtensions
     private static void DecryptIge(Aes aes, Span<byte> ciphertext,
         Span<byte> plaintext, int len, Span<byte> x, Span<byte> y, Span<byte> buf)
     {
+        Span<byte> block = stackalloc byte[16];
         for (int b = 0; b < len; b++)
         {
-            Span<byte> block = new byte[16];
             for (int i = 0; i < 16; i++)
             {
                 block[i] = ciphertext[i + b * 16];
@@ -184,7 +160,7 @@ public static class IgeExtensions
             {
                 plaintext[i + b * 16] = y[i] = (byte)(buf[i] ^ x[i]);
             }
-            x = block;
+            block.CopyTo(x);
         }
     }
 }

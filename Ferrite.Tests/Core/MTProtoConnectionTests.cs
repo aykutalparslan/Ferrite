@@ -350,7 +350,7 @@ public class MTProtoConnectionTests
             {
                 return new byte[0];
             }
-            return authKeys[a];
+            return authKeys2[a];
         });
         Queue<long> unixTimes = new Queue<long>();
         var time = new Mock<IMTProtoTime>();
