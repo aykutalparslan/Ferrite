@@ -17,4 +17,8 @@ The project is currently in a very early stage of development. The following are
 
 Project Ferrite is licensed under GNU AGPL-3.0
 
+### Special Thanks
+
+![Rider logo](https://resources.jetbrains.com/storage/products/company/brand/logos/Rider_icon.svg)
+
 [Telegram-Server]: <https://github.com/aykutalparslan/Telegram-Server/>
