@@ -29,7 +29,10 @@ using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
 using Ferrite.TL.mtproto;
 using System.Net;
+using DotNext.IO.Pipelines;
 using Ferrite.Services;
+using Ferrite.TL.layer139.upload;
+using Org.BouncyCastle.Cms;
 
 namespace Ferrite.Core;
 
@@ -48,7 +51,7 @@ public class MTProtoConnection : IMTProtoConnection
     private IFrameEncoder encoder;
     private IProcessorManager _processorManager;
     private long _authKeyId;
-    private byte[] _authKey;
+    private byte[]? _authKey;
     private long _sessionId;
     private long _uniqueSessionId;
     private int _seq = 0;
@@ -62,8 +65,9 @@ public class MTProtoConnection : IMTProtoConnection
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private WebSocketHandler webSocketHandler;
+    private WebSocketHandler? webSocketHandler;
     private Pipe webSocketPipe;
+    private MTProtoPipe? _currentRequest = null;
 
     private readonly object _abortLock = new object();
     private bool _connectionAborted = false;
@@ -125,6 +129,7 @@ public class MTProtoConnection : IMTProtoConnection
             _connectionAborted = true;
             try
             {
+                _currentRequest.Dispose();
                 _sessionManager.RemoveSession(_authKeyId, _sessionId);
                 _outgoing.Writer.Complete();
                 socketConnection.Abort(abortReason);
@@ -321,10 +326,15 @@ public class MTProtoConnection : IMTProtoConnection
             out decoder, out encoder);
         }
 
-        bool hasMore = false;
+        bool hasMore;
         do
         {
-            hasMore = decoder.Decode(ref reader, out var frame);
+            hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
+            if (isStream)
+            {
+                ProcessStream(frame, hasMore);
+                return reader.Position;
+            }
             if (frame.Length > 0)
             {
                 ProcessFrame(frame);
@@ -332,6 +342,115 @@ public class MTProtoConnection : IMTProtoConnection
         } while (hasMore);
 
         return reader.Position;
+    }
+
+    private void ProcessStream(ReadOnlySequence<byte> frame, bool hasMore)
+    {
+        SequenceReader reader = IAsyncBinaryReader.Create(frame);
+        if (_currentRequest == null)
+        {
+            if (frame.Length < 24)
+            {
+                return;
+            }
+            long authKeyId = reader.ReadInt64(true);
+            _authKeyId = authKeyId;
+            _authKey ??= _cache.GetAuthKey(_authKeyId) ?? _cache.GetTempAuthKey(_authKeyId);
+            if (_authKey == null)
+            {
+                var authKey = _db.GetAuthKey(_authKeyId);
+                if (authKey != null)
+                {
+                    _authKey = authKey;
+                    _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
+                }
+            }
+            
+            var incomingMessageKey = new byte[16];
+            reader.Read(incomingMessageKey);
+            var aesKey = new byte[32];
+            var aesIV = new byte[32];
+            AesIge.GenerateAesKeyAndIV(_authKey,incomingMessageKey,true,aesKey,aesIV);
+            _currentRequest = new MTProtoPipe(aesKey, aesIV, false);
+            _currentRequest.Write(ref reader);
+            _ = ProcessPipe(_currentRequest);
+        }
+        else
+        { 
+            _currentRequest.Write(ref reader);
+        }
+
+        if (!hasMore)
+        {
+            _currentRequest.Complete();
+            _currentRequest = null;
+        }
+    }
+
+    private async Task ProcessPipe(MTProtoPipe pipe)
+    {
+        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
+        context.Salt = await pipe.Input.ReadInt64Async(true);
+        context.SessionId = await pipe.Input.ReadInt64Async(true);
+        context.AuthKeyId = _authKeyId;
+        context.MessageId = await pipe.Input.ReadInt64Async(true);
+        context.SequenceNo = await pipe.Input.ReadInt32Async(true);
+        if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
+        {
+            context.IP = endpoint.Address.ToString();
+        }
+
+        int messageDataLength = await pipe.Input.ReadInt32Async(true);
+        int constructor = await pipe.Input.ReadInt32Async(true);
+        if (_sessionId == 0)
+        {
+            _sessionId = context.SessionId;
+            SessionState state = new SessionState();
+            var salt = new ServerSalt();
+            state.SessionId = _sessionId;
+            state.ServerSalt = salt;
+            state.AuthKeyId = _authKeyId;
+            state.AuthKey = _authKey;
+            state.NodeId = _sessionManager.NodeId;
+            await _sessionManager.AddSessionAsync(state,
+                new MTProtoSession(this));
+
+            _uniqueSessionId = _random.NextLong();
+            var newSessionCreated = factory.Resolve<NewSessionCreated>();
+            newSessionCreated.FirstMsgId = context.MessageId;
+            newSessionCreated.ServerSalt = salt.Salt;
+            newSessionCreated.UniqueId = _uniqueSessionId;
+            MTProtoMessage newSessionMessage = new MTProtoMessage();
+            newSessionMessage.Data = newSessionCreated.TLBytes.ToArray();
+            newSessionMessage.IsContentRelated = false;
+            newSessionMessage.IsResponse = false;
+            newSessionMessage.SessionId = _sessionId;
+            newSessionMessage.MessageType = MTProtoMessageType.NewSession;
+            _ = SendAsync(newSessionMessage);
+        }
+
+        if (context.MessageId < _time.ThirtySecondsLater &&
+            //msg_id values that belong over 30 seconds in the future
+            context.MessageId > _time.FiveMinutesAgo &&
+            //or over 300 seconds in the past are to be ignored
+            context.MessageId % 2 == 0 && //must have even parity
+            (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(context.MessageId) && //must not be equal to any
+                                            context.MessageId > _lastMessageIds.Min()))) //must not be lower than all
+        {
+            _lastMessageIds.Enqueue(context.MessageId);
+
+            try
+            {
+                //var msg = new SaveFilePart();
+                //await msg.SetPipe(_currentRequest);
+                //_ = _processorManager.Process(this, msg, context);
+                //OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
+            }
+            catch (Exception ex)
+            {
+                _log.Error(ex, ex.Message);
+            }
+        }
     }
 
     private void ProcessWebSocketHandshake(ref SequenceReader<byte> reader)
@@ -353,7 +472,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
 
-    private async Task ProcessEncryptedMessageAsync(ReadOnlySequence<byte> bytes)
+    private void ProcessEncryptedMessageAsync(ReadOnlySequence<byte> bytes)
     {
         if (bytes.Length < 16)
         {
@@ -364,15 +483,15 @@ public class MTProtoConnection : IMTProtoConnection
         {
             if (_authKey == null)
             {
-                _authKey = await _cache.GetAuthKeyAsync(_authKeyId);
+                _authKey = _cache.GetAuthKey(_authKeyId);
             }
             if (_authKey == null)
             {
-                _authKey = await _cache.GetTempAuthKeyAsync(_authKeyId);
+                _authKey = _cache.GetTempAuthKey(_authKeyId);
             }
             if (_authKey == null)
             {
-                var authKey = await _db.GetAuthKeyAsync(_authKeyId);
+                var authKey = _db.GetAuthKey(_authKeyId);
                 if (authKey != null)
                 {
                     _authKey = authKey;
@@ -426,8 +545,8 @@ public class MTProtoConnection : IMTProtoConnection
                 state.AuthKeyId = _authKeyId;
                 state.AuthKey = _authKey;
                 state.NodeId = _sessionManager.NodeId;
-                _sessionManager.AddSessionAsync(state,
-                    new MTProtoSession(this)).Wait();
+                _sessionManager.AddSession(state,
+                    new MTProtoSession(this));
 
                 _uniqueSessionId = _random.NextLong();
                 var newSessionCreated = factory.Resolve<NewSessionCreated>();
@@ -490,7 +609,7 @@ public class MTProtoConnection : IMTProtoConnection
         OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
 
-    private async void ProcessFrame(ReadOnlySequence<byte> bytes)
+    private void ProcessFrame(ReadOnlySequence<byte> bytes)
     {
         if (bytes.Length < 8)
         {
@@ -505,7 +624,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
         else
         {
-            await ProcessEncryptedMessageAsync(bytes.Slice(8));
+            ProcessEncryptedMessageAsync(bytes.Slice(8));
         }
     }
     private int GenerateSeqNo(bool isContentRelated)

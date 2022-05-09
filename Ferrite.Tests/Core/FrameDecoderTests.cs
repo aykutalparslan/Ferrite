@@ -21,6 +21,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 using Autofac;
 using Ferrite.Core;
 using Ferrite.Crypto;
@@ -30,6 +31,7 @@ using Ferrite.Utils;
 using DotNext.IO;
 using Xunit;
 using Autofac.Extras.Moq;
+using Moq;
 
 namespace Ferrite.Tests.Core
 {
@@ -40,6 +42,11 @@ namespace Ferrite.Tests.Core
         {
             using (var mock = AutoMock.GetLoose())
             {
+                var cache = mock.Mock<IDistributedCache>();
+                cache.Setup(x => x.GetAuthKey(It.IsAny<long>()))
+                    .Returns(RandomNumberGenerator.GetBytes(192));
+                cache.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
+                    It.IsAny<byte[]>())).ReturnsAsync(true);
                 var detector = mock.Create<MTProtoTransportDetector>();
                 byte[] data = File.ReadAllBytes("testdata/obfuscatedAbridgedSession.bin");
                 var seq = new ReadOnlySequence<byte>(data);
@@ -49,7 +56,7 @@ namespace Ferrite.Tests.Core
                 bool hasMore = false;
                 do
                 {
-                    hasMore = decoder.Decode(ref reader, out var frame);
+                    hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);
@@ -93,6 +100,11 @@ namespace Ferrite.Tests.Core
         {
             using (var mock = AutoMock.GetLoose())
             {
+                var cache = mock.Mock<IDistributedCache>();
+                cache.Setup(x => x.GetAuthKey(It.IsAny<long>()))
+                    .Returns(RandomNumberGenerator.GetBytes(192));
+                cache.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
+                    It.IsAny<byte[]>())).ReturnsAsync(true);
                 var detector = mock.Create<MTProtoTransportDetector>();
 
                 byte[] data = File.ReadAllBytes("testdata/obfuscatedIntermediateSession.bin");
@@ -103,7 +115,7 @@ namespace Ferrite.Tests.Core
                 bool hasMore = false;
                 do
                 {
-                    hasMore = decoder.Decode(ref reader, out var frame);
+                    hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);

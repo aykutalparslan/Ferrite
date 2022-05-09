@@ -21,6 +21,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 using Autofac;
 using Autofac.Extras.Moq;
 using Ferrite.Core;
@@ -29,6 +30,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.Utils;
+using Moq;
 using Xunit;
 
 namespace Ferrite.Tests.Core;
@@ -40,6 +42,11 @@ public class DetectTransportTests
     {
         using(var mock = AutoMock.GetLoose())
         {
+            var cache = mock.Mock<IDistributedCache>();
+            cache.Setup(x => x.GetAuthKey(It.IsAny<long>()))
+                .Returns(RandomNumberGenerator.GetBytes(192));
+            cache.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
+                It.IsAny<byte[]>())).ReturnsAsync(true);
             var detector = mock.Create<MTProtoTransportDetector>();
             byte[] data = File.ReadAllBytes("testdata/obfuscatedIntermediate.bin");
             var seq = new ReadOnlySequence<byte>(data);

@@ -22,8 +22,7 @@ using DotNext.IO;
 
 namespace Ferrite.TL;
 
-public interface ITLStream
+public interface IPipeOwner
 {
-    public ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default);
     public Task<bool> SetPipe(MTProtoPipe value);
 }

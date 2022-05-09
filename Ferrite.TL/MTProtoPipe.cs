@@ -47,7 +47,7 @@ public class MTProtoPipe : IDisposable
         
         Input = _pipe.Reader;
     }
-    public ValueTask<FlushResult> WriteAsync(ref SequenceReader reader)
+    public void Write(ref SequenceReader reader)
     {
         while (reader.RemainingSequence.Length >= 16)
         {
@@ -60,17 +60,22 @@ public class MTProtoPipe : IDisposable
             {
                 _aes.DecryptIge(_buff.Memory.Span, _aesIV);
             }
-            _pipe.Writer.Write(_buff.Memory.Span);
-        }
 
-        return _pipe.Writer.FlushAsync();
+            var buffer = _pipe.Writer.GetMemory(16);
+            _buff.Memory.CopyTo(buffer);
+            _pipe.Writer.Advance(16);
+        }
+        _pipe.Writer.FlushAsync();
     }
     public PipeReader Input { get; }
+
+    public void Complete()
+    {
+        _pipe.Writer.Complete();
+    }
 
     public void Dispose()
     {
         _buff.Dispose();
-        _pipe.Writer.Complete();
-        _pipe.Reader.Complete();
     }
 }

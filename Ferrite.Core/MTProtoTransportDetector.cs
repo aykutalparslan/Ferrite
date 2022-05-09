@@ -18,8 +18,10 @@
 
 using System;
 using System.Buffers;
+using Autofac;
 using DotNext.Buffers;
 using Ferrite.Crypto;
+using Ferrite.Data;
 using Ferrite.Services;
 
 namespace Ferrite.Core;
@@ -32,6 +34,12 @@ public class MTProtoTransportDetector : ITransportDetector
     const int PaddedIntermediate = unchecked((int)0xdddddddd);
     const int Full = unchecked((int)0xdddddddd);
     const int WebSocketGet = 542393671;
+    private readonly ILifetimeScope _scope;
+
+    public MTProtoTransportDetector(ILifetimeScope scope)
+    {
+        _scope = scope;
+    }
 
     public MTProtoTransport DetectTransport(ref SequenceReader<byte> reader,
         out IFrameDecoder decoder, out IFrameEncoder encoder)
@@ -46,7 +54,7 @@ public class MTProtoTransportDetector : ITransportDetector
             {
                 transport = MTProtoTransport.Abridged;
                 reader.Advance(1);
-                decoder = new AbridgedFrameDecoder();
+                decoder = new AbridgedFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                 encoder = new AbridgedFrameEncoder();
                 return transport;
             }
@@ -58,14 +66,14 @@ public class MTProtoTransportDetector : ITransportDetector
             if (firstint == Intermediate)
             {
                 transport = MTProtoTransport.Intermediate;
-                decoder = new IntermediateFrameDecoder();
+                decoder = new IntermediateFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                 encoder = new IntermediateFrameEncoder();
                 return transport;
             }
             else if (firstint == PaddedIntermediate)
             {
                 transport = MTProtoTransport.PaddedIntermediate;
-                decoder = new PaddedIntermediateFrameDecoder();
+                decoder = new PaddedIntermediateFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                 encoder = new PaddedIntermediateFrameEncoder();
                 return transport;
             }
@@ -78,7 +86,7 @@ public class MTProtoTransportDetector : ITransportDetector
             {
                 transport = MTProtoTransport.Full;
                 reader.Rewind(8);
-                decoder = new FullFrameDecoder();
+                decoder = new FullFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                 encoder = new FullFrameEncoder();
                 return transport;
             }
@@ -109,25 +117,25 @@ public class MTProtoTransportDetector : ITransportDetector
                 if (identifier == AbridgedInt)
                 {
                     transport = MTProtoTransport.Abridged;
-                    decoder = new AbridgedFrameDecoder(decryptor);
+                    decoder = new AbridgedFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                     encoder = new AbridgedFrameEncoder(encryptor);
                 }
                 else if (identifier == Intermediate)
                 {
                     transport = MTProtoTransport.Intermediate;
-                    decoder = new IntermediateFrameDecoder(decryptor);
+                    decoder = new IntermediateFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                     encoder = new IntermediateFrameEncoder(encryptor);
                 }
                 else if (identifier == PaddedIntermediate)
                 {
                     transport = MTProtoTransport.PaddedIntermediate;
-                    decoder = new PaddedIntermediateFrameDecoder(decryptor);
+                    decoder = new PaddedIntermediateFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                     encoder = new PaddedIntermediateFrameEncoder(encryptor);
                 }
                 else
                 {
                     transport = MTProtoTransport.Full;
-                    decoder = new FullFrameDecoder(decryptor);
+                    decoder = new FullFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
                     encoder = new FullFrameEncoder(encryptor);
                 }
             }

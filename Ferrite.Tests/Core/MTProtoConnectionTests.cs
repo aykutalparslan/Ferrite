@@ -308,6 +308,14 @@ public class MTProtoConnectionTests
             sessions.Add(a, b);
             return true;
         });
+        redis.Setup(x => x.GetAuthKey(It.IsAny<long>())).Returns((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
         redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!authKeys.ContainsKey(a))

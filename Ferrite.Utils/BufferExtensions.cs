@@ -18,10 +18,12 @@
 
 using System;
 using System.Buffers;
+using System.IO.Pipelines;
 using System.Runtime.CompilerServices;
 using System.Text;
 using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.IO.Pipelines;
 
 namespace Ferrite.Utils;
 
@@ -59,6 +61,20 @@ public static class BufferExtensions
         reader.Read(result);
         reader.Skip(rem);
         return result;
+    }
+    public static async Task<int> ReadTLBytesLength(this PipeReader reader)
+    {
+        byte b = await reader.ReadAsync<byte>();
+        int len = b;
+        if (len == 254)
+        {
+            var lenBytes = new byte[3];
+            await reader.ReadBlockAsync(lenBytes);
+            len = ((int)lenBytes[0]) |
+                  ((int)lenBytes[1] << 8) |
+                  ((int)lenBytes[2] << 16);
+        }
+        return len;
     }
     public static void WriteTLString(this IBufferWriter<byte> writer, string value)
     {
