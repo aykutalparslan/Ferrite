@@ -382,6 +382,7 @@ public class MTProtoConnection : IMTProtoConnection
 
         if (!hasMore)
         {
+            _currentRequest.Complete();
             _currentRequest = null;
         }
     }

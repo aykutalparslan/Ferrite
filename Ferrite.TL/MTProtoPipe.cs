@@ -65,12 +65,12 @@ public class MTProtoPipe : IDisposable
     {
         while (true)
         {
-            var readResult = await _encryptedPipe.Reader.ReadAtLeastAsync(16);
-            if (readResult.Buffer.Length >= 16)
+            var readResult = await _encryptedPipe.Reader.ReadAsync();
+            var pCount = readResult.Buffer.Length / 16;
+            for (int i = 0; i < pCount; i++)
             {
-                var slice = readResult.Buffer.Slice(0,16);
+                var slice = readResult.Buffer.Slice(i*16,16);
                 slice.CopyTo(_buff.Memory.Span);
-                _encryptedPipe.Reader.AdvanceTo(slice.End);
                 if (_encrypt)
                 {
                     _aes.EncryptIge(_buff.Memory.Span, _aesIV);
@@ -83,15 +83,22 @@ public class MTProtoPipe : IDisposable
                 var buffer = _pipe.Writer.GetMemory(16);
                 _buff.Memory.CopyTo(buffer);
                 _pipe.Writer.Advance(16);
-
-                await _pipe.Writer.FlushAsync();
             }
+            await _pipe.Writer.FlushAsync();
+            _encryptedPipe.Reader.AdvanceTo(readResult.Buffer.Slice(0,pCount*16).End, 
+                readResult.Buffer.End);
 
             if (readResult.IsCompleted)
             {
+                await _pipe.Writer.CompleteAsync();
                 break;
             }
         }
+    }
+
+    public void Complete()
+    {
+        _encryptedPipe.Writer.Complete();
     }
 
     public PipeReader Input { get; }

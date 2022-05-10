@@ -208,14 +208,7 @@ public class StreamingRequestTests
                 var bytes = default(byte[]);
                 using (var memstream = new MemoryStream())
                 {
-                    var buffer = new byte[512];
-                    int remaining = (int)data.Length;
-                    while (remaining > 0)
-                    {
-                        int count = await data.ReadAsync(buffer, 0, buffer.Length);
-                        memstream.Write(buffer, 0, count);
-                        remaining -= count;
-                    }
+                    await data.CopyToAsync(memstream);
                     bytes = memstream.ToArray();
                 }
                 Assert.Equal(fileData, bytes);
