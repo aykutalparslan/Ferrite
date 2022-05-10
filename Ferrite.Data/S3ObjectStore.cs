@@ -78,4 +78,18 @@ public class S3ObjectStore : IDistributedObjectStore
         var putObjectResponse = await _s3Client.PutObjectAsync(putObjectRequest);
         return true;
     }
+
+    public async Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data)
+    {
+        if (!_bucketsInitialized)
+        {
+            await _createBuckets;
+        }
+        PutObjectRequest putObjectRequest = new PutObjectRequest();
+        putObjectRequest.InputStream = data;
+        putObjectRequest.Key = fileId.ToString("X")+"-"+filePart.ToString("X");
+        putObjectRequest.BucketName = BigFileBucketName;
+        var putObjectResponse = await _s3Client.PutObjectAsync(putObjectRequest);
+        return true;
+    }
 }

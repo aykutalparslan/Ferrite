@@ -33,6 +33,7 @@ using DotNext.IO.Pipelines;
 using Ferrite.Services;
 using Ferrite.TL.layer139.upload;
 using Org.BouncyCastle.Cms;
+using TLConstructor = Ferrite.TL.layer139.TLConstructor;
 
 namespace Ferrite.Core;
 
@@ -446,10 +447,20 @@ public class MTProtoConnection : IMTProtoConnection
 
             try
             {
-                var msg = factory.Resolve<SaveFilePart>();
-                await msg.SetPipe(pipe);
-                _ = _processorManager.Process(this, msg, context);
-                OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
+                if (constructor == TLConstructor.Upload_SaveFilePart)
+                {
+                    var msg = factory.Resolve<SaveFilePart>();
+                    await msg.SetPipe(pipe);
+                    _ = _processorManager.Process(this, msg, context);
+                    OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
+                }
+                else if (constructor == TLConstructor.Upload_SaveBigFilePart)
+                {
+                    var msg = factory.Resolve<SaveBigFilePart>();
+                    await msg.SetPipe(pipe);
+                    _ = _processorManager.Process(this, msg, context);
+                    OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
+                }
             }
             catch (Exception ex)
             {

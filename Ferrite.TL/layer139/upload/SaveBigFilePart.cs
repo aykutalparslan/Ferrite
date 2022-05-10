@@ -20,97 +20,79 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using DotNext.IO.Pipelines;
+using Ferrite.Data;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.upload;
-public class SaveBigFilePart : ITLObject, ITLMethod
+public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private bool serialized = false;
-    public SaveBigFilePart(ITLObjectFactory objectFactory)
+    private readonly IDistributedObjectStore _objectStore;
+    public SaveBigFilePart(ITLObjectFactory objectFactory, IDistributedObjectStore objectStore)
     {
         factory = objectFactory;
+        _objectStore = objectStore;
     }
 
     public int Constructor => -562337987;
-    public ReadOnlySequence<byte> TLBytes
-    {
-        get
-        {
-            if (serialized)
-                return writer.ToReadOnlySequence();
-            writer.Clear();
-            writer.WriteInt32(Constructor, true);
-            writer.WriteInt64(_fileId, true);
-            writer.WriteInt32(_filePart, true);
-            writer.WriteInt32(_fileTotalParts, true);
-            writer.WriteTLBytes(_bytes);
-            serialized = true;
-            return writer.ToReadOnlySequence();
-        }
-    }
+    public ReadOnlySequence<byte> TLBytes => throw new NotSupportedException();
 
     private long _fileId;
     public long FileId
     {
         get => _fileId;
-        set
-        {
-            serialized = false;
-            _fileId = value;
-        }
+        set => _fileId = value;
     }
 
     private int _filePart;
     public int FilePart
     {
         get => _filePart;
-        set
-        {
-            serialized = false;
-            _filePart = value;
-        }
+        set => _filePart = value;
     }
 
     private int _fileTotalParts;
     public int FileTotalParts
     {
         get => _fileTotalParts;
-        set
-        {
-            serialized = false;
-            _fileTotalParts = value;
-        }
+        set => _fileTotalParts = value;
     }
 
-    private byte[] _bytes;
-    public byte[] Bytes
-    {
-        get => _bytes;
-        set
-        {
-            serialized = false;
-            _bytes = value;
-        }
-    }
+    private MTProtoPipe _bytes;
+    private int _length = 0;
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var stream = new MTProtoStream(_bytes.Input, _length);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var success = await _objectStore.SaveBigFilePart(_fileId, _filePart, _fileTotalParts, stream);
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
     {
-        serialized = false;
-        _fileId = buff.ReadInt64(true);
-        _filePart = buff.ReadInt32(true);
-        _fileTotalParts = buff.ReadInt32(true);
-        _bytes = buff.ReadTLBytes().ToArray();
+        throw new NotSupportedException();
     }
 
     public void WriteTo(Span<byte> buff)
     {
-        TLBytes.CopyTo(buff);
+        throw new NotSupportedException();
     }
+
+    public async Task<bool> SetPipe(MTProtoPipe value)
+    {
+        _bytes = value;
+        _fileId = await _bytes.Input.ReadInt64Async(true);
+        _filePart = await _bytes.Input.ReadInt32Async(true);
+        _fileTotalParts = await _bytes.Input.ReadInt32Async(true);
+        _length = await _bytes.Input.ReadTLBytesLength();
+        return true;
+    }
+
+    public int Length => _length;
 }
