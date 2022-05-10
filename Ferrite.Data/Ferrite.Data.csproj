@@ -28,6 +28,7 @@
     <None Remove="Updates\" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="AWSSDK.S3" Version="3.7.9.2" />
     <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.17.1" />
     <PackageReference Include="MessagePack" Version="2.3.85" />

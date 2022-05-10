@@ -203,7 +203,7 @@ public class StreamingRequestTests
         ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
         var objectStore = new Mock<IDistributedObjectStore>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
-            It.IsAny<long>(), It.IsAny<Stream>())).Returns(async (long fileId, long filePart, Stream data) =>
+            It.IsAny<int>(), It.IsAny<Stream>())).Returns(async (long fileId, int filePart, Stream data) =>
             {
                 var bytes = default(byte[]);
                 using (var memstream = new MemoryStream())

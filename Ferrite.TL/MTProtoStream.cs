@@ -69,6 +69,12 @@ public class MTProtoStream : Stream
     public override bool CanSeek => false;
     public override bool CanWrite => false;
     public override long Length { get; }
-    public override long Position { get => throw new NotSupportedException(); 
+    public override long Position { get => 0; 
         set => throw new NotSupportedException(); }
+
+    public override void Close()
+    {
+        _pipeStream.Close();
+        base.Close();
+    }
 }

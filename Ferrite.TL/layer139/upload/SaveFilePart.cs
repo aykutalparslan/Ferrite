@@ -23,14 +23,17 @@ using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
 using Ferrite.Data;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.upload;
 public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
 {
+    private readonly ITLObjectFactory _factory;
     private readonly IDistributedObjectStore _objectStore;
-    public SaveFilePart(IDistributedObjectStore objectStore)
+    public SaveFilePart(ITLObjectFactory factory, IDistributedObjectStore objectStore)
     {
+        _factory = factory;
         _objectStore = objectStore;
     }
 
@@ -67,8 +70,11 @@ public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         var stream = new MTProtoStream(_bytes.Input, _length);
-        await _objectStore.SaveFilePart(_fileId, _filePart, stream);
-        return new Null();
+        var result = _factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var success = await _objectStore.SaveFilePart(_fileId, _filePart, stream);
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public async Task<bool> SetPipe(MTProtoPipe value)
