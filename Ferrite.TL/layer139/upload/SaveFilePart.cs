@@ -68,14 +68,14 @@ public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
     {
         var stream = new MTProtoStream(_bytes.Input, _length);
         await _objectStore.SaveFilePart(_fileId, _filePart, stream);
-        throw new NotImplementedException();
+        return new Null();
     }
 
     public async Task<bool> SetPipe(MTProtoPipe value)
     {
         _bytes = value;
-        _fileId = await _bytes.Input.ReadInt64Async(false);
-        _filePart = await _bytes.Input.ReadInt32Async(false);
+        _fileId = await _bytes.Input.ReadInt64Async(true);
+        _filePart = await _bytes.Input.ReadInt32Async(true);
         _length = await _bytes.Input.ReadTLBytesLength();
         return true;
     }

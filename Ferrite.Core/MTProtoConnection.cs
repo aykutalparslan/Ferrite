@@ -97,6 +97,11 @@ public class MTProtoConnection : IMTProtoConnection
         sendTask = DoSend();
         DelayDisconnect();
     }
+    
+    public async Task WaitForCompletion()
+    {
+        
+    }
 
     private void DelayDisconnect(int delayInMiliseconds = 750000)
     {
@@ -442,8 +447,8 @@ public class MTProtoConnection : IMTProtoConnection
             try
             {
                 var msg = factory.Resolve<SaveFilePart>();
-                await msg.SetPipe(_currentRequest);
-                //_ = _processorManager.Process(this, msg, context);
+                await msg.SetPipe(pipe);
+                _ = _processorManager.Process(this, msg, context);
                 OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
             }
             catch (Exception ex)

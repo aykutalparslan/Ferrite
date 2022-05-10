@@ -74,12 +74,6 @@ class StubTransportConnection : ITransportConnection
         await Input.Writer.WriteAsync(_data);
     }
 
-    public async Task Receive(string file)
-    {
-        byte[] data = await File.ReadAllBytesAsync(file);
-        await Input.Writer.WriteAsync(data);
-    }
-
     public void Abort(Exception abortReason)
     {
         throw new NotImplementedException();
@@ -92,19 +86,25 @@ class StubTransportConnection : ITransportConnection
 }
 public class StreamingRequestTests
 {
-    [Fact]
-    public void ReceivesDataFor_SaveFilePart()
+    [Theory]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
+    [InlineData(4096)]
+    [InlineData(8192)]
+    [InlineData(9000)]
+    public async void ReceivesDataFor_SaveFilePart(int partSize)
     {
-        byte[] fileData = RandomNumberGenerator.GetBytes(8192);
+        byte[] fileData = RandomNumberGenerator.GetBytes(partSize);
         SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>();
         writer.WriteInt64(0, true);
         writer.WriteInt64(0, true);
         writer.WriteInt64(0, true);
         writer.WriteInt32(0, true);
-        writer.WriteInt32(fileData.Length, true);
+        writer.WriteInt32(fileData.Length+16, true);
         writer.WriteInt32(TLConstructor.Upload_SaveFilePart, true);
         writer.WriteInt64(123, true);
-        writer.WriteInt32(0, true);
+        writer.WriteInt32(5, true);
         int length = fileData.Length;
         int rem;
         if (length < 254)
@@ -200,10 +200,10 @@ public class StreamingRequestTests
             return true;
         });
         builder.RegisterMock(redis);
-        Dictionary<string, byte[]> storedObjects = new Dictionary<string, byte[]>();
+        ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
         var objectStore = new Mock<IDistributedObjectStore>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
-            It.IsAny<long>(), It.IsAny<Stream>())).Callback(async (long fileId, long filePart, Stream data) =>
+            It.IsAny<long>(), It.IsAny<Stream>())).Returns(async (long fileId, long filePart, Stream data) =>
             {
                 var bytes = default(byte[]);
                 using (var memstream = new MemoryStream())
@@ -211,20 +211,35 @@ public class StreamingRequestTests
                     await data.CopyToAsync(memstream);
                     bytes = memstream.ToArray();
                 }
-                Assert.Equal(fileData, bytes);
+                storedObjects.TryAdd(fileId+"-"+filePart, bytes);
+                return true;
             });
         builder.RegisterMock(objectStore);
+
+        var processorManager = new Mock<IProcessorManager>();
+        processorManager.Setup(x => x.Process(It.IsAny<object?>(),
+            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback( 
+            (object? sender, ITLObject input, TLExecutionContext ctx) =>
+        {
+            ((ITLMethod)input).ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>()));
+        });
+        
+        builder.RegisterMock(processorManager);
         var container = builder.Build();
         ITransportConnection connection = new StubTransportConnection(finalMessage);
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
         List<ITLObject> received = new List<ITLObject>();
         var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s,e) => {
-            received.Add(e.Message);
-            var result = await ((ITLMethod)e.Message).ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>()));
-        };
         mtProtoConnection.Start();
+        await Task.Run(() =>
+        {
+            while (!storedObjects.ContainsKey("123-5"))
+            {
+                Task.Delay(20);
+            }
+        });
+        Assert.Equal(fileData, storedObjects["123-5"]);
     }
     private ContainerBuilder GetContainerBuilder()
     {
@@ -358,12 +373,6 @@ public class StreamingRequestTests
         builder.RegisterMock(cassandra);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
-        builder.RegisterType<AuthKeyProcessor>();
-        builder.RegisterType<MsgContainerProcessor>();
-        builder.RegisterType<ServiceMessagesProcessor>();
-        builder.RegisterType<AuthorizationProcessor>();
-        builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
         builder.RegisterMock(pipe);
         builder.RegisterMock(new Mock<IAuthService>());
 
