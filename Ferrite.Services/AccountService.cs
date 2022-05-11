@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Text.RegularExpressions;
 using Ferrite.Data;
 
 namespace Ferrite.Services;
@@ -24,6 +25,7 @@ public class AccountService : IAccountService
 {
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
+    private Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
     public AccountService(IDistributedCache cache, IPersistentStore store)
     {
         _cache = cache;
@@ -95,5 +97,40 @@ public class AccountService : IAccountService
             return false;
         }
         return await _store.SavePeerReportReasonAsync(auth.UserId, peer, reason);
+    }
+
+    public async Task<bool> CheckUsername(string username)
+    {
+        if (!UsernameRegex.IsMatch(username))
+        {
+            return false;
+        }
+
+        var user = await _store.GetUserByUsernameAsync(username);
+        if (user != null)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public async Task<User?> UpdateUsername(long authKeyId, string username)
+    {
+        if (!UsernameRegex.IsMatch(username))
+        {
+            return null;
+        }
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return null;
+        }
+        var user = await _store.GetUserByUsernameAsync(username);
+        if (user == null)
+        {
+            await _store.UpdateUsernameAsync(auth.UserId, username);
+        }
+        return await _store.GetUserAsync(auth.UserId);
     }
 }

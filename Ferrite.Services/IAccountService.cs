@@ -30,4 +30,6 @@ public interface IAccountService
     public Task<User?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
     public Task<bool> UpdateStatus(long authKeyId, bool status);
     public Task<bool> ReportPeer(long authKeyId, InputPeer peer, ReportReason reason);
+    public Task<bool> CheckUsername(string username);
+    public Task<User?> UpdateUsername(long authKeyId, string username);
 }

@@ -34,6 +34,7 @@ public interface IPersistentStore
     public Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count);
     public Task<bool> SaveUserAsync(User user);
     public Task<bool> UpdateUserAsync(User user);
+    public Task<bool> UpdateUsernameAsync(long userId, string username);
     public Task<User?> GetUserAsync(long userId);
     public Task<User?> GetUserAsync(string phone);
     public Task<User?> GetUserByUsernameAsync(string username);

@@ -397,6 +397,28 @@ namespace Ferrite.Data
             return true;
         }
 
+        public async Task<bool> UpdateUsernameAsync(long userId, string username)
+        {
+            var oldUser = await GetUserAsync(userId);
+            if ((oldUser?.Username?.Length ?? 0) > 0)
+            {
+                var stmt = new SimpleStatement(
+                    "DELETE FROM ferrite.users_by_username WHERE username = ? AND user_id = ?;",
+                    oldUser?.Username, oldUser?.Id);
+                stmt = stmt.SetKeyspace(keySpace);
+                await session.ExecuteAsync(stmt);
+            }
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.users SET username = ? WHERE user_id = ?;",
+                username, userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            statement = new SimpleStatement(
+                    "INSERT INTO ferrite.users_by_username (username, user_id) VALUES (?,?);",
+                    username, userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
         public async Task<User?> GetUserAsync(long userId)
         {
             User? user = null;
