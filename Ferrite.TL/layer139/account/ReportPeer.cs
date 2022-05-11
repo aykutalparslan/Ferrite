@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +30,12 @@ public class ReportPeer : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public ReportPeer(ITLObjectFactory objectFactory)
+    public ReportPeer(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => -977650298;
@@ -85,7 +90,54 @@ public class ReportPeer : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var inputPeer = _peer.Constructor switch
+        {
+            TLConstructor.InputPeerUser => new Data.InputPeer()
+            {
+                UserId = ((InputPeerUserImpl)_peer).UserId,
+                AccessHash = ((InputPeerUserImpl)_peer).UserId,
+            },
+            TLConstructor.InputPeerChat => new Data.InputPeer()
+            {
+                ChatId = ((InputPeerChatImpl)_peer).ChatId,
+            },
+            TLConstructor.InputPeerUserFromMessage => new Data.InputPeer()
+            {
+                UserId = ((InputPeerUserFromMessageImpl)_peer).UserId,
+                MsgId = ((InputPeerUserFromMessageImpl)_peer).MsgId,
+                ChatId = ((InputPeerChatImpl)((InputPeerUserFromMessageImpl)_peer).Peer).ChatId
+            },
+            TLConstructor.InputPeerChannel => new Data.InputPeer()
+            {
+                ChannelId = ((InputPeerChannelImpl)_peer).ChannelId,
+                AccessHash = ((InputPeerChannelImpl)_peer).AccessHash,
+            },
+            TLConstructor.InputPeerSelf => new Data.InputPeer(){ InputPeerType = InputPeerType.Self},
+            TLConstructor.InputPeerChannelFromMessage => new Data.InputPeer()
+            {
+                ChannelId = ((InputPeerChannelFromMessageImpl)_peer).ChannelId,
+                ChatId = ((InputPeerChatImpl)((InputPeerChannelFromMessageImpl)_peer).Peer).ChatId
+            },
+            _ => new Data.InputPeer(){ InputPeerType = InputPeerType.Empty},
+        };
+        var success = await _account.ReportPeer(ctx.AuthKeyId, inputPeer, _reason.Constructor switch
+        {
+            TLConstructor.InputReportReasonCopyright => Data.ReportReason.Copyright,
+            TLConstructor.InputReportReasonFake => Data.ReportReason.Fake,
+            TLConstructor.InputReportReasonPornography => Data.ReportReason.Pornography,
+            TLConstructor.InputReportReasonSpam => Data.ReportReason.Spam,
+            TLConstructor.InputReportReasonViolence => Data.ReportReason.Violence,
+            TLConstructor.InputReportReasonChildAbuse => Data.ReportReason.ChildAbuse,
+            TLConstructor.InputReportReasonGeoIrrelevant => Data.ReportReason.GeoIrrelevant,
+            TLConstructor.InputReportReasonIllegalDrugs => Data.ReportReason.IllegalDrugs,
+            TLConstructor.InputReportReasonPersonalDetails => Data.ReportReason.PersonalDetails,
+            _ => Data.ReportReason.Other
+        });
+         
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

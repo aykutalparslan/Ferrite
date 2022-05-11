@@ -86,4 +86,14 @@ public class AccountService : IAccountService
 
         return false;
     }
+
+    public async Task<bool> ReportPeer(long authKeyId, InputPeer peer, ReportReason reason)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return false;
+        }
+        return await _store.SavePeerReportReasonAsync(auth.UserId, peer, reason);
+    }
 }

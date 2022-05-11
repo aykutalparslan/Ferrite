@@ -143,7 +143,7 @@ namespace Ferrite.Data
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.device_other_users (" +
                 "auth_key_id bigint," +
-                "user_id long," +
+                "user_id bigint," +
                 "token text," +
                 "PRIMARY KEY (auth_key_id, user_id, token));");
             session.Execute(statement.SetKeyspace(keySpace));
@@ -152,12 +152,20 @@ namespace Ferrite.Data
                 "auth_key_id bigint," +
                 "notify_peer_type int," +
                 "peer_type int," +
-                "peer_id long," +
+                "peer_id bigint," +
                 "show_previews boolean," +
                 "silent boolean," +
                 "mute_until int," +
                 "sound text," +
                 "PRIMARY KEY (auth_key_id, notify_peer_type, peer_type, peer_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.report_reasons (" +
+                "peer_id bigint," +
+                "peer_type int," +
+                "reported_by_user bigint," +
+                "report_reason int," +
+                "PRIMARY KEY (peer_id, peer_type, reported_by_user));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -702,6 +710,33 @@ namespace Ferrite.Data
                 "WHERE auth_key_id = ? AND notify_peer_type = ?;",
                 (int)peer.Peer.InputPeerType, peerId,settings.ShowPreviews, settings.Silent,
                 settings.MuteUntil, settings.Sound, authKeyId, (int)peer.NotifyPeerType).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<bool> SavePeerReportReasonAsync(long reportedByUser, InputPeer peer, ReportReason reason)
+        {
+            long peerId = 0;
+            if (peer.InputPeerType == InputPeerType.User)
+            {
+                peerId = peer.UserId;
+            } else if (peer.InputPeerType == InputPeerType.Chat)
+            {
+                peerId = peer.ChatId;
+            } else if (peer.InputPeerType == InputPeerType.Channel)
+            {
+                peerId = peer.ChannelId;
+            } else if (peer.InputPeerType == InputPeerType.UserFromMessage)
+            {
+                peerId = peer.UserId;
+            } else if (peer.InputPeerType == InputPeerType.ChannelFromMessage)
+            {
+                peerId = peer.ChannelId;
+            }
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.report_reasons SET report_reason = ? " +
+                "WHERE peer_id = ? AND peer_type = ? AND reported_by_user = ?;",
+                (int)reason, peerId, (int)peer.InputPeerType, reportedByUser).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
