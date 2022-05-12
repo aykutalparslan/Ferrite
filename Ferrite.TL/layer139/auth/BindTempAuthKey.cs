@@ -33,12 +33,14 @@ public class BindTempAuthKey : ITLObject, ITLMethod
     private readonly ITLObjectFactory factory;
     private readonly IMTProtoService _mtproto;
     private readonly IAuthService _auth;
+    private readonly ILogger _log;
     private bool serialized = false;
-    public BindTempAuthKey(ITLObjectFactory objectFactory, IMTProtoService mtproto, IAuthService auth)
+    public BindTempAuthKey(ITLObjectFactory objectFactory, IMTProtoService mtproto, IAuthService auth, ILogger log)
     {
         factory = objectFactory;
         _mtproto = mtproto;
         _auth = auth;
+        _log = log;
     }
 
     public int Constructor => -841733627;
@@ -107,7 +109,7 @@ public class BindTempAuthKey : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var authKey = await _mtproto.GetAuthKeyAsync(ctx.AuthKeyId);
+        var authKey = await _mtproto.GetAuthKeyAsync(_permAuthKeyId);
         var resp = factory.Resolve<RpcError>();
         if (authKey == null)
         {
@@ -116,11 +118,12 @@ public class BindTempAuthKey : ITLObject, ITLMethod
             result.Result = resp;
         }
         var bindingMessage = DecryptBindingMessage(authKey);
-        if (bindingMessage != null && bindingMessage.PermAuthKeyId == ctx.AuthKeyId &&
+        if (bindingMessage != null && bindingMessage.PermAuthKeyId == _permAuthKeyId &&
             bindingMessage.Nonce == _nonce)
         {
             var success = await _auth.BindTempAuthKey(bindingMessage.TempAuthKeyId,
             bindingMessage.PermAuthKeyId, _expiresAt);
+            _log.Information($"BindAuthkey Perm:{bindingMessage.PermAuthKeyId} Temp:{bindingMessage.TempAuthKeyId}");
             result.Result = success ? new BoolTrue() : new BoolFalse();
         }
         resp.ErrorCode = 400;
@@ -136,7 +139,9 @@ public class BindTempAuthKey : ITLObject, ITLMethod
         AesIgeV1 aesIge = new AesIgeV1(authKey, messageKey);
         aesIge.Decrypt(encrypted.Slice(24));
         SequenceReader reader = IAsyncBinaryReader.Create(_encryptedMessage);
-        reader.Skip(28);
+        reader.Skip(24);
+        reader.Skip(32);
+        int constructor = reader.ReadInt32(true);
         return factory.Read<BindAuthKeyInnerImpl>(ref reader);
     }
 
