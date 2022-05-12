@@ -26,6 +26,7 @@ using Ferrite.Crypto;
 using DotNext.Buffers;
 using System.IO.Pipelines;
 using System.Buffers;
+using System.Numerics;
 using Ferrite.Core;
 using Ferrite.Transport;
 using System.Text.Json;
@@ -48,6 +49,19 @@ public class Program
         IContainer container = BuildContainer();
 
         var scope = container.BeginLifetimeScope();
+
+        var keyProvider = scope.Resolve<IKeyProvider>();
+        var fingerprints = keyProvider.GetRSAFingerprints();
+        foreach (var fingerprint in fingerprints)
+        {
+            var key = keyProvider.GetKey(fingerprint);
+            Console.WriteLine(key?.ExportPublicKey());
+            Console.WriteLine($"Modulus: {new BigInteger(key?.PublicKeyParameters.Modulus, true, true)}");
+            Console.WriteLine($"Exponent: {new BigInteger(key?.PublicKeyParameters.Exponent,true,true)}");
+            Console.WriteLine($"Fingerprint-HEX: 0x{fingerprint:X}");
+            Console.WriteLine($"Fingerprint-DECIMAL: {fingerprint}");
+        }
+        
         IFerriteServer ferriteServer = scope.Resolve<IFerriteServer>();
         await ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 5222), default);
     }
