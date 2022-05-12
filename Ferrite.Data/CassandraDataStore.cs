@@ -134,18 +134,18 @@ namespace Ferrite.Data
                 "auth_key_id bigint," +
                 "no_muted boolean," +
                 "token_type int," +
-                "token text," +
+                "app_token text," +
                 "app_sandbox boolean," +
                 "app_version text," +
                 "secret blob," +
-                "PRIMARY KEY (auth_key_id, token));");
+                "PRIMARY KEY (auth_key_id, app_token));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.device_other_users (" +
                 "auth_key_id bigint," +
                 "user_id bigint," +
-                "token text," +
-                "PRIMARY KEY (auth_key_id, user_id, token));");
+                "app_token text," +
+                "PRIMARY KEY (auth_key_id, user_id, app_token));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.notify_settings (" +
@@ -333,7 +333,7 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
-                "last_name, username, phone, about) VALUES(?,?,?,?,?,?);",
+                "last_name, username, phone, about) VALUES(?,?,?,?,?,?,?);",
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone, user.About).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
@@ -645,7 +645,7 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.devices SET no_muted = ?, token_type = ?, " +
-                "token = ?, app_sandbox = ?, " +
+                "app_token = ?, app_sandbox = ?, " +
                 "secret = ? " +
                 "WHERE auth_key_id = ?;",
                 deviceInfo.NoMuted, deviceInfo.TokenType, deviceInfo.Token,
@@ -654,7 +654,7 @@ namespace Ferrite.Data
             foreach (var userId in deviceInfo.OtherUserIds)
             {
                 statement = new SimpleStatement(
-                    "UPDATE ferrite.device_other_users SET token = ? " +
+                    "UPDATE ferrite.device_other_users SET app_token = ? " +
                     "WHERE auth_key_id = ? AND user_id = ?;",
                     deviceInfo.Token, deviceInfo.AuthKeyId, userId).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
@@ -684,7 +684,7 @@ namespace Ferrite.Data
                 {
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     TokenType = row.GetValue<int>("token_type"),
-                    Token = row.GetValue<string>("token"),
+                    Token = row.GetValue<string>("app_token"),
                     NoMuted = row.GetValue<bool>("no_muted"),
                     Secret = row.GetValue<byte[]>("secret"),
                     AppSandbox = row.GetValue<bool>("app_sandbox"),
@@ -697,14 +697,14 @@ namespace Ferrite.Data
         public async Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds)
         {
             var statement = new SimpleStatement(
-                "DELETE FROM ferrite.devices WHERE auth_key_id = ? AND token = ?;",
+                "DELETE FROM ferrite.devices WHERE auth_key_id = ? AND app_token = ?;",
                 authKeyId, token);
             statement = statement.SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             foreach (var userId in otherUserIds)
             {
                 statement = new SimpleStatement(
-                    "DELETE FROM ferrite.device_other_users WHERE auth_key_id = ? AND user_id = ?, AND token = ?;",
+                    "DELETE FROM ferrite.device_other_users WHERE auth_key_id = ? AND user_id = ?, AND app_token = ?;",
                     authKeyId, userId, token);
                 statement = statement.SetKeyspace(keySpace);
             }
