@@ -19,6 +19,7 @@
 using System;
 using System.Buffers;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using DotNext.Buffers;
 using Ferrite.Utils;
 using Org.BouncyCastle.Crypto;
@@ -79,8 +80,15 @@ public class RSAKey : IRSAKey
         publicKey = (ICipherParameters)new PemReader(new StringReader(ExportPublicKey())).ReadObject();
         privateKey = ((AsymmetricCipherKeyPair)new PemReader(new StringReader(ExportPrivateKey())).ReadObject()).Private;
     }
+    
+    // https://stackoverflow.com/a/7768475/2015348
+    // https://creativecommons.org/licenses/by-sa/3.0/
+    private string SpliceText(string text, int lineLength) {
+        return Regex.Replace(text, "(.{" + lineLength + "})", "$1" + "\n");
+    }
 
     // https://stackoverflow.com/a/28407693 -----------------------------------
+    // https://creativecommons.org/licenses/by-sa/4.0/
     public string ExportPublicKey()
     {
         using (var stream = new MemoryStream())
@@ -124,8 +132,8 @@ public class RSAKey : IRSAKey
 
             var base64 = Convert.ToBase64String(stream.GetBuffer(), 0, (int)stream.Length);
             return "-----BEGIN PUBLIC KEY-----\n" +
-            base64 + "\n" +
-            "-----END PUBLIC KEY-----\n";
+                   SpliceText(base64, 64) + "\n" +
+                   "-----END PUBLIC KEY-----\n";
         }
     }
 
@@ -190,6 +198,7 @@ public class RSAKey : IRSAKey
     // https://stackoverflow.com/a/28407693/ -----------------------------------
 
     // https://stackoverflow.com/a/23739932/ -----------------------------------
+    // https://creativecommons.org/licenses/by-sa/3.0/
     public string ExportPrivateKey()
     {
         using (var stream = new MemoryStream())
@@ -214,9 +223,9 @@ public class RSAKey : IRSAKey
             }
 
             var base64 = Convert.ToBase64String(stream.GetBuffer(), 0, (int)stream.Length);
-            return "-----BEGIN RSA PRIVATE KEY-----\n"+
-            base64 + "\n"+
-            "-----END RSA PRIVATE KEY-----\n";
+            return "-----BEGIN RSA PRIVATE KEY-----\n" +
+                   SpliceText(base64, 64) + "\n" +
+                   "-----END RSA PRIVATE KEY-----\n";
         }
     }
 

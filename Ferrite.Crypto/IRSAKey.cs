@@ -30,6 +30,8 @@ namespace Ferrite.Crypto
         public void Init(string alias);
         public byte[] EncryptBlock(byte[] data, bool usePublicKey = true);
         public byte[] DecryptBlock(byte[] data, bool usePrivateKey = true);
+        public string ExportPublicKey();
+        public string ExportPrivateKey();
     }
 }
 
