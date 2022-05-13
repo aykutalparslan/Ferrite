@@ -87,10 +87,6 @@ public abstract class Config : ITLObject
         config.CaptionLengthMax = 1024;
         config.MessageLengthMax = 4096;
         config.WebfileDcId = 1;
-        if(_default == null)
-        {
-            _default = config;
-        }
-        return _default;
+        return _default ??= config;
     }
 }
