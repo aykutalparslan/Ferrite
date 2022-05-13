@@ -76,10 +76,9 @@ public class InvokeWithLayer : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        if(_layer == 139 &&
-            _query is ITLMethod medhod)
+        if(_query is ITLMethod medhod)
         {
-            _log.Information(String.Format("Invoke {0} with Layer {1} MessageId: {2}", medhod.ToString(), _layer, ctx.MessageId));
+            _log.Information($"Invoke {medhod} with Layer {_layer} MessageId: {ctx.MessageId} AuthKeyId:{ctx.AuthKeyId}");
             return await medhod.ExecuteAsync(ctx);
         }
         var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");
