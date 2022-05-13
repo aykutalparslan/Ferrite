@@ -7,14 +7,10 @@ services:
       context: .
       dockerfile: Ferrite/Dockerfile
     depends_on:
-      cassandra:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
+      - cassandra
+      - redis
+      - minio
+      - kafka
     ports:
       - 5222:5222
   redis:
