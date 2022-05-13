@@ -69,6 +69,7 @@ public class MTProtoConnection : IMTProtoConnection
     private WebSocketHandler? webSocketHandler;
     private Pipe webSocketPipe;
     private MTProtoPipe? _currentRequest = null;
+    public Dictionary<string, object> SessionData { get; private set; } = new();
 
     private readonly object _abortLock = new object();
     private bool _connectionAborted = false;
@@ -169,23 +170,23 @@ public class MTProtoConnection : IMTProtoConnection
 
     private async Task DoReceive()
     {
-        try
+
+        while (true)
         {
-            while (true)
+            var result = await socketConnection.Transport.Input.ReadAsync();
+            try
             {
-                var result = await socketConnection.Transport.Input.ReadAsync();
                 if (result.IsCanceled)
                 {
                     break;
                 }
+
                 if (result.Buffer.Length > 0)
                 {
                     if (webSocketHandler != null)
                     {
-                        if (webSocketPipe == null)
-                        {
-                            webSocketPipe = new Pipe();
-                        }
+                        webSocketPipe ??= new Pipe();
+
                         var position = webSocketHandler.DecodeTo(result.Buffer, webSocketPipe.Writer);
                         _ = await webSocketPipe.Writer.FlushAsync();
                         socketConnection.Transport.Input.AdvanceTo(position);
@@ -200,15 +201,16 @@ public class MTProtoConnection : IMTProtoConnection
                         socketConnection.Transport.Input.AdvanceTo(position);
                     }
                 }
+
                 if (result.IsCompleted)
                 {
                     break;
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _log.Error(ex, ex.Message);
+            catch (Exception ex)
+            {
+                _log.Error(ex, ex.Message);
+            }
         }
     }
 
@@ -224,6 +226,7 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
+                
                 var data = msg.Data;
                 _log.Debug($"=>Sending {msg.MessageType} message.");
                 if (_authKeyId == 0)
@@ -231,7 +234,7 @@ public class MTProtoConnection : IMTProtoConnection
                     SendUnencrypted(data, NextMessageId(msg.IsResponse));
                 }
                 else if (await _sessionManager.GetSessionStateAsync(_sessionId)
-                    is SessionState state)
+                    is { } state)
                 {
                     SendEncrypted(msg, state);
                 }
@@ -305,7 +308,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
 
-    public delegate Task AsyncEventHandler<MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
+    public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
     public event AsyncEventHandler<MTProtoAsyncEventArgs>? MessageReceived;
 
     protected virtual void OnMessageReceived(MTProtoAsyncEventArgs e)
@@ -338,7 +341,7 @@ public class MTProtoConnection : IMTProtoConnection
             hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
             if (isStream)
             {
-                ProcessStream(frame, hasMore);
+                _ = ProcessStream(frame, hasMore);
                 return reader.Position;
             }
             if (frame.Length > 0)
@@ -360,18 +363,13 @@ public class MTProtoConnection : IMTProtoConnection
                 return;
             }
             long authKeyId = reader.ReadInt64(true);
-            _authKeyId = authKeyId;
-            _authKey ??= _cache.GetAuthKey(_authKeyId) ?? _cache.GetTempAuthKey(_authKeyId);
-            if (_authKey == null)
+            if (authKeyId != 0 && _authKeyId != authKeyId)
             {
-                var authKey = _db.GetAuthKey(_authKeyId);
-                if (authKey != null)
-                {
-                    _authKey = authKey;
-                    _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
-                }
+                _authKeyId = authKeyId;
+                _authKey = null;
+                GetAuthKey();
             }
-            
+
             var incomingMessageKey = new byte[16];
             reader.Read(incomingMessageKey);
             var aesKey = new byte[32];
@@ -395,7 +393,7 @@ public class MTProtoConnection : IMTProtoConnection
 
     private async Task ProcessPipe(MTProtoPipe pipe)
     {
-        TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
+        TLExecutionContext context = new TLExecutionContext(SessionData);
         context.Salt = await pipe.Input.ReadInt64Async(true);
         context.SessionId = await pipe.Input.ReadInt64Async(true);
         context.AuthKeyId = _authKeyId;
@@ -495,27 +493,48 @@ public class MTProtoConnection : IMTProtoConnection
             return;
         }
 
-        if (_authKeyId != 0)
+        try
         {
-            if (_authKey == null)
-            {
-                _authKey = _cache.GetAuthKey(_authKeyId);
-            }
-            if (_authKey == null)
-            {
-                _authKey = _cache.GetTempAuthKey(_authKeyId);
-            }
-            if (_authKey == null)
-            {
-                var authKey = _db.GetAuthKey(_authKeyId);
-                if (authKey != null)
-                {
-                    _authKey = authKey;
-                    _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
-                }
-            }
-
             DecryptAndRaiseEvent(in bytes);
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, ex.Message);
+        }
+    }
+
+    private void GetAuthKey()
+    {
+        if (_authKey == null)
+        {
+            _log.Information("Trying to get the authKey from cache");
+            var authKey = _cache.GetAuthKey(_authKeyId);
+            if (authKey != null)
+            {
+                var tmp = authKey.ToArray();
+                Interlocked.CompareExchange(ref _authKey, tmp, null);
+            }
+        }
+        if (_authKey == null)
+        {
+            _log.Information("Trying to get tempAuthKey");
+            var authKey = _cache.GetTempAuthKey(_authKeyId);
+            if (authKey != null)
+            {
+                var tmp = authKey.ToArray();
+                Interlocked.CompareExchange(ref _authKey, tmp, null);
+            }
+        }
+        if (_authKey == null)
+        {
+            _log.Information("Trying to get the authKey from db");
+            var authKey = _db.GetAuthKey(_authKeyId);
+            if (authKey != null)
+            {
+                var tmp = authKey.ToArray();
+                Interlocked.CompareExchange(ref _authKey, tmp, null);
+                _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
+            }
         }
     }
 
@@ -538,7 +557,7 @@ public class MTProtoConnection : IMTProtoConnection
                 throw ex;
             }
             SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
-            TLExecutionContext _context = new TLExecutionContext(new Dictionary<string, object>());
+            TLExecutionContext _context = new TLExecutionContext(SessionData);
             _context.Salt = rd.ReadInt64(true);
             _context.SessionId = rd.ReadInt64(true);
             _context.AuthKeyId = _authKeyId;
@@ -614,7 +633,7 @@ public class MTProtoConnection : IMTProtoConnection
         int constructor = reader.ReadInt32(true);
         var msg = factory.Read(constructor, ref reader);
         //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
-        TLExecutionContext _context = new TLExecutionContext(new Dictionary<string, object>());
+        TLExecutionContext _context = new TLExecutionContext(SessionData);
         if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
         {
             _context.IP = endpoint.Address.ToString();
@@ -632,9 +651,15 @@ public class MTProtoConnection : IMTProtoConnection
             return;
         }
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        long authKey = reader.ReadInt64(true);
-        _authKeyId = authKey;
-        if (authKey == 0)
+        long keyId = reader.ReadInt64(true);
+        if (keyId != 0 && keyId != _authKeyId)
+        {
+            _authKey = null;
+            _authKeyId = keyId;
+            GetAuthKey();
+        }
+        
+        if (keyId == 0)
         {
             ProcessUnencryptedMessage(bytes.Slice(8));
         }

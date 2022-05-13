@@ -170,6 +170,7 @@ public class SetClientDhParams : ITLObject, ITLMethod
                 dhGenOk.Nonce = sessionNonce;
                 dhGenOk.ServerNonce = sessionServerNonce;
                 dhGenOk.NewNonceHash1 = (Int128)newNonceHash1;
+                ctx.SessionData.Clear();
                 return dhGenOk;
             }
             else

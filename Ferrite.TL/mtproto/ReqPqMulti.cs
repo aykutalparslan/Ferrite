@@ -66,17 +66,28 @@ public class ReqPqMulti : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         ResPQ respq = factory.Resolve<ResPQ>();
-        if (!ctx.SessionData.ContainsKey("nonce") ||
-            (Int128)ctx.SessionData["nonce"] != nonce)
+        if (!ctx.SessionData.ContainsKey("nonce"))
         {
             ctx.SessionData.Add("nonce", (byte[])nonce);
             respq.ServerNonce = (Int128)randomGenerator.GetRandomBytes(16);
             ctx.SessionData.Add("server_nonce", (byte[])respq.ServerNonce);
+            await Task.Delay(100);
+        }
+        else if ((Int128)(byte[])ctx.SessionData["nonce"] != nonce)
+        {
+            ctx.SessionData["nonce"] = (byte[])nonce;
+            respq.ServerNonce = (Int128)randomGenerator.GetRandomBytes(16);
+            ctx.SessionData["server_nonce"] = (byte[])respq.ServerNonce;
+            return null;
         }
         else
         {
             respq.ServerNonce = (Int128)ctx.SessionData["server_nonce"];
         }
+        nonce = (Int128)(byte[])ctx.SessionData["nonce"];
+        respq.ServerNonce = (Int128)(byte[])ctx.SessionData["server_nonce"];
+        
+        Console.WriteLine("====Nonce: "+BitConverter.ToString(nonce.AsSpan().ToArray()));
         respq.Nonce = nonce;
         if (ctx.SessionData.ContainsKey("p"))
         {

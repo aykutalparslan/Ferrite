@@ -170,9 +170,11 @@ public class MTProtoConnectionTests
         };
         mtProtoConnection.Start();
         var webSocketResult = await connection.Application.Input.ReadAsync();
-        string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
         string wsExpected = "HTTP/1.1 101 Switching Protocols\r\nConnection: upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: AJivmihbVG1JSXhoiKaZkpv82+s=\r\nSec-WebSocket-Protocol: binary\r\n\r\n";
-        connection.Application.Input.AdvanceTo(webSocketResult.Buffer.End);
+
+        var slice = webSocketResult.Buffer.Slice(0, wsExpected.Length);
+        string webSocketResponse = Encoding.UTF8.GetString(slice);
+        connection.Application.Input.AdvanceTo(slice.End);
         Assert.Equal(wsExpected, webSocketResponse);
     }
 

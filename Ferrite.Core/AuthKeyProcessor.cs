@@ -21,6 +21,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.Utils;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -29,14 +30,17 @@ public class AuthKeyProcessor : IProcessor
 {
     private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public AuthKeyProcessor(ISessionService sessionManager, IDistributedPipe pipe)
+    private readonly ILogger _log;
+    public AuthKeyProcessor(ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
     {
         _sessionManager = sessionManager;
         _pipe = pipe;
+        _log = log;
     }
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
+        _log.Information($"{input} received.");
         if (ctx.AuthKeyId != 0)
         {
             output.Enqueue(input);
@@ -48,31 +52,28 @@ public class AuthKeyProcessor : IProcessor
         {
             return;
         }
-
         if (input is ReqPqMulti reqPq &&
             sender is MTProtoConnection connection)
         {
             var result = await reqPq.ExecuteAsync(ctx);
+            if (result == null)
+            {
+                return;
+            }
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.TLBytes.ToArray();
-            await _sessionManager.AddAuthSessionAsync(reqPq.Nonce,
-                new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
-                new MTProtoSession(connection));
             message.Nonce = reqPq.Nonce;
             message.MessageType = MTProtoMessageType.Unencrypted;
             var bytes = MessagePackSerializer.Serialize(message);
-            _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
+            await connection.SendAsync(message);
 
-            Console.WriteLine("-->" + result.ToString());
+            _log.Information($"{result} sent.");
         }
-        else if (input is ReqDhParams reqDhParams &&
-            await _sessionManager.GetAuthSessionStateAsync(reqDhParams.Nonce)
-            is AuthSessionState state)
+        else if (input is ReqDhParams reqDhParams)
         {
-            ctx.SessionData = state.SessionData;
             var result = await reqDhParams.ExecuteAsync(ctx);
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
@@ -81,21 +82,20 @@ public class AuthKeyProcessor : IProcessor
             message.Data = result.TLBytes.ToArray();
             message.MessageType = MTProtoMessageType.Unencrypted;
             message.Nonce = reqDhParams.Nonce;
-            var bytes = MessagePackSerializer.Serialize(message);
-            _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
+            
             await _sessionManager.UpdateAuthSessionAsync(reqDhParams.Nonce, new AuthSessionState()
             {
                 NodeId = _sessionManager.NodeId,
                 SessionData = ctx.SessionData
             });
-
-            Console.WriteLine("-->" + result.ToString());
+            if (sender != null)
+            {
+                await ((MTProtoConnection)sender).SendAsync(message);
+            }
+            _log.Information($"{result} sent.");
         }
-        else if (input is SetClientDhParams setClientDhParams &&
-           await _sessionManager.GetAuthSessionStateAsync(setClientDhParams.Nonce)
-           is AuthSessionState state2)
+        else if (input is SetClientDhParams setClientDhParams)
         {
-            ctx.SessionData = state2.SessionData;
             var result = await setClientDhParams.ExecuteAsync(ctx);
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
@@ -104,15 +104,17 @@ public class AuthKeyProcessor : IProcessor
             message.Data = result.TLBytes.ToArray();
             message.MessageType = MTProtoMessageType.Unencrypted;
             message.Nonce = setClientDhParams.Nonce;
-            var bytes = MessagePackSerializer.Serialize(message);
-            _ = _pipe.WriteAsync(_sessionManager.NodeId.ToString(), bytes);
+            //var bytes = MessagePackSerializer.Serialize(message);
             await _sessionManager.UpdateAuthSessionAsync(setClientDhParams.Nonce, new AuthSessionState()
             {
                 NodeId = _sessionManager.NodeId,
                 SessionData = ctx.SessionData
             });
-
-            Console.WriteLine("-->" + result.ToString());
+            if (sender != null)
+            {
+                await ((MTProtoConnection)sender).SendAsync(message);
+            }
+            _log.Information($"{result} sent.");
         }
     }
 }

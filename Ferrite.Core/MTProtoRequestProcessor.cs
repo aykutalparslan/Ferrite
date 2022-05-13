@@ -47,12 +47,14 @@ public class MTProtoRequestProcessor : IProcessor
                 message.IsResponse = true;
                 message.IsContentRelated = true;
                 message.Data = result.TLBytes.ToArray();
-
-                if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                if (sender != null)
+                {
+                    await ((MTProtoConnection)sender).SendAsync(message);
+                }
+                else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
                     is SessionState session)
                 {
                     var bytes = MessagePackSerializer.Serialize(message);
-                    //TODO: maybe don't queue if the client is connected to the same server 
                     _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
                 }
 
@@ -77,11 +79,14 @@ public class MTProtoRequestProcessor : IProcessor
                 message.IsContentRelated = true;
                 message.Data = result.TLBytes.ToArray();
 
-                if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                if (sender != null)
+                {
+                    await ((MTProtoConnection)sender).SendAsync(message);
+                }
+                else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
                     is SessionState session)
                 {
                     var bytes = MessagePackSerializer.Serialize(message);
-                    //TODO: maybe don't queue if the client is connected to the same server 
                     _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
                 }
 

@@ -63,7 +63,9 @@ public class AuthorizationProcessor : IProcessor
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguage);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.InitConnection);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.JsonObject);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_BindTempAuthKey);
         _unauthorizedMethods.Add(TLConstructor.GetFutureSalts);
+        _unauthorizedMethods.Add(TLConstructor.MsgsAck);
         _unauthorizedMethods.Add(2018609336);//initConnection
     }
 
@@ -127,15 +129,12 @@ public class AuthorizationProcessor : IProcessor
             message.IsContentRelated = true;
             message.Data = response.TLBytes.ToArray();
 
-            if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                is SessionState session)
+            if (sender != null)
             {
-                var bytes = MessagePackSerializer.Serialize(message);
-                _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                await ((MTProtoConnection)sender).SendAsync(message);
             }
 
             Console.WriteLine("-->" + response.ToString());
-            return;
         }
     }
 }

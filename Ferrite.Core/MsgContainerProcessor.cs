@@ -65,7 +65,7 @@ public class MsgContainerProcessor : IProcessor
                 await connection.SendAsync(message);
             }
             else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                    is SessionState session)
+                    is { } session)
             {
                 var bytes = MessagePackSerializer.Serialize(message);
                 _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);

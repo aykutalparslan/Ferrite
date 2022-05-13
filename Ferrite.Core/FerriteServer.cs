@@ -55,7 +55,6 @@ public class FerriteServer : IFerriteServer
     public async Task StopAsync(CancellationToken token)
     {
         await _scope.DisposeAsync();
-
     }
 
     private async Task StartAccept(IConnectionListener socketListener)
@@ -63,25 +62,27 @@ public class FerriteServer : IFerriteServer
         _log.Information(String.Format("Server is listening at {0}", socketListener.EndPoint));
         while (true)
         {
-            if (await socketListener.AcceptAsync() is
-                ITransportConnection connection)
+            if (await socketListener.AcceptAsync() is { } connection)
             {
+                _log.Debug("New MTProto connection was created.");
                 connection.Start();
                 MTProtoConnection mtProtoConnection = _scope.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
                 mtProtoConnection.Start();
+                
             }
         }
     }
 
     private async Task DoReceive()
     {
-        try
+        while (true)
         {
-            while (true)
+            var result = await _pipe.ReadAsync();
+            try
             {
-                var result = await _pipe.ReadAsync();
                 var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
-                if (message.MessageType == MTProtoMessageType.Unencrypted)
+                if (message is { MessageType: MTProtoMessageType.Unencrypted } &&
+                    message.Nonce != null)
                 {
                     var sessionExists = _sessionManager.TryGetLocalAuthSession(message.Nonce, out var protoSession);
                     if (sessionExists &&
@@ -100,12 +101,11 @@ public class FerriteServer : IFerriteServer
                         _ = connection.SendAsync(message);
                     }
                 }
-                
             }
-        }
-        catch (Exception ex)
-        {
-            _log.Error(ex, ex.Message);
+            catch (Exception ex)
+            {
+                _log.Error(ex, ex.Message);
+            }
         }
     }
 }
