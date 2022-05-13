@@ -118,13 +118,14 @@ public class BindTempAuthKey : ITLObject, ITLMethod
             result.Result = resp;
         }
         var bindingMessage = DecryptBindingMessage(authKey);
-        if (bindingMessage != null && bindingMessage.PermAuthKeyId == _permAuthKeyId &&
+        if (bindingMessage.PermAuthKeyId == _permAuthKeyId &&
             bindingMessage.Nonce == _nonce)
         {
             var success = await _auth.BindTempAuthKey(bindingMessage.TempAuthKeyId,
             bindingMessage.PermAuthKeyId, _expiresAt);
             _log.Information($"BindAuthkey Perm:{bindingMessage.PermAuthKeyId} Temp:{bindingMessage.TempAuthKeyId}");
             result.Result = success ? new BoolTrue() : new BoolFalse();
+            return result;
         }
         resp.ErrorCode = 400;
         resp.ErrorMessage = "ENCRYPTED_MESSAGE_INVALID";
