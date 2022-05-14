@@ -186,14 +186,9 @@ public class MTProtoConnectionTests
         FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
+        
         mtProtoConnection.Start();
         var webSocketResult = await connection.Application.Input.ReadAsync();
-        string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
         connection.Application.Input.AdvanceTo(webSocketResult.Buffer.End);
         
         byte[] data = File.ReadAllBytes("testdata/message_0");
