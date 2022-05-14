@@ -94,7 +94,7 @@ public class PqTests
     byte[] pq = new byte[] { 0x17, 0xED, 0x48, 0x94, 0x1A, 0x08, 0xF9, 0x81 };
 
     [Fact]
-    public void ReqPqMulti_ShouldModifyTLExecutionContext()
+    public async Task ReqPqMulti_ShouldModifyTLExecutionContext()
     {
         using (var mock = AutoMock.GetLoose())
         {
@@ -118,7 +118,7 @@ public class PqTests
             reqpq.Nonce = (Int128)nonce;
 
             TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-            var respq = reqpq.ExecuteAsync(context);
+            var respq = await reqpq.ExecuteAsync(context);
 
             Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
             Assert.Equal(0x53911073, (int)context.SessionData["q"]);
@@ -129,7 +129,7 @@ public class PqTests
     }
 
     [Fact]
-    public void ReqPqMulti_ShouldNotModifyTLExecutionContext()
+    public async Task ReqPqMulti_ShouldNotModifyTLExecutionContext()
     {
         using (var mock = AutoMock.GetLoose())
         {
@@ -153,7 +153,7 @@ public class PqTests
             reqpq.Nonce = (Int128)nonce;
 
             TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
-            var respq = reqpq.ExecuteAsync(context);
+            var respq = await reqpq.ExecuteAsync(context);
 
             Assert.Equal(0x494C553B, (int)context.SessionData["p"]);
             Assert.Equal(0x53911073, (int)context.SessionData["q"]);
@@ -814,9 +814,6 @@ public class PqTests
             .Concat(authKeyAuxHash).ToArray();
         var newNonceHash1 = SHA1.HashData(str).Skip(4).ToArray();
 
-
-
-        Assert.Equal(authKey, (byte[])context.SessionData["auth_key"]);
         Assert.Equal(newNonceHash1, result.NewNonceHash1);
     }
 
