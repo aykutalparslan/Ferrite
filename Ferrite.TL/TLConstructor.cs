@@ -24,6 +24,7 @@ public class TLConstructor
     public const int Vector = 481674261;
     public const int ResPQ = 85337187;
     public const int PQInnerData = -2083955988;
+    public const int PQInnerDataTemp = 1013613780;
     public const int PQInnerDataDc = -1443537003;
     public const int PQInnerDataTempDc = 1459478408;
     public const int ServerDhParamsOk = -790100132;

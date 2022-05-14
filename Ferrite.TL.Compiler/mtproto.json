@@ -61,6 +61,41 @@
             "type": "P_Q_inner_data"
         },
         {
+            "id": "1013613780",
+            "predicate": "p_q_inner_data_temp",
+            "params": [
+                {
+                    "name": "pq",
+                    "type": "bytes"
+                },
+                {
+                    "name": "p",
+                    "type": "bytes"
+                },
+                {
+                    "name": "q",
+                    "type": "bytes"
+                },
+                {
+                    "name": "nonce",
+                    "type": "int128"
+                },
+                {
+                    "name": "server_nonce",
+                    "type": "int128"
+                },
+                {
+                    "name": "new_nonce",
+                    "type": "int256"
+                },
+                {
+                    "name": "expires_in",
+                    "type": "int"
+                }
+            ],
+            "type": "P_Q_inner_data"
+        },
+        {
             "id": "-1443537003",
             "predicate": "p_q_inner_data_dc",
             "params": [

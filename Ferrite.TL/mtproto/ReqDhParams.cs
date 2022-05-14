@@ -143,6 +143,16 @@ public class ReqDhParams : ITLObject, ITLMethod
             log.Debug("Could not obtain the RSA Key.");
             rpcError = factory.Resolve<RpcError>();
             rpcError.ErrorCode = -404;
+            rpcError.ErrorMessage = "";
+            return rpcError;
+        }
+        if(!ctx.SessionData.ContainsKey("nonce") || 
+                !ctx.SessionData.ContainsKey("server_nonce"))
+        {
+            log.Debug("Could not obtain the RSA Key.");
+            rpcError = factory.Resolve<RpcError>();
+            rpcError.ErrorCode = -404;
+            rpcError.ErrorMessage = "";
             return rpcError;
         }
         Memory<byte> data;
@@ -227,6 +237,38 @@ public class ReqDhParams : ITLObject, ITLMethod
         {
             ctx.SessionData.Add("temp_auth_key", true);
             var obj = factory.Read<PQInnerDataTempDc>(ref reader);
+            ctx.SessionData.Add("temp_auth_key_expires_in", obj.ExpiresIn);
+            ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
+            if (nonce != obj.Nonce ||
+                nonce != sessionNonce ||
+                serverNonce != obj.ServerNonce ||
+                serverNonce != sessionServerNonce)
+            {
+                rpcError = factory.Resolve<RpcError>();
+                rpcError.ErrorCode = -404;
+                return rpcError;
+            }
+            var newNonceServerNonce = SHA1.HashData(((byte[])obj.NewNonce)
+                .Concat((byte[])sessionServerNonce).ToArray());
+            var serverNonceNewNonce = SHA1.HashData(((byte[])sessionServerNonce)
+                .Concat((byte[])obj.NewNonce).ToArray());
+            var newNonceNewNonce = SHA1.HashData(((byte[])obj.NewNonce)
+                .Concat((byte[])obj.NewNonce).ToArray());
+            var tmpAesKey = newNonceServerNonce
+                .Concat(serverNonceNewNonce.SkipLast(8)).ToArray();
+            var tmpAesIV = serverNonceNewNonce.Skip(12)
+                .Concat(newNonceNewNonce).Concat(((byte[])obj.NewNonce).Take(4)).ToArray();
+            ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
+            ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
+            byte[] answer = GenerateEncryptedAnswer(ctx, serverDhParamsOk, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
+            serverDhParamsOk.EncryptedAnswer = answer;
+            ctx.SessionData.Add("valid_until", DateTime.Now.AddSeconds(obj.ExpiresIn));
+            return serverDhParamsOk;
+        }
+        else if (constructor == TLConstructor.PQInnerDataTemp)
+        {
+            ctx.SessionData.Add("temp_auth_key", true);
+            var obj = factory.Read<PQInnerDataTemp>(ref reader);
             ctx.SessionData.Add("temp_auth_key_expires_in", obj.ExpiresIn);
             ctx.SessionData.Add("new_nonce", (byte[])obj.NewNonce);
             if (nonce != obj.Nonce ||

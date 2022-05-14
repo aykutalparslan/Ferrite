@@ -1,4 +1,4 @@
-﻿/*
+/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -37,6 +37,7 @@ public class TLObjectFactory : ITLObjectFactory
     {
         85337187 => Read<ResPQ>(ref buff),
         -2083955988 => Read<PQInnerData>(ref buff),
+        1013613780 => Read<PQInnerDataTemp>(ref buff),
         -1443537003 => Read<PQInnerDataDc>(ref buff),
         1459478408 => Read<PQInnerDataTempDc>(ref buff),
         -790100132 => Read<ServerDhParamsOk>(ref buff),
@@ -1093,7 +1094,7 @@ public class TLObjectFactory : ITLObjectFactory
         1926525996 => Read<layer139.photos.UpdateProfilePhoto>(ref buff),
         -1980559511 => Read<layer139.photos.UploadProfilePhoto>(ref buff),
         -2016444625 => Read<layer139.photos.DeletePhotos>(ref buff),
-        //-1291540959 => Read<layer139.upload.SaveFilePart>(ref buff),
+        -1291540959 => Read<layer139.upload.SaveFilePart>(ref buff),
         -1319462148 => Read<layer139.upload.GetFile>(ref buff),
         -990308245 => Read<layer139.help.GetConfig>(ref buff),
         531836966 => Read<layer139.help.GetNearestDc>(ref buff),

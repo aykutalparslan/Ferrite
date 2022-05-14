@@ -65,6 +65,9 @@ public class AuthKeyProcessor : IProcessor
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.TLBytes.ToArray();
+            await _sessionManager.AddAuthSessionAsync(reqPq.Nonce,
+                new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
+                new MTProtoSession(connection));
             message.Nonce = reqPq.Nonce;
             message.MessageType = MTProtoMessageType.Unencrypted;
             var bytes = MessagePackSerializer.Serialize(message);
@@ -72,8 +75,11 @@ public class AuthKeyProcessor : IProcessor
 
             _log.Information($"{result} sent.");
         }
-        else if (input is ReqDhParams reqDhParams)
+        else if (input is ReqDhParams reqDhParams &&
+            await _sessionManager.GetAuthSessionStateAsync(reqDhParams.Nonce)
+            is { } state)
         {
+            ctx.SessionData = state.SessionData;
             var result = await reqDhParams.ExecuteAsync(ctx);
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
@@ -94,8 +100,11 @@ public class AuthKeyProcessor : IProcessor
             }
             _log.Information($"{result} sent.");
         }
-        else if (input is SetClientDhParams setClientDhParams)
+        else if (input is SetClientDhParams setClientDhParams &&
+           await _sessionManager.GetAuthSessionStateAsync(setClientDhParams.Nonce)
+           is { } state2)
         {
+            ctx.SessionData = state2.SessionData;
             var result = await setClientDhParams.ExecuteAsync(ctx);
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
@@ -104,7 +113,6 @@ public class AuthKeyProcessor : IProcessor
             message.Data = result.TLBytes.ToArray();
             message.MessageType = MTProtoMessageType.Unencrypted;
             message.Nonce = setClientDhParams.Nonce;
-            //var bytes = MessagePackSerializer.Serialize(message);
             await _sessionManager.UpdateAuthSessionAsync(setClientDhParams.Nonce, new AuthSessionState()
             {
                 NodeId = _sessionManager.NodeId,
