@@ -21718,6 +21718,12 @@
             "type": "Vector<LangPackLanguage>"
         },
         {
+            "id": "-2146445955",
+            "method": "langpack.getLanguagesL67",
+            "params": [],
+            "type": "Vector<LangPackLanguage>"
+        },
+        {
             "id": "-1763259007",
             "method": "channels.editBanned",
             "params": [

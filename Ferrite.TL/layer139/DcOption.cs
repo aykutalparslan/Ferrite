@@ -42,16 +42,22 @@ public abstract class DcOption : ITLObject
             return _options;
         }
         //TODO: Populate from the data store
+        Vector<DcOption> options = factory.Resolve<Vector<DcOption>>();
         var dcOption = factory.Resolve<DcOptionImpl>();
         dcOption.Id = 1;
-        dcOption.IpAddress = "127.0.0.1";
+        dcOption.IpAddress = "10.0.2.2";
         dcOption.Port = 5222;
-        Vector<DcOption> options = factory.Resolve<Vector<DcOption>>();
         options.Add(dcOption);
-        if (_options == null)
-        {
-            _options = options;
-        }
-        return _options;
+        dcOption = factory.Resolve<DcOptionImpl>();
+        dcOption.Id = 2;
+        dcOption.IpAddress = "10.0.2.2";
+        dcOption.Port = 5222;
+        options.Add(dcOption);
+        dcOption = factory.Resolve<DcOptionImpl>();
+        dcOption.Id = 3;
+        dcOption.IpAddress = "10.0.2.2";
+        dcOption.Port = 5222;
+        options.Add(dcOption);
+        return _options ??= options;
     }
 }

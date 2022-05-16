@@ -60,11 +60,15 @@ public class AuthorizationProcessor : IProcessor
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetStrings);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetDifference);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguages);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguagesL67);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguage);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.InitConnection);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.JsonObject);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_BindTempAuthKey);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCountriesList);
         _unauthorizedMethods.Add(TLConstructor.GetFutureSalts);
+        _unauthorizedMethods.Add(TLConstructor.DestroySession);
+        _unauthorizedMethods.Add(TLConstructor.RpcDropAnswer);
         _unauthorizedMethods.Add(TLConstructor.MsgsAck);
         _unauthorizedMethods.Add(2018609336);//initConnection
     }

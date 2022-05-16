@@ -1193,6 +1193,7 @@ public class TLConstructor
     public static readonly int Langpack_GetStrings = -269862909;
     public static readonly int Langpack_GetDifference = -845657435;
     public static readonly int Langpack_GetLanguages = 1120311183;
+    public static readonly int Langpack_GetLanguagesL67 = -2146445955;
     public static readonly int Channels_EditBanned = -1763259007;
     public static readonly int Channels_GetAdminLog = 870184064;
     public static readonly int Upload_GetCdnFileHashes = 1302676017;

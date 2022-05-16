@@ -1249,6 +1249,7 @@ public class TLObjectFactory : ITLObjectFactory
         -269862909 => Read<layer139.langpack.GetStrings>(ref buff),
         -845657435 => Read<layer139.langpack.GetDifference>(ref buff),
         1120311183 => Read<layer139.langpack.GetLanguages>(ref buff),
+        -2146445955 => Read<layer139.langpack.GetLanguagesL67>(ref buff),
         -1763259007 => Read<layer139.channels.EditBanned>(ref buff),
         870184064 => Read<layer139.channels.GetAdminLog>(ref buff),
         1302676017 => Read<layer139.upload.GetCdnFileHashes>(ref buff),

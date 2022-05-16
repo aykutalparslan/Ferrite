@@ -51,7 +51,7 @@ public abstract class Config : ITLObject
         config.RevokePmInbox = false;
         config.BlockedMode = false;
         config.Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
-        config.Expires = (int)DateTimeOffset.Now.AddDays(30).ToUnixTimeSeconds();
+        config.Expires = (int)DateTimeOffset.Now.AddSeconds(90).ToUnixTimeSeconds();
         config.TestMode = true;
         config.ThisDc = 1;
         config.DcOptions = await DcOption.GetDefaultDcOptionsAsync(factory);
