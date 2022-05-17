@@ -34,7 +34,7 @@ public abstract class DcOption : ITLObject
     {
         throw new NotImplementedException();
     }
-    private static Vector<DcOption> _options;
+    private static Vector<DcOption>? _options = null;
     public static async Task<Vector<DcOption>> GetDefaultDcOptionsAsync(ITLObjectFactory factory)
     {
         if(_options != null)
@@ -53,11 +53,11 @@ public abstract class DcOption : ITLObject
         dcOption.IpAddress = "10.0.2.2";
         dcOption.Port = 5222;
         options.Add(dcOption);
-        dcOption = factory.Resolve<DcOptionImpl>();
+        /*dcOption = factory.Resolve<DcOptionImpl>();
         dcOption.Id = 3;
         dcOption.IpAddress = "10.0.2.2";
         dcOption.Port = 5222;
-        options.Add(dcOption);
+        options.Add(dcOption);*/
         return _options ??= options;
     }
 }

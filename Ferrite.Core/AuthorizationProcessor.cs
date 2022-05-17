@@ -65,7 +65,9 @@ public class AuthorizationProcessor : IProcessor
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.InitConnection);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.JsonObject);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_BindTempAuthKey);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCountriesList);
+        //_unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCountriesList);
+        //_unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetPromoData);
+        //_unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetTermsOfServiceUpdate);
         _unauthorizedMethods.Add(TLConstructor.GetFutureSalts);
         _unauthorizedMethods.Add(TLConstructor.DestroySession);
         _unauthorizedMethods.Add(TLConstructor.RpcDropAnswer);

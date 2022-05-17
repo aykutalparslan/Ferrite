@@ -46,7 +46,8 @@ public class AuthService : IAuthService
     public async Task<AppInfo?> AcceptLoginToken(long authKeyId, byte[] token)
     {
         var t = await _cache.GetLoginTokenAsync(token);
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var auth = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         if (auth != null && t != null&& t.ExceptUserIds.Contains(auth.UserId))
         {
             var login = new LoginViaQR()
@@ -95,12 +96,14 @@ public class AuthService : IAuthService
 
     public async Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys)
     {
-        return await _cache.DeleteTempAuthKeysAsync(authKeyId, exceptAuthKeys);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        return await _cache.DeleteTempAuthKeysAsync(permAuthKey ?? authKeyId, exceptAuthKeys);
     }
 
     public async Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var auth = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         var data = _random.GetRandomBytes(128);
         //TODO: get current dc id
         await _store.SaveExportedAuthorizationAsync(auth, 1, dcId, data);
@@ -113,7 +116,8 @@ public class AuthService : IAuthService
 
     public async Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var auth = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         if (auth!= null && auth.LoggedIn &&
             await _store.GetUserAsync(auth.UserId) is User user)
         {
@@ -143,7 +147,7 @@ public class AuthService : IAuthService
         LoginViaQR login = new LoginViaQR()
         {
             Token = token,
-            AuthKeyId = authKeyId,
+            AuthKeyId = permAuthKey ?? authKeyId,
             SessionId = sessionId,
             Status = false,
             ExceptUserIds = exceptIds
@@ -159,8 +163,9 @@ public class AuthService : IAuthService
 
     public async Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var exported = await _store.GetExportedAuthorizationAsync(userId, authKeyId);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var auth = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
+        var exported = await _store.GetExportedAuthorizationAsync(userId, permAuthKey ?? authKeyId);
         
         if (auth != null && exported != null &&
             auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
@@ -209,14 +214,20 @@ public class AuthService : IAuthService
 
     public async Task<bool> IsAuthorized(long authKeyId)
     {
-        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
+        if (authKeyId == 0)
+        {
+            return false;
+        }
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var authKeyDetails = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         return authKeyDetails?.LoggedIn ?? false;
     }
 
     public async Task<LoggedOut?> LogOut(long authKeyId)
     {
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
         var futureAuthToken = _random.GetRandomBytes(32);
-        var info = await _store.GetAuthorizationAsync(authKeyId);
+        var info = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         if(info == null)
         {
             return null;
@@ -320,10 +331,11 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
-        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var authKeyDetails = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         await _store.SaveAuthorizationAsync(new AuthInfo()
         {
-            AuthKeyId = authKeyId,
+            AuthKeyId = permAuthKey ?? authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
             ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
@@ -373,10 +385,11 @@ public class AuthService : IAuthService
             AccessHash = _random.NextLong()
         };
         await _store.SaveUserAsync(user);
-        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
+        long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+        var authKeyDetails = await _store.GetAuthorizationAsync(permAuthKey ?? authKeyId);
         await _store.SaveAuthorizationAsync(new AuthInfo()
         {
-            AuthKeyId = authKeyId,
+            AuthKeyId = permAuthKey ?? authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
             ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer
