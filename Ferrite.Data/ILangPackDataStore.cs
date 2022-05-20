@@ -21,6 +21,7 @@ namespace Ferrite.Data;
 public interface ILangPackDataStore
 {
     public Task<bool> SaveLanguageAsync(LangPackLanguage language);
+    public Task<bool> SaveLangPackDifferenceAsync(LangPackDifference difference);
     public Task<ICollection<LangPackLanguage>> GetLanguagesAsync(string? langPack);
     public Task<LangPackLanguage?> GetLanguagesAsync(string langPack, string langCode);
     public Task<LangPackDifference?> GetLangPackAsync(string langPack, string langCode);
