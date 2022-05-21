@@ -54,60 +54,293 @@ public class LangPackDataStore : ILangPackDataStore
             "lang_native_name text," +
             "base_lang_code text," +
             "plural_code text," +
-            "strings_count int," +
-            "translated_count int," +
             "translations_url text," +
-            "PRIMARY KEY ((lang_pack, lang_code)));");
+            "PRIMARY KEY (lang_pack, lang_code));");
         session.Execute(statement.SetKeyspace(keySpace));
         statement = new SimpleStatement(
             "CREATE TABLE IF NOT EXISTS ferrite.lang_pack_strings (" +
             "lang_pack text," +
             "lang_code text," +
             "string_key text," +
+            "version int," +
             "string_value text," +
             "zero_value text," +
             "one_value text," +
+            "two_value text," +
             "few_value text," +
             "many_value text," +
             "other_value text," +
             "string_type int," +
-            "deleted boolean," +
-            "PRIMARY KEY ((lang_pack, lang_code), string_key));");
+            "PRIMARY KEY (lang_pack, lang_code, string_key, version));");
         session.Execute(statement.SetKeyspace(keySpace));
     }
 
-    public async Task<bool> SaveLanguageAsync(LangPackLanguage language)
+    public async Task<bool> SaveLanguageAsync(string langPack, LangPackLanguage language)
     {
-        throw new NotImplementedException();
+        var statement = new SimpleStatement(
+            "UPDATE ferrite.lang_pack_languages SET official = ?, rtl = ?, " +
+            "beta = ?, lang_name = ?, lang_native_name = ?, base_lang_code = ? " +
+            "plural_code = ?, translations_url = ? " +
+            " WHERE lang_pack = ? AND lang_code = ?;",
+            language.Official, language.Rtl, language.Beta, language.Name,
+            language.NativeName, language.BaseLangCode, language.PluralCode,
+            language.TranslationsUrl, langPack, language.LangCode).SetKeyspace(keySpace);
+        await session.ExecuteAsync(statement);
+        return true;
     }
 
-    public async Task<bool> SaveLangPackDifferenceAsync(LangPackDifference difference)
+    public async Task<bool> SaveLangPackDifferenceAsync(string langPack, LangPackDifference difference)
     {
-        throw new NotImplementedException();
+        foreach (var str in difference.Strings)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.lang_pack_strings SET version = ?, string_value = ?, zero_value = ?, " +
+                "one_value = ?, two_value = ?, few_value = ?, many_value = ?, other_value = ? " +
+                "string_type = ? " +
+                " WHERE lang_pack = ? AND lang_code = ? AND string_key = ?;", difference.Version, str.Value, str.ZeroValue,
+                str.OneValue, str.TwoValue, str.FewValue, str.ManyValue, str.OtherValue, (int)str.StringType,
+                langPack, difference.LangCode, str.Key).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        }
+        
+        return true;
     }
 
     public async Task<ICollection<LangPackLanguage>> GetLanguagesAsync(string? langPack)
     {
-        throw new NotImplementedException();
+        List<LangPackLanguage> languages = new();
+        
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.lang_pack_languages WHERE lang_pack = ?;",
+            langPack);
+        statement = statement.SetKeyspace(keySpace);
+
+        var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        foreach (var row in results)
+        {
+            var statement2 = new SimpleStatement(
+                "SELECT COUNT(*) FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND string_type != ?;",
+                langPack, (int)LangPackStringType.Deleted);
+            var results2 = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            int stringsCount = 0;
+            foreach (var row2 in results2)
+            {
+                stringsCount = row2.GetValue<int>(0);
+            }
+            languages.Add(new LangPackLanguage()
+            {
+                LangCode = row.GetValue<string>("lang_code"),
+                Official = row.GetValue<bool>("official"),
+                Beta = row.GetValue<bool>("beta"),
+                Rtl = row.GetValue<bool>("rtl"),
+                Name = row.GetValue<string>("lang_name"),
+                NativeName = row.GetValue<string>("lang_native_name"),
+                BaseLangCode = row.GetValue<string>("base_lang_code"),
+                PluralCode = row.GetValue<string>("plural_code"),
+                TranslationsUrl = row.GetValue<string>("translations_url"),
+                StringsCount = stringsCount,
+            });
+        }
+        return languages;
     }
 
-    public async Task<LangPackLanguage?> GetLanguagesAsync(string langPack, string langCode)
+    public async Task<LangPackLanguage?> GetLanguageAsync(string langPack, string langCode)
     {
-        throw new NotImplementedException();
+        LangPackLanguage? lang = null;
+        var statement = new SimpleStatement(
+            "SELECT COUNT(*) FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code AND string_type != ?;",
+            langPack, langCode, (int)LangPackStringType.Deleted);
+        var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        int stringsCount = 0;
+        foreach (var row in results)
+        {
+            stringsCount = row.GetValue<int>(0);
+        }
+        statement = new SimpleStatement(
+            "SELECT * FROM ferrite.lang_pack_languages WHERE lang_pack = ? AND lang_code = ?;",
+            langPack, langCode);
+        statement = statement.SetKeyspace(keySpace);
+        results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        foreach (var row in results)
+        {
+            lang = new LangPackLanguage()
+            {
+                LangCode = row.GetValue<string>("lang_code"),
+                Official = row.GetValue<bool>("official"),
+                Beta = row.GetValue<bool>("beta"),
+                Rtl = row.GetValue<bool>("rtl"),
+                Name = row.GetValue<string>("lang_name"),
+                NativeName = row.GetValue<string>("lang_native_name"),
+                BaseLangCode = row.GetValue<string>("base_lang_code"),
+                PluralCode = row.GetValue<string>("plural_code"),
+                TranslationsUrl = row.GetValue<string>("translations_url"),
+                StringsCount = stringsCount,
+            };
+        }
+        return lang;
     }
 
     public async Task<LangPackDifference?> GetLangPackAsync(string langPack, string langCode)
     {
-        throw new NotImplementedException();
+        int version = 0;
+        List<LangPackString> strings = new();
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code = ?;",
+            langPack, langCode);
+        var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        foreach (var row in results)
+        {
+            LangPackStringType type = (LangPackStringType)row.GetValue<int>("string_type");
+            int strVersion = row.GetValue<int>("version");
+            if (strVersion > version)
+            {
+                version = strVersion;
+            }
+            if (type == LangPackStringType.Default)
+            {
+                strings.Add(new LangPackString()
+                {
+                    StringType = type,
+                    Key = row.GetValue<string>("string_key"),
+                    Value = row.GetValue<string>("string_value"),
+                });
+            }
+            else if (type == LangPackStringType.Pluralized)
+            {
+                strings.Add(new LangPackString()
+                {
+                    StringType = type,
+                    Key = row.GetValue<string>("string_key"),
+                    ZeroValue = row.GetValue<string>("zero_value"),
+                    OneValue = row.GetValue<string>("one_value"),
+                    TwoValue = row.GetValue<string>("two_value"),
+                    FewValue = row.GetValue<string>("few_value"),
+                    ManyValue = row.GetValue<string>("many_value"),
+                    OtherValue = row.GetValue<string>("other_value"),
+                });
+            }
+            else if (type == LangPackStringType.Deleted)
+            {
+                strings.Add(new LangPackString()
+                {
+                    StringType = type,
+                    Key = row.GetValue<string>("string_key"),
+                });
+            }
+        }
+        
+        return new LangPackDifference
+        {
+            LangCode = langCode,
+            FromVersion = 0,
+            Version = version,
+            Strings = strings
+        };
     }
 
     public async Task<LangPackDifference?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
     {
-        throw new NotImplementedException();
+        int version = 0;
+        List<LangPackString> strings = new();
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code = ? AND version > ?;",
+            langPack, langCode, fromVersion);
+        var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        foreach (var row in results)
+        {
+            LangPackStringType type = (LangPackStringType)row.GetValue<int>("string_type");
+            int strVersion = row.GetValue<int>("version");
+            if (strVersion > version)
+            {
+                version = strVersion;
+            }
+            if (type == LangPackStringType.Default)
+            {
+                strings.Add(new LangPackString()
+                {
+                    StringType = type,
+                    Key = row.GetValue<string>("string_key"),
+                    Value = row.GetValue<string>("string_value"),
+                });
+            }
+            else if (type == LangPackStringType.Pluralized)
+            {
+                strings.Add(new LangPackString()
+                {
+                    StringType = type,
+                    Key = row.GetValue<string>("string_key"),
+                    ZeroValue = row.GetValue<string>("zero_value"),
+                    OneValue = row.GetValue<string>("one_value"),
+                    TwoValue = row.GetValue<string>("two_value"),
+                    FewValue = row.GetValue<string>("few_value"),
+                    ManyValue = row.GetValue<string>("many_value"),
+                    OtherValue = row.GetValue<string>("other_value"),
+                });
+            }
+            else if (type == LangPackStringType.Deleted)
+            {
+                strings.Add(new LangPackString()
+                {
+                    StringType = type,
+                    Key = row.GetValue<string>("string_key"),
+                });
+            }
+        }
+        
+        return new LangPackDifference
+        {
+            LangCode = langCode,
+            FromVersion = fromVersion,
+            Version = version > fromVersion ? version : fromVersion,
+            Strings = strings
+        };
     }
 
     public async Task<ICollection<LangPackString>> GetStringsAsync(string langPack, string langCode, ICollection<string> keys)
     {
-        throw new NotImplementedException();
+        List<LangPackString> strings = new();
+        foreach (var key in keys)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code = ? AND string_key = ?;",
+                langPack, langCode, key);
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            foreach (var row in results)
+            {
+                LangPackStringType type = (LangPackStringType)row.GetValue<int>("string_type");
+                if (type == LangPackStringType.Default)
+                {
+                    strings.Add(new LangPackString()
+                    {
+                        StringType = type,
+                        Key = row.GetValue<string>("string_key"),
+                        Value = row.GetValue<string>("string_value"),
+                    });
+                }
+                else if (type == LangPackStringType.Pluralized)
+                {
+                    strings.Add(new LangPackString()
+                    {
+                        StringType = type,
+                        Key = row.GetValue<string>("string_key"),
+                        ZeroValue = row.GetValue<string>("zero_value"),
+                        OneValue = row.GetValue<string>("one_value"),
+                        TwoValue = row.GetValue<string>("two_value"),
+                        FewValue = row.GetValue<string>("few_value"),
+                        ManyValue = row.GetValue<string>("many_value"),
+                        OtherValue = row.GetValue<string>("other_value"),
+                    });
+                }
+                else if (type == LangPackStringType.Deleted)
+                {
+                    strings.Add(new LangPackString()
+                    {
+                        StringType = type,
+                        Key = row.GetValue<string>("string_key"),
+                    });
+                }
+            }
+        }
+        return strings;
     }
 }
