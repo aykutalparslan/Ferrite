@@ -16,7 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Text.Json;
 using Cassandra;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Ferrite.Data;
 
@@ -35,6 +38,33 @@ public class LangPackDataStore : ILangPackDataStore
         keySpace = keyspace;
         session = cluster.Connect();
         CreateSchema();
+        _ = LoadFromDisk();
+    }
+
+    private async Task LoadFromDisk()
+    {
+        string[] langPacks = {"android", "ios", "tdesktop", "macos", "android_x" };
+        foreach (var langPack in langPacks)
+        {
+            var langs = await GetLanguagesAsync(langPack);
+            if (langs.Count > 0)
+            {
+                continue;
+            }
+            using StreamReader rd = new StreamReader($"LangData/{langPack}-languages.json");
+            var options = new JsonSerializerOptions
+            {
+                IncludeFields = true
+            };
+            LangPackLanguage[] languages = JsonSerializer.Deserialize<LangPackLanguage[]>(rd.ReadToEnd());
+            foreach (LangPackLanguage language in languages)
+            {
+                await SaveLanguageAsync(langPack, language);
+                using StreamReader rd2 = new StreamReader($"LangData/{langPack}-{language.LangCode}.json");
+                LangPackDifference difference = JsonSerializer.Deserialize<LangPackDifference>(rd2.ReadToEnd());
+                SaveLangPackDifferenceAsync(langPack, difference);
+            }
+        }
     }
 
     private void CreateSchema()
