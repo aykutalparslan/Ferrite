@@ -52,9 +52,8 @@ public class GetPromoData : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<RpcError>();
-        resp.ErrorCode = 501;
-        resp.ErrorMessage = "Not Implemented";
+        var resp = factory.Resolve<PromoDataEmptyImpl>();
+        resp.Expires = (int)DateTimeOffset.Now.AddDays(30).ToUnixTimeSeconds();
         result.Result = resp;
         return result;
     }

@@ -87,7 +87,6 @@ public class ReqPqMulti : ITLObject, ITLMethod
         nonce = (Int128)(byte[])ctx.SessionData["nonce"];
         respq.ServerNonce = (Int128)(byte[])ctx.SessionData["server_nonce"];
         
-        Console.WriteLine("====Nonce: "+BitConverter.ToString(nonce.AsSpan().ToArray()));
         respq.Nonce = nonce;
         if (ctx.SessionData.ContainsKey("p"))
         {

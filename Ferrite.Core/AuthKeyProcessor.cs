@@ -40,7 +40,6 @@ public class AuthKeyProcessor : IProcessor
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        _log.Information($"{input} received.");
         if (ctx.AuthKeyId != 0)
         {
             output.Enqueue(input);

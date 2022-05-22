@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.help;
@@ -49,7 +50,12 @@ public class GetInviteText : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var resp = factory.Resolve<InviteTextImpl>();
+        resp.Message = "";
+        result.Result = resp;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

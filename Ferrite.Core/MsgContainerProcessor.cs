@@ -46,7 +46,7 @@ public class MsgContainerProcessor : IProcessor
         if (input.Constructor == TLConstructor.MsgContainer &&
             input is MsgContainer container)
         {
-            _log.Information(String.Format($"MsgContainer reecived with Id: {ctx.MessageId}"));
+            _log.Information(String.Format($"MsgContainer received with Id: {ctx.MessageId}"));
             var ack = _scope.Resolve<MsgsAck>();
             ack.MsgIds = new VectorOfLong(container.Messages.Count+1);
             ack.MsgIds.Add(ctx.MessageId);

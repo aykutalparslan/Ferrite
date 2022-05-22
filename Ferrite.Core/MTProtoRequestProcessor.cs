@@ -21,6 +21,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.Utils;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -29,17 +30,19 @@ public class MTProtoRequestProcessor : IProcessor
 {
     private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
-    public MTProtoRequestProcessor(ISessionService sessionManager, IDistributedPipe pipe)
+    private readonly ILogger _log;
+    public MTProtoRequestProcessor(ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
     {
         _sessionManager = sessionManager;
         _pipe = pipe;
+        _log = log;
     }
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        Console.WriteLine(input.ToString());
         if (input is ITLMethod method)
         {
             var result = await method.ExecuteAsync(ctx);
+            _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
             if (result != null)
             {
                 MTProtoMessage message = new MTProtoMessage();
@@ -63,7 +66,6 @@ public class MTProtoRequestProcessor : IProcessor
         }
         if (input is Message msg && msg.Body is ITLMethod encMethod)
         {
-            Console.WriteLine(encMethod.ToString());
             var _context = new TLExecutionContext(ctx.SessionData);
             _context.MessageId = msg.MsgId;
             _context.AuthKeyId = ctx.AuthKeyId;
@@ -71,6 +73,7 @@ public class MTProtoRequestProcessor : IProcessor
             _context.Salt = ctx.Salt;
             _context.SessionId = ctx.SessionId;
             var result = await encMethod.ExecuteAsync(_context);
+            _log.Debug($"Result for {encMethod} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
             if (result != null)
             {
                 MTProtoMessage message = new MTProtoMessage();

@@ -22,6 +22,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.Utils;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -32,14 +33,16 @@ public class AuthorizationProcessor : IProcessor
     private readonly ISessionService _sessionManager;
     private readonly IAuthService _auth;
     private readonly IDistributedPipe _pipe;
+    private readonly ILogger _log;
     private readonly SortedSet<int> _unauthorizedMethods = new();
     public AuthorizationProcessor(ILifetimeScope scope, ISessionService sessionManager,
-        IAuthService auth, IDistributedPipe pipe)
+        IAuthService auth, IDistributedPipe pipe, ILogger log)
     {
         _scope = scope;
         _sessionManager = sessionManager;
         _auth = auth;
         _pipe = pipe;
+        _log = log;
         AddUnauthorizedMethods();
     }
 
@@ -65,9 +68,6 @@ public class AuthorizationProcessor : IProcessor
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.InitConnection);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.JsonObject);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_BindTempAuthKey);
-        //_unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCountriesList);
-        //_unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetPromoData);
-        //_unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetTermsOfServiceUpdate);
         _unauthorizedMethods.Add(TLConstructor.GetFutureSalts);
         _unauthorizedMethods.Add(TLConstructor.DestroySession);
         _unauthorizedMethods.Add(TLConstructor.RpcDropAnswer);
@@ -126,6 +126,10 @@ public class AuthorizationProcessor : IProcessor
         }
         else
         {
+            if (ctx.AuthKeyId != 0)
+            {
+                _log.Debug($"AuthKeyId: {ctx.AuthKeyId} is not logged in");
+            }
             var response = _scope.Resolve<RpcError>();
             response.ErrorCode = 401;
             response.ErrorMessage = "UNAUTHORIZED";

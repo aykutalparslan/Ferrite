@@ -290,6 +290,7 @@ namespace Ferrite.Data
                     UserId = row.GetValue<long>("user_id"),
                     ApiLayer = row.GetValue<int>("api_layer"),
                     FutureAuthToken = row.GetValue<byte[]>("future_auth_token"),
+                    LoggedIn = row.GetValue<bool>("logged_in"),
                 };
             }
             return info;
