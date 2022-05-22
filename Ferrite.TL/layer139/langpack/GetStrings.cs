@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
@@ -97,46 +98,25 @@ public class GetStrings : ITLObject, ITLMethod
     {
         Vector<LangPackString> strings = factory.Resolve<Vector<LangPackString>>();
         var tmp = await _langPackService.GetStringsAsync(_langPack, _langCode, _keys);
-        foreach (var key in _keys)
+        foreach (var langPackString in tmp)
         {
-            if (tmp!= null && tmp.ContainsKey(key))
+            if (langPackString.StringType == LangPackStringType.Default)
             {
                 LangPackStringImpl str = factory.Resolve<LangPackStringImpl>();
-                str.Key = key;
-                str.Value = tmp[key];
+                str.Key = langPackString.Key;
+                str.Value = langPackString.Value;
                 strings.Add(str);
             }
-            else if (tmp != null && (tmp.ContainsKey(key + Zero) ||
-                tmp.ContainsKey(key + One) || tmp.ContainsKey(key + Two) ||
-                tmp.ContainsKey(key + Few) || tmp.ContainsKey(key + Many) ||
-                tmp.ContainsKey(key + Other)))
+            else if (langPackString.StringType == LangPackStringType.Pluralized)
             {
                 LangPackStringPluralizedImpl str = factory.Resolve<LangPackStringPluralizedImpl>();
-                str.Key = key;
-                if (tmp.ContainsKey(key + Zero))
-                {
-                    str.ZeroValue = tmp[key + Zero];
-                }
-                if (tmp.ContainsKey(key + One))
-                {
-                    str.OneValue = tmp[key + One];
-                }
-                if (tmp.ContainsKey(key + Two))
-                {
-                    str.TwoValue = tmp[key + Two];
-                }
-                if (tmp.ContainsKey(key + Few))
-                {
-                    str.FewValue = tmp[key + Few];
-                }
-                if (tmp.ContainsKey(key + Many))
-                {
-                    str.ManyValue = tmp[key + Many];
-                }
-                if (tmp.ContainsKey(key + Other))
-                {
-                    str.OtherValue = tmp[key + Other];
-                }
+                str.Key = langPackString.Key;
+                str.ZeroValue = langPackString.ZeroValue;
+                str.OneValue = langPackString.OneValue;
+                str.TwoValue = langPackString.TwoValue;
+                str.FewValue = langPackString.FewValue;
+                str.ManyValue = langPackString.ManyValue;
+                str.OtherValue = langPackString.OtherValue;
                 strings.Add(str);
             }
         }

@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.langpack;
@@ -27,10 +30,12 @@ public class GetDifference : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly ILangPackService _langPackService;
     private bool serialized = false;
-    public GetDifference(ITLObjectFactory objectFactory)
+    public GetDifference(ITLObjectFactory objectFactory, ILangPackService langPackService)
     {
         factory = objectFactory;
+        _langPackService = langPackService;
     }
 
     public int Constructor => -845657435;
@@ -85,7 +90,40 @@ public class GetDifference : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        RpcResult result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var difference = await _langPackService.GetDifferenceAsync(_langPack, _langCode, _fromVersion);
+        var langPack = factory.Resolve<LangPackDifferenceImpl>();
+        langPack.LangCode = difference.LangCode;
+        langPack.FromVersion = difference.Version;
+        langPack.Version = difference.Version;
+        Vector<LangPackString> strings = factory.Resolve<Vector<LangPackString>>();
+        foreach (var langPackString in difference.Strings)
+        {
+            if (langPackString.StringType == LangPackStringType.Default)
+            {
+                LangPackStringImpl str = factory.Resolve<LangPackStringImpl>();
+                str.Key = langPackString.Key;
+                str.Value = langPackString.Value;
+                strings.Add(str);
+            }
+            else if (langPackString.StringType == LangPackStringType.Pluralized)
+            {
+                LangPackStringPluralizedImpl str = factory.Resolve<LangPackStringPluralizedImpl>();
+                str.Key = langPackString.Key;
+                str.ZeroValue = langPackString.ZeroValue;
+                str.OneValue = langPackString.OneValue;
+                str.TwoValue = langPackString.TwoValue;
+                str.FewValue = langPackString.FewValue;
+                str.ManyValue = langPackString.ManyValue;
+                str.OtherValue = langPackString.OtherValue;
+                strings.Add(str);
+            }
+        }
+
+        langPack.Strings = strings;
+        result.Result = langPack;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

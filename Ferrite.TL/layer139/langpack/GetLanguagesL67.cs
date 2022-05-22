@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.langpack;
@@ -27,10 +29,12 @@ public class GetLanguagesL67 : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly ILangPackService _langPackService;
     private bool serialized = false;
-    public GetLanguagesL67(ITLObjectFactory objectFactory)
+    public GetLanguagesL67(ITLObjectFactory objectFactory, ILangPackService langPackService)
     {
         factory = objectFactory;
+        _langPackService = langPackService;
     }
 
     public int Constructor => -2146445955;
@@ -49,7 +53,27 @@ public class GetLanguagesL67 : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        RpcResult result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var langs = factory.Resolve<Vector<LangPackLanguageImpl>>();
+        var languages = await _langPackService.GetLanguagesAsync("android");
+        foreach (var language in languages)
+        {
+            var lang = factory.Resolve<LangPackLanguageImpl>();
+            lang.Beta = language.Beta;
+            lang.Official = language.Official;
+            lang.Rtl = language.Rtl;
+            lang.Name = language.Name;
+            lang.LangCode = language.LangCode;
+            lang.NativeName = language.NativeName;
+            lang.PluralCode = language.PluralCode;
+            lang.StringsCount = language.StringsCount;
+            lang.TranslationsUrl = language.TranslationsUrl;
+            lang.BaseLangCode = language.BaseLangCode;
+        }
+
+        result.Result = langs;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

@@ -105,6 +105,8 @@ public class Program
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.Register(_ => new CassandraDataStore("ferrite","localhost"))
             .As<IPersistentStore>().SingleInstance();
+        builder.Register(_ => new LangPackDataStore("ferrite","localhost"))
+            .As<ILangPackDataStore>().SingleInstance();
         builder.Register(_=> new RedisCache("localhost:6379", new MTProtoTime()))
             .As<IDistributedCache>().SingleInstance();
         builder.Register(_=> new RedisPipe("localhost:6379")).As<IDistributedPipe>();
@@ -113,6 +115,7 @@ public class Program
         builder.RegisterType<SessionService>().As<ISessionService>().SingleInstance();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>();
         builder.RegisterType<AuthService>().As<IAuthService>();
+        builder.RegisterType<AccountService>().As<IAccountService>();
         var container = builder.Build();
 
         return container;

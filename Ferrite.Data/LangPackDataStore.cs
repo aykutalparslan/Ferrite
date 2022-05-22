@@ -28,6 +28,8 @@ public class LangPackDataStore : ILangPackDataStore
     private readonly Cluster cluster;
     private readonly ISession session;
     private readonly string keySpace;
+    private bool loadingFromDisk = false;
+    private Task? loadFromDisk;
 
     public LangPackDataStore(string keyspace, params string[] hosts)
     {
@@ -38,19 +40,33 @@ public class LangPackDataStore : ILangPackDataStore
         keySpace = keyspace;
         session = cluster.Connect();
         CreateSchema();
-        _ = LoadFromDisk();
+        loadFromDisk = LoadFromDisk();
     }
 
     private async Task LoadFromDisk()
     {
+        if (loadingFromDisk)
+        {
+            return;
+        }
+
+        loadingFromDisk = true;
         string[] langPacks = {"android", "ios", "tdesktop", "macos", "android_x" };
+        var statement = new SimpleStatement(
+            "SELECT COUNT(*) FROM ferrite.lang_pack_languages WHERE lang_pack = ?;",
+            "android");
+        statement = statement.SetKeyspace(keySpace);
+        var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+        foreach (var row in results)
+        {
+            if (row.GetValue<long>(0) > 0)
+            {
+                loadingFromDisk = false;
+                return;
+            }
+        }
         foreach (var langPack in langPacks)
         {
-            var langs = await GetLanguagesAsync(langPack);
-            if (langs.Count > 0)
-            {
-                continue;
-            }
             using StreamReader rd = new StreamReader($"LangData/{langPack}-languages.json");
             var options = new JsonSerializerOptions
             {
@@ -62,9 +78,11 @@ public class LangPackDataStore : ILangPackDataStore
                 await SaveLanguageAsync(langPack, language);
                 using StreamReader rd2 = new StreamReader($"LangData/{langPack}-{language.LangCode}.json");
                 LangPackDifference difference = JsonSerializer.Deserialize<LangPackDifference>(rd2.ReadToEnd());
-                SaveLangPackDifferenceAsync(langPack, difference);
+                await SaveLangPackDifferenceAsync(langPack, difference);
             }
         }
+
+        loadingFromDisk = false;
     }
 
     private void CreateSchema()
@@ -109,7 +127,7 @@ public class LangPackDataStore : ILangPackDataStore
     {
         var statement = new SimpleStatement(
             "UPDATE ferrite.lang_pack_languages SET official = ?, rtl = ?, " +
-            "beta = ?, lang_name = ?, lang_native_name = ?, base_lang_code = ? " +
+            "beta = ?, lang_name = ?, lang_native_name = ?, base_lang_code = ?, " +
             "plural_code = ?, translations_url = ? " +
             " WHERE lang_pack = ? AND lang_code = ?;",
             language.Official, language.Rtl, language.Beta, language.Name,
@@ -124,12 +142,12 @@ public class LangPackDataStore : ILangPackDataStore
         foreach (var str in difference.Strings)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.lang_pack_strings SET version = ?, string_value = ?, zero_value = ?, " +
-                "one_value = ?, two_value = ?, few_value = ?, many_value = ?, other_value = ? " +
+                "UPDATE ferrite.lang_pack_strings SET string_value = ?, zero_value = ?, " +
+                "one_value = ?, two_value = ?, few_value = ?, many_value = ?, other_value = ?, " +
                 "string_type = ? " +
-                " WHERE lang_pack = ? AND lang_code = ? AND string_key = ?;", difference.Version, str.Value, str.ZeroValue,
+                " WHERE lang_pack = ? AND lang_code = ? AND string_key = ? AND version = ?;", str.Value, str.ZeroValue,
                 str.OneValue, str.TwoValue, str.FewValue, str.ManyValue, str.OtherValue, (int)str.StringType,
-                langPack, difference.LangCode, str.Key).SetKeyspace(keySpace);
+                langPack, difference.LangCode, str.Key, difference.Version).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement.SetKeyspace(keySpace));
         }
         
@@ -138,6 +156,11 @@ public class LangPackDataStore : ILangPackDataStore
 
     public async Task<ICollection<LangPackLanguage>> GetLanguagesAsync(string? langPack)
     {
+        if (loadingFromDisk != null)
+        {
+            await loadFromDisk;
+        }
+        
         List<LangPackLanguage> languages = new();
         
         var statement = new SimpleStatement(
@@ -149,13 +172,13 @@ public class LangPackDataStore : ILangPackDataStore
         foreach (var row in results)
         {
             var statement2 = new SimpleStatement(
-                "SELECT COUNT(*) FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND string_type != ?;",
-                langPack, (int)LangPackStringType.Deleted);
-            var results2 = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+                "SELECT COUNT(*) FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code = ?;",
+                langPack, row.GetValue<string>("lang_code"));
+            var results2 = await session.ExecuteAsync(statement2.SetKeyspace(keySpace));
             int stringsCount = 0;
             foreach (var row2 in results2)
             {
-                stringsCount = row2.GetValue<int>(0);
+                stringsCount = (int)row2.GetValue<long>(0);
             }
             languages.Add(new LangPackLanguage()
             {
@@ -176,10 +199,14 @@ public class LangPackDataStore : ILangPackDataStore
 
     public async Task<LangPackLanguage?> GetLanguageAsync(string langPack, string langCode)
     {
+        if (loadFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         LangPackLanguage? lang = null;
         var statement = new SimpleStatement(
-            "SELECT COUNT(*) FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code AND string_type != ?;",
-            langPack, langCode, (int)LangPackStringType.Deleted);
+            "SELECT COUNT(*) FROM ferrite.lang_pack_strings WHERE lang_pack = ? AND lang_code;",
+            langPack, langCode);
         var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
         int stringsCount = 0;
         foreach (var row in results)
@@ -212,6 +239,10 @@ public class LangPackDataStore : ILangPackDataStore
 
     public async Task<LangPackDifference?> GetLangPackAsync(string langPack, string langCode)
     {
+        if (loadFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         int version = 0;
         List<LangPackString> strings = new();
         var statement = new SimpleStatement(
@@ -270,6 +301,10 @@ public class LangPackDataStore : ILangPackDataStore
 
     public async Task<LangPackDifference?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
     {
+        if (loadFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         int version = 0;
         List<LangPackString> strings = new();
         var statement = new SimpleStatement(
@@ -328,6 +363,10 @@ public class LangPackDataStore : ILangPackDataStore
 
     public async Task<ICollection<LangPackString>> GetStringsAsync(string langPack, string langCode, ICollection<string> keys)
     {
+        if (loadFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         List<LangPackString> strings = new();
         foreach (var key in keys)
         {
