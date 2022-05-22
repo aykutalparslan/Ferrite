@@ -48,9 +48,12 @@ public class AccountService : IAccountService
 
     public async Task<InputPeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer)
     {
-        var settings = await _store.GetNotifySettingsAsync(authKeyId, peer) ?? new InputPeerNotifySettings();
-
-        return settings;
+        var result = await _store.GetNotifySettingsAsync(authKeyId, peer) ?? 
+                     new InputPeerNotifySettings()
+                     {
+                         Sound = ""
+                     };
+        return result;
     }
 
     public async Task<bool> ResetNotifySettings(long authKeyId)

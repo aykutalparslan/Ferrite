@@ -53,6 +53,7 @@ public class GetTermsOfServiceUpdate : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var update = factory.Resolve<TermsOfServiceUpdateEmptyImpl>();
+        update.Expires = (int)DateTimeOffset.Now.AddDays(30).ToUnixTimeSeconds();
         result.Result = update;
         return result;
     }

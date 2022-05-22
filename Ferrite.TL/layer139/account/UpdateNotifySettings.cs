@@ -85,18 +85,15 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
             var peer = (InputNotifyPeerImpl)_peer;
             notifyPeer = new Data.InputNotifyPeer()
             {
-                NotifyPeerType = peer.Constructor switch
-                {
-                    TLConstructor.InputNotifyChats => InputNotifyPeerType.Chats,
-                    TLConstructor.InputNotifyUsers => InputNotifyPeerType.Users,
-                    TLConstructor.InputNotifyBroadcasts => InputNotifyPeerType.Broadcasts,
-                    _ => InputNotifyPeerType.Peer
-                },
+                NotifyPeerType = InputNotifyPeerType.Peer,
                 Peer = new Data.InputPeer()
                 {
                     InputPeerType = peer.Peer.Constructor switch
                     {
                         TLConstructor.InputPeerChat => InputPeerType.Chat,
+                        TLConstructor.InputPeerChannel => InputPeerType.Channel,
+                        TLConstructor.InputPeerUserFromMessage => InputPeerType.UserFromMessage,
+                        TLConstructor.InputPeerChannelFromMessage => InputPeerType.ChannelFromMessage,
                         _ => InputPeerType.User
                     },
                     UserId = peer.Peer.Constructor switch
@@ -115,6 +112,12 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
                     ChatId = peer.Peer.Constructor == TLConstructor.InputPeerChat
                         ? ((InputPeerChatImpl)peer.Peer).ChatId
                         : 0,
+                    ChannelId = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerChannel => ((InputPeerChannelImpl)peer.Peer).ChannelId,
+                        TLConstructor.InputPeerChannelFromMessage => ((InputPeerChannelFromMessageImpl)peer.Peer).ChannelId,
+                        _ => 0
+                    },
                 }
             };
         } 

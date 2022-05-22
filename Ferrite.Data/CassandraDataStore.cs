@@ -646,11 +646,10 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.devices SET no_muted = ?, token_type = ?, " +
-                "app_token = ?, app_sandbox = ?, " +
-                "secret = ? " +
-                "WHERE auth_key_id = ?;",
-                deviceInfo.NoMuted, deviceInfo.TokenType, deviceInfo.Token,
-                deviceInfo.AppSandbox, deviceInfo.Secret, deviceInfo.AuthKeyId).SetKeyspace(keySpace);
+                "app_sandbox = ?, secret = ? " +
+                "WHERE auth_key_id = ? AND app_token = ?;",
+                deviceInfo.NoMuted, deviceInfo.TokenType,
+                deviceInfo.AppSandbox, deviceInfo.Secret, deviceInfo.AuthKeyId, deviceInfo.Token).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             foreach (var userId in deviceInfo.OtherUserIds)
             {
@@ -716,22 +715,38 @@ namespace Ferrite.Data
         public async Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeer peer, InputPeerNotifySettings settings)
         {
             long peerId = 0;
-            if (peer.Peer.InputPeerType == InputPeerType.User)
+            int peerType = 0;
+            if (peer.NotifyPeerType == InputNotifyPeerType.Peer)
             {
-                peerId = peer.Peer.UserId;
-            } else if (peer.Peer.InputPeerType == InputPeerType.Self)
-            {
-                peerId = peer.Peer.UserId;
-            } else if (peer.Peer.InputPeerType == InputPeerType.Chat)
-            {
-                peerId = peer.Peer.ChatId;
+                peerType = (int)peer.Peer.InputPeerType;
+                if (peer.Peer.InputPeerType == InputPeerType.User)
+                {
+                    peerId = peer.Peer.UserId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.UserFromMessage)
+                {
+                    peerId = peer.Peer.UserId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.Chat)
+                {
+                    peerId = peer.Peer.ChatId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.Channel)
+                {
+                    peerId = peer.Peer.ChannelId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.ChannelFromMessage)
+                {
+                    peerId = peer.Peer.ChannelId;
+                }
             }
+            
             var statement = new SimpleStatement(
                 "UPDATE ferrite.notify_settings SET peer_type = ?, peer_id = ?, " +
                 "show_previews = ?, silent = ?, " +
                 "mute_until = ?, sound = ? " +
                 "WHERE auth_key_id = ? AND notify_peer_type = ?;",
-                (int)peer.Peer.InputPeerType, peerId,settings.ShowPreviews, settings.Silent,
+                peerType, peerId,settings.ShowPreviews, settings.Silent,
                 settings.MuteUntil, settings.Sound, authKeyId, (int)peer.NotifyPeerType).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
@@ -767,21 +782,36 @@ namespace Ferrite.Data
         public async Task<InputPeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
         {
             long peerId = 0;
-            if (peer.Peer.InputPeerType == InputPeerType.User)
+            int peerType = 0;
+            if (peer.NotifyPeerType == InputNotifyPeerType.Peer)
             {
-                peerId = peer.Peer.UserId;
-            } else if (peer.Peer.InputPeerType == InputPeerType.Self)
-            {
-                peerId = peer.Peer.UserId;
-            } else if (peer.Peer.InputPeerType == InputPeerType.Chat)
-            {
-                peerId = peer.Peer.ChatId;
+                peerType = (int)peer.Peer.InputPeerType;
+                if (peer.Peer.InputPeerType == InputPeerType.User)
+                {
+                    peerId = peer.Peer.UserId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.UserFromMessage)
+                {
+                    peerId = peer.Peer.UserId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.Chat)
+                {
+                    peerId = peer.Peer.ChatId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.Channel)
+                {
+                    peerId = peer.Peer.ChannelId;
+                }
+                else if (peer.Peer.InputPeerType == InputPeerType.ChannelFromMessage)
+                {
+                    peerId = peer.Peer.ChannelId;
+                }
             }
             InputPeerNotifySettings? settings = null;
             var statement = new SimpleStatement(
-                "SELECT * FROM ferrite.app_infos WHERE auth_key_id = ? AND notify_peer_type = ? " +
+                "SELECT * FROM ferrite.notify_settings WHERE auth_key_id = ? AND notify_peer_type = ? " +
                 "AND peer_type = ? AND peer_id = ?;", authKeyId, (int)peer.NotifyPeerType, 
-                (int)peer.Peer.InputPeerType, peerId);
+                peerType, peerId);
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
@@ -790,7 +820,7 @@ namespace Ferrite.Data
                 settings = new InputPeerNotifySettings()
                 {
                     Silent = row.GetValue<bool>("silent"),
-                    Sound = row.GetValue<string>("sound"),
+                    Sound = row.GetValue<string>("sound") ?? "",
                     MuteUntil = row.GetValue<int>("mute_until"),
                     ShowPreviews = row.GetValue<bool>("show_previews")
                 };

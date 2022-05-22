@@ -41,27 +41,38 @@ public class MTProtoRequestProcessor : IProcessor
     {
         if (input is ITLMethod method)
         {
-            var result = await method.ExecuteAsync(ctx);
-            _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
-            if (result != null)
+            try
             {
-                MTProtoMessage message = new MTProtoMessage();
-                message.SessionId = ctx.SessionId;
-                message.IsResponse = true;
-                message.IsContentRelated = true;
-                message.Data = result.TLBytes.ToArray();
-                if (sender != null)
+                var result = await method.ExecuteAsync(ctx);
+                if (result != null)
                 {
-                    await ((MTProtoConnection)sender).SendAsync(message);
-                }
-                else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                    is SessionState session)
-                {
-                    var bytes = MessagePackSerializer.Serialize(message);
-                    _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
-                }
+                    _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
+                    MTProtoMessage message = new MTProtoMessage();
+                    message.SessionId = ctx.SessionId;
+                    message.IsResponse = true;
+                    message.IsContentRelated = true;
+                    message.Data = result.TLBytes.ToArray();
+                    if (sender != null)
+                    {
+                        await ((MTProtoConnection)sender).SendAsync(message);
+                    }
+                    else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                             is SessionState session)
+                    {
+                        var bytes = MessagePackSerializer.Serialize(message);
+                        _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                    }
 
-                Console.WriteLine("-->" + result.ToString());
+                    Console.WriteLine("-->" + result.ToString());
+                }
+                else
+                {
+                    _log.Debug($"Result for {input} was NULL Processed with AuthKeyId: {ctx.AuthKeyId}");
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, $"😭 => {this} => {input} => {e.Message}");
             }
         }
         if (input is Message msg && msg.Body is ITLMethod encMethod)
@@ -72,28 +83,37 @@ public class MTProtoRequestProcessor : IProcessor
             _context.SequenceNo = msg.Seqno;
             _context.Salt = ctx.Salt;
             _context.SessionId = ctx.SessionId;
-            var result = await encMethod.ExecuteAsync(_context);
-            _log.Debug($"Result for {encMethod} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
-            if (result != null)
+            try
             {
-                MTProtoMessage message = new MTProtoMessage();
-                message.SessionId = ctx.SessionId;
-                message.IsResponse = true;
-                message.IsContentRelated = true;
-                message.Data = result.TLBytes.ToArray();
-
-                if (sender != null)
+                var result = await encMethod.ExecuteAsync(_context);
+                if (result != null)
                 {
-                    await ((MTProtoConnection)sender).SendAsync(message);
-                }
-                else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                    is SessionState session)
-                {
-                    var bytes = MessagePackSerializer.Serialize(message);
-                    _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
-                }
+                    _log.Debug($"Result for {encMethod} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
+                    MTProtoMessage message = new MTProtoMessage();
+                    message.SessionId = ctx.SessionId;
+                    message.IsResponse = true;
+                    message.IsContentRelated = true;
+                    message.Data = result.TLBytes.ToArray();
 
-                Console.WriteLine("-->" + result.ToString());
+                    if (sender != null)
+                    {
+                        await ((MTProtoConnection)sender).SendAsync(message);
+                    }
+                    else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
+                             is SessionState session)
+                    {
+                        var bytes = MessagePackSerializer.Serialize(message);
+                        _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                    }
+                }
+                else
+                {
+                    _log.Debug($"Result for {encMethod} was NULL Processed with AuthKeyId: {ctx.AuthKeyId}");
+                }
+            }
+            catch (Exception e)
+            {
+                _log.Error(e, $"😭 => {this} => {input} => {e.Message}");
             }
         }
     }
