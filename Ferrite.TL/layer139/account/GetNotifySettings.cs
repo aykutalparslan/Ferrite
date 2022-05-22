@@ -68,41 +68,76 @@ public class GetNotifySettings : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var peer = (InputNotifyPeerImpl)_peer;
-        var settings = await _account.GetNotifySettings(ctx.AuthKeyId, new Data.InputNotifyPeer()
+        Data.InputNotifyPeer? notifyPeer = null;
+        if (_peer.Constructor == TLConstructor.InputNotifyPeer)
         {
-            NotifyPeerType = peer.Constructor switch
+            var peer = (InputNotifyPeerImpl)_peer;
+            notifyPeer = new Data.InputNotifyPeer()
             {
-                TLConstructor.InputNotifyChats => InputNotifyPeerType.Chats,
-                TLConstructor.InputNotifyUsers => InputNotifyPeerType.Users,
-                TLConstructor.InputNotifyBroadcasts => InputNotifyPeerType.Broadcasts,
-                _ => InputNotifyPeerType.Peer
-            },
-            Peer = new Data.InputPeer()
+                NotifyPeerType = peer.Constructor switch
+                {
+                    TLConstructor.InputNotifyChats => InputNotifyPeerType.Chats,
+                    TLConstructor.InputNotifyUsers => InputNotifyPeerType.Users,
+                    TLConstructor.InputNotifyBroadcasts => InputNotifyPeerType.Broadcasts,
+                    _ => InputNotifyPeerType.Peer
+                },
+                Peer = new Data.InputPeer()
+                {
+                    InputPeerType = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerChat => InputPeerType.Chat,
+                        _ => InputPeerType.User
+                    },
+                    UserId = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
+                        TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)peer.Peer).UserId,
+                        _ => 0
+                    },
+                    AccessHash = peer.Peer.Constructor switch
+                    {
+                        TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
+                        TLConstructor.InputPeerUserFromMessage =>
+                            ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)peer.Peer).Peer).AccessHash,
+                        _ => 0
+                    },
+                    ChatId = peer.Peer.Constructor == TLConstructor.InputPeerChat
+                        ? ((InputPeerChatImpl)peer.Peer).ChatId
+                        : 0,
+                }
+            };
+        } 
+        else if (_peer.Constructor == TLConstructor.InputNotifyChats)
+        {
+            notifyPeer = new Data.InputNotifyPeer()
             {
-                InputPeerType = peer.Peer.Constructor switch
-                {
-                    TLConstructor.InputPeerChat => InputPeerType.Chat,
-                    _ => InputPeerType.User
-                },
-                UserId = peer.Peer.Constructor switch
-                {
-                    TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
-                    TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)peer.Peer).UserId,
-                    _ => 0
-                },
-                AccessHash = peer.Peer.Constructor switch
-                {
-                    TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
-                    TLConstructor.InputPeerUserFromMessage =>
-                        ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)peer.Peer).Peer).AccessHash,
-                    _ => 0
-                },
-                ChatId = peer.Peer.Constructor == TLConstructor.InputPeerChat
-                    ? ((InputPeerChatImpl)peer.Peer).ChatId
-                    : 0,
-            }
-        });
+                NotifyPeerType = InputNotifyPeerType.Chats
+            };
+        }
+        else if (_peer.Constructor == TLConstructor.InputNotifyUsers)
+        {
+            notifyPeer = new Data.InputNotifyPeer()
+            {
+                NotifyPeerType = InputNotifyPeerType.Users
+            };
+        }
+        else if (_peer.Constructor == TLConstructor.InputNotifyBroadcasts)
+        {
+            notifyPeer = new Data.InputNotifyPeer()
+            {
+                NotifyPeerType = InputNotifyPeerType.Broadcasts
+            };
+        }
+
+        if (notifyPeer == null)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = 400;
+            err.ErrorMessage = "";
+            result.Result = err;
+            return result;
+        }
+        var settings = await _account.GetNotifySettings(ctx.AuthKeyId, notifyPeer);
         var resp = factory.Resolve<PeerNotifySettingsImpl>();
         resp.ShowPreviews = settings.ShowPreviews;
         resp.Silent = settings.Silent;
