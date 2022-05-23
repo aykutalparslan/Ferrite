@@ -18,6 +18,7 @@
 
 using System.Text.RegularExpressions;
 using Ferrite.Data;
+using Ferrite.Data.Account;
 
 namespace Ferrite.Services;
 
@@ -135,5 +136,15 @@ public class AccountService : IAccountService
             await _store.UpdateUsernameAsync(auth.UserId, username);
         }
         return await _store.GetUserAsync(auth.UserId);
+    }
+
+    public async Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<InputPrivacyRule> rules)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key)
+    {
+        throw new NotImplementedException();
     }
 }

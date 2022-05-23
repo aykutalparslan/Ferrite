@@ -140,7 +140,7 @@ public class GetNotifySettings : ITLObject, ITLMethod
             result.Result = err;
             return result;
         }
-        var settings = await _account.GetNotifySettings(ctx.AuthKeyId, notifyPeer);
+        var settings = await _account.GetNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, notifyPeer);
         var resp = factory.Resolve<PeerNotifySettingsImpl>();
         resp.ShowPreviews = settings.ShowPreviews;
         resp.Silent = settings.Silent;

@@ -146,7 +146,7 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
         var settings = (InputPeerNotifySettingsImpl)_settings;
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var success = notifyPeer != null && await _account.UpdateNotifySettings(ctx.AuthKeyId,
+        var success = notifyPeer != null && await _account.UpdateNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             notifyPeer,
             new Data.InputPeerNotifySettings()
             {

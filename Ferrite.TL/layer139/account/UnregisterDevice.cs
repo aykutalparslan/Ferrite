@@ -91,7 +91,7 @@ public class UnregisterDevice : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var success = await _account.UnregisterDevice(ctx.AuthKeyId, _token, _otherUids);
+        var success = await _account.UnregisterDevice(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _token, _otherUids);
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

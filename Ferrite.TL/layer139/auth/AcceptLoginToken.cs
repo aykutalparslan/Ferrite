@@ -67,7 +67,7 @@ public class AcceptLoginToken : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var acceptResult = await _auth.AcceptLoginToken(ctx.AuthKeyId, _token);
+        var acceptResult = await _auth.AcceptLoginToken(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _token);
 
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;

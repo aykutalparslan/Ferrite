@@ -202,7 +202,7 @@ public class InitConnection : ITLObject, ITLMethod
         {
             ApiId = _apiId,
             AppVersion = _appVersion,
-            AuthKeyId = ctx.AuthKeyId,
+            AuthKeyId = ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             DeviceModel = _deviceModel,
             IP = ctx.IP,
             LangCode = _langCode,

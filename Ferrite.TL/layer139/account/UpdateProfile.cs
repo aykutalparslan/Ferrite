@@ -119,7 +119,7 @@ public class UpdateProfile : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var userNew = await _account.UpdateProfile(ctx.AuthKeyId, _firstName, _lastName, _about);
+        var userNew = await _account.UpdateProfile(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _firstName, _lastName, _about);
         if (userNew == null)
         {
             var userEmpty = factory.Resolve<UserEmptyImpl>();

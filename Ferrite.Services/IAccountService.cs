@@ -17,6 +17,7 @@
 //
 
 using Ferrite.Data;
+using Ferrite.Data.Account;
 
 namespace Ferrite.Services;
 
@@ -32,4 +33,6 @@ public interface IAccountService
     public Task<bool> ReportPeer(long authKeyId, InputPeer peer, ReportReason reason);
     public Task<bool> CheckUsername(string username);
     public Task<User?> UpdateUsername(long authKeyId, string username);
+    public Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<InputPrivacyRule> rules);
+    public Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key);
 }

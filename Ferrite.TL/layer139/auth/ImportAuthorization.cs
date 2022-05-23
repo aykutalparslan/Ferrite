@@ -79,7 +79,7 @@ public class ImportAuthorization : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var auth = await _service.ImportAuthorization(_id, ctx.AuthKeyId, _bytes);
+        var auth = await _service.ImportAuthorization(_id, ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _bytes);
         if(auth.AuthorizationType == Data.Auth.AuthorizationType.AuthBytesInvalid)
         {
             var resp = factory.Resolve<RpcError>();

@@ -67,7 +67,7 @@ public class UpdateUsername : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var user = await _account.UpdateUsername(ctx.AuthKeyId, _username);
+        var user = await _account.UpdateUsername(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _username);
         if (user == null)
         {
             var err = factory.Resolve<RpcError>();

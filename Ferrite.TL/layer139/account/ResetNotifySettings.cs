@@ -55,7 +55,7 @@ public class ResetNotifySettings : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var success = await _account.ResetNotifySettings(ctx.AuthKeyId);
+        var success = await _account.ResetNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

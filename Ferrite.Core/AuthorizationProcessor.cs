@@ -77,7 +77,7 @@ public class AuthorizationProcessor : IProcessor
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
     {
-        bool isAuthorized = await _auth.IsAuthorized(ctx.AuthKeyId);
+        bool isAuthorized = await _auth.IsAuthorized(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         if (isAuthorized || _unauthorizedMethods.Contains(input.Constructor))
         {
             output.Enqueue(input);
@@ -128,7 +128,7 @@ public class AuthorizationProcessor : IProcessor
         {
             if (ctx.AuthKeyId != 0)
             {
-                _log.Debug($"AuthKeyId: {ctx.AuthKeyId} is not logged in");
+                _log.Debug($"AuthKeyId: {(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId)} is not logged in");
             }
             var response = _scope.Resolve<RpcError>();
             response.ErrorCode = 401;

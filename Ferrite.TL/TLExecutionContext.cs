@@ -23,6 +23,7 @@ namespace Ferrite.TL
     {
         public Dictionary<string, object> SessionData { get; set; }
         public long AuthKeyId { get; set; }
+        public long PermAuthKeyId { get; set; }
         public long Salt { get; set; }
         public long SessionId { get; set; }
         public long MessageId { get; set; }

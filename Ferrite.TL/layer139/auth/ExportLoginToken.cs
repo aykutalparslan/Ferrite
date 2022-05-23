@@ -92,7 +92,7 @@ public class ExportLoginToken : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var token = await _auth.ExportLoginToken(ctx.AuthKeyId, ctx.SessionId, _apiId, _apiHash, _exceptIds);
+        var token = await _auth.ExportLoginToken(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, ctx.SessionId, _apiId, _apiHash, _exceptIds);
         if(token.LoginTokenType == LoginTokenType.TokenSuccess)
         {
             var resp = factory.Resolve<LoginTokenSuccessImpl>();

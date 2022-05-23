@@ -55,7 +55,7 @@ public class ResetAuthorizations : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var deleted = await _auth.ResetAuthorizations(ctx.AuthKeyId);
+        var deleted = await _auth.ResetAuthorizations(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         result.Result = deleted ? new BoolTrue() : new BoolFalse();
         return result;
     }

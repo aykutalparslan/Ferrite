@@ -120,7 +120,7 @@ public class ReportPeer : ITLObject, ITLMethod
             },
             _ => new Data.InputPeer(){ InputPeerType = InputPeerType.Empty},
         };
-        var success = await _account.ReportPeer(ctx.AuthKeyId, inputPeer, _reason.Constructor switch
+        var success = await _account.ReportPeer(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, inputPeer, _reason.Constructor switch
         {
             TLConstructor.InputReportReasonCopyright => Data.ReportReason.Copyright,
             TLConstructor.InputReportReasonFake => Data.ReportReason.Fake,

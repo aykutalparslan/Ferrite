@@ -140,7 +140,7 @@ public class RegisterDevice : ITLObject, ITLMethod
         result.ReqMsgId = ctx.MessageId;
         var success = await _account.RegisterDevice(new DeviceInfo()
         {
-            AuthKeyId = ctx.AuthKeyId,
+            AuthKeyId = ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             Secret = _secret,
             Token = _token,
             AppSandbox = _appSandbox,

@@ -80,6 +80,7 @@ public class MTProtoRequestProcessor : IProcessor
             var _context = new TLExecutionContext(ctx.SessionData);
             _context.MessageId = msg.MsgId;
             _context.AuthKeyId = ctx.AuthKeyId;
+            _context.PermAuthKeyId = ctx.PermAuthKeyId;
             _context.SequenceNo = msg.Seqno;
             _context.Salt = ctx.Salt;
             _context.SessionId = ctx.SessionId;

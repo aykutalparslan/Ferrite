@@ -67,7 +67,7 @@ public class DropTempAuthKeys : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var success = await _auth.DropTempAuthKeys(ctx.AuthKeyId, _exceptAuthKeys);
+        var success = await _auth.DropTempAuthKeys(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _exceptAuthKeys);
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

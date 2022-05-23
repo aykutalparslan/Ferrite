@@ -55,7 +55,7 @@ public class LogOut : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var loggedout = await _auth.LogOut(ctx.AuthKeyId);
+        var loggedout = await _auth.LogOut(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         if (loggedout == null)
         {
             var error = factory.Resolve<RpcError>();
