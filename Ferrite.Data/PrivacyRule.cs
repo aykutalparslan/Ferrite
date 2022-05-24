@@ -21,6 +21,5 @@ namespace Ferrite.Data;
 public record PrivacyRule
 {
     public PrivacyRuleType PrivacyRuleType { get; init; }
-    public ICollection<long> Users { get; init; } = default!;
-    public ICollection<long> Chats { get; init; } = default!;
+    public ICollection<long> Peers { get; init; } = default!;
 }

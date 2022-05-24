@@ -167,6 +167,14 @@ namespace Ferrite.Data
                 "report_reason int," +
                 "PRIMARY KEY (peer_id, peer_type, reported_by_user));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.privacy_rules (" +
+                "user_id bigint," +
+                "privacy_key int," +
+                "rule_type int," +
+                "peer_ids set<bigint>," +
+                "PRIMARY KEY (user_id, privacy_key, rule_type));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -834,6 +842,50 @@ namespace Ferrite.Data
                 "DELETE FROM ferrite.notify_settings WHERE auth_key_id = ?;", authKeyId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
+        }
+
+        public async Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRule> rules)
+        {
+            foreach (var rule in rules)
+            {
+                var statement = new SimpleStatement(
+                    "UPDATE ferrite.privacy_rules SET peer_ids = ? " +
+                    "WHERE user_id = ? AND privacy_key = ? AND rule_type = ?;",
+                    rule.Peers, userId, (int)key, (int)rule.PrivacyRuleType).SetKeyspace(keySpace);
+                await session.ExecuteAsync(statement);
+            }
+            return true;
+        }
+
+        public async Task<ICollection<PrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
+        {
+            PrivacyRule? rule = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.privacy_rules WHERE user_id = ? AND privacy_key = ?;", 
+                userId, (int)key);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<PrivacyRule> result = new();
+            foreach (var row in results)
+            {
+                result.Add(new PrivacyRule()
+                {
+                    PrivacyRuleType = (PrivacyRuleType)row.GetValue<int>("rule_type"),
+                    Peers = row.GetValue<List<long>>("peer_ids"),
+                });
+            }
+            return result;
+        }
+
+        public async Task<bool> SaveChatAsync(Chat chat)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<Chat?> GetChatAsync(long chatId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -17,6 +17,8 @@
  */
 
 using System;
+using Ferrite.Data.Account;
+
 namespace Ferrite.Data;
 public interface IPersistentStore
 {
@@ -47,5 +49,9 @@ public interface IPersistentStore
     public Task<bool> SavePeerReportReasonAsync(long reportedByUser, InputPeer peer, ReportReason reason);
     public Task<InputPeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer);
     public Task<bool> DeleteNotifySettingsAsync(long authKeyId);
+    public Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRule> rules);
+    public Task<ICollection<PrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
+    public Task<bool> SaveChatAsync(Chat chat);
+    public Task<Chat?> GetChatAsync(long chatId);
 }
 

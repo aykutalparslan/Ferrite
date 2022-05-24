@@ -26,7 +26,7 @@ public class AccountService : IAccountService
 {
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
-    private Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
+    private readonly Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
     public AccountService(IDistributedCache cache, IPersistentStore store)
     {
         _cache = cache;
@@ -138,13 +138,98 @@ public class AccountService : IAccountService
         return await _store.GetUserAsync(auth.UserId);
     }
 
-    public async Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<InputPrivacyRule> rules)
+    public async Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRule> rules)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return null;
+        }
+
+        await _store.SavePrivacyRulesAsync(auth.UserId, key, rules);
+        var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
+        List<PrivacyRule> privacyRules = new();
+        List<User> users = new();
+        List<Chat> chats = new();
+        foreach (var r in savedRules)
+        {
+            privacyRules.Add(r);
+            if (r.PrivacyRuleType is PrivacyRuleType.AllowUsers or PrivacyRuleType.DisallowUsers)
+            {
+                foreach (var id in r.Peers)
+                {
+                    if (await _store.GetUserAsync(id) is { } user)
+                    {
+                        users.Add(user);
+                    }  
+                }
+            } 
+            else if (r.PrivacyRuleType is PrivacyRuleType.AllowChatParticipants
+                       or PrivacyRuleType.DisallowChatParticipants)
+            {
+                foreach (var id in r.Peers)
+                {
+                    if (await _store.GetChatAsync(id) is { } chat)
+                    {
+                        chats.Add(chat);
+                    }  
+                }
+            }
+        }
+        
+        PrivacyRules result = new PrivacyRules()
+        {
+            Rules = privacyRules,
+            Users = users,
+            Chats = chats
+        };
+        return result;
     }
 
     public async Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return null;
+        }
+        
+        var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
+        List<PrivacyRule> privacyRules = new();
+        List<User> users = new();
+        List<Chat> chats = new();
+        foreach (var r in savedRules)
+        {
+            privacyRules.Add(r);
+            if (r.PrivacyRuleType is PrivacyRuleType.AllowUsers or PrivacyRuleType.DisallowUsers)
+            {
+                foreach (var id in r.Peers)
+                {
+                    if (await _store.GetUserAsync(id) is { } user)
+                    {
+                        users.Add(user);
+                    }  
+                }
+            }
+            else if (r.PrivacyRuleType is PrivacyRuleType.AllowChatParticipants
+                     or PrivacyRuleType.DisallowChatParticipants)
+            {
+                foreach (var id in r.Peers)
+                {
+                    if (await _store.GetChatAsync(id) is { } chat)
+                    {
+                        chats.Add(chat);
+                    }  
+                }
+            }
+        }
+        
+        PrivacyRules result = new PrivacyRules()
+        {
+            Rules = privacyRules,
+            Users = users,
+            Chats = chats
+        };
+        return result;
     }
 }
