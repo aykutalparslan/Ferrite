@@ -30,18 +30,18 @@ public class RedisCache: IDistributedCache
     private readonly ConnectionMultiplexer redis;
     private readonly IMTProtoTime _time;
     private const int ExpiryMaxSeconds = 3600;
-    private const string AuthKeyPrefix = "auth-";
-    private const string TempAuthKeyPrefix = "tauth-";
-    private const string BoundAuthKeyPrefix = "bauth-";
-    private const string BoundTempAuthKeyPrefix = "btauth-";
-    private const string BoundTempKeysPrefix = "bkeys-";
-    private const string SessionPrefix = "ses-s";
-    private const string SessionByAuthKeyPrefix = "sbauth-";
-    private const string PhoneCodePrefix = "pcode-";
-    private const string AuthSessionPrefix = "asess-";
-    private const string ServerSaltPrefix = "salt-";
-    private const string LoginTokenPrefix = "ltoken-";
-    private const string UserStatusPrefix = "ustat-";
+    private readonly byte[] AuthKeyPrefix = "auth-";
+    private readonly byte[] TempAuthKeyPrefix = "tauth-";
+    private readonly byte[] BoundAuthKeyPrefix = "bauth-";
+    private readonly byte[] BoundTempAuthKeyPrefix = "btauth-";
+    private readonly byte[] BoundTempKeysPrefix = "bkeys-";
+    private readonly byte[] SessionPrefix = "ses-s";
+    private readonly byte[] SessionByAuthKeyPrefix = "sbauth-";
+    private readonly byte[] PhoneCodePrefix = "pcode-";
+    private readonly byte[] AuthSessionPrefix = "asess-";
+    private readonly byte[] ServerSaltPrefix = "salt-";
+    private readonly byte[] LoginTokenPrefix = "ltoken-";
+    private readonly byte[] UserStatusPrefix = "ustat-";
 
     public RedisCache(string config, IMTProtoTime time)
     {
