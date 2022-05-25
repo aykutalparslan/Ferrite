@@ -34,4 +34,18 @@ public abstract class InputUser : ITLObject
     {
         throw new NotImplementedException();
     }
+
+    public long GetUserId()
+    {
+        if (this.Constructor == TLConstructor.InputUser)
+        {
+            return ((InputUserImpl)this).UserId;
+        }
+        else if (this.Constructor == TLConstructor.InputUserFromMessage)
+        {
+            return ((InputUserFromMessageImpl)this).UserId;
+        }
+
+        return 0;
+    }
 }

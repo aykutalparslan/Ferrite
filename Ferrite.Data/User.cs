@@ -20,6 +20,7 @@ namespace Ferrite.Data;
 
 public record User
 {
+    public bool Empty { get; init; }
     public bool Self { get; init; }
     public bool Contact { get; init; }
     public bool MutualContact { get; init; }
