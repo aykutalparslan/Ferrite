@@ -232,4 +232,25 @@ public class AccountService : IAccountService
         };
         return result;
     }
+
+    public async Task<bool> DeleteAccount(long authKeyId)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        var user = await _store.GetUserAsync(auth.UserId);
+
+        foreach (var a in authorizations)
+        {
+            await _store.DeleteAuthorizationAsync(a.AuthKeyId);
+            var device = await _store.GetDeviceInfoAsync(a.AuthKeyId);
+            await _store.DeleteDeviceInfoAsync(a.AuthKeyId, device.Token, device.OtherUserIds);
+            await _store.DeleteNotifySettingsAsync(a.AuthKeyId);
+        }
+
+        await _store.DeletePrivacyRulesAsync(user.Id);
+
+        await _store.DeleteUserAsync(user);
+
+        return true;
+    }
 }

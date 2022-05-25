@@ -522,6 +522,32 @@ namespace Ferrite.Data
             return user;
         }
 
+        public async Task<bool> DeleteUserAsync(User user)
+        {
+            if (user.Phone.Length  > 0)
+            {
+                var stmt = new SimpleStatement(
+                    "DELETE FROM ferrite.users_by_phone WHERE phone = ? AND user_id = ?;",
+                    user.Phone, user.Id);
+                stmt = stmt.SetKeyspace(keySpace);
+                await session.ExecuteAsync(stmt);
+            }
+            if (user.Username?.Length > 0)
+            {
+                var stmt = new SimpleStatement(
+                    "DELETE FROM ferrite.users_by_username WHERE username = ? AND user_id = ?;",
+                    user.Username, user.Id);
+                stmt = stmt.SetKeyspace(keySpace);
+                await session.ExecuteAsync(stmt);
+            }
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.users WHERE user_id = ?;",
+                user.Id);
+            statement = statement.SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            throw new NotImplementedException();
+        }
+
         public async Task<bool> DeleteAuthKeyAsync(long authKeyId)
         {
             var statement = new SimpleStatement(
@@ -854,6 +880,16 @@ namespace Ferrite.Data
                     rule.Peers, userId, (int)key, (int)rule.PrivacyRuleType).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
             }
+            return true;
+        }
+
+        public async Task<bool> DeletePrivacyRulesAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.privacy_rules " +
+                "WHERE user_id = ?;",
+                userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
             return true;
         }
 

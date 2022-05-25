@@ -35,4 +35,5 @@ public interface IAccountService
     public Task<User?> UpdateUsername(long authKeyId, string username);
     public Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRule> rules);
     public Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key);
+    public Task<bool> DeleteAccount(long authKeyId);
 }

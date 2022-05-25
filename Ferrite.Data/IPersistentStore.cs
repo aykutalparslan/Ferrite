@@ -40,6 +40,14 @@ public interface IPersistentStore
     public Task<User?> GetUserAsync(long userId);
     public Task<User?> GetUserAsync(string phone);
     public Task<User?> GetUserByUsernameAsync(string username);
+    /// <summary>
+    /// Deletes a user. This method does not check if the related user data is deleted
+    /// therefore must be called only after all user related data has been deleted.
+    /// Otherwise it will leave the database in an inconsistent state.
+    /// </summary>
+    /// <param name="user"></param>
+    /// <returns></returns>
+    public Task<bool> DeleteUserAsync(User user);
     public Task<bool> SaveAppInfoAsync(AppInfo appInfo);
     public Task<AppInfo?> GetAppInfoAsync(long authKeyId);
     public Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo);
@@ -50,6 +58,7 @@ public interface IPersistentStore
     public Task<InputPeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer);
     public Task<bool> DeleteNotifySettingsAsync(long authKeyId);
     public Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRule> rules);
+    public Task<bool> DeletePrivacyRulesAsync(long userId);
     public Task<ICollection<PrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
     public Task<bool> SaveChatAsync(Chat chat);
     public Task<Chat?> GetChatAsync(long chatId);
