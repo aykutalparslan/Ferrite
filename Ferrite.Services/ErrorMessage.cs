@@ -16,8 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Diagnostics.CodeAnalysis;
-
 namespace Ferrite.Services;
 
-public readonly record struct ServiceResult<T>(T? Result, bool Success, ErrorMessage ErrorMessage);
+public readonly record struct ErrorMessage(int Code, byte[] Message);

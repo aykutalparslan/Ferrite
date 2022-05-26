@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.layer139.auth;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +30,12 @@ public class SendChangePhoneCode : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _accountService;
     private bool serialized = false;
-    public SendChangePhoneCode(ITLObjectFactory objectFactory)
+    public SendChangePhoneCode(ITLObjectFactory objectFactory, IAccountService accountService)
     {
         factory = objectFactory;
+        _accountService = accountService;
     }
 
     public int Constructor => -2108208411;
@@ -73,7 +78,31 @@ public class SendChangePhoneCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var serviceResult = await _accountService.SendChangePhoneCode(ctx.PermAuthKeyId!=0 ? 
+            ctx.PermAuthKeyId : ctx.AuthKeyId, _phoneNumber, new Data.Auth.CodeSettings());
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        else
+        {
+            var sent = serviceResult.Result;
+            var sentCode = factory.Resolve<SentCodeImpl>();
+            var codeType = factory.Resolve<SentCodeTypeSmsImpl>();
+            var nextType = factory.Resolve<CodeTypeSmsImpl>();
+            sentCode.NextType = nextType;
+            sentCode.PhoneCodeHash = sent.PhoneCodeHash;
+            sentCode.Timeout = sent.Timeout;
+            sentCode.Type = codeType;
+
+            result.Result = sentCode;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

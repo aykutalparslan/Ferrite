@@ -96,8 +96,8 @@ public class ChangePhone : ITLObject, ITLMethod
         if (!serviceResult.Success)
         {
             var err = factory.Resolve<RpcError>();
-            err.ErrorCode = serviceResult.ErrorCode;
-            err.ErrorMessage = serviceResult.ErrorMessage;
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
             result.Result = err;
         }
         else

@@ -43,6 +43,7 @@ public class RedisCache: IDistributedCache
     private readonly byte[] ServerSaltPrefix = "salt-";
     private readonly byte[] LoginTokenPrefix = "ltoken-";
     private readonly byte[] UserStatusPrefix = "ustat-";
+    private readonly byte[] DeviceLockedPrefix = "dlock-";
 
     public RedisCache(string config, IMTProtoTime time)
     {
@@ -216,6 +217,24 @@ public class RedisCache: IDistributedCache
         }
 
         return (wasOnline, status);
+    }
+
+    public async Task<bool> PutDeviceLockedAsync(long authKeyId, int period)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(authKeyId);
+        key = key.Prepend(SignInPrefix);
+        return await db.StringSetAsync(key, period);
+    }
+
+    public async Task<int> GetDeviceLockedAsync(long authKeyId)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = BitConverter.GetBytes(authKeyId);
+        key = key.Prepend(SignInPrefix);
+        return (int)await db.StringGetAsync(key);
     }
 
     public async Task<string> GetPhoneCodeAsync(string phoneNumber, string phoneCodeHash)

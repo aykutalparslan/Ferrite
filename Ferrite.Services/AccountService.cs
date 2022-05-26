@@ -281,23 +281,19 @@ public partial class AccountService : IAccountService
         return await _store.GetAccountTTLAsync(auth.UserId);
     }
 
-    public async Task<SentCode> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings)
+    public async Task<ServiceResult<SentCode>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
-            return new SentCode()
-            {
-                CodeType = SentCodeType.FRESH_CHANGE_PHONE_FORBIDDEN
-            };
+            return new ServiceResult<SentCode>(null, false, 
+                ErrorMessages.FreshChangePhoneForbidden);
         }
         var user = await _store.GetUserAsync(phoneNumber);
         if (user != new User())
         {
-            return new SentCode()
-            {
-                CodeType = SentCodeType.PHONE_NUMBER_OCCUPIED
-            };
+            return new ServiceResult<SentCode>(null, false, 
+                ErrorMessages.PhoneNumberOccupied);
         }
         
         var code = _random.GetNext(10000, 99999);
@@ -307,13 +303,14 @@ public partial class AccountService : IAccountService
         await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         
-        return new SentCode()
+        var result = new SentCode()
         {
             CodeType = SentCodeType.Sms,
             CodeLength = 5,
             Timeout = PhoneCodeTimeout,
             PhoneCodeHash = hash
         };
+        return new ServiceResult<SentCode>(result, true, ErrorMessages.None);
     }
 
     public async Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
@@ -321,13 +318,13 @@ public partial class AccountService : IAccountService
         var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
-            return new ServiceResult<User>(null, false, 0, ErrorMessages.Empty);
+            return new ServiceResult<User>(null, false, ErrorMessages.None);
         }
 
         var user = await _store.GetUserAsync(phoneNumber);
         if (user != null)
         {
-            return new ServiceResult<User>(null, false, 400, ErrorMessages.PhoneNumberOccupied);
+            return new ServiceResult<User>(null, false, ErrorMessages.PhoneNumberOccupied);
         }
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
@@ -337,6 +334,6 @@ public partial class AccountService : IAccountService
         }
         await _store.UpdateUserPhoneAsync(auth.UserId, phoneNumber);
         user = await _store.GetUserAsync(phoneNumber);
-        return new ServiceResult<User>(user, true, 0, ErrorMessages.Empty);
+        return new ServiceResult<User>(user, true, ErrorMessages.None);
     }
 }
