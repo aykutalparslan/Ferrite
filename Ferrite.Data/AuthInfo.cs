@@ -26,5 +26,6 @@ public record AuthInfo
     public int ApiLayer { get; init; }
     public byte[] FutureAuthToken { get; init; } = default!;
     public bool LoggedIn { get; init; }
+    public DateTime LoggedInAt { get; init; }
 }
 

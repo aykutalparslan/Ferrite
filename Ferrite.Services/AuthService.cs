@@ -308,20 +308,21 @@ public class AuthService : IAuthService
 
     public async Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        var user = await _store.GetUserAsync(phoneNumber);
-        if(user == null)
-        {
-            return new Authorization()
-            {
-                AuthorizationType = AuthorizationType.SignUpRequired,
-            };
-        }
         var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
             return new Authorization()
             {
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
+            };
+        }
+        await _cache.PutSignInAsync(authKeyId, phoneNumber, phoneCodeHash);
+        var user = await _store.GetUserAsync(phoneNumber);
+        if(user == null)
+        {
+            return new Authorization()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired,
             };
         }
         var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
@@ -361,11 +362,21 @@ public class AuthService : IAuthService
             userId = await _userIdCnt.IncrementAndGet();
         }
         var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
-        if(phoneCode == null)
+        var signedInAuthKeyId = await _cache.GetSignInAsync(phoneNumber, phoneCodeHash);
+        if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {
             return new Authorization()
             {
-                AuthorizationType = AuthorizationType.SignUpRequired,
+                AuthorizationType = AuthorizationType.PhoneCodeInvalid,
+            };
+        } 
+        var codeBytes = BitConverter.GetBytes(int.Parse(phoneCode));
+        var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        if (phoneCodeHash != hash)
+        {
+            return new Authorization()
+            {
+                AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
         var user = new User()
@@ -383,7 +394,8 @@ public class AuthService : IAuthService
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
-            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer
+            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
+            LoggedIn = true
         });
         return new Authorization()
         {

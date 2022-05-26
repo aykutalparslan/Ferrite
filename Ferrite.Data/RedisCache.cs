@@ -38,6 +38,7 @@ public class RedisCache: IDistributedCache
     private readonly byte[] SessionPrefix = "ses-s";
     private readonly byte[] SessionByAuthKeyPrefix = "sbauth-";
     private readonly byte[] PhoneCodePrefix = "pcode-";
+    private readonly byte[] SignInPrefix = "sign-";
     private readonly byte[] AuthSessionPrefix = "asess-";
     private readonly byte[] ServerSaltPrefix = "salt-";
     private readonly byte[] LoginTokenPrefix = "ltoken-";
@@ -344,6 +345,24 @@ public class RedisCache: IDistributedCache
         RedisKey key = phoneNumber + phoneCodeHash;
         key = key.Prepend(PhoneCodePrefix);
         return await db.StringSetAsync(key, phoneCode, expiresIn);
+    }
+
+    public async Task<bool> PutSignInAsync(long authKeyId, string phoneNumber, string phoneCodeHash)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = phoneNumber + phoneCodeHash;
+        key = key.Prepend(SignInPrefix);
+        return await db.StringSetAsync(key, authKeyId);
+    }
+
+    public async Task<long> GetSignInAsync(string phoneNumber, string phoneCodeHash)
+    {
+        object _asyncState = new object();
+        IDatabase db = redis.GetDatabase(asyncState: _asyncState);
+        RedisKey key = phoneNumber + phoneCodeHash;
+        key = key.Prepend(SignInPrefix);
+        return (long)await db.StringGetAsync(key);
     }
 
     public async Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn)

@@ -60,6 +60,7 @@ namespace Ferrite.Data
                             "api_layer int," +
                             "future_auth_token blob," +
                             "logged_in boolean," +
+                            "logged_in_at timestamp," +
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
@@ -259,9 +260,9 @@ namespace Ferrite.Data
             var oldAuth = await GetAuthorizationAsync(info.AuthKeyId);
             var statement = new SimpleStatement(
                 "UPDATE ferrite.authorizations SET phone = ?, user_id = ?, " +
-                "api_layer = ?, future_auth_token = ?, logged_in = ?  WHERE auth_key_id = ?;",
+                "api_layer = ?, future_auth_token = ?, logged_in = ?, logged_in_at = ?  WHERE auth_key_id = ?;",
                 info.Phone, info.UserId, info.ApiLayer,
-                info.FutureAuthToken, info.LoggedIn, info.AuthKeyId).SetKeyspace(keySpace);
+                info.FutureAuthToken, info.LoggedIn, DateTime.Now, info.AuthKeyId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             if((oldAuth?.Phone.Length ?? 0) > 0)
             {
@@ -300,6 +301,7 @@ namespace Ferrite.Data
                     ApiLayer = row.GetValue<int>("api_layer"),
                     FutureAuthToken = row.GetValue<byte[]>("future_auth_token"),
                     LoggedIn = row.GetValue<bool>("logged_in"),
+                    LoggedInAt = row.GetValue<DateTime>("logged_in_at"),
                 };
             }
             return info;
