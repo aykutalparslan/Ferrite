@@ -336,4 +336,9 @@ public partial class AccountService : IAccountService
         user = await _store.GetUserAsync(phoneNumber);
         return new ServiceResult<User>(user, true, ErrorMessages.None);
     }
+
+    public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)
+    {
+        return await _cache.PutDeviceLockedAsync(authKeyId, period);
+    }
 }

@@ -225,7 +225,7 @@ public class RedisCache: IDistributedCache
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = BitConverter.GetBytes(authKeyId);
         key = key.Prepend(SignInPrefix);
-        return await db.StringSetAsync(key, period);
+        return await db.StringSetAsync(key, period, new TimeSpan(0, 0, period));
     }
 
     public async Task<int> GetDeviceLockedAsync(long authKeyId)
