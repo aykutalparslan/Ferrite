@@ -44,6 +44,10 @@ public enum SentCodeType
     /// The code will be sent via a flash phone call, that will be closed immediately.
     /// The last digits of the phone number that calls are the code that must be entered manually by the user.
     /// </summary>
-    MissedCall
+    MissedCall,
+    FRESH_CHANGE_PHONE_FORBIDDEN,
+    PHONE_NUMBER_BANNED,
+    PHONE_NUMBER_INVALID,
+    PHONE_NUMBER_OCCUPIED,
 }
 

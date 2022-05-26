@@ -17,8 +17,11 @@
 //
 
 using System.Text.RegularExpressions;
+using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
+using Ferrite.Data.Auth;
+using xxHash;
 
 namespace Ferrite.Services;
 
@@ -26,11 +29,14 @@ public class AccountService : IAccountService
 {
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
+    private readonly IRandomGenerator _random;
     private readonly Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
-    public AccountService(IDistributedCache cache, IPersistentStore store)
+    private const int PhoneCodeTimeout = 60;//seconds
+    public AccountService(IDistributedCache cache, IPersistentStore store, IRandomGenerator random)
     {
         _cache = cache;
         _store = store;
+        _random = random;
     }
     public async Task<bool> RegisterDevice(DeviceInfo deviceInfo)
     {
@@ -274,5 +280,40 @@ public class AccountService : IAccountService
         }
 
         return await _store.GetAccountTTLAsync(auth.UserId);
+    }
+
+    public async Task<SentCode> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
+        {
+            return new SentCode()
+            {
+                CodeType = SentCodeType.FRESH_CHANGE_PHONE_FORBIDDEN
+            };
+        }
+        var user = await _store.GetUserAsync(phoneNumber);
+        if (user != new User())
+        {
+            return new SentCode()
+            {
+                CodeType = SentCodeType.PHONE_NUMBER_OCCUPIED
+            };
+        }
+        
+        var code = _random.GetNext(10000, 99999);
+        Console.WriteLine("auth.sentCode=>" + code.ToString());
+        var codeBytes = BitConverter.GetBytes(code);
+        var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
+            new TimeSpan(0, 0, PhoneCodeTimeout*2));
+        
+        return new SentCode()
+        {
+            CodeType = SentCodeType.Sms,
+            CodeLength = 5,
+            Timeout = PhoneCodeTimeout,
+            PhoneCodeHash = hash
+        };
     }
 }

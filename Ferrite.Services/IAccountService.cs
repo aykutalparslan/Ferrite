@@ -18,6 +18,7 @@
 
 using Ferrite.Data;
 using Ferrite.Data.Account;
+using Ferrite.Data.Auth;
 
 namespace Ferrite.Services;
 
@@ -38,4 +39,5 @@ public interface IAccountService
     public Task<bool> DeleteAccount(long authKeyId);
     public Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL);
     public Task<int> GetAccountTTL(long authKeyId);
+    public Task<SentCode> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings);
 }
