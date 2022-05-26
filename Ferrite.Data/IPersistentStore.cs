@@ -62,5 +62,7 @@ public interface IPersistentStore
     public Task<ICollection<PrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
     public Task<bool> SaveChatAsync(Chat chat);
     public Task<Chat?> GetChatAsync(long chatId);
+    public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
+    public Task<int> GetAccountTTLAsync(long userId);
 }
 

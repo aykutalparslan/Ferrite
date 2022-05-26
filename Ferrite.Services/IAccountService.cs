@@ -36,4 +36,6 @@ public interface IAccountService
     public Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRule> rules);
     public Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key);
     public Task<bool> DeleteAccount(long authKeyId);
+    public Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL);
+    public Task<int> GetAccountTTL(long authKeyId);
 }

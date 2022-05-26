@@ -88,6 +88,7 @@ namespace Ferrite.Data
                 "username text," +
                 "phone text," +
                 "about text," +
+                "account_days_TTL int," +
                 "PRIMARY KEY (user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             //https://docs.datastax.com/en/cql-oss/3.3/cql/cql_using/useWhenIndex.html
@@ -442,7 +443,7 @@ namespace Ferrite.Data
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
-                    AccessHash = row.GetValue<long>("acces_hash"),
+                    AccessHash = row.GetValue<long>("access_hash"),
                     FirstName = row.GetValue<string>("first_name"),
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
@@ -922,6 +923,31 @@ namespace Ferrite.Data
         public async Task<Chat?> GetChatAsync(long chatId)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.users SET account_days_TTL = ? WHERE user_id = ?;",
+                accountDaysTTL, userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<int> GetAccountTTLAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT account_days_TTL FROM ferrite.users WHERE user_id = ?;", 
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                return row.GetValue<int>("account_days_TTL");
+            }
+
+            return 0;
         }
     }
 }

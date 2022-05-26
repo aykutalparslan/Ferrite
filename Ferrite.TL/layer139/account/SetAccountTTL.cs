@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +29,12 @@ public class SetAccountTTL : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _accountService;
     private bool serialized = false;
-    public SetAccountTTL(ITLObjectFactory objectFactory)
+    public SetAccountTTL(ITLObjectFactory objectFactory, IAccountService accountService)
     {
         factory = objectFactory;
+        _accountService = accountService;
     }
 
     public int Constructor => 608323678;
@@ -61,7 +65,12 @@ public class SetAccountTTL : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var success = await _accountService.SetAccountTTL(ctx.PermAuthKeyId!=0 ? 
+            ctx.PermAuthKeyId : ctx.AuthKeyId, ((AccountDaysTTLImpl)_ttl).Days);
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

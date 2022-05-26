@@ -253,4 +253,26 @@ public class AccountService : IAccountService
 
         return true;
     }
+
+    public async Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return false;
+        }
+
+        return await _store.UpdateAccountTTLAsync(auth.UserId, accountDaysTTL);
+    }
+
+    public async Task<int> GetAccountTTL(long authKeyId)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return 0;
+        }
+
+        return await _store.GetAccountTTLAsync(auth.UserId);
+    }
 }
