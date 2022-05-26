@@ -22,60 +22,19 @@ namespace Ferrite.Transport
         // The .NET Foundation licenses this file to you under the MIT license.
         // "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         // This uses C# compiler's ability to refer to static data directly. For more information see https://vcsjones.dev/2019/02/01/csharp-readonly-span-bytes-static
-        private static ReadOnlySpan<byte> EncodedWebSocketKey => new byte[]
-        {
-            (byte)'2', (byte)'5', (byte)'8', (byte)'E', (byte)'A', (byte)'F', (byte)'A', (byte)'5', (byte)'-',
-            (byte)'E', (byte)'9', (byte)'1', (byte)'4', (byte)'-', (byte)'4', (byte)'7', (byte)'D', (byte)'A',
-            (byte)'-', (byte)'9', (byte)'5', (byte)'C', (byte)'A', (byte)'-', (byte)'C', (byte)'5', (byte)'A',
-            (byte)'B', (byte)'0', (byte)'D', (byte)'C', (byte)'8', (byte)'5', (byte)'B', (byte)'1', (byte)'1'
-        };
+        private static ReadOnlySpan<byte> EncodedWebSocketKey => "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-        private static ReadOnlySpan<byte> CRLF => new byte[] { (byte)'\r', (byte)'\n' };
-        private static ReadOnlySpan<byte> Seperator => new byte[] { (byte)':', (byte)' ' };
-        private static ReadOnlySpan<byte> Http11 => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'1', (byte)'.', (byte)'1', (byte)' '
-        };
-        private static ReadOnlySpan<byte> Http2 => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'2', (byte)' '
-        };
-        private static ReadOnlySpan<byte> Http3 => new byte[]
-        {
-            (byte)'H', (byte)'T', (byte)'T', (byte)'P', (byte)'/', (byte)'3', (byte)' '
-        };
-        private static ReadOnlySpan<byte> Resp101 => new byte[]
-        {
-            (byte)'1', (byte)'0', (byte)'1', (byte)' ',
-            (byte)'S', (byte)'w', (byte)'i', (byte)'t', (byte)'c',(byte)'h', (byte)'i', (byte)'n', (byte)'g', (byte)' ',
-            (byte)'P',(byte)'r', (byte)'o', (byte)'t', (byte)'o', (byte)'c', (byte)'o',(byte)'l', (byte)'s', (byte)'\r', (byte)'\n'
-        };
-        private static ReadOnlySpan<byte> ConnectionUpgrade => new byte[]
-        {
-            (byte)'C', (byte)'o', (byte)'n', (byte)'n',(byte)'e', (byte)'c', (byte)'t', (byte)'i', (byte)'o', (byte)'n',
-            (byte)':', (byte)' ',
-            (byte)'u', (byte)'p', (byte)'g', (byte)'r',(byte)'a', (byte)'d', (byte)'e', (byte)'\r', (byte)'\n'
-        };
-        private static ReadOnlySpan<byte> UpgradeWebsocket => new byte[]
-        {
-            (byte)'U', (byte)'p', (byte)'g', (byte)'r',(byte)'a', (byte)'d', (byte)'e',
-            (byte)':', (byte)' ',
-            (byte)'w',(byte)'e', (byte)'b', (byte)'s', (byte)'o', (byte)'c', (byte)'k',(byte)'e', (byte)'t', (byte)'\r', (byte)'\n'
-        };
+        private static ReadOnlySpan<byte> CRLF => "\r\n";
+        private static ReadOnlySpan<byte> Seperator => ": ";
+        private static ReadOnlySpan<byte> Http11 => "HTTP/1.1 ";
+        private static ReadOnlySpan<byte> Http2 => "HTTP/2 ";
+        private static ReadOnlySpan<byte> Http3 => "HTTP/3 ";
+        private static ReadOnlySpan<byte> Resp101 => "101 Switching Protocols\r\n";
+        private static ReadOnlySpan<byte> ConnectionUpgrade => "Connection: upgrade\r\n";
+        private static ReadOnlySpan<byte> UpgradeWebsocket => "Upgrade: websocket\r\n";
+        private static ReadOnlySpan<byte> WebSocketAccept => "Sec-WebSocket-Accept";
 
-        private static ReadOnlySpan<byte> WebSocketAccept => new byte[]
-        {
-            (byte)'S', (byte)'e', (byte)'c', (byte)'-',(byte)'W', (byte)'e', (byte)'b',
-            (byte)'S', (byte)'o', (byte)'c',(byte)'k', (byte)'e', (byte)'t', (byte)'-',
-            (byte)'A', (byte)'c',(byte)'c', (byte)'e', (byte)'p', (byte)'t',
-        };
-
-        private static ReadOnlySpan<byte> WebSocketProtocol => new byte[]
-        {
-            (byte)'S', (byte)'e', (byte)'c', (byte)'-',(byte)'W', (byte)'e', (byte)'b',
-            (byte)'S', (byte)'o', (byte)'c',(byte)'k', (byte)'e', (byte)'t', (byte)'-',
-            (byte)'P', (byte)'r',(byte)'o', (byte)'t', (byte)'o', (byte)'c', (byte)'o', (byte)'l'
-        };
+        private static ReadOnlySpan<byte> WebSocketProtocol => "Sec-WebSocket-Protocol";
 
         /// <summary>
         /// Validates the Sec-WebSocket-Key request header
