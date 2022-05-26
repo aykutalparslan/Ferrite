@@ -24,6 +24,7 @@ using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
@@ -448,7 +449,7 @@ public class AuthTests
         Assert.IsType<RpcError>(rslt.Result);
         var err = (RpcError)rslt.Result;
         Assert.Equal(400, err.ErrorCode);
-        Assert.Equal("AUTH_BYTES_INVALID", err.ErrorMessage);
+        Assert.Equal(Encoding.UTF8.GetBytes("AUTH_BYTES_INVALID"), err.ErrorMessage);
     }
     [Fact]
     public async Task BindTempAuthKey_Returns_True()

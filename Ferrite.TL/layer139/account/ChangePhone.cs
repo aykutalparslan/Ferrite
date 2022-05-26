@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +29,12 @@ public class ChangePhone : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _accountService;
     private bool serialized = false;
-    public ChangePhone(ITLObjectFactory objectFactory)
+    public ChangePhone(ITLObjectFactory objectFactory, IAccountService accountService)
     {
         factory = objectFactory;
+        _accountService = accountService;
     }
 
     public int Constructor => 1891839707;
@@ -85,7 +89,38 @@ public class ChangePhone : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var serviceResult = await _accountService.ChangePhone(ctx.PermAuthKeyId!=0 ? 
+            ctx.PermAuthKeyId : ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _phoneCode);
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorCode;
+            err.ErrorMessage = serviceResult.ErrorMessage;
+            result.Result = err;
+        }
+        else
+        {
+            var user = serviceResult.Result;
+            var userImpl = factory.Resolve<UserImpl>();
+            userImpl.Id = user.Id;
+            userImpl.FirstName = user.FirstName;
+            userImpl.LastName = user.LastName;
+            userImpl.Phone = user.Phone;
+            userImpl.Self = user.Self;
+            if(user.Status == Data.UserStatus.Empty)
+            {
+                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (user.Photo.Empty)
+            {
+                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+
+            result.Result = userImpl;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

@@ -25,12 +25,13 @@ using xxHash;
 
 namespace Ferrite.Services;
 
-public class AccountService : IAccountService
+public partial class AccountService : IAccountService
 {
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
     private readonly IRandomGenerator _random;
-    private readonly Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
+    [RegexGenerator("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled)]
+    private static partial Regex UsernameRegex();
     private const int PhoneCodeTimeout = 60;//seconds
     public AccountService(IDistributedCache cache, IPersistentStore store, IRandomGenerator random)
     {
@@ -73,13 +74,11 @@ public class AccountService : IAccountService
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth != null && await _store.GetUserAsync(auth.UserId) is { } user )
         {
-            var userNew = new User()
+            var userNew = user with
             {
-                AccessHash = user.AccessHash,
                 FirstName = firstName ?? user.FirstName,
                 LastName = lastName ?? user.LastName,
                 About = about ?? user.About,
-                Phone = user.Phone
             };
             await _store.SaveUserAsync(userNew);
             return userNew;
@@ -111,7 +110,7 @@ public class AccountService : IAccountService
 
     public async Task<bool> CheckUsername(string username)
     {
-        if (!UsernameRegex.IsMatch(username))
+        if (!UsernameRegex().IsMatch(username))
         {
             return false;
         }
@@ -127,7 +126,7 @@ public class AccountService : IAccountService
 
     public async Task<User?> UpdateUsername(long authKeyId, string username)
     {
-        if (!UsernameRegex.IsMatch(username))
+        if (!UsernameRegex().IsMatch(username))
         {
             return null;
         }
@@ -315,5 +314,29 @@ public class AccountService : IAccountService
             Timeout = PhoneCodeTimeout,
             PhoneCodeHash = hash
         };
+    }
+
+    public async Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    {
+        var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        if (phoneCode != code)
+        {
+            return new ServiceResult<User>(null, false, 0, ErrorMessages.Empty);
+        }
+
+        var user = await _store.GetUserAsync(phoneNumber);
+        if (user != null)
+        {
+            return new ServiceResult<User>(null, false, 400, ErrorMessages.PhoneNumberOccupied);
+        }
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        foreach (var authorization in authorizations)
+        {
+            await _store.SaveAuthorizationAsync(authorization with { Phone = phoneNumber });
+        }
+        await _store.UpdateUserPhoneAsync(auth.UserId, phoneNumber);
+        user = await _store.GetUserAsync(phoneNumber);
+        return new ServiceResult<User>(user, true, 0, ErrorMessages.Empty);
     }
 }

@@ -47,10 +47,7 @@ namespace Ferrite.Data
                 "CREATE TABLE IF NOT EXISTS ferrite.auth_keys (" +
                             "auth_key_id bigint," +
                             "auth_key blob," +
-                            "phone text," +
-                            "user_id bigint," +
-                            "api_layer int," +
-                            "PRIMARY KEY (auth_key_id));");
+                "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.authorizations (" +
@@ -431,6 +428,28 @@ namespace Ferrite.Data
             return true;
         }
 
+        public async Task<bool> UpdateUserPhoneAsync(long userId, string phone)
+        {
+            var oldUser = await GetUserAsync(userId);
+            if ((oldUser?.Phone.Length ?? 0) > 0)
+            {
+                var stmt = new SimpleStatement(
+                    "DELETE FROM ferrite.users_by_phone WHERE phone = ? AND user_id = ?;",
+                    oldUser?.Phone, oldUser?.Id);
+                stmt = stmt.SetKeyspace(keySpace);
+                await session.ExecuteAsync(stmt);
+            }
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.users SET phone = ? WHERE user_id = ?;",
+                phone, userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            statement = new SimpleStatement(
+                "INSERT INTO ferrite.users_by_phone (username, user_id) VALUES (?,?);",
+                phone, userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
         public async Task<User?> GetUserAsync(long userId)
         {
             User? user = null;
@@ -515,7 +534,7 @@ namespace Ferrite.Data
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
-                    AccessHash = row.GetValue<long>("acces_hash"),
+                    AccessHash = row.GetValue<long>("access_hash"),
                     FirstName = row.GetValue<string>("first_name"),
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),

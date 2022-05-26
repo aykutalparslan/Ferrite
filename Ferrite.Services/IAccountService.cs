@@ -40,4 +40,5 @@ public interface IAccountService
     public Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL);
     public Task<int> GetAccountTTL(long authKeyId);
     public Task<SentCode> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings);
+    public Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
 }

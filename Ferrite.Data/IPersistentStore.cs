@@ -37,6 +37,13 @@ public interface IPersistentStore
     public Task<bool> SaveUserAsync(User user);
     public Task<bool> UpdateUserAsync(User user);
     public Task<bool> UpdateUsernameAsync(long userId, string username);
+    /// <summary>
+    /// Must be called only after phone fields in the other tables are updated.
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <param name="phone"></param>
+    /// <returns></returns>
+    public Task<bool> UpdateUserPhoneAsync(long userId, string phone);
     public Task<User?> GetUserAsync(long userId);
     public Task<User?> GetUserAsync(string phone);
     public Task<User?> GetUserByUsernameAsync(string username);
