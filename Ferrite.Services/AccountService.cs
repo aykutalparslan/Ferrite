@@ -341,4 +341,17 @@ public partial class AccountService : IAccountService
     {
         return await _cache.PutDeviceLockedAsync(authKeyId, period);
     }
+
+    public async Task<Authorizations> GetAuthorizations(long authKeyId)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        List<AppInfo> auths = new();
+        foreach (var a in authorizations)
+        {
+            auths.Add(await _store.GetAppInfoAsync(a.AuthKeyId));
+        }
+
+        return new Authorizations(await _store.GetAccountTTLAsync(auth.UserId), auths);
+    }
 }

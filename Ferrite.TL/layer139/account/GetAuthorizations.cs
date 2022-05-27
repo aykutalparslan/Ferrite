@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.account;
@@ -27,10 +29,12 @@ public class GetAuthorizations : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private bool serialized = false;
-    public GetAuthorizations(ITLObjectFactory objectFactory)
+    private readonly IAccountService _accountService;
+        private bool serialized = false;
+    public GetAuthorizations(ITLObjectFactory objectFactory, IAccountService accountService)
     {
         factory = objectFactory;
+        _accountService = accountService;
     }
 
     public int Constructor => -484392616;
@@ -49,7 +53,39 @@ public class GetAuthorizations : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _accountService.GetAuthorizations(ctx.PermAuthKeyId != 0 ? 
+            ctx.PermAuthKeyId : ctx.AuthKeyId);
+        
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var authorizations = factory.Resolve<AuthorizationsImpl>();
+        authorizations.AuthorizationTtlDays = serviceResult.AuthorizationTTLDays;
+        var authList = factory.Resolve<Vector<Authorization>>();
+        foreach (var info in serviceResult.AppInfos)
+        {
+            var auth = factory.Resolve<Ferrite.TL.layer139.AuthorizationImpl>();
+            auth.ApiId = info.ApiId;
+            auth.AppName = "Unknown";
+            auth.AppVersion = info.AppVersion;
+            auth.CallRequestsDisabled = false;
+            auth.Country = "Turkey";
+            auth.Current = true;
+            auth.DateActive = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+            auth.DateCreated = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+            auth.DeviceModel = info.DeviceModel;
+            auth.EncryptedRequestsDisabled = false;
+            auth.Hash = ctx.SessionId;
+            auth.Ip = info.IP;
+            auth.OfficialApp = true;
+            auth.Platform = "Unknown";
+            auth.Region = "Unknown";
+            auth.SystemVersion = info.SystemVersion;
+            authList.Add(auth);
+        }
+
+        authorizations.Authorizations = authList;
+        result.Result = authorizations;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

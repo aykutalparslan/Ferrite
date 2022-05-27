@@ -42,4 +42,5 @@ public interface IAccountService
     public Task<ServiceResult<SentCode>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings);
     public Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
     public Task<bool> UpdateDeviceLocked(long authKeyId, int period);
+    public Task<Authorizations> GetAuthorizations(long authKeyId);
 }
