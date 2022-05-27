@@ -20,6 +20,7 @@ namespace Ferrite.Data;
 
 public record AppInfo
 {
+    public long Hash { get; init; }
     public long AuthKeyId { get; init; }
     public int ApiId { get; init; }
     public string DeviceModel { get; init; } = default!;

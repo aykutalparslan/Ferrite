@@ -27,6 +27,7 @@ public class ErrorMessages
     public static readonly ErrorMessage FreshChangePhoneForbidden = new ErrorMessage(406, "FRESH_CHANGE_PHONE_FORBIDDEN");
     public static readonly ErrorMessage PhoneNumberBanned = new ErrorMessage(400, "PHONE_NUMBER_BANNED");
     public static readonly ErrorMessage PhoneNumberInvalid = new ErrorMessage(406, "PHONE_NUMBER_INVALID");
-    
-    
+    public static readonly ErrorMessage HashInvalid = new ErrorMessage(400, "HASH_INVALID");
+    public static readonly ErrorMessage FreshResetAuthorizationForbidden = new ErrorMessage(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN");
+
 }

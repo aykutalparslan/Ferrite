@@ -117,16 +117,23 @@ namespace Ferrite.Data
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.app_infos (" +
-                            "auth_key_id bigint," +
-                            "api_id int," +
-                            "device_model text," +
-                            "system_version text," +
-                            "app_version text," +
-                            "system_lang_code text," +
-                            "lang_pack text," +
-                            "lang_code text," +
-                            "ip_address text," +
-                            "PRIMARY KEY (auth_key_id));");
+                "auth_key_id bigint," +
+                "hash bigint," +
+                "api_id int," +
+                "device_model text," +
+                "system_version text," +
+                "app_version text," +
+                "system_lang_code text," +
+                "lang_pack text," +
+                "lang_code text," +
+                "ip_address text," +
+                "PRIMARY KEY (auth_key_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.app_infos_by_hash (" +
+                "hash bigint," +
+                "auth_key_id bigint," +
+                "PRIMARY KEY (hash, auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.devices (" +
@@ -659,19 +666,26 @@ namespace Ferrite.Data
 
         public async Task<bool> SaveAppInfoAsync(AppInfo appInfo)
         {
+            BatchStatement batchStatement = new BatchStatement();
             var statement = new SimpleStatement(
-                "UPDATE ferrite.app_infos SET api_id = ?, device_model = ?, " +
+                "UPDATE ferrite.app_infos SET hash = ?, api_id = ?, device_model = ?, " +
                 "system_version = ?, app_version = ?, " +
                 "system_lang_code = ?, lang_pack = ?, " +
                 "lang_code = ?, ip_address = ? " +
                 "WHERE auth_key_id = ?;",
-                appInfo.ApiId, appInfo.DeviceModel, appInfo.SystemVersion,
+                appInfo.Hash, appInfo.ApiId, appInfo.DeviceModel, appInfo.SystemVersion,
                 appInfo.AppVersion, appInfo.SystemLangCode, appInfo.LangPack,
                 appInfo.LangCode, appInfo.IP, appInfo.AuthKeyId).SetKeyspace(keySpace);
-            await session.ExecuteAsync(statement);
+            batchStatement.Add(statement);
+            var statement2 = new SimpleStatement(
+                "UPDATE ferrite.app_infos_by_hash SET auth_key_id = ? " +
+                "WHERE hash = ?;",
+                appInfo.AuthKeyId, appInfo.Hash).SetKeyspace(keySpace);
+            batchStatement.Add(statement2);
+            await session.ExecuteAsync(batchStatement);
             return true;
         }
-
+        
         public async Task<AppInfo?> GetAppInfoAsync(long authKeyId)
         {
             AppInfo? info = null;
@@ -684,6 +698,7 @@ namespace Ferrite.Data
             {
                 info = new AppInfo()
                 {
+                    Hash = row.GetValue<long>("hash"),
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     ApiId = row.GetValue<int>("api_id"),
                     DeviceModel = row.GetValue<string>("device_model"),
@@ -696,6 +711,20 @@ namespace Ferrite.Data
                 };
             }
             return info;
+        }
+
+        public async Task<long?> GetAuthKeyIdByAppHashAsync(long hash)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.app_infos_by_hash WHERE hash = ?;", hash);
+            statement = statement.SetKeyspace(keySpace);
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                return row.GetValue<long>("auth_key_id");
+            }
+
+            return null;
         }
 
         public async Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo)

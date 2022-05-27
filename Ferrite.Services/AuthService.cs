@@ -225,10 +225,8 @@ public class AuthService : IAuthService
         {
             return null;
         }
-        await _store.SaveAuthorizationAsync(new AuthInfo()
+        await _store.SaveAuthorizationAsync(info with
         {
-            AuthKeyId = info.AuthKeyId,
-            ApiLayer = info.ApiLayer,
             FutureAuthToken = futureAuthToken,
             Phone = "",
             UserId = 0,

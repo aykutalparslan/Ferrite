@@ -354,4 +354,30 @@ public partial class AccountService : IAccountService
 
         return new Authorizations(await _store.GetAccountTTLAsync(auth.UserId), auths);
     }
+
+    public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)
+    {
+        var sessAuthKeyId = await _store.GetAuthKeyIdByAppHashAsync(hash);
+        if (sessAuthKeyId == null)
+        {
+            return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
+        }
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
+        {
+            return new ServiceResult<bool>(false, false, ErrorMessages.FreshResetAuthorizationForbidden);
+        }
+        var info = await _store.GetAuthorizationAsync((long)sessAuthKeyId);
+        if(info == null)
+        {
+            return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
+        }
+        await _store.SaveAuthorizationAsync(info with
+        {
+            Phone = "",
+            UserId = 0,
+            LoggedIn = false
+        });
+        return new ServiceResult<bool>(true, true, ErrorMessages.None);
+    }
 }

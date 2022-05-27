@@ -43,4 +43,5 @@ public interface IAccountService
     public Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
     public Task<bool> UpdateDeviceLocked(long authKeyId, int period);
     public Task<Authorizations> GetAuthorizations(long authKeyId);
+    public Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash);
 }

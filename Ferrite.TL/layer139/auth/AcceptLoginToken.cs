@@ -84,7 +84,7 @@ public class AcceptLoginToken : ITLObject, ITLMethod
             resp.DateCreated = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
             resp.DeviceModel = acceptResult.DeviceModel;
             resp.EncryptedRequestsDisabled = false;
-            resp.Hash = ctx.SessionId;
+            resp.Hash = acceptResult.Hash;
             resp.Ip = acceptResult.IP;
             resp.OfficialApp = true;
             resp.Platform = "Unknown";

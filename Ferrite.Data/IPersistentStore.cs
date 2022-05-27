@@ -57,6 +57,7 @@ public interface IPersistentStore
     public Task<bool> DeleteUserAsync(User user);
     public Task<bool> SaveAppInfoAsync(AppInfo appInfo);
     public Task<AppInfo?> GetAppInfoAsync(long authKeyId);
+    public Task<long?> GetAuthKeyIdByAppHashAsync(long hash);
     public Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo);
     public Task<DeviceInfo?> GetDeviceInfoAsync(long authKeyId);
     public Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds);

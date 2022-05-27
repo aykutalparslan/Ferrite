@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Crypto;
 using Ferrite.Services;
 using Ferrite.TL.Exceptions;
 using Ferrite.TL.mtproto;
@@ -32,12 +33,14 @@ public class InitConnection : ITLObject, ITLMethod
     private readonly ILogger _log;
     private readonly ITLObjectFactory factory;
     private readonly IAuthService _auth;
+    private readonly IRandomGenerator _random;
     private bool serialized = false;
-    public InitConnection(ITLObjectFactory objectFactory, ILogger logger, IAuthService auth)
+    public InitConnection(ITLObjectFactory objectFactory, ILogger logger, IAuthService auth, IRandomGenerator random)
     {
         factory = objectFactory;
         _log = logger;
         _auth = auth;
+        _random = random;
     }
 
     public int Constructor => -1043505495;
@@ -200,6 +203,7 @@ public class InitConnection : ITLObject, ITLMethod
     {
         _ = _auth.SaveAppInfo(new Data.AppInfo()
         {
+            Hash = _random.NextLong(),
             ApiId = _apiId,
             AppVersion = _appVersion,
             AuthKeyId = ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,

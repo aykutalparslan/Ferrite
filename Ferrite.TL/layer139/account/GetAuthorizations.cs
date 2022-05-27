@@ -74,7 +74,7 @@ public class GetAuthorizations : ITLObject, ITLMethod
             auth.DateCreated = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
             auth.DeviceModel = info.DeviceModel;
             auth.EncryptedRequestsDisabled = false;
-            auth.Hash = ctx.SessionId;
+            auth.Hash = info.Hash;
             auth.Ip = info.IP;
             auth.OfficialApp = true;
             auth.Platform = "Unknown";
