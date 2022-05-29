@@ -87,6 +87,10 @@ public class AllocationFreeSerializationTests
         memoryOwners.Push(memoryOwner);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
+        for (int i = 0; i < memoryOwners.Count; i++)
+        {
+            memoryOwners.Pop().Dispose();
+        }
     }
     private static IContainer BuildContainer()
     {
