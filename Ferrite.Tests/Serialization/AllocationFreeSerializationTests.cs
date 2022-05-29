@@ -19,6 +19,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using Autofac;
@@ -91,6 +92,42 @@ public class AllocationFreeSerializationTests
         {
             memoryOwners.Pop().Dispose();
         }
+    }
+    [Fact]
+    public void VectorOfInt_Should_Serialize()
+    {
+        var vecTmp = new VectorOfInt();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        List<int> items = new();
+        foreach (var tmp in vecTmp)
+        {
+            items.Add(tmp);
+        }
+        var vec = Ferrite.TL.slim.VectorOfInt
+            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data, actual);
+        memoryOwner.Dispose();
+    }
+    [Fact]
+    public void VectorOfInt_Should_SerializeWithSpanSource()
+    {
+        var vecTmp = new VectorOfInt();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var items = vecTmp.ToArray();
+        var vec = Ferrite.TL.slim.VectorOfInt
+            .Create(MemoryPool<byte>.Shared, items.AsSpan(), out var memoryOwner);
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data, actual);
+        memoryOwner.Dispose();
     }
     private static IContainer BuildContainer()
     {

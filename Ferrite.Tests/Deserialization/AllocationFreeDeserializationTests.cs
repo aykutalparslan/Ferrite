@@ -89,6 +89,23 @@ public class AllocationFreeDeserializationTests
             Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.PublicKeyFingerprint);
         }
     }
+    [Fact]
+    public void VectorOfInt_Should_Read()
+    {
+        var vecTmp = new VectorOfInt();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var vec = Ferrite.TL.slim.VectorOfInt.Read(data, 0, out var bytesRead);
+        for (int i = 0; i < vec.Count; i++)
+        {
+            var tmp = vecTmp[i];
+            var tmp2 = vec[i];
+            Assert.Equal(tmp, tmp2);
+        }
+    }
     private static IContainer BuildContainer()
     {
         var logger = new Mock<ILogger>();
