@@ -23,7 +23,7 @@ using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>
+public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
 {
     private readonly byte* _buff;
     private ReqDhParams(Span<byte> buffer)
@@ -32,13 +32,14 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>
         Length = buffer.Length;
     }
     public ref readonly int Constructor => ref *(int*)_buff;
+
     private void SetConstructor(int constructor)
     {
         var p = (int*)_buff;
         *p = constructor;
     }
     public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
+    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
     public static ReqDhParams Read(Span<byte> data, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(7, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);

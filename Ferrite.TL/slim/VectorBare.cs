@@ -17,41 +17,41 @@
 // 
 
 using System.Buffers;
+using System.Collections;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct VectorOfInt : ITLStruct<VectorOfInt>, ITLBoxed
+public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruct<T>
 {
     private readonly byte* _buff;
-    private VectorOfInt(Span<byte> buffer)
+    private VectorBare(Span<byte> buffer)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
-    private void SetConstructor(int constructor)
-    {
-        var p = (int*)_buff;
-        *p = constructor;
+        _position = 4;
     }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
-    public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff + 4));
+    public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff));
     private void SetCount(int count)
     {
-        var p = (int*)(_buff + 4);
+        var p = (int*)(_buff);
         *p = count;
     }
     public int Length { get; }
-    public static VectorOfInt Read(Span<byte> data, in int offset, out int bytesRead)
+    private int _position;
+    public static VectorBare<T> Read(Span<byte> data, in int offset, out int bytesRead)
     {
-        var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
-        ptr += 4;
+        var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8 + count * 4;
+        int len = 8;
+        for (int i = 0; i < count; i++)
+        {
+            len += T.ReadSize(data, len);
+        }
         bytesRead = len;
-        var obj = new VectorOfInt(data.Slice(offset, bytesRead));
+        var obj = new VectorBare<T>(data.Slice(offset, bytesRead));
         return obj;
     }
 
@@ -60,38 +60,33 @@ public readonly unsafe struct VectorOfInt : ITLStruct<VectorOfInt>, ITLBoxed
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        return 8 + count * 4;
+        int len = 4;
+        for (int i = 0; i < count; i++)
+        {
+            len += T.ReadSize(data, len);
+        }
+        return len;
     }
-
-    public static VectorOfInt Create(MemoryPool<byte> pool, ICollection<int> items,
+    public static VectorBare<T> Create(MemoryPool<byte> pool, ICollection<T> items, 
         out IMemoryOwner<byte> memory)
     {
-        var length = 8 + items.Count * 4;
-        memory = pool.Rent(length);
-        var obj = new VectorOfInt(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x1cb5c415));
-        obj.SetCount(items.Count);
-        int offset = 8;
+        var length = 4;
         foreach (var item in items)
         {
-            obj.Write(item, offset);
-            offset += 4;
+            length += item.Length;
         }
-
-        return obj;
-    }
-
-    public static VectorOfInt Create(MemoryPool<byte> pool, ReadOnlySpan<int> items, 
-        out IMemoryOwner<byte> memory)
-    {
-        var length = 8 + items.Length * 4;
         memory = pool.Rent(length);
-        var obj = new VectorOfInt(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x1cb5c415));
-        obj.SetCount(items.Length);
-        obj.Write(MemoryMarshal.Cast<int, byte>(items), 8);
+        var obj = new VectorBare<T>(memory.Memory.Span[..length]);
+        obj.SetCount(items.Count);
+        int offset = 4;
+        foreach (var item in items)
+        {
+            obj.Write(item.ToReadOnlySpan(), offset);
+            offset += item.Length;
+        }
         return obj;
     }
+
     private void Write(ReadOnlySpan<byte> value, int offset)
     {
         fixed (byte* p = value)
@@ -100,10 +95,19 @@ public readonly unsafe struct VectorOfInt : ITLStruct<VectorOfInt>, ITLBoxed
                 Length - offset,value.Length);
         }
     }
-    private void Write(in int value, int offset)
+    public T Read()
     {
-        *(int*)(_buff + offset) = value;
+        if (_position == Length)
+        {
+            throw new EndOfStreamException();
+        }
+        var obj = T.Read(new Span<byte>(_buff + _position, 
+            Length - _position), 0, out var bytesRead);
+         _position += bytesRead;
+        return obj;
     }
-
-    public ref readonly int this[int index] => ref *(int*)(_buff + 8 + index * 4);
+    public void Reset()
+    {
+        _position = 4;
+    }
 }

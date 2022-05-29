@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct VectorOfDouble : ITLStruct<VectorOfDouble>
+public readonly unsafe struct VectorOfDouble : ITLStruct<VectorOfDouble>, ITLBoxed
 {
     private readonly byte* _buff;
     private VectorOfDouble(Span<byte> buffer)

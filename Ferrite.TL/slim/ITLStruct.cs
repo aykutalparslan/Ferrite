@@ -22,7 +22,6 @@ namespace Ferrite.TL.slim;
 
 public interface ITLStruct<out T>
 {
-    public ref readonly int Constructor { get; }
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan();
     public static abstract T Read(Span<byte> data, in int offset, out int bytesRead);
@@ -54,34 +53,48 @@ public interface ITLStruct<out T>
 
         return lenBytes;
     }
+    /// <summary>
+    /// Decodes the size of a TL serialized bare string including the padding bytes.
+    /// </summary>
+    /// <param name="buffer">Pointer to the source buffer.</param>
+    /// <param name="offset">Offset in the source buffer.</param>
+    /// <param name="length">Length of the source buffer.</param>
+    /// <returns></returns>
     public static unsafe int GetTLBytesLength(byte* buffer, in int offset, in int length)
     {
-        if (offset >= length)
+        if (offset > length)
         {
             return 0;
         }
 
-        var b = (byte*)buffer + offset;
+        var b = buffer + offset;
         int len = *b;
         var rem = (4 - ((len + 1) % 4)) % 4;
         if (len != 254) return len + rem + 1;
-        len = *++b |
-              ((*++b & 0xff) << 8) |
-              ((*++b & 0xff) << 16);
+        len = (*(b+1) & 0xff) |
+              ((*(b+2) & 0xff) << 8) |
+              ((*(b+3) & 0xff) << 16);
         rem = (4 - len % 4) % 4;
-        return len + rem;
+        return len + 4 + rem;
     }
-    public static unsafe ReadOnlySpan<byte> GetTLBytes(byte* buffer, in int offset, in int length)
+    /// <summary>
+    /// Decodes the value of a TL serialized bare string.
+    /// </summary>
+    /// <param name="buffer">Pointer to the source buffer.</param>
+    /// <param name="offset">Offset in the source buffer.</param>
+    /// <param name="length">Length of the source buffer.</param>
+    /// <returns></returns>
+    public static unsafe Span<byte> GetTLBytes(byte* buffer, in int offset, in int length)
     {
-        if (offset >= length) return new ReadOnlySpan<byte>();
-        var b = (byte*)buffer + offset;
+        if (offset >= length) return new Span<byte>();
+        var b = buffer + offset;
         int len = *b;
-        if (offset + len >= length) return new ReadOnlySpan<byte>();
-        if (len != 254) return new ReadOnlySpan<byte>(b + 1, len);
-        len = *++b |
-              ((*++b & 0xff) << 8) |
-              ((*++b & 0xff) << 16);
-        if (offset + len >= length) return new ReadOnlySpan<byte>();
-        return new ReadOnlySpan<byte>(b + 4, len);
+        if (offset + len > length) return new Span<byte>();
+        if (len != 254) return new Span<byte>(b + 1, len);
+        len = (*(b+1) & 0xff) |
+              ((*(b+2) & 0xff) << 8) |
+              ((*(b+3) & 0xff) << 16);
+        if (offset + len > length) return new Span<byte>();
+        return new Span<byte>(b + 4, len);
     }
 }

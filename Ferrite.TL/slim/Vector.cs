@@ -23,7 +23,7 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct Vector<T> : ITLStruct<Vector<T>> where T : ITLStruct<T>
+public unsafe struct Vector<T> : ITLStruct<Vector<T>>, ITLBoxed where T : ITLStruct<T>
 {
     private readonly byte* _buff;
     private Vector(Span<byte> buffer)

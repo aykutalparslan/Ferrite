@@ -21,6 +21,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Text;
 using Autofac;
 using Autofac.Core.Lifetime;
 using Autofac.Extras.Moq;
@@ -28,9 +29,13 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using Ferrite.Utils;
 using Moq;
 using Xunit;
+using VectorOfDouble = Ferrite.TL.VectorOfDouble;
+using VectorOfInt = Ferrite.TL.VectorOfInt;
+using VectorOfLong = Ferrite.TL.VectorOfLong;
 
 namespace Ferrite.Tests.Deserialization;
 
@@ -62,7 +67,7 @@ public class AllocationFreeDeserializationTests
     public void Vector_Should_Read()
     {
         var container = BuildContainer();
-        var vecTmp = new Vector<ReqDhParams>(container.Resolve<ITLObjectFactory>());
+        var vecTmp = new Ferrite.TL.Vector<ReqDhParams>(container.Resolve<ITLObjectFactory>());
         for (int i = 0; i < 10; i++)
         {
             var tmp = container.Resolve<ReqDhParams>();
@@ -70,7 +75,7 @@ public class AllocationFreeDeserializationTests
             tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
             tmp.P = RandomNumberGenerator.GetBytes(4);
             tmp.Q = RandomNumberGenerator.GetBytes(4);
-            tmp.EncryptedData = RandomNumberGenerator.GetBytes(24);
+            tmp.EncryptedData = RandomNumberGenerator.GetBytes(27);
             tmp.PublicKeyFingerprint = 123741692374192L+i;
             vecTmp.Add(tmp);
         }
@@ -87,6 +92,29 @@ public class AllocationFreeDeserializationTests
             Assert.Equal(tmp.Q, reqDhParams.Q.ToArray());
             Assert.Equal(tmp.EncryptedData, reqDhParams.EncryptedData.ToArray());
             Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.PublicKeyFingerprint);
+        }
+    }
+    [Fact]
+    public void VectorOfString_Should_Read()
+    {
+        var vecTmp = new VectorOfString();
+        for (int i = 0; i < 50; i++)
+        {
+            var len = Random.Shared.Next(512);
+            StringBuilder sb = new StringBuilder(len);
+            for (int j = 0; j < len; j++)
+            {
+                sb.Append(j);
+            }
+            vecTmp.Add(sb.ToString()+i);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var vec = Ferrite.TL.slim.Vector<TLString>.Read(data, 0, out var bytesRead);
+        for (int i = 0; i < vec.Count; i++)
+        {
+            var expected = vecTmp[i];
+            var actual = Encoding.UTF8.GetString(vec.Read().GetValueBytes());
+            Assert.Equal(expected, actual);
         }
     }
     [Fact]

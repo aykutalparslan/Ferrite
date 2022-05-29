@@ -46,7 +46,7 @@ public class AllocationFreeSerializationTests
         tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
         tmp.P = RandomNumberGenerator.GetBytes(4);
         tmp.Q = RandomNumberGenerator.GetBytes(4);
-        tmp.EncryptedData = RandomNumberGenerator.GetBytes(24);
+        tmp.EncryptedData = RandomNumberGenerator.GetBytes(278);
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
         Ferrite.TL.slim.mtproto.ReqDhParams reqDhParams =
@@ -68,7 +68,7 @@ public class AllocationFreeSerializationTests
             tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
             tmp.P = RandomNumberGenerator.GetBytes(4);
             tmp.Q = RandomNumberGenerator.GetBytes(4);
-            tmp.EncryptedData = RandomNumberGenerator.GetBytes(24);
+            tmp.EncryptedData = RandomNumberGenerator.GetBytes(33);
             tmp.PublicKeyFingerprint = 123741692374192L+i;
             vecTmp.Add(tmp);
         }
