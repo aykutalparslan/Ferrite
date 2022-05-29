@@ -55,7 +55,7 @@ public class VectorOfDouble : ITLObject, ICollection<double>
             writer.WriteInt32(list.Count, true);
             foreach (var item in list)
             {
-                writer.WriteInt64((long)item, true);
+                writer.Write(BitConverter.GetBytes(item), true);
             }
 
             return writer.ToReadOnlySequence();

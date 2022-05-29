@@ -31,7 +31,7 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
     }
-    public ref readonly int Constructor => ref Unsafe.AsRef<int>((int*)_buff);
+    public ref readonly int Constructor => ref *(int*)_buff;
     private void SetConstructor(int constructor)
     {
         var p = (int*)_buff;

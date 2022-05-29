@@ -106,6 +106,40 @@ public class AllocationFreeDeserializationTests
             Assert.Equal(tmp, tmp2);
         }
     }
+    [Fact]
+    public void VectorOfLong_Should_Read()
+    {
+        var vecTmp = new VectorOfLong();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i*10000000000L);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var vec = Ferrite.TL.slim.VectorOfLong.Read(data, 0, out var bytesRead);
+        for (int i = 0; i < vecTmp.Count; i++)
+        {
+            var tmp = vecTmp[i];
+            var tmp2 = vec[i];
+            Assert.Equal(tmp, tmp2);
+        }
+    }
+    [Fact]
+    public void VectorOfDouble_Should_Read()
+    {
+        var vecTmp = new VectorOfDouble();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i+0.3);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var vec = Ferrite.TL.slim.VectorOfDouble.Read(data, 0, out var bytesRead);
+        for (int i = 0; i < vec.Count; i++)
+        {
+            var tmp = vecTmp[i];
+            var tmp2 = vec[i];
+            Assert.Equal(tmp, tmp2);
+        }
+    }
     private static IContainer BuildContainer()
     {
         var logger = new Mock<ILogger>();

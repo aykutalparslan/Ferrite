@@ -30,13 +30,32 @@ public readonly unsafe struct ReqPqMulti : ITLStruct<ReqPqMulti>
     }
     public ref readonly int Constructor => ref Unsafe.As<byte, int>(ref Unsafe.AsRef<byte>(_buff));
     public int Length { get; }
+    public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
+    public static ReqPqMulti Read(Span<byte> data, in int offset, out int bytesRead)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static int ReadSize(Span<byte> data, in int offset)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static ReqPqMulti Init(Span<byte> data, in int offset, in int length)
+    {
+        throw new NotImplementedException();
+    }
+
     public static ReqPqMulti Read(Span<byte> data, int offset, out int bytesRead)
     {
         bytesRead = GetOffset(7, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
         var obj = new ReqPqMulti(data.Slice(offset, bytesRead));
         return obj;
     }
-
+    public int GetRequiredBufferSize()
+    {
+        return 12;
+    }
     public static int ReadSize(Span<byte> data, int offset)
     {
         return GetOffset(7, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);

@@ -129,6 +129,78 @@ public class AllocationFreeSerializationTests
         Assert.Equal(data, actual);
         memoryOwner.Dispose();
     }
+    [Fact]
+    public void VectorOfLong_Should_Serialize()
+    {
+        var vecTmp = new VectorOfLong();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        List<long> items = new();
+        foreach (var tmp in vecTmp)
+        {
+            items.Add(tmp);
+        }
+        var vec = Ferrite.TL.slim.VectorOfLong
+            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data, actual);
+        memoryOwner.Dispose();
+    }
+    [Fact]
+    public void VectorOfLong_Should_SerializeWithSpanSource()
+    {
+        var vecTmp = new VectorOfLong();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var items = vecTmp.ToArray();
+        var vec = Ferrite.TL.slim.VectorOfLong
+            .Create(MemoryPool<byte>.Shared, items.AsSpan(), out var memoryOwner);
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data, actual);
+        memoryOwner.Dispose();
+    }
+    [Fact]
+    public void VectorOfDouble_Should_Serialize()
+    {
+        var vecTmp = new VectorOfDouble();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i+0.3);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        List<double> items = new();
+        foreach (var tmp in vecTmp)
+        {
+            items.Add(tmp);
+        }
+        var vec = Ferrite.TL.slim.VectorOfDouble
+            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data, actual);
+        memoryOwner.Dispose();
+    }
+    [Fact]
+    public void VectorOfDouble_Should_SerializeWithSpanSource()
+    {
+        var vecTmp = new VectorOfDouble();
+        for (int i = 0; i < 100; i++)
+        {
+            vecTmp.Add(i+0.3);
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var items = vecTmp.ToArray();
+        var vec = Ferrite.TL.slim.VectorOfDouble
+            .Create(MemoryPool<byte>.Shared, items.AsSpan(), out var memoryOwner);
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data, actual);
+        memoryOwner.Dispose();
+    }
     private static IContainer BuildContainer()
     {
         var logger = new Mock<ILogger>();
