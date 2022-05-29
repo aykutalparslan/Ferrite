@@ -28,12 +28,6 @@ public class LangPackService : ILangPackService
     public LangPackService(ILangPackDataStore store)
     {
         _store = store;
-        StreamReader sr = new StreamReader("LanguagePacks/android_en_v20699265.json");
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
-        };
     }
 
     public async Task<LangPackDifference?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
