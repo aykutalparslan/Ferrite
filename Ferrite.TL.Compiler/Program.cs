@@ -236,7 +236,7 @@ class Compiler
             else if (typeName == "double")
             {
                 parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt64(true);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.Read<double>();" + suffix)
                     );
             }
             else if (typeName == "string")
@@ -405,7 +405,7 @@ class Compiler
             else if (typeName == "double")
             {
                 bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt64((long)" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + "writer.Write(BitConverter.GetBytes(" + item.Name.ToCamelCase() + "));" + suffix)
                     );
             }
             else if (typeName == "string")
@@ -616,7 +616,7 @@ class Compiler
             else if (typeName == "double")
             {
                 parseBlock = parseBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.ReadInt64(true);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + item.Name.ToCamelCase() + " = buff.Read<double>();" + suffix)
                     );
             }
             else if (typeName == "string")
@@ -784,7 +784,7 @@ class Compiler
             else if (typeName == "double")
             {
                 bytesBlock = bytesBlock.AddStatements(
-                    SyntaxFactory.ParseStatement(prefix + "writer.WriteInt64((long)" + item.Name.ToCamelCase() + ", true);" + suffix)
+                    SyntaxFactory.ParseStatement(prefix + "writer.Write(BitConverter.GetBytes(" + item.Name.ToCamelCase() + "));" + suffix)
                     );
             }
             else if (typeName == "string")

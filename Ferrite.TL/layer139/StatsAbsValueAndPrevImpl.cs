@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -42,8 +42,8 @@ public class StatsAbsValueAndPrevImpl : StatsAbsValueAndPrev
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
-            writer.WriteInt64((long)_current, true);
-            writer.WriteInt64((long)_previous, true);
+            writer.Write(BitConverter.GetBytes(_current));
+            writer.Write(BitConverter.GetBytes(_previous));
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -74,8 +74,8 @@ public class StatsAbsValueAndPrevImpl : StatsAbsValueAndPrev
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _current = buff.ReadInt64(true);
-        _previous = buff.ReadInt64(true);
+        _current = buff.Read<double>();
+        _previous = buff.Read<double>();
     }
 
     public override void WriteTo(Span<byte> buff)

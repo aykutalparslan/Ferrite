@@ -42,7 +42,7 @@ public class JsonNumberImpl : JSONValue
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
-            writer.WriteInt64((long)_value, true);
+            writer.Write(BitConverter.GetBytes(_value));
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -62,7 +62,7 @@ public class JsonNumberImpl : JSONValue
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _value = buff.ReadInt64(true);
+        _value = buff.Read<double>();
     }
 
     public override void WriteTo(Span<byte> buff)
