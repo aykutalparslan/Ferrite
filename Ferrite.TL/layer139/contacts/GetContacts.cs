@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.layer139.account;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -61,7 +63,13 @@ public class GetContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var contacts = factory.Resolve<ContactsImpl>();
+        contacts.Contacts = factory.Resolve<Vector<Contact>>();
+        contacts.Users = factory.Resolve<Vector<User>>();
+        result.Result = contacts;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

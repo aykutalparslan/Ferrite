@@ -797,7 +797,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeer peer, InputPeerNotifySettings settings)
+        public async Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeer peer, PeerNotifySettings settings)
         {
             long peerId = 0;
             int peerType = 0;
@@ -864,7 +864,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<InputPeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
+        public async Task<PeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
         {
             long peerId = 0;
             int peerType = 0;
@@ -892,7 +892,7 @@ namespace Ferrite.Data
                     peerId = peer.Peer.ChannelId;
                 }
             }
-            InputPeerNotifySettings? settings = null;
+            PeerNotifySettings? settings = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.notify_settings WHERE auth_key_id = ? AND notify_peer_type = ? " +
                 "AND peer_type = ? AND peer_id = ?;", authKeyId, (int)peer.NotifyPeerType, 
@@ -902,7 +902,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                settings = new InputPeerNotifySettings()
+                settings = new PeerNotifySettings()
                 {
                     Silent = row.GetValue<bool>("silent"),
                     Sound = row.GetValue<string>("sound") ?? "",
