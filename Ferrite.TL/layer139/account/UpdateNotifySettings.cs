@@ -148,7 +148,7 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
         result.ReqMsgId = ctx.MessageId;
         var success = notifyPeer != null && await _account.UpdateNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             notifyPeer,
-            new Data.InputPeerNotifySettings()
+            new Data.PeerNotifySettings()
             {
                 Silent = settings.Silent,
                 Sound = settings.Sound,

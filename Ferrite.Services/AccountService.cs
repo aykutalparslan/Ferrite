@@ -49,15 +49,15 @@ public partial class AccountService : IAccountService
         return await _store.DeleteDeviceInfoAsync(authKeyId, token, otherUserIds);
     }
 
-    public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeer peer, InputPeerNotifySettings settings)
+    public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeer peer, PeerNotifySettings settings)
     {
         return await _store.SaveNotifySettingsAsync(authKeyId, peer, settings);
     }
 
-    public async Task<InputPeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer)
+    public async Task<PeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer)
     {
         var result = await _store.GetNotifySettingsAsync(authKeyId, peer) ?? 
-                     new InputPeerNotifySettings()
+                     new PeerNotifySettings()
                      {
                          Sound = ""
                      };

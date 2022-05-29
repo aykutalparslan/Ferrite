@@ -1,6 +1,6 @@
 namespace Ferrite.Data;
 
-public record InputPeerNotifySettings
+public record PeerNotifySettings
 {
     public bool ShowPreviews { get; init; }
     public bool Silent { get; init; }
