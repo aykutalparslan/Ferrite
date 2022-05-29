@@ -16,27 +16,38 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using System.Collections;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct Vector<T> : ITLStruct<Vector<T>> where T: ITLStruct<T>
+public unsafe struct Vector<T> : ITLStruct<Vector<T>> where T : ITLStruct<T>
 {
     private readonly byte* _buff;
-    public Vector(Span<byte> buffer)
+    private Vector(Span<byte> buffer)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Count = *(_buff+4) & 0xff | (*(_buff + 5) & 0xff) << 8 | (*(_buff + 6) & 0xff) << 16 |
-                    (*(_buff + 7) & 0xff) << 24;
         Length = buffer.Length;
         _position = 8;
     }
-    public ref readonly int Constructor => ref Unsafe.As<byte, int>(ref Unsafe.AsRef<byte>(_buff));
-    public int Count { get; }
+    public ref readonly int Constructor => ref Unsafe.AsRef<int>((int*)_buff);
+    private void SetConstructor(int constructor)
+    {
+        var p = (int*)_buff;
+        *p = constructor;
+    }
+    public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
+    public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff + 4));
+    private void SetCount(int count)
+    {
+        var p = (int*)(_buff + 4);
+        *p = count;
+    }
     public int Length { get; }
     private int _position;
-    public static Vector<T> Read(Span<byte> data, int offset, out int bytesRead)
+    public static Vector<T> Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
@@ -51,7 +62,7 @@ public unsafe struct Vector<T> : ITLStruct<Vector<T>> where T: ITLStruct<T>
         return obj;
     }
 
-    public static int ReadSize(Span<byte> data, int offset)
+    public static int ReadSize(Span<byte> data, in int offset)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
@@ -63,7 +74,35 @@ public unsafe struct Vector<T> : ITLStruct<Vector<T>> where T: ITLStruct<T>
         }
         return len;
     }
+    public static Vector<T> Create(MemoryPool<byte> pool, ICollection<T> items, 
+        out IMemoryOwner<byte> memory)
+    {
+        var length = 8;
+        foreach (var item in items)
+        {
+            length += item.Length;
+        }
+        memory = pool.Rent(length);
+        var obj = new Vector<T>(memory.Memory.Span[..length]);
+        obj.SetConstructor(unchecked((int)0x1cb5c415));
+        obj.SetCount(items.Count);
+        int offset = 8;
+        foreach (var item in items)
+        {
+            obj.Write(item.ToReadOnlySpan(), offset);
+            offset += item.Length;
+        }
+        return obj;
+    }
 
+    private void Write(ReadOnlySpan<byte> value, int offset)
+    {
+        fixed (byte* p = value)
+        {
+            Buffer.MemoryCopy(p, _buff + offset,
+                Length - offset,value.Length);
+        }
+    }
     public T Read()
     {
         if (_position == Length)
