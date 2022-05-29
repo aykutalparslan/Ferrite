@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -42,7 +42,7 @@ public class InputAppEventImpl : InputAppEvent
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
-            writer.WriteInt64((long)_time, true);
+            writer.Write(BitConverter.GetBytes(_time));
             writer.WriteTLString(_type);
             writer.WriteInt64(_peer, true);
             writer.Write(_data.TLBytes, false);
@@ -98,7 +98,7 @@ public class InputAppEventImpl : InputAppEvent
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _time = buff.ReadInt64(true);
+        _time = buff.Read<double>();
         _type = buff.ReadTLString();
         _peer = buff.ReadInt64(true);
         _data = (JSONValue)factory.Read(buff.ReadInt32(true), ref buff);

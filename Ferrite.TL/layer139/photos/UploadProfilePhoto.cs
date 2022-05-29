@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -55,7 +55,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
 
             if (_flags[2])
             {
-                writer.WriteInt64((long)_videoStartTs, true);
+                writer.Write(BitConverter.GetBytes(_videoStartTs));
             }
 
             serialized = true;
@@ -131,7 +131,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
 
         if (_flags[2])
         {
-            _videoStartTs = buff.ReadInt64(true);
+            _videoStartTs = buff.Read<double>();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -43,9 +43,9 @@ public class MaskCoordsImpl : MaskCoords
             writer.Clear();
             writer.WriteInt32(Constructor, true);
             writer.WriteInt32(_n, true);
-            writer.WriteInt64((long)_x, true);
-            writer.WriteInt64((long)_y, true);
-            writer.WriteInt64((long)_zoom, true);
+            writer.Write(BitConverter.GetBytes(_x));
+            writer.Write(BitConverter.GetBytes(_y));
+            writer.Write(BitConverter.GetBytes(_zoom));
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -99,9 +99,9 @@ public class MaskCoordsImpl : MaskCoords
     {
         serialized = false;
         _n = buff.ReadInt32(true);
-        _x = buff.ReadInt64(true);
-        _y = buff.ReadInt64(true);
-        _zoom = buff.ReadInt64(true);
+        _x = buff.Read<double>();
+        _y = buff.Read<double>();
+        _zoom = buff.Read<double>();
     }
 
     public override void WriteTo(Span<byte> buff)

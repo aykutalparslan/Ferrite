@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ public class VideoSizeImpl : VideoSize
             writer.WriteInt32(_size, true);
             if (_flags[0])
             {
-                writer.WriteInt64((long)_videoStartTs, true);
+                writer.Write(BitConverter.GetBytes(_videoStartTs));
             }
 
             serialized = true;
@@ -134,7 +134,7 @@ public class VideoSizeImpl : VideoSize
         _size = buff.ReadInt32(true);
         if (_flags[0])
         {
-            _videoStartTs = buff.ReadInt64(true);
+            _videoStartTs = buff.Read<double>();
         }
     }
 

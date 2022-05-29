@@ -1,5 +1,5 @@
 /*
- *   Project Ferrite is an Implementation Telegram Server API
+ *   Project Ferrite is an Implementation of the Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
  *   This program is free software: you can redistribute it and/or modify
@@ -43,8 +43,8 @@ public class InputGeoPointImpl : InputGeoPoint
             writer.Clear();
             writer.WriteInt32(Constructor, true);
             writer.Write<Flags>(_flags);
-            writer.WriteInt64((long)_lat, true);
-            writer.WriteInt64((long)_long, true);
+            writer.Write(BitConverter.GetBytes(_lat));
+            writer.Write(BitConverter.GetBytes(_long));
             if (_flags[0])
             {
                 writer.WriteInt32(_accuracyRadius, true);
@@ -104,8 +104,8 @@ public class InputGeoPointImpl : InputGeoPoint
     {
         serialized = false;
         _flags = buff.Read<Flags>();
-        _lat = buff.ReadInt64(true);
-        _long = buff.ReadInt64(true);
+        _lat = buff.Read<double>();
+        _long = buff.Read<double>();
         if (_flags[0])
         {
             _accuracyRadius = buff.ReadInt32(true);
