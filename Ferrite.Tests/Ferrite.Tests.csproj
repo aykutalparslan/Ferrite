@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" />
     <ProjectReference Include="..\Ferrite\Ferrite.csproj" />
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
     <ProjectReference Include="..\Ferrite.Core\Ferrite.Core.csproj" />
@@ -52,6 +53,9 @@
     <None Remove="Moq" />
     <None Remove="Moq.AutoMock" />
     <None Remove="Autofac.Extras.Moq" />
+    <None Update="testdata\mtproto.tl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="PQ\" />
