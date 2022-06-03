@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Text;
+
 namespace Ferrite.TLParser;
 
 public class TypeTermSyntax
@@ -25,4 +27,21 @@ public class TypeTermSyntax
     public string? NamespaceIdentifier { get; set; }
     public string Identifier { get; set; }
     public TypeTermSyntax? OptionalType { get; set; }
+
+    public string GetFullyQualifiedIdentifier()
+    {
+        var sb = new StringBuilder();
+        if (NamespaceIdentifier != null)
+        {
+            sb.Append(NamespaceIdentifier);
+            sb.Append(".");
+        }
+
+        sb.Append(Identifier);
+        if (OptionalType == null) return sb.ToString();
+        sb.Append("<");
+        sb.Append(OptionalType.GetFullyQualifiedIdentifier());
+        sb.Append(">");
+        return sb.ToString();
+    }
 }

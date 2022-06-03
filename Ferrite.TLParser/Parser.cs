@@ -95,14 +95,15 @@ public class Parser
             };
         }
         if (statement.Count > 7 && statement[0].Type == TokenType.NamespaceIdentifier &&
-            statement[1].Type == TokenType.CombinatorIdentifier &&
-            statement[2].Type == TokenType.Hash &&
-            statement[3].Type == TokenType.HexConstant)
+            statement[1].Type == TokenType.Dot &&
+            statement[2].Type == TokenType.CombinatorIdentifier &&
+            statement[3].Type == TokenType.Hash &&
+            statement[4].Type == TokenType.HexConstant)
         {
             nameSpace = statement[0].Value;
-            identifier = statement[1].Value;
-            name = statement[3].Value;
-            offset = 4;
+            identifier = statement[2].Value;
+            name = statement[4].Value;
+            offset = 5;
         }
         else if (statement.Count > 6 && statement[0].Type == TokenType.CombinatorIdentifier &&
                  statement[1].Type == TokenType.Hash &&
@@ -159,9 +160,10 @@ public class Parser
 
         if (statement.Count - offset > 4 && statement[offset].Type == TokenType.Equal &&
             statement[offset + 1].Type == TokenType.NamespaceIdentifier &&
-            statement[offset + 2].Type == TokenType.TypeIdentifier &&
-            statement[offset + 3].Type == TokenType.Semicolon &&
-            statement[offset + 4].Type == TokenType.EOL)
+            statement[offset + 2].Type == TokenType.Dot &&
+            statement[offset + 3].Type == TokenType.TypeIdentifier &&
+            statement[offset + 4].Type == TokenType.Semicolon &&
+            statement[offset + 5].Type == TokenType.EOL)
         {
             return new CombinatorDeclarationSyntax()
             {
@@ -174,15 +176,16 @@ public class Parser
                 Type = new TypeTermSyntax()
                 {
                     NamespaceIdentifier = statement[offset + 1].Value,
-                    Identifier = statement[offset + 2].Value
+                    Identifier = statement[offset + 3].Value
                 }
             };
         }
         
         if (statement.Count - offset > 4 && statement[offset].Type == TokenType.Equal &&
             statement[offset + 1].Type == TokenType.NamespaceIdentifier &&
-            statement[offset + 2].Type == TokenType.TypeIdentifier &&
-            statement[offset + 3].Type == TokenType.Langle)
+            statement[offset + 2].Type == TokenType.Dot &&
+            statement[offset + 3].Type == TokenType.TypeIdentifier &&
+            statement[offset + 4].Type == TokenType.Langle)
         {
             var returnType = ParseTypeTerm(statement, offset, out var consumed);
             offset += consumed;
@@ -349,24 +352,26 @@ public class Parser
         }
         
         if (statement.Count - offset > 3 && statement[offset].Type == TokenType.NamespaceIdentifier &&
-            statement[offset + 1].Type == TokenType.TypeIdentifier &&
-            statement[offset + 2].Type != TokenType.Langle)
+            statement[offset + 1].Type == TokenType.Dot &&
+            statement[offset + 2].Type == TokenType.TypeIdentifier &&
+            statement[offset + 3].Type != TokenType.Langle)
         {
-            consumed += 2;
+            consumed += 3;
             return new TypeTermSyntax()
             {
                 IsBare = isBare,
                 IsTypeOf = isTypeOf,
                 NamespaceIdentifier = statement[offset].Value,
-                Identifier = statement[offset + 1].Value
+                Identifier = statement[offset + 2].Value
             };
         }
         
         if (statement.Count - offset > 4 && statement[offset].Type == TokenType.NamespaceIdentifier &&
-            statement[offset + 1].Type == TokenType.TypeIdentifier &&
-            statement[offset + 2].Type == TokenType.Langle)
+            statement[offset + 1].Type == TokenType.Dot &&
+            statement[offset + 2].Type == TokenType.TypeIdentifier &&
+            statement[offset + 3].Type == TokenType.Langle)
         {
-            consumed += 3;
+            consumed += 4;
             var innerTerm = ParseTypeTerm(statement, offset + consumed, out var consumed2);
             consumed += consumed2;
             if (statement[offset + consumed].Type == TokenType.Rangle)
@@ -377,7 +382,7 @@ public class Parser
                     IsBare = isBare,
                     IsTypeOf = isTypeOf,
                     NamespaceIdentifier = statement[offset].Value,
-                    Identifier = statement[offset + 1].Value,
+                    Identifier = statement[offset + 2].Value,
                     OptionalType = innerTerm
                 };
             }
