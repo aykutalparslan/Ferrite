@@ -18,6 +18,7 @@
 
 using System.Runtime.CompilerServices;
 using DotNext;
+using Ferrite.Utils;
 
 namespace Ferrite.TL.slim;
 
@@ -37,19 +38,19 @@ public readonly unsafe struct TLString : ITLStruct<TLString>
 
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new(_buff, Length);
-    public ReadOnlySpan<byte> GetValueBytes() => ITLStruct<TLString>.GetTLBytes(_buff, 0, Length);
+    public ReadOnlySpan<byte> GetValueBytes() => BufferUtils.GetTLBytes(_buff, 0, Length);
 
     public static TLString Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var buffer = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-        bytesRead = ITLStruct<TLString>.GetTLBytesLength(buffer, offset, data.Length);
+        bytesRead = BufferUtils.GetTLBytesLength(buffer, offset, data.Length);
         return new TLString(data.Slice(offset, bytesRead));
     }
 
     public static int ReadSize(Span<byte> data, in int offset)
     {
         var buffer = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-        return ITLStruct<TLString>.GetTLBytesLength(buffer, 0, data.Length);
+        return BufferUtils.GetTLBytesLength(buffer, 0, data.Length);
     }
 
     public static TLString Create(ReadOnlySpan<byte> value)

@@ -18,8 +18,7 @@
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using DotNext.Buffers;
+using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
@@ -49,9 +48,9 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
 
     public static int GetRequiredBufferSize(int lenP, int lenQ, int lenEncryptedData)
     {
-        return 4 + 16 + 16 + ITLStruct<ReqDhParams>.CalculateTLBytesLength(lenP) +
-               ITLStruct<ReqDhParams>.CalculateTLBytesLength(lenQ) + 8 +
-               ITLStruct<ReqDhParams>.CalculateTLBytesLength(lenEncryptedData);
+        return 4 + 16 + 16 + BufferUtils.CalculateTLBytesLength(lenP) +
+               BufferUtils.CalculateTLBytesLength(lenQ) + 8 +
+               BufferUtils.CalculateTLBytesLength(lenEncryptedData);
     }
     public static int ReadSize(Span<byte> data, in int offset)
     {
@@ -95,22 +94,22 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
                 Length - offset,value.Length);
         }
     }
-    public ReadOnlySpan<byte> P => ITLStruct<ReqDhParams>.GetTLBytes(_buff,GetOffset(3, _buff, Length), Length);
+    public ReadOnlySpan<byte> P => BufferUtils.GetTLBytes(_buff,GetOffset(3, _buff, Length), Length);
     private void SetP(ReadOnlySpan<byte> value)
     {
         var offset = GetOffset(3, _buff, Length);
-        var lenBytes = ITLStruct<ReqDhParams>.WriteLenBytes(_buff, value, offset, Length);
+        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset, Length);
         fixed (byte* p = value)
         {
             Buffer.MemoryCopy(p, _buff + offset + lenBytes,
                 Length - offset,value.Length);
         }
     }
-    public ReadOnlySpan<byte> Q => ITLStruct<ReqDhParams>.GetTLBytes(_buff,GetOffset(4, _buff, Length), Length);
+    public ReadOnlySpan<byte> Q => BufferUtils.GetTLBytes(_buff,GetOffset(4, _buff, Length), Length);
     private void SetQ(ReadOnlySpan<byte> value)
     {
         var offset = GetOffset(4, _buff, Length);
-        var lenBytes = ITLStruct<ReqDhParams>.WriteLenBytes(_buff, value, offset, Length);
+        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset, Length);
         fixed (byte* p = value)
         {
             Buffer.MemoryCopy(p, _buff + offset + lenBytes,
@@ -124,11 +123,11 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
         var p = (long*)(_buff + GetOffset(5, _buff, Length));
         *p = value;
     }
-    public ReadOnlySpan<byte> EncryptedData => ITLStruct<ReqDhParams>.GetTLBytes(_buff,GetOffset(6, _buff, Length), Length);
+    public ReadOnlySpan<byte> EncryptedData => BufferUtils.GetTLBytes(_buff,GetOffset(6, _buff, Length), Length);
     private void SetEncryptedData(ReadOnlySpan<byte> value)
     {
         var offset = GetOffset(6, _buff, Length);
-        var lenBytes = ITLStruct<ReqDhParams>.WriteLenBytes(_buff, value, offset, Length);
+        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset, Length);
         fixed (byte* p = value)
         {
             Buffer.MemoryCopy(p, _buff + offset + lenBytes,
@@ -142,10 +141,10 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
         if(index >= 1) offset += 4;
         if(index >= 2) offset += 16;
         if(index >= 3) offset += 16;
-        if(index >= 4) offset += ITLStruct<ReqDhParams>.GetTLBytesLength(buffer, offset, length);
-        if(index >= 5) offset += ITLStruct<ReqDhParams>.GetTLBytesLength(buffer, offset, length);
+        if(index >= 4) offset += BufferUtils.GetTLBytesLength(buffer, offset, length);
+        if(index >= 5) offset += BufferUtils.GetTLBytesLength(buffer, offset, length);
         if(index >= 6) offset += 8;
-        if(index >= 7) offset  += ITLStruct<ReqDhParams>.GetTLBytesLength(buffer, offset, length);
+        if(index >= 7) offset  += BufferUtils.GetTLBytesLength(buffer, offset, length);
         
         return offset;
     }
