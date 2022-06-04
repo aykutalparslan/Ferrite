@@ -54,7 +54,7 @@ public readonly unsafe struct VectorOfLong : ITLStruct<VectorOfLong>, ITLBoxed
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8 + count * 4;
+        int len = 8 + count * 8;
         bytesRead = len;
         var obj = new VectorOfLong(data.Slice(offset, bytesRead));
         return obj;
@@ -65,7 +65,7 @@ public readonly unsafe struct VectorOfLong : ITLStruct<VectorOfLong>, ITLBoxed
         var ptr = buffer + offset;
         ptr += 4;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8 + count * 4;
+        int len = 8 + count * 8;
         bytesRead = len;
         var obj = new VectorOfLong(buffer + offset, bytesRead);
         return obj;
@@ -76,7 +76,7 @@ public readonly unsafe struct VectorOfLong : ITLStruct<VectorOfLong>, ITLBoxed
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        return 8 + count * 4;
+        return 8 + count * 8;
     }
 
     public static int ReadSize(byte* buffer, in int length, in int offset)
@@ -84,7 +84,7 @@ public readonly unsafe struct VectorOfLong : ITLStruct<VectorOfLong>, ITLBoxed
         var ptr = buffer + offset;
         ptr += 4;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        return 8 + count * 4;
+        return 8 + count * 8;
     }
 
     public static VectorOfLong Create(MemoryPool<byte> pool, ICollection<long> items,

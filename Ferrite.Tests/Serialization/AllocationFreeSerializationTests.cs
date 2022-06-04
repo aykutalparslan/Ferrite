@@ -57,6 +57,31 @@ public class AllocationFreeSerializationTests
         memory.Dispose();
     }
     [Fact]
+    public void ResPq_Should_Serialize()
+    {
+        var container = BuildContainer();
+        var tmp = container.Resolve<ResPQ>();
+        tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.Pq = RandomNumberGenerator.GetBytes(8);
+        var fingerprints = new VectorOfLong(3);
+        fingerprints.Add(123416662344445L);
+        fingerprints.Add(734657345673634L);
+        fingerprints.Add(923874923784422L);
+        tmp.ServerPublicKeyFingerprints = fingerprints;
+        byte[] data = tmp.TLBytes.ToArray();
+        var fingerprints2 = Ferrite.TL.slim.VectorOfLong.Create(MemoryPool<byte>.Shared,
+            tmp.ServerPublicKeyFingerprints,
+            out var memory2);
+        Ferrite.TL.slim.mtproto.resPQ value =
+            Ferrite.TL.slim.mtproto.resPQ.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
+                (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2,
+                out var memory);
+        Assert.Equal(data, value.ToReadOnlySpan().ToArray());
+        memory.Dispose();
+        memory2.Dispose();
+    }
+    [Fact]
     public void Vector_Should_Serialize()
     {
         var container = BuildContainer();

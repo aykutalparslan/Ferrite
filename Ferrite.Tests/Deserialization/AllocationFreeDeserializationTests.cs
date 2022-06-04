@@ -28,11 +28,12 @@ using Autofac.Extras.Moq;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.TL;
-using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using Moq;
 using Xunit;
+using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
 using VectorOfDouble = Ferrite.TL.VectorOfDouble;
 using VectorOfInt = Ferrite.TL.VectorOfInt;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
@@ -62,6 +63,34 @@ public class AllocationFreeDeserializationTests
         Assert.Equal(tmp.Q, reqDhParams.q.ToArray());
         Assert.Equal(tmp.EncryptedData, reqDhParams.encrypted_data.ToArray());
         Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.public_key_fingerprint);
+    }
+    [Fact]
+    public void ResPQ_Should_AccessMemberData()
+    {
+        var container = BuildContainer();
+        var tmp = container.Resolve<Ferrite.TL.mtproto.ResPQ>();
+        tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.Pq = RandomNumberGenerator.GetBytes(8);
+        var fingerprints = new VectorOfLong(3);
+        fingerprints.Add(123416662344445L);
+        fingerprints.Add(734657345673634L);
+        fingerprints.Add(923874923784422L);
+        tmp.ServerPublicKeyFingerprints = fingerprints;
+        byte[] data = tmp.TLBytes.ToArray();
+        Ferrite.TL.slim.mtproto.resPQ value =
+            Ferrite.TL.slim.mtproto.resPQ.Read(data, 0, out var bytesRead);
+        Assert.Equal(tmp.Constructor, value.Constructor);
+        Assert.Equal((byte[])tmp.Nonce, value.nonce.ToArray());
+        Assert.Equal((byte[])tmp.ServerNonce, value.server_nonce.ToArray());
+        Assert.Equal(tmp.Nonce, value.nonce.ToArray());
+        Assert.Equal(tmp.ServerNonce, value.server_nonce.ToArray());
+        Assert.Equal(tmp.Pq, value.pq.ToArray());
+        for (int i = 0; i < value.server_public_key_fingerprints.Count; i++)
+        {
+            Assert.Equal(tmp.ServerPublicKeyFingerprints[i], 
+                value.server_public_key_fingerprints[i]);
+        }
     }
     [Fact]
     public void Vector_Should_Read()
