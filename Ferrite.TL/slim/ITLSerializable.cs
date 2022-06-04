@@ -18,7 +18,8 @@
 
 namespace Ferrite.TL.slim;
 
-public interface ITLBoxed: ITLSerializable
+public interface ITLSerializable
 {
-    public ref readonly int Constructor { get; }
+    public int Length { get; }
+    public ReadOnlySpan<byte> ToReadOnlySpan();
 }

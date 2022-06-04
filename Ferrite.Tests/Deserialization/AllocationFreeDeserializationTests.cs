@@ -54,8 +54,8 @@ public class AllocationFreeDeserializationTests
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(24);
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
-        Ferrite.TL.slim.mtproto.req_DH_params reqDhParams =
-            Ferrite.TL.slim.mtproto.req_DH_params.Read(data, 0, out var bytesRead);
+        req_DH_params reqDhParams =
+            (req_DH_params)req_DH_params.Read(data, 0, out var bytesRead);
         Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
         Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
         Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.server_nonce.ToArray());
@@ -78,8 +78,8 @@ public class AllocationFreeDeserializationTests
         fingerprints.Add(923874923784422L);
         tmp.ServerPublicKeyFingerprints = fingerprints;
         byte[] data = tmp.TLBytes.ToArray();
-        Ferrite.TL.slim.mtproto.resPQ value =
-            Ferrite.TL.slim.mtproto.resPQ.Read(data, 0, out var bytesRead);
+        resPQ value =
+            (resPQ)resPQ.Read(data, 0, out var bytesRead);
         Assert.Equal(tmp.Constructor, value.Constructor);
         Assert.Equal((byte[])tmp.Nonce, value.nonce.ToArray());
         Assert.Equal((byte[])tmp.ServerNonce, value.server_nonce.ToArray());
@@ -109,7 +109,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(tmp);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.req_DH_params>.Read(data, 0, out var bytesRead);
+        var vec = (Ferrite.TL.slim.Vector<req_DH_params>)Ferrite.TL.slim.Vector<req_DH_params>.Read(data, 0, out var bytesRead);
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
@@ -138,7 +138,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(sb.ToString()+i);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = Ferrite.TL.slim.Vector<TLString>.Read(data, 0, out var bytesRead);
+        var vec = (Ferrite.TL.slim.Vector<TLString>)Ferrite.TL.slim.Vector<TLString>.Read(data, 0, out var bytesRead);
         for (int i = 0; i < vec.Count; i++)
         {
             var expected = vecTmp[i];
@@ -155,7 +155,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(i);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = Ferrite.TL.slim.VectorOfInt.Read(data, 0, out var bytesRead);
+        var vec = (Ferrite.TL.slim.VectorOfInt)Ferrite.TL.slim.VectorOfInt.Read(data, 0, out var bytesRead);
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
@@ -172,7 +172,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(i*10000000000L);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = Ferrite.TL.slim.VectorOfLong.Read(data, 0, out var bytesRead);
+        var vec = (Ferrite.TL.slim.VectorOfLong)Ferrite.TL.slim.VectorOfLong.Read(data, 0, out var bytesRead);
         for (int i = 0; i < vecTmp.Count; i++)
         {
             var tmp = vecTmp[i];
@@ -189,7 +189,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(i+0.3);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = Ferrite.TL.slim.VectorOfDouble.Read(data, 0, out var bytesRead);
+        var vec = (Ferrite.TL.slim.VectorOfDouble)Ferrite.TL.slim.VectorOfDouble.Read(data, 0, out var bytesRead);
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];

@@ -23,7 +23,7 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruct<T>
+public unsafe struct VectorBare<T> : ITLObjectReader<VectorBare<T>>, ITLBoxed where T : ITLObjectReader<T>, ITLBoxed
 {
     private readonly byte* _buff;
     private VectorBare(Span<byte> buffer)
@@ -47,7 +47,7 @@ public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruc
     }
     public int Length { get; }
     private int _position;
-    public static VectorBare<T> Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
@@ -61,7 +61,7 @@ public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruc
         return obj;
     }
 
-    public static VectorBare<T> Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         var ptr = buffer+offset;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
@@ -137,10 +137,12 @@ public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruc
         var obj = T.Read(new Span<byte>(_buff + _position, 
             Length - _position), 0, out var bytesRead);
          _position += bytesRead;
-        return obj;
+        return (T)obj;
     }
     public void Reset()
     {
         _position = 4;
     }
+
+    public ref readonly int Constructor => throw new NotImplementedException();
 }

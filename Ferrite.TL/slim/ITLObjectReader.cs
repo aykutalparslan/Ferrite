@@ -16,9 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using DotNext;
+
 namespace Ferrite.TL.slim;
 
-public interface ITLBoxed: ITLSerializable
+public interface ITLObjectReader<out T>
 {
-    public ref readonly int Constructor { get; }
+    public static abstract ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead);
+    public static abstract unsafe ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead);
+    public static abstract int ReadSize(Span<byte> data, in int offset);
+    public static abstract unsafe int ReadSize(byte* buffer, in int length, in int offset);
 }

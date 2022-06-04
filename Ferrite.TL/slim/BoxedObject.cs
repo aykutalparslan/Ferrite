@@ -16,16 +16,35 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using DotNext;
-
 namespace Ferrite.TL.slim;
 
-public interface ITLStruct<out T>
+public struct BoxedObject: ITLObjectReader<BoxedObject>, ITLBoxed
 {
     public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan();
-    public static abstract T Read(Span<byte> data, in int offset, out int bytesRead);
-    public static abstract unsafe T Read(byte* buffer, in int length, in int offset, out int bytesRead);
-    public static abstract int ReadSize(Span<byte> data, in int offset);
-    public static abstract unsafe int ReadSize(byte* buffer, in int length, in int offset);
+    public ReadOnlySpan<byte> ToReadOnlySpan()
+    {
+        throw new NotImplementedException();
+    }
+
+    public static ITLBoxed Read(Span<byte> data, in int offset, out int bytesRead)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static unsafe ITLBoxed Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static int ReadSize(Span<byte> data, in int offset)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static unsafe int ReadSize(byte* buffer, in int length, in int offset)
+    {
+        throw new NotImplementedException();
+    }
+
+    public ref readonly int Constructor => throw new NotImplementedException();
 }

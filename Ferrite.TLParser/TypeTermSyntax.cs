@@ -57,6 +57,10 @@ public class TypeTermSyntax
         {
             sb.Append("Flags");
         }
+        else if (Identifier is "Object")
+        {
+            sb.Append("BoxedObject");
+        }
         else if (Identifier is "int128" or "int258")
         {
             sb.Append("ReadOnlySpan<byte>");

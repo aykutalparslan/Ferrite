@@ -23,7 +23,7 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct Vector<T> : ITLStruct<Vector<T>>, ITLBoxed where T : ITLStruct<T>
+public unsafe struct Vector<T> : ITLObjectReader<Vector<T>>, ITLBoxed where T : ITLObjectReader<T>, ITLSerializable
 {
     private readonly byte* _buff;
     private Vector(Span<byte> buffer)
@@ -53,7 +53,7 @@ public unsafe struct Vector<T> : ITLStruct<Vector<T>>, ITLBoxed where T : ITLStr
     }
     public int Length { get; }
     private int _position;
-    public static Vector<T> Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
@@ -68,7 +68,7 @@ public unsafe struct Vector<T> : ITLStruct<Vector<T>>, ITLBoxed where T : ITLStr
         return obj;
     }
 
-    public static Vector<T> Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         var ptr = buffer+offset;
         ptr += 4;
@@ -147,7 +147,7 @@ public unsafe struct Vector<T> : ITLStruct<Vector<T>>, ITLBoxed where T : ITLStr
         var obj = T.Read(new Span<byte>(_buff + _position, 
             Length - _position), 0, out var bytesRead);
          _position += bytesRead;
-        return obj;
+        return (T)obj;
     }
     public void Reset()
     {

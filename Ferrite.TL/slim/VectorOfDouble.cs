@@ -22,7 +22,7 @@ using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct VectorOfDouble : ITLStruct<VectorOfDouble>, ITLBoxed
+public readonly unsafe struct VectorOfDouble : ITLObjectReader<VectorOfDouble>, ITLBoxed
 {
     private readonly byte* _buff;
     private VectorOfDouble(Span<byte> buffer)
@@ -49,7 +49,7 @@ public readonly unsafe struct VectorOfDouble : ITLStruct<VectorOfDouble>, ITLBox
         *p = count;
     }
     public int Length { get; }
-    public static VectorOfDouble Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
@@ -60,7 +60,7 @@ public readonly unsafe struct VectorOfDouble : ITLStruct<VectorOfDouble>, ITLBox
         return obj;
     }
 
-    public static VectorOfDouble Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         var ptr = buffer + offset;
         ptr += 4;
