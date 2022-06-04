@@ -53,15 +53,15 @@ public class AllocationFreeDeserializationTests
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(24);
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
-        Ferrite.TL.slim.mtproto.ReqDhParams reqDhParams =
-            Ferrite.TL.slim.mtproto.ReqDhParams.Read(data, 0, out var bytesRead);
+        Ferrite.TL.slim.mtproto.req_DH_params reqDhParams =
+            Ferrite.TL.slim.mtproto.req_DH_params.Read(data, 0, out var bytesRead);
         Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
-        Assert.Equal((byte[])tmp.Nonce, reqDhParams.Nonce.ToArray());
-        Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.ServerNonce.ToArray());
-        Assert.Equal(tmp.P, reqDhParams.P.ToArray());
-        Assert.Equal(tmp.Q, reqDhParams.Q.ToArray());
-        Assert.Equal(tmp.EncryptedData, reqDhParams.EncryptedData.ToArray());
-        Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.PublicKeyFingerprint);
+        Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
+        Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.server_nonce.ToArray());
+        Assert.Equal(tmp.P, reqDhParams.p.ToArray());
+        Assert.Equal(tmp.Q, reqDhParams.q.ToArray());
+        Assert.Equal(tmp.EncryptedData, reqDhParams.encrypted_data.ToArray());
+        Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.public_key_fingerprint);
     }
     [Fact]
     public void Vector_Should_Read()
@@ -80,18 +80,18 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(tmp);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.ReqDhParams>.Read(data, 0, out var bytesRead);
+        var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.req_DH_params>.Read(data, 0, out var bytesRead);
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
             var reqDhParams = vec.Read();
             Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
-            Assert.Equal((byte[])tmp.Nonce, reqDhParams.Nonce.ToArray());
-            Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.ServerNonce.ToArray());
-            Assert.Equal(tmp.P, reqDhParams.P.ToArray());
-            Assert.Equal(tmp.Q, reqDhParams.Q.ToArray());
-            Assert.Equal(tmp.EncryptedData, reqDhParams.EncryptedData.ToArray());
-            Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.PublicKeyFingerprint);
+            Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
+            Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.server_nonce.ToArray());
+            Assert.Equal(tmp.P, reqDhParams.p.ToArray());
+            Assert.Equal(tmp.Q, reqDhParams.q.ToArray());
+            Assert.Equal(tmp.EncryptedData, reqDhParams.encrypted_data.ToArray());
+            Assert.Equal(tmp.PublicKeyFingerprint, reqDhParams.public_key_fingerprint);
         }
     }
     [Fact]

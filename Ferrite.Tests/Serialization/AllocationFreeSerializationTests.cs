@@ -73,17 +73,17 @@ public class AllocationFreeSerializationTests
             vecTmp.Add(tmp);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        List<Ferrite.TL.slim.mtproto.ReqDhParams> items = new();
+        List<Ferrite.TL.slim.mtproto.req_DH_params> items = new();
         Stack<IMemoryOwner<byte>> memoryOwners = new Stack<IMemoryOwner<byte>>();
         foreach (var tmp in vecTmp)
         {
-            items.Add(Ferrite.TL.slim.mtproto.ReqDhParams.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
+            items.Add(Ferrite.TL.slim.mtproto.req_DH_params.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData,
                 out var memory));
             memoryOwners.Push(memory);
         }
 
-        var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.ReqDhParams>
+        var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.req_DH_params>
             .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
         memoryOwners.Push(memoryOwner);
         var actual = vec.ToReadOnlySpan().ToArray();
