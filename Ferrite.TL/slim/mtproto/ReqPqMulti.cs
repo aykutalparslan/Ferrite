@@ -36,7 +36,17 @@ public readonly unsafe struct ReqPqMulti : ITLStruct<ReqPqMulti>
         throw new NotImplementedException();
     }
 
+    public static ReqPqMulti Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        throw new NotImplementedException();
+    }
+
     public static int ReadSize(Span<byte> data, in int offset)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
     {
         throw new NotImplementedException();
     }

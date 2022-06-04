@@ -27,6 +27,7 @@
     <PackageReference Include="DotNext.IO" Version="4.4.1" />
     <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
     <PackageReference Include="Autofac" Version="6.3.0" />
+    <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="mtproto\" />

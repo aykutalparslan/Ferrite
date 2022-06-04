@@ -32,6 +32,12 @@ public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruc
         Length = buffer.Length;
         _position = 4;
     }
+    private VectorBare(byte* buffer, in int length)
+    {
+        _buff = buffer;
+        Length = length;
+        _position = 4;
+    }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
     public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff));
     private void SetCount(int count)
@@ -55,6 +61,20 @@ public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruc
         return obj;
     }
 
+    public static VectorBare<T> Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        var ptr = buffer+offset;
+        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        int len = 8;
+        for (int i = 0; i < count; i++)
+        {
+            len += T.ReadSize(buffer, length, offset + len);
+        }
+        bytesRead = len;
+        var obj = new VectorBare<T>(buffer + offset, bytesRead);
+        return obj;
+    }
+
     public static int ReadSize(Span<byte> data, in int offset)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
@@ -67,6 +87,19 @@ public unsafe struct VectorBare<T> : ITLStruct<VectorBare<T>> where T : ITLStruc
         }
         return len;
     }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
+    {
+        var ptr = buffer + offset;
+        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        int len = 8;
+        for (int i = 0; i < count; i++)
+        {
+            len += T.ReadSize(buffer, length, len);
+        }
+        return len;
+    }
+
     public static VectorBare<T> Create(MemoryPool<byte> pool, ICollection<T> items, 
         out IMemoryOwner<byte> memory)
     {

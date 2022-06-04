@@ -49,8 +49,8 @@ public class AllocationFreeSerializationTests
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(278);
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
-        Ferrite.TL.slim.mtproto.ReqDhParams reqDhParams =
-            Ferrite.TL.slim.mtproto.ReqDhParams.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
+        Ferrite.TL.slim.mtproto.req_DH_params reqDhParams =
+            Ferrite.TL.slim.mtproto.req_DH_params.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData,
                 out var memory);
         Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());

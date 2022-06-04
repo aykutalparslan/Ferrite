@@ -30,6 +30,11 @@ public readonly unsafe struct VectorOfInt : ITLStruct<VectorOfInt>, ITLBoxed
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
     }
+    private VectorOfInt(byte* buffer, int length)
+    {
+        _buff = buffer;
+        Length = length;
+    }
     public ref readonly int Constructor => ref *(int*)_buff;
     private void SetConstructor(int constructor)
     {
@@ -55,9 +60,28 @@ public readonly unsafe struct VectorOfInt : ITLStruct<VectorOfInt>, ITLBoxed
         return obj;
     }
 
+    public static VectorOfInt Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        var ptr = buffer + offset;
+        ptr += 4;
+        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        int len = 8 + count * 4;
+        bytesRead = len;
+        var obj = new VectorOfInt(buffer + offset, bytesRead);
+        return obj;
+    }
+
     public static int ReadSize(Span<byte> data, in int offset)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
+        ptr += 4;
+        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        return 8 + count * 4;
+    }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
+    {
+        var ptr = buffer + offset;
         ptr += 4;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
         return 8 + count * 4;

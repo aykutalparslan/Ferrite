@@ -25,5 +25,7 @@ public interface ITLStruct<out T>
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan();
     public static abstract T Read(Span<byte> data, in int offset, out int bytesRead);
+    public static abstract unsafe T Read(byte* buffer, in int length, in int offset, out int bytesRead);
     public static abstract int ReadSize(Span<byte> data, in int offset);
+    public static abstract unsafe int ReadSize(byte* buffer, in int length, in int offset);
 }

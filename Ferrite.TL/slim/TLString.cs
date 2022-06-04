@@ -35,6 +35,11 @@ public readonly unsafe struct TLString : ITLStruct<TLString>
 
         Length = buffer.Length;
     }
+    private TLString(byte* buffer, in int length)
+    {
+        _buff = buffer;
+        Length = length;
+    }
 
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new(_buff, Length);
@@ -47,10 +52,21 @@ public readonly unsafe struct TLString : ITLStruct<TLString>
         return new TLString(data.Slice(offset, bytesRead));
     }
 
+    public static TLString Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        bytesRead = BufferUtils.GetTLBytesLength(buffer, offset, length);
+        return new TLString(buffer + offset, bytesRead);
+    }
+
     public static int ReadSize(Span<byte> data, in int offset)
     {
         var buffer = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
         return BufferUtils.GetTLBytesLength(buffer, 0, data.Length);
+    }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
+    {
+        return BufferUtils.GetTLBytesLength(buffer, offset, length);
     }
 
     public static TLString Create(ReadOnlySpan<byte> value)

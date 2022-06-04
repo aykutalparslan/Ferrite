@@ -37,7 +37,22 @@ public class TypeTermSyntax
             sb.Append(".");
         }
 
-        sb.Append(Identifier);
+        if (Identifier is "bytes" or "string")
+        {
+            sb.Append("TLString");
+        }
+        else if (Identifier is "#")
+        {
+            sb.Append("Flags");
+        }
+        else if (Identifier is "int128" or "int258")
+        {
+            sb.Append("ReadOnlySpan<byte>");
+        }
+        else
+        {
+            sb.Append(Identifier);
+        }
         if (OptionalType == null) return sb.ToString();
         sb.Append("<");
         sb.Append(OptionalType.GetFullyQualifiedIdentifier());

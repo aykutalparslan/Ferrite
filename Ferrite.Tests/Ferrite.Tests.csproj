@@ -3,10 +3,17 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
-
+    <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
-
     <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +41,7 @@
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
     <ProjectReference Include="..\Ferrite.Core\Ferrite.Core.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+    <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="PQ\" />

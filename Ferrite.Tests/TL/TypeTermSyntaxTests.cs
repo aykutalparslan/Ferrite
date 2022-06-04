@@ -29,6 +29,7 @@ public class TypeTermSyntaxTests
     [InlineData("test#aabbccdd arg:flags.0?Vector<InputTestType> = Test;\n",0,"Vector<InputTestType>")]
     [InlineData("test#aabbccdd arg:Vector<testns.TestType> = Test;\n",0,"Vector<testns.TestType>")]
     [InlineData("testns.test#aabbccdd arg:Vector<testns.TestType> = testns.Test;\n",0,"Vector<testns.TestType>")]
+    [InlineData("test#aabbccdd arg:Vector<bytes> = Test;\n",0,"Vector<TLString>")]
     public void TypeTermSyntax_Should_ReturnFullyQualifiedName(string tl, int argOffset, string name)
     {
         Lexer lexer = new Lexer(tl);

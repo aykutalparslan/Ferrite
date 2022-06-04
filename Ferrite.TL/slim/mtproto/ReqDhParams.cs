@@ -19,6 +19,8 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using Ferrite.Utils;
+using Microsoft.Toolkit.HighPerformance;
+using Microsoft.Toolkit.HighPerformance.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
@@ -46,6 +48,13 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
         return obj;
     }
 
+    public static ReqDhParams Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        bytesRead = GetOffset(7, buffer + offset, length);
+        var obj = new ReqDhParams(new Span<byte>(buffer + offset, bytesRead));
+        return obj;
+    }
+
     public static int GetRequiredBufferSize(int lenP, int lenQ, int lenEncryptedData)
     {
         return 4 + 16 + 16 + BufferUtils.CalculateTLBytesLength(lenP) +
@@ -55,6 +64,11 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
     public static int ReadSize(Span<byte> data, in int offset)
     {
         return GetOffset(7, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+    }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
+    {
+        return GetOffset(7, buffer + offset, length);
     }
 
     public static ReqDhParams Create(MemoryPool<byte> pool, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> serverNonce,
@@ -74,14 +88,14 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
         return obj;
     }
 
-    public ReadOnlySpan<byte> Nonce => new ((byte*)_buff + GetOffset(1, _buff, Length), 16);
+    public ReadOnlySpan<byte> Nonce => new (_buff + GetOffset(1, _buff, Length), 16);
     private void SetNonce(ReadOnlySpan<byte> value)
     {
         fixed (byte* p = value)
         {
             int offset = GetOffset(1, _buff, Length);
             Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset,value.Length);
+                Length - offset,16);
         }
     }
     public ReadOnlySpan<byte> ServerNonce => new ((byte*)_buff + GetOffset(2, _buff, Length), 16);
@@ -91,7 +105,7 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
         {
             int offset = GetOffset(2, _buff, Length);
             Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset,value.Length);
+                Length - offset,16);
         }
     }
     public ReadOnlySpan<byte> P => BufferUtils.GetTLBytes(_buff,GetOffset(3, _buff, Length), Length);
@@ -116,8 +130,7 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
                 Length - offset,value.Length);
         }
     }
-    public ref readonly long PublicKeyFingerprint => ref Unsafe.As<byte, long>(
-        ref Unsafe.Add(ref Unsafe.AsRef<byte>(_buff), GetOffset(5, _buff, Length)));
+    public ref readonly long PublicKeyFingerprint => ref *(long*)(_buff + GetOffset(5, _buff, Length));
     private void SetPublicKeyFingerprint(in long value)
     {
         var p = (long*)(_buff + GetOffset(5, _buff, Length));
@@ -144,7 +157,7 @@ public readonly unsafe struct ReqDhParams : ITLStruct<ReqDhParams>, ITLBoxed
         if(index >= 4) offset += BufferUtils.GetTLBytesLength(buffer, offset, length);
         if(index >= 5) offset += BufferUtils.GetTLBytesLength(buffer, offset, length);
         if(index >= 6) offset += 8;
-        if(index >= 7) offset  += BufferUtils.GetTLBytesLength(buffer, offset, length);
+        if(index >= 7) offset += BufferUtils.GetTLBytesLength(buffer, offset, length);
         
         return offset;
     }

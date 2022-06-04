@@ -30,7 +30,17 @@ public readonly unsafe struct ResPq : ITLStruct<ResPq>
         throw new NotImplementedException();
     }
 
+    public static ResPq Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        throw new NotImplementedException();
+    }
+
     public static int ReadSize(Span<byte> data, in int offset)
+    {
+        throw new NotImplementedException();
+    }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
     {
         throw new NotImplementedException();
     }
