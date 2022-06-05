@@ -34,6 +34,7 @@ using Ferrite.Utils;
 using Moq;
 using Xunit;
 using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
+using ResPQ = Ferrite.TL.mtproto.ResPQ;
 
 namespace Ferrite.Tests.Serialization;
 
@@ -41,7 +42,7 @@ public class AllocationFreeSerializationTests
 {
     [Fact]
     public void ReqDhParams_Should_Serialize()
-    {
+    {rpc_result
         var container = BuildContainer();
         var tmp = container.Resolve<ReqDhParams>();
         tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
@@ -60,7 +61,7 @@ public class AllocationFreeSerializationTests
     }
     [Fact]
     public void ResPq_Should_Serialize()
-    {P_Q_inner_data
+    {
         var container = BuildContainer();
         var tmp = container.Resolve<ResPQ>();
         tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
