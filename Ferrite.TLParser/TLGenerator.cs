@@ -344,18 +344,21 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
+public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable, IDisposable
 {
     private readonly byte* _buff;
-    private " + typeName + @"(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private " + typeName + @"(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    private " + typeName + @"(byte* buffer, in int length)
+    private " + typeName + @"(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
     "+
     (combinator.Name != null ?                                                    
@@ -375,14 +378,14 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new " + typeName + @"(data.Slice(offset, bytesRead));
+        var obj = new " + typeName + @"(data.Slice(offset, bytesRead), null);
         return obj;
     }
     public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", buffer + offset, length);
-        var obj = new " + typeName + @"(buffer + offset, bytesRead);
+        var obj = new " + typeName + @"(buffer + offset, bytesRead, null);
         return obj;
     }
 ");
@@ -403,6 +406,10 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         GenerateProperties(sourceBuilder, combinator);
         GenerateGetOffset(sourceBuilder, combinator);
         var str = @"
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }
 ";
         sourceBuilder.Append(str);
@@ -424,18 +431,21 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
+public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable, IDisposable
 {
     private readonly byte* _buff;
-    private " + typeName + @"(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private " + typeName + @"(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    private " + typeName + @"(byte* buffer, in int length)
+    private " + typeName + @"(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
     "+
     (combinator.Name != null ?                                                    
@@ -459,14 +469,14 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new " + typeName + @"(data.Slice(offset, bytesRead));
+        var obj = new " + typeName + @"(data.Slice(offset, bytesRead), null);
         return obj;
     }
     public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", buffer + offset, length);
-        var obj = new " + typeName + @"(buffer + offset, bytesRead);
+        var obj = new " + typeName + @"(buffer + offset, bytesRead, null);
         return obj;
     }
 ");
@@ -487,6 +497,10 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         GenerateProperties(sourceBuilder, combinator);
         GenerateGetOffset(sourceBuilder, combinator);
         var str = @"
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }
 ";
         sourceBuilder.Append(str);
@@ -586,26 +600,25 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
         sb.Append(@"
     public static " + typeName +
-                  @" Create(MemoryPool<byte> pool, ");
+                  @" Create(MemoryPool<byte> pool");
         foreach (var arg in combinator.Arguments)
         {
             if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256")
             {
-                sb.Append("ReadOnlySpan<byte> " + arg.Identifier + ", ");
+                sb.Append(", ReadOnlySpan<byte> " + arg.Identifier);
             }
             else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
-                sb.Append("ITLSerializable " + arg.Identifier + ", ");
+                sb.Append(", ITLSerializable " + arg.Identifier);
             }
             else
             {
                 string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
-                sb.Append(typeIdent + " " + arg.Identifier + ", ");
+                sb.Append(", " + typeIdent + " " + arg.Identifier);
             }
         }
 
-        sb.Append(@"
-        out IMemoryOwner<byte> memory)
+        sb.Append(@")
     {
         var length = GetRequiredBufferSize(");
         bool first = true;
@@ -638,8 +651,8 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         }
 
         sb.Append(@");
-        memory = pool.Rent(length);
-        var obj = new " + typeName + @"(memory.Memory.Span[..length]);");
+        var memory = pool.Rent(length);
+        var obj = new " + typeName + @"(memory.Memory.Span[..length], memory);");
         if (combinator.Name != null)
         {
             sb.Append(@"

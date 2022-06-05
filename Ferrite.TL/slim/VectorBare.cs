@@ -23,20 +23,23 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable where T : ITLObjectReader, ITLSerializable
+public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable, IDisposable where T : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
-    private VectorBare(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private VectorBare(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
         _position = 4;
+        _memoryOwner = memoryOwner;
     }
-    private VectorBare(byte* buffer, in int length)
+    private VectorBare(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
         _position = 4;
+        _memoryOwner = memoryOwner;
     }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
     public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff));
@@ -57,7 +60,7 @@ public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable where T : 
             len += T.ReadSize(data, len);
         }
         bytesRead = len;
-        var obj = new VectorBare<T>(data.Slice(offset, bytesRead));
+        var obj = new VectorBare<T>(data.Slice(offset, bytesRead), null);
         return obj;
     }
 
@@ -71,7 +74,7 @@ public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable where T : 
             len += T.ReadSize(buffer, length, offset + len);
         }
         bytesRead = len;
-        var obj = new VectorBare<T>(buffer + offset, bytesRead);
+        var obj = new VectorBare<T>(buffer + offset, bytesRead, null);
         return obj;
     }
 
@@ -100,16 +103,15 @@ public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable where T : 
         return len;
     }
 
-    public static VectorBare<T> Create(MemoryPool<byte> pool, ICollection<T> items, 
-        out IMemoryOwner<byte> memory)
+    public static VectorBare<T> Create(MemoryPool<byte> pool, ICollection<T> items)
     {
         var length = 4;
         foreach (var item in items)
         {
             length += item.Length;
         }
-        memory = pool.Rent(length);
-        var obj = new VectorBare<T>(memory.Memory.Span[..length]);
+        var memory = pool.Rent(length);
+        var obj = new VectorBare<T>(memory.Memory.Span[..length], memory);
         obj.SetCount(items.Count);
         int offset = 4;
         foreach (var item in items)
@@ -145,4 +147,9 @@ public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable where T : 
     }
 
     public ref readonly int Constructor => throw new NotImplementedException();
+
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }

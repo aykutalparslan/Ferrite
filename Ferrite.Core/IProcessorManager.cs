@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Buffers;
 using Ferrite.TL;
 
 namespace Ferrite.Core;
@@ -23,5 +24,6 @@ namespace Ferrite.Core;
 public interface IProcessorManager
 {
     public Task Process(object? sender, ITLObject input, TLExecutionContext ctx);
+    public Task Process(object? sender, IMemoryOwner<byte> input, TLExecutionContext ctx);
 }
 

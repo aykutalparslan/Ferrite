@@ -54,10 +54,8 @@ public class AllocationFreeSerializationTests
         byte[] data = tmp.TLBytes.ToArray();
         Ferrite.TL.slim.mtproto.req_DH_params reqDhParams =
             Ferrite.TL.slim.mtproto.req_DH_params.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
-                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData,
-                out var memory);
+                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
         Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());
-        memory.Dispose();
     }
     [Fact]
     public void ResPq_Should_Serialize()
@@ -74,15 +72,11 @@ public class AllocationFreeSerializationTests
         tmp.ServerPublicKeyFingerprints = fingerprints;
         byte[] data = tmp.TLBytes.ToArray();
         var fingerprints2 = Ferrite.TL.slim.VectorOfLong.Create(MemoryPool<byte>.Shared,
-            tmp.ServerPublicKeyFingerprints,
-            out var memory2);
+            tmp.ServerPublicKeyFingerprints);
         Ferrite.TL.slim.mtproto.resPQ value =
             Ferrite.TL.slim.mtproto.resPQ.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
-                (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2,
-                out var memory);
+                (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2);
         Assert.Equal(data, value.ToReadOnlySpan().ToArray());
-        memory.Dispose();
-        memory2.Dispose();
     }
     [Fact]
     public void Vector_Should_Serialize()
@@ -106,20 +100,14 @@ public class AllocationFreeSerializationTests
         foreach (var tmp in vecTmp)
         {
             items.Add(Ferrite.TL.slim.mtproto.req_DH_params.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
-                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData,
-                out var memory));
-            memoryOwners.Push(memory);
+                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData));
         }
 
         var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.req_DH_params>
-            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
-        memoryOwners.Push(memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        for (int i = 0; i < memoryOwners.Count; i++)
-        {
-            memoryOwners.Pop().Dispose();
-        }
+
     }
     [Fact]
     public void VectorOfInt_Should_Serialize()
@@ -136,10 +124,9 @@ public class AllocationFreeSerializationTests
             items.Add(tmp);
         }
         var vec = Ferrite.TL.slim.VectorOfInt
-            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        memoryOwner.Dispose();
     }
     [Fact]
     public void VectorOfInt_Should_SerializeWithSpanSource()
@@ -152,10 +139,9 @@ public class AllocationFreeSerializationTests
         byte[] data = vecTmp.TLBytes.ToArray();
         var items = vecTmp.ToArray();
         var vec = Ferrite.TL.slim.VectorOfInt
-            .Create(MemoryPool<byte>.Shared, items.AsSpan(), out var memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items.AsSpan());
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        memoryOwner.Dispose();
     }
     [Fact]
     public void VectorOfLong_Should_Serialize()
@@ -172,10 +158,9 @@ public class AllocationFreeSerializationTests
             items.Add(tmp);
         }
         var vec = Ferrite.TL.slim.VectorOfLong
-            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        memoryOwner.Dispose();
     }
     [Fact]
     public void VectorOfLong_Should_SerializeWithSpanSource()
@@ -188,10 +173,9 @@ public class AllocationFreeSerializationTests
         byte[] data = vecTmp.TLBytes.ToArray();
         var items = vecTmp.ToArray();
         var vec = Ferrite.TL.slim.VectorOfLong
-            .Create(MemoryPool<byte>.Shared, items.AsSpan(), out var memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items.AsSpan());
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        memoryOwner.Dispose();
     }
     [Fact]
     public void VectorOfDouble_Should_Serialize()
@@ -208,10 +192,9 @@ public class AllocationFreeSerializationTests
             items.Add(tmp);
         }
         var vec = Ferrite.TL.slim.VectorOfDouble
-            .Create(MemoryPool<byte>.Shared, items, out var memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        memoryOwner.Dispose();
     }
     [Fact]
     public void VectorOfDouble_Should_SerializeWithSpanSource()
@@ -224,10 +207,9 @@ public class AllocationFreeSerializationTests
         byte[] data = vecTmp.TLBytes.ToArray();
         var items = vecTmp.ToArray();
         var vec = Ferrite.TL.slim.VectorOfDouble
-            .Create(MemoryPool<byte>.Shared, items.AsSpan(), out var memoryOwner);
+            .Create(MemoryPool<byte>.Shared, items.AsSpan());
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
-        memoryOwner.Dispose();
     }
     private static IContainer BuildContainer()
     {

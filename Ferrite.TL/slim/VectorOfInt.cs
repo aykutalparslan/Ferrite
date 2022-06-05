@@ -22,19 +22,21 @@ using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable
+public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable, IDisposable
 {
     private readonly byte* _buff;
-
-    private VectorOfInt(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private VectorOfInt(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    private VectorOfInt(byte* buffer, int length)
+    private VectorOfInt(byte* buffer, int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
     public ref readonly int Constructor => ref *(int*)_buff;
     private void SetConstructor(int constructor)
@@ -57,7 +59,7 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
         int len = 8 + count * 4;
         bytesRead = len;
-        var obj = new VectorOfInt(data.Slice(offset, bytesRead));
+        var obj = new VectorOfInt(data.Slice(offset, bytesRead), null);
         return obj;
     }
 
@@ -68,7 +70,7 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
         int len = 8 + count * 4;
         bytesRead = len;
-        var obj = new VectorOfInt(buffer + offset, bytesRead);
+        var obj = new VectorOfInt(buffer + offset, bytesRead, null);
         return obj;
     }
 
@@ -88,12 +90,11 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable
         return 8 + count * 4;
     }
 
-    public static VectorOfInt Create(MemoryPool<byte> pool, ICollection<int> items,
-        out IMemoryOwner<byte> memory)
+    public static VectorOfInt Create(MemoryPool<byte> pool, ICollection<int> items)
     {
         var length = 8 + items.Count * 4;
-        memory = pool.Rent(length);
-        var obj = new VectorOfInt(memory.Memory.Span[..length]);
+        var memory = pool.Rent(length);
+        var obj = new VectorOfInt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);
         int offset = 8;
@@ -106,12 +107,11 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable
         return obj;
     }
 
-    public static VectorOfInt Create(MemoryPool<byte> pool, ReadOnlySpan<int> items, 
-        out IMemoryOwner<byte> memory)
+    public static VectorOfInt Create(MemoryPool<byte> pool, ReadOnlySpan<int> items)
     {
         var length = 8 + items.Length * 4;
-        memory = pool.Rent(length);
-        var obj = new VectorOfInt(memory.Memory.Span[..length]);
+        var memory = pool.Rent(length);
+        var obj = new VectorOfInt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Length);
         obj.Write(MemoryMarshal.Cast<int, byte>(items), 8);
@@ -131,4 +131,9 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable
     }
 
     public ref readonly int this[int index] => ref *(int*)(_buff + 8 + index * 4);
+
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }

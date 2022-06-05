@@ -17,6 +17,8 @@
 //
 using System;
 using System.Buffers;
+using DotNext;
+using Ferrite.Core.Methods;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -126,6 +128,24 @@ public class AuthKeyProcessor : IProcessor
             }
             _log.Information($"{result} sent.");
         }
+    }
+
+    public async Task Process(object? sender, IMemoryOwner<byte> input, Queue<IMemoryOwner<byte>> output, TLExecutionContext ctx)
+    {
+        var query = BoxedObject.Read(input.Memory.Span, 0, out var bytesRead);
+        if (query is req_pq_multi reqPqMulti)
+        {
+            var result = await QueryHandlers.Get(reqPqMulti.Constructor).Process(reqPqMulti, ctx);
+        }
+        else if (query is req_DH_params reqDhParams)
+        {
+            
+        }
+        else if (query is set_client_DH_params setClientDhParams)
+        {
+            
+        }
+        input.Dispose();
     }
 }
 

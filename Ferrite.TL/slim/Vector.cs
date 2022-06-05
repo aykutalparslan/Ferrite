@@ -23,20 +23,23 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable where T : ITLObjectReader, ITLSerializable
+public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable, IDisposable where T : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
-    private Vector(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private Vector(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
         _position = 8;
+        _memoryOwner = memoryOwner;
     }
-    private Vector(byte* buffer, in int length)
+    private Vector(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
         _position = 8;
+        _memoryOwner = memoryOwner;
     }
     public ref readonly int Constructor => ref Unsafe.AsRef<int>((int*)_buff);
     private void SetConstructor(int constructor)
@@ -64,7 +67,7 @@ public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable where T : ITLO
             len += T.ReadSize(data, len);
         }
         bytesRead = len;
-        var obj = new Vector<T>(data.Slice(offset, bytesRead));
+        var obj = new Vector<T>(data.Slice(offset, bytesRead), null);
         return obj;
     }
 
@@ -79,7 +82,7 @@ public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable where T : ITLO
             len += T.ReadSize(buffer, length, offset + len);
         }
         bytesRead = len;
-        var obj = new Vector<T>(buffer + offset, bytesRead);
+        var obj = new Vector<T>(buffer + offset, bytesRead, null);
         return obj;
     }
 
@@ -109,16 +112,15 @@ public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable where T : ITLO
         return len;
     }
 
-    public static Vector<T> Create(MemoryPool<byte> pool, ICollection<T> items, 
-        out IMemoryOwner<byte> memory)
+    public static Vector<T> Create(MemoryPool<byte> pool, ICollection<T> items)
     {
         var length = 8;
         foreach (var item in items)
         {
             length += item.Length;
         }
-        memory = pool.Rent(length);
-        var obj = new Vector<T>(memory.Memory.Span[..length]);
+        var memory = pool.Rent(length);
+        var obj = new Vector<T>(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);
         int offset = 8;
@@ -152,5 +154,10 @@ public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable where T : ITLO
     public void Reset()
     {
         _position = 8;
+    }
+
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
     }
 }

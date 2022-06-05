@@ -76,5 +76,10 @@ public class MsgContainerProcessor : IProcessor
             output.Enqueue(input);
         }
     }
+
+    public async Task Process(object? sender, IMemoryOwner<byte> input, Queue<IMemoryOwner<byte>> output, TLExecutionContext ctx)
+    {
+        throw new NotImplementedException();
+    }
 }
 

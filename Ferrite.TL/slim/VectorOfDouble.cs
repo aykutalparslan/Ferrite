@@ -22,18 +22,21 @@ using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable
+public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable, IDisposable
 {
     private readonly byte* _buff;
-    private VectorOfDouble(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private VectorOfDouble(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    private VectorOfDouble(byte* buffer, in int length)
+    private VectorOfDouble(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
     public ref readonly int Constructor => ref *(int*)_buff;
     private void SetConstructor(int constructor)
@@ -56,7 +59,7 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
         int len = 8 + count * 8;
         bytesRead = len;
-        var obj = new VectorOfDouble(data.Slice(offset, bytesRead));
+        var obj = new VectorOfDouble(data.Slice(offset, bytesRead), null);
         return obj;
     }
 
@@ -67,7 +70,7 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
         int len = 8 + count * 8;
         bytesRead = len;
-        var obj = new VectorOfDouble(buffer + offset, bytesRead);
+        var obj = new VectorOfDouble(buffer + offset, bytesRead, null);
         return obj;
     }
 
@@ -87,12 +90,11 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable
         return 8 + count * 8;
     }
 
-    public static VectorOfDouble Create(MemoryPool<byte> pool, ICollection<double> items,
-        out IMemoryOwner<byte> memory)
+    public static VectorOfDouble Create(MemoryPool<byte> pool, ICollection<double> items)
     {
         var length = 8 + items.Count * 8;
-        memory = pool.Rent(length);
-        var obj = new VectorOfDouble(memory.Memory.Span[..length]);
+        var memory = pool.Rent(length);
+        var obj = new VectorOfDouble(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);
         int offset = 8;
@@ -105,12 +107,11 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable
         return obj;
     }
 
-    public static VectorOfDouble Create(MemoryPool<byte> pool, ReadOnlySpan<double> items, 
-        out IMemoryOwner<byte> memory)
+    public static VectorOfDouble Create(MemoryPool<byte> pool, ReadOnlySpan<double> items)
     {
         var length = 8 + items.Length * 8;
-        memory = pool.Rent(length);
-        var obj = new VectorOfDouble(memory.Memory.Span[..length]);
+        var memory = pool.Rent(length);
+        var obj = new VectorOfDouble(memory.Memory.Span[..length], null);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Length);
         obj.Write(MemoryMarshal.Cast<double, byte>(items), 8);
@@ -130,4 +131,9 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable
     }
 
     public ref readonly double this[int index] => ref *(double*)(_buff + 8 + index * 8);
+
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }
