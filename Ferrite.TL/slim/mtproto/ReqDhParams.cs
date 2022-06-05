@@ -24,7 +24,7 @@ using Microsoft.Toolkit.HighPerformance.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct ReqDhParams : ITLObjectReader<ReqDhParams>, ITLBoxed
+public readonly unsafe struct ReqDhParams : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
     private ReqDhParams(Span<byte> buffer)
@@ -42,14 +42,14 @@ public readonly unsafe struct ReqDhParams : ITLObjectReader<ReqDhParams>, ITLBox
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
 
-    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(7, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
         var obj = new ReqDhParams(data.Slice(offset, bytesRead));
         return obj;
     }
 
-    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(7, buffer + offset, length);
         var obj = new ReqDhParams(new Span<byte>(buffer + offset, bytesRead));

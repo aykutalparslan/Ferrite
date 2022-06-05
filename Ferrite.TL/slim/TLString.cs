@@ -22,7 +22,7 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct TLString : ITLObjectReader<TLString>, ITLBoxed
+public readonly unsafe struct TLString : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
 
@@ -45,14 +45,14 @@ public readonly unsafe struct TLString : ITLObjectReader<TLString>, ITLBoxed
     public ReadOnlySpan<byte> ToReadOnlySpan() => new(_buff, Length);
     public ReadOnlySpan<byte> GetValueBytes() => BufferUtils.GetTLBytes(_buff, 0, Length);
 
-    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var buffer = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
         bytesRead = BufferUtils.GetTLBytesLength(buffer, offset, data.Length);
         return new TLString(data.Slice(offset, bytesRead));
     }
 
-    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = BufferUtils.GetTLBytesLength(buffer, offset, length);
         return new TLString(buffer + offset, bytesRead);

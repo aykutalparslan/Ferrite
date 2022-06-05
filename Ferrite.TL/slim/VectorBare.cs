@@ -23,7 +23,7 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct VectorBare<T> : ITLObjectReader<VectorBare<T>>, ITLBoxed where T : ITLObjectReader<T>, ITLBoxed
+public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable where T : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
     private VectorBare(Span<byte> buffer)
@@ -47,7 +47,7 @@ public unsafe struct VectorBare<T> : ITLObjectReader<VectorBare<T>>, ITLBoxed wh
     }
     public int Length { get; }
     private int _position;
-    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
@@ -61,7 +61,7 @@ public unsafe struct VectorBare<T> : ITLObjectReader<VectorBare<T>>, ITLBoxed wh
         return obj;
     }
 
-    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         var ptr = buffer+offset;
         int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;

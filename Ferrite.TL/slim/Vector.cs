@@ -23,7 +23,7 @@ using System.Runtime.CompilerServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct Vector<T> : ITLObjectReader<Vector<T>>, ITLBoxed where T : ITLObjectReader<T>, ITLSerializable
+public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable where T : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
     private Vector(Span<byte> buffer)
@@ -53,7 +53,7 @@ public unsafe struct Vector<T> : ITLObjectReader<Vector<T>>, ITLBoxed where T : 
     }
     public int Length { get; }
     private int _position;
-    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
         ptr += 4;
@@ -68,7 +68,7 @@ public unsafe struct Vector<T> : ITLObjectReader<Vector<T>>, ITLBoxed where T : 
         return obj;
     }
 
-    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         var ptr = buffer+offset;
         ptr += 4;

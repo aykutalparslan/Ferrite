@@ -18,7 +18,7 @@
 
 namespace Ferrite.TL.slim;
 
-public struct BoxedObject: ITLObjectReader<BoxedObject>, ITLBoxed
+public struct BoxedObject: ITLObjectReader, ITLSerializable
 {
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan()
@@ -26,12 +26,12 @@ public struct BoxedObject: ITLObjectReader<BoxedObject>, ITLBoxed
         throw new NotImplementedException();
     }
 
-    public static ITLBoxed Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable Read(Span<byte> data, in int offset, out int bytesRead)
     {
         throw new NotImplementedException();
     }
 
-    public static unsafe ITLBoxed Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static unsafe ITLSerializable Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         throw new NotImplementedException();
     }

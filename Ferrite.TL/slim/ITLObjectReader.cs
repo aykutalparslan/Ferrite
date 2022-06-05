@@ -20,10 +20,10 @@ using DotNext;
 
 namespace Ferrite.TL.slim;
 
-public interface ITLObjectReader<out T>
+public interface ITLObjectReader
 {
-    public static abstract ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead);
-    public static abstract unsafe ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead);
+    public static abstract ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead);
+    public static abstract unsafe ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead);
     public static abstract int ReadSize(Span<byte> data, in int offset);
     public static abstract unsafe int ReadSize(byte* buffer, in int length, in int offset);
 }

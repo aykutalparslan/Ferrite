@@ -56,7 +56,7 @@ rpc_result#f35c6d01 req_msg_id:long result:Object = RpcResult;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + combinator.Type + @" : ITLObjectReader<" + combinator.Type + @">, ITLBoxed
+public readonly unsafe struct " + combinator.Type + @" : ITLObjectReader<" + combinator.Type + @">, ITLSerializable
 {
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan()
@@ -64,12 +64,12 @@ public readonly unsafe struct " + combinator.Type + @" : ITLObjectReader<" + com
         throw new NotImplementedException();
     }
 
-    public static ITLBoxed Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         throw new NotImplementedException();
     }
 
-    public static unsafe ITLBoxed Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static unsafe ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         throw new NotImplementedException();
     }
@@ -101,7 +101,7 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader<" + combinator.Identifier + @">, ITLBoxed
+public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
     private " + combinator.Identifier + @"(Span<byte> buffer)
@@ -123,14 +123,14 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader<"
     }
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLBoxed? Read(Span<byte> data, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
         var obj = new " + combinator.Identifier + @"(data.Slice(offset, bytesRead));
         return obj;
     }
-    public static ITLBoxed? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", buffer + offset, length);
@@ -262,7 +262,7 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader<"
             }
             else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
-                sb.Append("ITLBoxed " + arg.Identifier + ", ");
+                sb.Append("ITLSerializable " + arg.Identifier + ", ");
             }
             else
             {
@@ -441,7 +441,7 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader<"
             else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
                 sb.Append(@"
-    public ITLBoxed "+arg.Identifier+@" => ("+arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+ 
+    public ITLSerializable "+arg.Identifier+@" => ("+arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+ 
                           arg.TypeTerm.GetFullyQualifiedIdentifier() 
                           +@".Read(_buff, Length, GetOffset("+index+@", _buff, Length), out var bytesRead);");
                 sb.Append(@"
