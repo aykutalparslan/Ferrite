@@ -41,7 +41,6 @@
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
     <ProjectReference Include="..\Ferrite.Core\Ferrite.Core.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
-    <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="PQ\" />

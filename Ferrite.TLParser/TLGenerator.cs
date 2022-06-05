@@ -19,6 +19,8 @@ public class TLGenerator : ISourceGenerator
         List<CombinatorDeclarationSyntax> combinators = new();
         List<Token> tokens = new List<Token>();
         Lexer lexer = new Lexer(@"resPQ#05162463 nonce:int128 server_nonce:int128 pq:bytes server_public_key_fingerprints:Vector<long> = ResPQ;
+p_q_inner_data#83c95aec pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 = P_Q_inner_data;
+p_q_inner_data_temp#3c6a84d4 pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 expires_in:int = P_Q_inner_data;
 p_q_inner_data_dc#a9f55f95 pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 dc:int = P_Q_inner_data;
 p_q_inner_data_temp_dc#56fddf88 pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 dc:int expires_in:int = P_Q_inner_data;
 server_DH_params_ok#d0e8075c nonce:int128 server_nonce:int128 encrypted_answer:bytes = Server_DH_Params;
@@ -99,6 +101,10 @@ destroy_auth_key#d1435160 = DestroyAuthKeyRes;
             }
             else if(combinator.CombinatorType == CombinatorType.Function)
             {
+                if (combinator.Name != null)
+                {
+                    combinators.Add(combinator);
+                }
                 GenerateFunctionSource(context, combinator);
             }
 
@@ -434,7 +440,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
     "+
     (combinator.Name != null ?                                                    
     @"
-    public " + combinator.Type.Identifier + @" As_" + combinator.Type.Identifier + @"()
+    public " + combinator.Type.Identifier + @" GetAs" + combinator.Type.Identifier + @"()
     {
         return new " + combinator.Type.Identifier + @"(_buff, Length);
     }
