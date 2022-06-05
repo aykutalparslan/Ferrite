@@ -42,7 +42,7 @@ public class AllocationFreeSerializationTests
 {
     [Fact]
     public void ReqDhParams_Should_Serialize()
-    {rpc_result
+    {
         var container = BuildContainer();
         var tmp = container.Resolve<ReqDhParams>();
         tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);

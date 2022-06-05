@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Ferrite.TLParser;
@@ -17,12 +18,54 @@ public class TLGenerator : ISourceGenerator
         Dictionary<string, List<CombinatorDeclarationSyntax>> types = new();
         List<CombinatorDeclarationSyntax> combinators = new();
         List<Token> tokens = new List<Token>();
-        Lexer lexer = new Lexer(
-            @"resPQ#05162463 nonce:int128 server_nonce:int128 pq:bytes server_public_key_fingerprints:Vector<long> = ResPQ;
+        Lexer lexer = new Lexer(@"resPQ#05162463 nonce:int128 server_nonce:int128 pq:bytes server_public_key_fingerprints:Vector<long> = ResPQ;
 p_q_inner_data_dc#a9f55f95 pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 dc:int = P_Q_inner_data;
 p_q_inner_data_temp_dc#56fddf88 pq:bytes p:bytes q:bytes nonce:int128 server_nonce:int128 new_nonce:int256 dc:int expires_in:int = P_Q_inner_data;
-req_DH_params#d712e4be nonce:int128 server_nonce:int128 p:bytes q:bytes public_key_fingerprint:long encrypted_data:bytes = Server_DH_Params;
+server_DH_params_ok#d0e8075c nonce:int128 server_nonce:int128 encrypted_answer:bytes = Server_DH_Params;
+server_DH_inner_data#b5890dba nonce:int128 server_nonce:int128 g:int dh_prime:bytes g_a:bytes server_time:int = Server_DH_inner_data;
+client_DH_inner_data#6643b654 nonce:int128 server_nonce:int128 retry_id:long g_b:bytes = Client_DH_Inner_Data;
+dh_gen_ok#3bcbf734 nonce:int128 server_nonce:int128 new_nonce_hash1:int128 = Set_client_DH_params_answer;
+dh_gen_retry#46dc1fb9 nonce:int128 server_nonce:int128 new_nonce_hash2:int128 = Set_client_DH_params_answer;
+dh_gen_fail#a69dae02 nonce:int128 server_nonce:int128 new_nonce_hash3:int128 = Set_client_DH_params_answer;
+bind_auth_key_inner#75a3f765 nonce:long temp_auth_key_id:long perm_auth_key_id:long temp_session_id:long expires_at:int = BindAuthKeyInner;
 rpc_result#f35c6d01 req_msg_id:long result:Object = RpcResult;
+rpc_error#2144ca19 error_code:int error_message:string = RpcError;
+rpc_answer_unknown#5e2ad36e = RpcDropAnswer;
+rpc_answer_dropped_running#cd78e586 = RpcDropAnswer;
+rpc_answer_dropped#a43ad8b7 msg_id:long seq_no:int bytes:int = RpcDropAnswer;
+future_salt#0949d9dc valid_since:int valid_until:int salt:long = FutureSalt;
+future_salts#ae500895 req_msg_id:long now:int salts:vector<future_salt> = FutureSalts;
+pong#347773c5 msg_id:long ping_id:long = Pong;
+destroy_session_ok#e22045fc session_id:long = DestroySessionRes;
+destroy_session_none#62d350c9 session_id:long = DestroySessionRes;
+new_session_created#9ec20908 first_msg_id:long unique_id:long server_salt:long = NewSession;
+msg_container#73f1f8dc messages:vector<%Message> = MessageContainer;
+message msg_id:long seqno:int bytes:int body:Object = Message;
+msg_copy#e06046b2 orig_message:Message = MessageCopy;
+gzip_packed#3072cfa1 packed_data:bytes = GzipPacked;
+msgs_ack#62d6b459 msg_ids:Vector<long> = MsgsAck;
+bad_msg_notification#a7eff811 bad_msg_id:long bad_msg_seqno:int error_code:int = BadMsgNotification;
+bad_server_salt#edab447b bad_msg_id:long bad_msg_seqno:int error_code:int new_server_salt:long = BadMsgNotification;
+msg_resend_req#7d861a08 msg_ids:Vector<long> = MsgResendReq;
+msgs_state_req#da69fb52 msg_ids:Vector<long> = MsgsStateReq;
+msgs_state_info#04deb57d req_msg_id:long info:bytes = MsgsStateInfo;
+msgs_all_info#8cc0d131 msg_ids:Vector<long> info:bytes = MsgsAllInfo;
+msg_detailed_info#276d3ec6 msg_id:long answer_msg_id:long bytes:int status:int = MsgDetailedInfo;
+msg_new_detailed_info#809db6df answer_msg_id:long bytes:int status:int = MsgDetailedInfo;
+destroy_auth_key_ok#f660e1d4 = DestroyAuthKeyRes;
+destroy_auth_key_none#0a9f2259 = DestroyAuthKeyRes;
+destroy_auth_key_fail#ea109b13 = DestroyAuthKeyRes;
+---functions---
+req_pq_multi#be7e8ef1 nonce:int128 = ResPQ;
+req_DH_params#d712e4be nonce:int128 server_nonce:int128 p:bytes q:bytes public_key_fingerprint:long encrypted_data:bytes = Server_DH_Params;
+set_client_DH_params#f5045f1f nonce:int128 server_nonce:int128 encrypted_data:bytes = Set_client_DH_params_answer;
+rpc_drop_answer#58e4a740 req_msg_id:long = RpcDropAnswer;
+get_future_salts#b921bd04 num:int = FutureSalts;
+ping#7abe77ec ping_id:long = Pong;
+ping_delay_disconnect#f3427b8c ping_id:long disconnect_delay:int = Pong;
+destroy_session#e7512126 session_id:long = DestroySessionRes;
+http_wait#9299359f max_delay:int wait_after:int max_wait:int = HttpWait;
+destroy_auth_key#d1435160 = DestroyAuthKeyRes;
 ");
         Parser parser = new Parser(lexer);
         var combinator = parser.ParseCombinator();
@@ -35,26 +78,43 @@ rpc_result#f35c6d01 req_msg_id:long result:Object = RpcResult;
             }
 
             var id = ns + combinator.Type.Identifier;
-            if (!types.ContainsKey(id))
+            if (combinator.CombinatorType == CombinatorType.Constructor &&
+                !types.ContainsKey(id))
             {
                 types.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
+                if (combinator.Name != null)
+                {
+                    combinators.Add(combinator);
+                }
+                GenerateSourceFile(context, combinator);
             }
-            else
+            else if(combinator.CombinatorType == CombinatorType.Constructor)
             {
                 types[id].Add(combinator);
+                if (combinator.Name != null)
+                {
+                    combinators.Add(combinator);
+                }
+                GenerateSourceFile(context, combinator);
             }
-            combinators.Add(combinator);
-            GenerateSourceFile(context, combinator);
+            else if(combinator.CombinatorType == CombinatorType.Function)
+            {
+                GenerateFunctionSource(context, combinator);
+            }
+
             combinator = parser.ParseCombinator();
         }
 
         foreach (var item in types)
         {
-            GenerateBaseType(context, item.Value);
+            if (item.Value[0].Name != null)
+            {
+                GenerateBaseType(context, item.Value);
+            }
         }
         GenerateBoxedObject(context, combinators);
     }
-private void GenerateBaseType(GeneratorExecutionContext context, IReadOnlyList<CombinatorDeclarationSyntax> combinators)
+    private void GenerateBaseType(GeneratorExecutionContext context, IReadOnlyList<CombinatorDeclarationSyntax> combinators)
     {
         StringBuilder sb = new StringBuilder(@"//  <auto-generated>
 //  This file was auto-generated by the Ferrite TL Generator.
@@ -264,8 +324,9 @@ public readonly unsafe struct BoxedObject : ITLObjectReader, ITLSerializable
         context.AddSource("BoxedObject.g.cs",
             SourceText.From(sb.ToString(), Encoding.UTF8));
     }
-    private void GenerateSourceFile(GeneratorExecutionContext context, CombinatorDeclarationSyntax? combinator)
+    private void GenerateFunctionSource(GeneratorExecutionContext context, CombinatorDeclarationSyntax? combinator)
     {
+        var typeName = combinator.Identifier;
         StringBuilder sourceBuilder = new StringBuilder(@"//  <auto-generated>
 //  This file was auto-generated by the Ferrite TL Generator.
 //  Please do not modify as all changes will be lost.
@@ -277,19 +338,102 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, ITLSerializable
+public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
-    private " + combinator.Identifier + @"(Span<byte> buffer)
+    private " + typeName + @"(Span<byte> buffer)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
     }
-    private " + combinator.Identifier + @"(byte* buffer, in int length)
+    private " + typeName + @"(byte* buffer, in int length)
     {
         _buff = buffer;
         Length = length;
     }
+    "+
+    (combinator.Name != null ?                                                    
+    @"
+    public ref readonly int Constructor => ref *(int*)_buff;
+
+    private void SetConstructor(int constructor)
+    {
+        var p = (int*)_buff;
+        *p = constructor;
+    }": "")+
+    
+    @"
+    public int Length { get; }
+    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
+    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    {
+        bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
+                                                        @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        var obj = new " + typeName + @"(data.Slice(offset, bytesRead));
+        return obj;
+    }
+    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    {
+        bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
+                                                        @", buffer + offset, length);
+        var obj = new " + typeName + @"(buffer + offset, bytesRead);
+        return obj;
+    }
+");
+        GenerateGetRequiredBufferSize(sourceBuilder, combinator);
+        GenerateCreate(sourceBuilder, combinator);
+        sourceBuilder.Append(@"
+    public static int ReadSize(Span<byte> data, in int offset)
+    {
+        return GetOffset(" + (combinator.Arguments.Count + 1) +
+                             @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+    }
+
+    public static int ReadSize(byte* buffer, in int length, in int offset)
+    {
+        return GetOffset(" + (combinator.Arguments.Count + 1) +
+                             @", buffer + offset, length);
+    }");
+        GenerateProperties(sourceBuilder, combinator);
+        GenerateGetOffset(sourceBuilder, combinator);
+        var str = @"
+}
+";
+        sourceBuilder.Append(str);
+        // inject the created source into the users compilation
+        context.AddSource(combinator.Identifier + ".g.cs",
+            SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
+    }
+    private void GenerateSourceFile(GeneratorExecutionContext context, CombinatorDeclarationSyntax? combinator)
+    {
+        var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
+        StringBuilder sourceBuilder = new StringBuilder(@"//  <auto-generated>
+//  This file was auto-generated by the Ferrite TL Generator.
+//  Please do not modify as all changes will be lost.
+//  <auto-generated/>
+
+using System.Buffers;
+using System.Runtime.CompilerServices;
+using Ferrite.Utils;
+
+namespace Ferrite.TL.slim.mtproto;
+
+public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
+{
+    private readonly byte* _buff;
+    private " + typeName + @"(Span<byte> buffer)
+    {
+        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
+        Length = buffer.Length;
+    }
+    private " + typeName + @"(byte* buffer, in int length)
+    {
+        _buff = buffer;
+        Length = length;
+    }
+    "+
+    (combinator.Name != null ?                                                    
+    @"
     public " + combinator.Type.Identifier + @" As_" + combinator.Type.Identifier + @"()
     {
         return new " + combinator.Type.Identifier + @"(_buff, Length);
@@ -300,21 +444,23 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, 
     {
         var p = (int*)_buff;
         *p = constructor;
-    }
+    }": "")+
+    
+    @"
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
     public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new " + combinator.Identifier + @"(data.Slice(offset, bytesRead));
+        var obj = new " + typeName + @"(data.Slice(offset, bytesRead));
         return obj;
     }
     public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
                                                         @", buffer + offset, length);
-        var obj = new " + combinator.Identifier + @"(buffer + offset, bytesRead);
+        var obj = new " + typeName + @"(buffer + offset, bytesRead);
         return obj;
     }
 ");
@@ -345,7 +491,7 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, 
 
     public void Initialize(GeneratorInitializationContext context)
     {
-        // No initialization required
+        
     }
 
     private void GenerateGetRequiredBufferSize(StringBuilder sb, CombinatorDeclarationSyntax combinator)
@@ -431,8 +577,9 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, 
 
     private void GenerateCreate(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
+        var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
         sb.Append(@"
-    public static " + combinator.Identifier +
+    public static " + typeName +
                   @" Create(MemoryPool<byte> pool, ");
         foreach (var arg in combinator.Arguments)
         {
@@ -486,7 +633,7 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, 
 
         sb.Append(@");
         memory = pool.Rent(length);
-        var obj = new " + combinator.Identifier + @"(memory.Memory.Span[..length]);");
+        var obj = new " + typeName + @"(memory.Memory.Span[..length]);");
         if (combinator.Name != null)
         {
             sb.Append(@"
@@ -495,7 +642,7 @@ public readonly unsafe struct " + combinator.Identifier + @" : ITLObjectReader, 
 
         foreach (var arg in combinator.Arguments)
         {
-            if (arg.TypeTerm.IsBare)
+            if (arg.TypeTerm.IsBare && arg.TypeTerm.OptionalType == null)
             {
                 sb.Append(@"
         obj.Set_"+arg.Identifier+"("+arg.Identifier+");");            

@@ -31,6 +31,8 @@ namespace Ferrite.TLParser
             (TokenType.EOL, @"[\r\n|\r|\n]"),
             (TokenType.LineComment, @"\/\/[^\n\r]+?(?:\*\)|[\n\r])"), //https://stackoverflow.com/a/49180687/2015348
             (TokenType.MultilineComment, @"(?s)/\*.*?\*/"), //https://stackoverflow.com/a/36328890/2015348
+            (TokenType.Functions, @"(---\s?functions\s?---)"),
+            (TokenType.Types, @"(---\s?types\s?---)"),
             (TokenType.Spaces, @"\s+"),
             (TokenType.OpenBracket, @"\["),
             (TokenType.CloseBracket, @"\]"),
@@ -61,8 +63,6 @@ namespace Ferrite.TLParser
             (TokenType.BareTypeIdentifier, @"[a-z][_a-zA-Z0-9]+(?=[\s\<\>])(?![\:])"),
             (TokenType.LowercaseIdentifier, @"[a-z][_a-zA-Z0-9]*"),
             (TokenType.Number, @"[0-9]"),
-            (TokenType.Functions, @"(---\s?functions\s?---)?"),
-            (TokenType.Types, @"(---\s?types\s?---)?")
 
             //
             //(TokenType.CombinatorIdentifier,  @"^[a-z][_a-zA-Z0-9]+([#]+[a-f0-9]+)?(?=\s)"),

@@ -41,12 +41,11 @@ public class Parser
             statement = NextStatement();
         }
 
-        _combinatorType = statement[0].Type switch
+        if (statement[0].Type == TokenType.Functions)
         {
-            TokenType.Functions => CombinatorType.Function,
-            TokenType.Types => CombinatorType.Constructor,
-            _ => _combinatorType
-        };
+            _combinatorType = CombinatorType.Function;
+            statement = NextStatement();
+        }
 
         int offset = 0;
         string nameSpace = null;

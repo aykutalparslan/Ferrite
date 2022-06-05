@@ -36,20 +36,25 @@ public class TypeTermSyntax
             sb.Append(NamespaceIdentifier);
             sb.Append(".");
         }
-
+        
         if (Identifier == "Vector" && OptionalType.Identifier == "int")
         {
             return "VectorOfInt";
         }
-        else if (Identifier == "Vector" && OptionalType.Identifier == "long")
+        if (Identifier == "Vector" && OptionalType.Identifier == "long")
         {
             return "VectorOfLong";
         }
-        else if (Identifier == "Vector" && OptionalType.Identifier == "double")
+        if (Identifier == "Vector" && OptionalType.Identifier == "double")
         {
             return "VectorOfDouble";
         }
-        if (Identifier is "bytes" or "string")
+        
+        if (Identifier == "vector")
+        {
+            sb.Append("VectorBare");
+        }
+        else if (Identifier is "bytes" or "string")
         {
             sb.Append("TLString");
         }
