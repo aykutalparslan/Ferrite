@@ -29,9 +29,11 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using Moq;
 using Xunit;
+using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
 
 namespace Ferrite.Tests.Serialization;
 
@@ -58,7 +60,7 @@ public class AllocationFreeSerializationTests
     }
     [Fact]
     public void ResPq_Should_Serialize()
-    {
+    {P_Q_inner_data
         var container = BuildContainer();
         var tmp = container.Resolve<ResPQ>();
         tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
