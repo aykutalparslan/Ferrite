@@ -23,11 +23,11 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using MessagePack;
-using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
-using ReqPqMulti = Ferrite.TL.mtproto.ReqPqMulti;
+using InputPeer = Ferrite.TL.slim.InputPeer;
 
 namespace Ferrite.Core;
 

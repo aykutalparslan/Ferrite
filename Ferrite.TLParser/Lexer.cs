@@ -54,7 +54,7 @@ namespace Ferrite.TLParser
             (TokenType.BackTick, @"\`"),
             (TokenType.Plus, @"\+"),
             (TokenType.Minus, @"\-"),
-            (TokenType.HexConstant, @"[a-fA-F0-9]{7,8}"),
+            (TokenType.HexConstant, @"[a-fA-F0-9]{6,8}"),
             (TokenType.NamespaceIdentifier, @"[a-z][_a-zA-Z0-9]*(?=\.[a-zA-Z])"),
             (TokenType.CombinatorIdentifier, @"[a-z][_a-zA-Z0-9]+(?=([#]+[a-f0-9]+)+\s)"),
             (TokenType.VariableIdentifier, @"[a-z][_a-zA-Z0-9]*(?=\:)"),
