@@ -40,5 +40,10 @@ storage.fileWebp#1081464c = storage.FileType;
 inputGeoPointEmpty#e4c123d6 = InputGeoPoint;
 inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;
 inputMediaGeoLive#971fa843 flags:# stopped:flags.0?true geo_point:InputGeoPoint heading:flags.2?int period:flags.1?int proximity_notification_radius:flags.3?int = InputMedia;
+inputDocumentEmpty#72f0eaae = InputDocument;
+inputDocument#1abfb575 id:long access_hash:long file_reference:bytes = InputDocument;
+inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;
+inputFileBig#fa4f0bb5 id:long parts:int name:string = InputFile;
+inputMediaUploadedPhoto#1e287d04 flags:# file:InputFile stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
 ";
 }

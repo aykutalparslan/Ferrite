@@ -755,7 +755,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
                     sb.Append(@"
         if(" + arg.Identifier + @" != null)
         {
-            obj.Set_"+arg.Identifier+"("+arg.Identifier+@".ToReadOnlySpan());
+            obj.Set_"+arg.Identifier+"((("+ arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+arg.Identifier+@").ToReadOnlySpan());
         }");
                 }
                 else
