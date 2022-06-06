@@ -53,7 +53,7 @@ public class AllocationFreeSerializationTests
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
         Ferrite.TL.slim.mtproto.req_DH_params reqDhParams =
-            Ferrite.TL.slim.mtproto.req_DH_params.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
+            Ferrite.TL.slim.mtproto.req_DH_params.Create((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
         Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());
     }
@@ -71,10 +71,9 @@ public class AllocationFreeSerializationTests
         fingerprints.Add(923874923784422L);
         tmp.ServerPublicKeyFingerprints = fingerprints;
         byte[] data = tmp.TLBytes.ToArray();
-        var fingerprints2 = Ferrite.TL.slim.VectorOfLong.Create(MemoryPool<byte>.Shared,
-            tmp.ServerPublicKeyFingerprints);
+        var fingerprints2 = Ferrite.TL.slim.VectorOfLong.Create(tmp.ServerPublicKeyFingerprints);
         Ferrite.TL.slim.mtproto.resPQ value =
-            Ferrite.TL.slim.mtproto.resPQ.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
+            Ferrite.TL.slim.mtproto.resPQ.Create((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2);
         Assert.Equal(data, value.ToReadOnlySpan().ToArray());
     }
@@ -99,12 +98,12 @@ public class AllocationFreeSerializationTests
         Stack<IMemoryOwner<byte>> memoryOwners = new Stack<IMemoryOwner<byte>>();
         foreach (var tmp in vecTmp)
         {
-            items.Add(Ferrite.TL.slim.mtproto.req_DH_params.Create(MemoryPool<byte>.Shared, (byte[])tmp.Nonce,
+            items.Add(Ferrite.TL.slim.mtproto.req_DH_params.Create((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData));
         }
 
         var vec = Ferrite.TL.slim.Vector<Ferrite.TL.slim.mtproto.req_DH_params>
-            .Create(MemoryPool<byte>.Shared, items);
+            .Create(items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
 
@@ -124,7 +123,7 @@ public class AllocationFreeSerializationTests
             items.Add(tmp);
         }
         var vec = Ferrite.TL.slim.VectorOfInt
-            .Create(MemoryPool<byte>.Shared, items);
+            .Create(items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
     }
@@ -139,7 +138,7 @@ public class AllocationFreeSerializationTests
         byte[] data = vecTmp.TLBytes.ToArray();
         var items = vecTmp.ToArray();
         var vec = Ferrite.TL.slim.VectorOfInt
-            .Create(MemoryPool<byte>.Shared, items.AsSpan());
+            .Create(items.AsSpan());
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
     }
@@ -158,7 +157,7 @@ public class AllocationFreeSerializationTests
             items.Add(tmp);
         }
         var vec = Ferrite.TL.slim.VectorOfLong
-            .Create(MemoryPool<byte>.Shared, items);
+            .Create(items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
     }
@@ -173,7 +172,7 @@ public class AllocationFreeSerializationTests
         byte[] data = vecTmp.TLBytes.ToArray();
         var items = vecTmp.ToArray();
         var vec = Ferrite.TL.slim.VectorOfLong
-            .Create(MemoryPool<byte>.Shared, items.AsSpan());
+            .Create(items.AsSpan());
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
     }
@@ -192,7 +191,7 @@ public class AllocationFreeSerializationTests
             items.Add(tmp);
         }
         var vec = Ferrite.TL.slim.VectorOfDouble
-            .Create(MemoryPool<byte>.Shared, items);
+            .Create(items);
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
     }
@@ -207,7 +206,7 @@ public class AllocationFreeSerializationTests
         byte[] data = vecTmp.TLBytes.ToArray();
         var items = vecTmp.ToArray();
         var vec = Ferrite.TL.slim.VectorOfDouble
-            .Create(MemoryPool<byte>.Shared, items.AsSpan());
+            .Create(items.AsSpan());
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
     }

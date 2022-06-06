@@ -90,10 +90,10 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable, ID
         return 8 + count * 4;
     }
 
-    public static VectorOfInt Create(MemoryPool<byte> pool, ICollection<int> items)
+    public static VectorOfInt Create(ICollection<int> items, MemoryPool<byte>? pool = null)
     {
         var length = 8 + items.Count * 4;
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new VectorOfInt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);
@@ -107,10 +107,10 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable, ID
         return obj;
     }
 
-    public static VectorOfInt Create(MemoryPool<byte> pool, ReadOnlySpan<int> items)
+    public static VectorOfInt Create(ReadOnlySpan<int> items, MemoryPool<byte>? pool = null)
     {
         var length = 8 + items.Length * 4;
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new VectorOfInt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Length);

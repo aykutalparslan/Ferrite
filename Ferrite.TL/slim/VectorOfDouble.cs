@@ -90,10 +90,10 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable,
         return 8 + count * 8;
     }
 
-    public static VectorOfDouble Create(MemoryPool<byte> pool, ICollection<double> items)
+    public static VectorOfDouble Create(ICollection<double> items, MemoryPool<byte>? pool = null)
     {
         var length = 8 + items.Count * 8;
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new VectorOfDouble(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);
@@ -107,10 +107,10 @@ public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable,
         return obj;
     }
 
-    public static VectorOfDouble Create(MemoryPool<byte> pool, ReadOnlySpan<double> items)
+    public static VectorOfDouble Create(ReadOnlySpan<double> items, MemoryPool<byte>? pool = null)
     {
         var length = 8 + items.Length * 8;
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new VectorOfDouble(memory.Memory.Span[..length], null);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Length);

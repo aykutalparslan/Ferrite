@@ -112,14 +112,14 @@ public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable, IDisposable w
         return len;
     }
 
-    public static Vector<T> Create(MemoryPool<byte> pool, ICollection<T> items)
+    public static Vector<T> Create(ICollection<T> items, MemoryPool<byte>? pool = null)
     {
         var length = 8;
         foreach (var item in items)
         {
             length += item.Length;
         }
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new Vector<T>(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);

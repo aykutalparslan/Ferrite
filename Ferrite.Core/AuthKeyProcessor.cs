@@ -36,11 +36,13 @@ public class AuthKeyProcessor : IProcessor
     private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
     private readonly ILogger _log;
-    public AuthKeyProcessor(ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
+    private readonly IApiLayer _api;
+    public AuthKeyProcessor(ISessionService sessionManager, IDistributedPipe pipe, ILogger log, IApiLayer api)
     {
         _sessionManager = sessionManager;
         _pipe = pipe;
         _log = log;
+        _api = api;
     }
 
     public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
@@ -135,7 +137,11 @@ public class AuthKeyProcessor : IProcessor
         var query = BoxedObject.Read(input.Memory.Span, 0, out var bytesRead);
         if (query is req_pq_multi reqPqMulti)
         {
-            var result = await QueryHandlers.Get(reqPqMulti.Constructor).Process(reqPqMulti, ctx);
+            var handler = _api.GetHandler(reqPqMulti.Constructor);
+            if (handler != null)
+            {
+                var result = await handler.Process(reqPqMulti, ctx);
+            }
         }
         else if (query is req_DH_params reqDhParams)
         {

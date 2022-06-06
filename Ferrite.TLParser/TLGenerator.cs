@@ -136,15 +136,18 @@ namespace Ferrite.TL.slim.mtproto;
 public readonly unsafe struct " + combinators[0].Type.Identifier + @" : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
-    private " + combinators[0].Type.Identifier + @"(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private " + combinators[0].Type.Identifier + @"(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    internal " + combinators[0].Type.Identifier + @"(byte* buffer, in int length)
+    internal " + combinators[0].Type.Identifier + @"(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
@@ -219,6 +222,10 @@ public readonly unsafe struct " + combinators[0].Type.Identifier + @" : ITLObjec
         }
         sb.Append(@"
         return 0;
+    }
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
     }
 }
 ");
@@ -241,15 +248,18 @@ namespace Ferrite.TL.slim.mtproto;
 public readonly unsafe struct BoxedObject : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
-    private BoxedObject(Span<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private BoxedObject(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    internal BoxedObject(byte* buffer, in int length)
+    internal BoxedObject(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
     public int Length { get; }
     public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
@@ -325,6 +335,10 @@ public readonly unsafe struct BoxedObject : ITLObjectReader, ITLSerializable
         sb.Append(@"
         return 0;
     }
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }
 ");
         context.AddSource("BoxedObject.g.cs",
@@ -344,7 +358,7 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable, IDisposable
+public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
     private readonly IMemoryOwner<byte>? _memoryOwner;
@@ -431,7 +445,7 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable, IDisposable
+public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
     private readonly IMemoryOwner<byte>? _memoryOwner;
@@ -452,7 +466,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
     @"
     public " + combinator.Type.Identifier + @" GetAs" + combinator.Type.Identifier + @"()
     {
-        return new " + combinator.Type.Identifier + @"(_buff, Length);
+        return new " + combinator.Type.Identifier + @"(_buff, Length, _memoryOwner);
     }
     public ref readonly int Constructor => ref *(int*)_buff;
 
@@ -600,25 +614,25 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
         sb.Append(@"
     public static " + typeName +
-                  @" Create(MemoryPool<byte> pool");
+                  @" Create(");
         foreach (var arg in combinator.Arguments)
         {
             if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256")
             {
-                sb.Append(", ReadOnlySpan<byte> " + arg.Identifier);
+                sb.Append("ReadOnlySpan<byte> " + arg.Identifier + ", ");
             }
             else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
-                sb.Append(", ITLSerializable " + arg.Identifier);
+                sb.Append("ITLSerializable " + arg.Identifier + ", ");
             }
             else
             {
                 string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
-                sb.Append(", " + typeIdent + " " + arg.Identifier);
+                sb.Append(typeIdent + " " + arg.Identifier + ", ");
             }
         }
 
-        sb.Append(@")
+        sb.Append(@"MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize(");
         bool first = true;
@@ -651,7 +665,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         }
 
         sb.Append(@");
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new " + typeName + @"(memory.Memory.Span[..length], memory);");
         if (combinator.Name != null)
         {

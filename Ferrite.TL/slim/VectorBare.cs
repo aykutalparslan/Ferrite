@@ -103,14 +103,14 @@ public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable, IDisposab
         return len;
     }
 
-    public static VectorBare<T> Create(MemoryPool<byte> pool, ICollection<T> items)
+    public static VectorBare<T> Create(ICollection<T> items, MemoryPool<byte>? pool = null)
     {
         var length = 4;
         foreach (var item in items)
         {
             length += item.Length;
         }
-        var memory = pool.Rent(length);
+        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         var obj = new VectorBare<T>(memory.Memory.Span[..length], memory);
         obj.SetCount(items.Count);
         int offset = 4;

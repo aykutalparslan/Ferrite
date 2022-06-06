@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using System.Runtime.CompilerServices;
-using DotNext;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim;
@@ -25,8 +25,8 @@ namespace Ferrite.TL.slim;
 public readonly unsafe struct TLString : ITLObjectReader, ITLSerializable
 {
     private readonly byte* _buff;
-
-    private TLString(ReadOnlySpan<byte> buffer)
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private TLString(ReadOnlySpan<byte> buffer, IMemoryOwner<byte> memoryOwner)
     {
         fixed (byte* p = &buffer[0])
         {
@@ -34,11 +34,13 @@ public readonly unsafe struct TLString : ITLObjectReader, ITLSerializable
         }
 
         Length = buffer.Length;
+        _memoryOwner = memoryOwner;
     }
-    private TLString(byte* buffer, in int length)
+    private TLString(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
     {
         _buff = buffer;
         Length = length;
+        _memoryOwner = memoryOwner;
     }
 
     public int Length { get; }
@@ -49,13 +51,13 @@ public readonly unsafe struct TLString : ITLObjectReader, ITLSerializable
     {
         var buffer = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
         bytesRead = BufferUtils.GetTLBytesLength(buffer, offset, data.Length);
-        return new TLString(data.Slice(offset, bytesRead));
+        return new TLString(data.Slice(offset, bytesRead), null);
     }
 
     public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
     {
         bytesRead = BufferUtils.GetTLBytesLength(buffer, offset, length);
-        return new TLString(buffer + offset, bytesRead);
+        return new TLString(buffer + offset, bytesRead, null);
     }
 
     public static int ReadSize(Span<byte> data, in int offset)
@@ -71,8 +73,17 @@ public readonly unsafe struct TLString : ITLObjectReader, ITLSerializable
 
     public static TLString Create(ReadOnlySpan<byte> value)
     {
-        return new TLString(value);
+        return new TLString(value, null);
+    }
+    public static TLString Create(ReadOnlySpan<byte> value, IMemoryOwner<byte> memoryOwner)
+    {
+        return new TLString(value, memoryOwner);
     }
 
     public ref readonly int Constructor => throw new NotImplementedException();
+
+    public void Dispose()
+    {
+        _memoryOwner?.Dispose();
+    }
 }

@@ -20,20 +20,7 @@ using Ferrite.TL.slim;
 
 namespace Ferrite.Core.Methods;
 
-public class QueryHandlers
+public interface IApiLayer
 {
-    private static Dictionary<int, IQueryHandler<ITLSerializable>> _handlers;
-    
-    static QueryHandlers()
-    {
-        _handlers = new Dictionary<int, IQueryHandler<ITLSerializable>>
-        {
-            { unchecked((int)0xbe7e8ef1), (IQueryHandler<ITLSerializable>)new ReqPQHandler() }
-        };
-    }
-
-    public static IQueryHandler<ITLSerializable>? Get(int constructor)
-    {
-        return _handlers.ContainsKey(constructor) ? _handlers[constructor] : null;
-    }
+    public IQueryHandler<ITLSerializable>? GetHandler(int constructor);
 }
