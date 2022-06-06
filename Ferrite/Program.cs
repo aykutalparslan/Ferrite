@@ -35,6 +35,7 @@ using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 using Ferrite.TL;
 using System.Reflection;
+using Ferrite.Core.Methods;
 using Ferrite.Data;
 using StackExchange.Redis;
 using MessagePack;
@@ -69,6 +70,7 @@ public class Program
     private static IContainer BuildContainer()
     {
         var tl = Assembly.Load("Ferrite.TL");
+        var core = Assembly.Load("Ferrite.Core");
         var builder = new ContainerBuilder();
         builder.RegisterType<MTProtoTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -91,6 +93,13 @@ public class Program
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
             .AsSelf();
+        builder.RegisterAssemblyTypes(core)
+            .Where(t => t.Namespace == "Ferrite.Core.Methods")
+            .AsSelf();
+        builder.RegisterAssemblyOpenGenericTypes(core)
+            .Where(t => t.Namespace == "Ferrite.Core.Methods")
+            .AsSelf();
+        builder.RegisterType<DefaultApiLayer>().As<IApiLayer>();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();

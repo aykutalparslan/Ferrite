@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Autofac;
@@ -48,6 +49,38 @@ public class IncomingMessageHandler: IProcessorManager
             return;
         }
         Queue<ITLObject> tobeProcessed = new();
+        tobeProcessed.Enqueue(input);
+        int idx = 0;
+        var processor = _processors[idx];
+
+        do {
+            int limit = tobeProcessed.Count;
+            for (int i = 0; i < limit; i++)
+            {
+                var curr = tobeProcessed.Dequeue();
+                try
+                {
+                    await processor.Process(sender, curr, tobeProcessed, ctx);
+                }
+                catch (Exception ex)
+                {
+                    _log.Error(ex, ex.Message);
+                }
+            }
+            if (++idx < _processors.Count)
+            {
+                processor = _processors[idx];
+            }
+        } while (tobeProcessed.Count > 0 && processor != null);
+    }
+
+    public async Task Process(object? sender, IMemoryOwner<byte> input, TLExecutionContext ctx)
+    {
+        if (_processors.Count == 0)
+        {
+            return;
+        }
+        Queue<IMemoryOwner<byte>> tobeProcessed = new();
         tobeProcessed.Enqueue(input);
         int idx = 0;
         var processor = _processors[idx];

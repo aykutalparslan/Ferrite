@@ -636,8 +636,15 @@ public class MTProtoConnection : IMTProtoConnection
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
         long msgId = reader.ReadInt64(true);
         int messageDataLength = reader.ReadInt32(true);
-        int constructor = reader.ReadInt32(true);
-        var msg = factory.Read(constructor, ref reader);
+        if (messageDataLength > reader.RemainingSequence.Length)
+        {
+            return;
+        }
+
+        var messageData = UnmanagedMemoryAllocator.Allocate<byte>(messageDataLength, false);
+        reader.Read(messageData.Span);
+        //int constructor = reader.ReadInt32(true);
+        //var msg = factory.Read(constructor, ref reader);
         //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
         TLExecutionContext _context = new TLExecutionContext(SessionData);
         if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
@@ -647,8 +654,9 @@ public class MTProtoConnection : IMTProtoConnection
         _context.MessageId = msgId;
         _context.AuthKeyId = _authKeyId;
         _context.PermAuthKeyId = _permAuthKeyId;
-        _processorManager.Process(this, msg, _context);
-        OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
+        _processorManager.Process(this, messageData, _context);
+        //_processorManager.Process(this, msg, _context);
+        //OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
 
     private void ProcessFrame(ReadOnlySequence<byte> bytes)

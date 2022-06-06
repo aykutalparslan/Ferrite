@@ -123,7 +123,7 @@ public static class IgeExtensions
     /// <param name="ciphertext">The data to decrypt.</param>
     /// <param name="iv">The initialization vector.</param>
     /// <param name="plaintext">The data after decryption.</param>
-    public static void DecryptIge(this Aes aes, Span<byte> ciphertext, Span<byte> iv,
+    public static void DecryptIge(this Aes aes, ReadOnlySpan<byte> ciphertext, Span<byte> iv,
         Span<byte> plaintext)
     {
         int len = ciphertext.Length / 16;
@@ -144,7 +144,7 @@ public static class IgeExtensions
     /// <param name="y">The first block of the initialization vector.</param>
     /// <param name="x">The second block of the initialization vector.</param>
     /// <param name="buf">The block buffer.</param>
-    private static void DecryptIge(Aes aes, Span<byte> ciphertext,
+    private static void DecryptIge(Aes aes, ReadOnlySpan<byte> ciphertext,
         Span<byte> plaintext, int len, Span<byte> x, Span<byte> y, Span<byte> buf)
     {
         Span<byte> block = stackalloc byte[16];
