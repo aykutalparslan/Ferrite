@@ -37,5 +37,6 @@
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
     <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
     <ProjectReference Include="..\Ferrite.Services\Ferrite.Services.csproj" />
+    <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>
