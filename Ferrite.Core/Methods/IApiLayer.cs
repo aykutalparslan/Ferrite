@@ -16,24 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Autofac;
 using Ferrite.TL.slim;
 
 namespace Ferrite.Core.Methods;
 
-public class DefaultApiLayer : IApiLayer
+public interface IApiLayer
 {
-    private Dictionary<int, IQueryHandler<ITLSerializable>> _handlers;
-
-    public DefaultApiLayer(IComponentContext context)
-    {
-        _handlers = new Dictionary<int, IQueryHandler<ITLSerializable>>
-        {
-            { unchecked((int)0xbe7e8ef1), (IQueryHandler<ITLSerializable>)context.Resolve<ReqPQHandler>() }
-        };
-    }
-    public IQueryHandler<ITLSerializable>? GetHandler(int constructor)
-    {
-        throw new NotImplementedException();
-    }
+    public IQueryHandler<T>? GetHandler<T>(int constructor) where T : ITLSerializable;
 }
