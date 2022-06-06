@@ -58,11 +58,11 @@ namespace Ferrite.TLParser
             (TokenType.NamespaceIdentifier, @"[a-z][_a-zA-Z0-9]*(?=\.[a-zA-Z])"),
             (TokenType.CombinatorIdentifier, @"[a-z][_a-zA-Z0-9]+(?=([#]+[a-f0-9]+)+\s)"),
             (TokenType.VariableIdentifier, @"[a-z][_a-zA-Z0-9]*(?=\:)"),
-            (TokenType.ConditionalIdentifier, @"[a-z][_a-zA-Z0-9]*(?=[\.]{1}[0-9]{1}[\?]{1})"),
+            (TokenType.ConditionalIdentifier, @"[a-z][_a-zA-Z0-9]*(?=[\.]{1}[0-9]+[\?]{1})"),
             (TokenType.TypeIdentifier, @"[A-Z][_a-zA-Z0-9]*"),
             (TokenType.BareTypeIdentifier, @"[a-z][_a-zA-Z0-9]+(?=[\s\<\>])(?![\:])"),
             (TokenType.LowercaseIdentifier, @"[a-z][_a-zA-Z0-9]*"),
-            (TokenType.Number, @"[0-9]"),
+            (TokenType.Number, @"[0-9]+"),
 
             //
             //(TokenType.CombinatorIdentifier,  @"^[a-z][_a-zA-Z0-9]+([#]+[a-f0-9]+)?(?=\s)"),
