@@ -551,7 +551,8 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         bool first = true;
         foreach (var arg in combinator.Arguments)
         {
-            if (arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true")
+            if (arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true" &&
+                arg.TypeTerm.IsBare)
             {
                 if (!first)
                 {
@@ -560,6 +561,16 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
 
                 first = false;
                 sb.Append("bool has_" + arg.Identifier);
+            }
+            else if (arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true")
+            {
+                if (!first)
+                {
+                    sb.Append(", ");
+                }
+
+                first = false;
+                sb.Append("int len_" + arg.Identifier);
             }
             else if (arg.TypeTerm.Identifier != "#" && arg.TypeTerm.Identifier != "int" &&
                      arg.TypeTerm.Identifier != "long" && arg.TypeTerm.Identifier != "double" &&
@@ -618,8 +629,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             }
             else
             {
-                sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?32:0)" : 
-                    "len_" + arg.Identifier);
+                sb.Append("len_" + arg.Identifier);
             }
 
             sb.Append(i == combinator.Arguments.Count - 1 ? ";" : " + ");
@@ -670,7 +680,8 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         bool first = true;
         foreach (var arg in combinator.Arguments)
         {
-            if (arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true")
+            if (arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true" &&
+                arg.TypeTerm.IsBare)
             {
                 if (!first)
                 {
@@ -679,6 +690,15 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
 
                 first = false;
                 sb.Append(arg.Identifier + " != null");
+            }
+            else if (arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true")
+            {
+                if (!first)
+                {
+                    sb.Append(", ");
+                }
+                first = false;
+                sb.Append("(" + arg.Identifier + " != null?(("+ arg.TypeTerm.GetFullyQualifiedIdentifier() + ")" +arg.Identifier + ").Length:0)");
             }
             else if (arg.TypeTerm.Identifier != "#" && arg.TypeTerm.Identifier != "int" &&
                      arg.TypeTerm.Identifier != "long" && arg.TypeTerm.Identifier != "double" &&
@@ -919,7 +939,10 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
     }");
             }
 
-            index++;
+            if (arg.TypeTerm.Identifier != "true")
+            {
+                index++;
+            }
         }
     }
     
@@ -929,18 +952,32 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
     private static int GetOffset(int index, byte* buffer, int length)
     {
         int offset = "+(combinator.Name != null?"4":"0")+@";");
+        bool hasFlags = false;
+        foreach (var arg in combinator.Arguments)
+        {
+            if (arg.ConditionalDefinition != null)
+            {
+                hasFlags = true;
+            }
+        }
+
+        if (hasFlags)
+        {
+            sb.Append(@"
+        Flags f = *(Flags*)(buffer + offset);");
+        }
         int index = 2;
         foreach (var arg in combinator.Arguments)
         {
             if (arg.TypeTerm.Identifier == "int")
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += 4;");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 4;");
             }
             else if (arg.TypeTerm.Identifier == "#")
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += 4;");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 4;");
             }
             else if (arg.TypeTerm.Identifier == "true")
             {
@@ -949,27 +986,27 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             else if (arg.TypeTerm.Identifier is "long" or "double")
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += 8;");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 8;");
             }
             else if (arg.TypeTerm.Identifier == "int128")
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += 16;");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 16;");
             }
             else if (arg.TypeTerm.Identifier == "int256")
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += 32;");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 32;");
             }
             else if (arg.TypeTerm.Identifier is "bytes" or "string")
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += BufferUtils.GetTLBytesLength(buffer, offset, length);");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += BufferUtils.GetTLBytesLength(buffer, offset, length);");
             }
             else
             {
                 sb.Append(@"
-        if(index >= "+index+@") offset += "+arg.TypeTerm.GetFullyQualifiedIdentifier()+".ReadSize(buffer, length, offset);");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += "+arg.TypeTerm.GetFullyQualifiedIdentifier()+".ReadSize(buffer, length, offset);");
             }
             if (arg.TypeTerm.Identifier != "true")
             {

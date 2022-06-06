@@ -45,5 +45,6 @@ inputDocument#1abfb575 id:long access_hash:long file_reference:bytes = InputDocu
 inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;
 inputFileBig#fa4f0bb5 id:long parts:int name:string = InputFile;
 inputMediaUploadedPhoto#1e287d04 flags:# file:InputFile stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
+inputChatUploadedPhoto#c642724e flags:# file:flags.0?InputFile video:flags.1?InputFile video_start_ts:flags.2?double = InputChatPhoto;
 ";
 }
