@@ -33,7 +33,8 @@ public class TLGenerator : ISourceGenerator
             }
 
             var id = ns + "." + combinator.Type.Identifier;
-            if (combinator.CombinatorType == CombinatorType.Constructor &&
+            if ((combinator.CombinatorType == CombinatorType.Constructor || 
+                combinator.CombinatorType == CombinatorType.Builtin) &&
                 !types.ContainsKey(id))
             {
                 types.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
@@ -43,7 +44,8 @@ public class TLGenerator : ISourceGenerator
                 }
                 GenerateSourceFile(context, combinator, "mtproto");
             }
-            else if(combinator.CombinatorType == CombinatorType.Constructor)
+            else if((combinator.CombinatorType == CombinatorType.Constructor || 
+                     combinator.CombinatorType == CombinatorType.Builtin))
             {
                 types[id].Add(combinator);
                 if (combinator.Name != null)
@@ -575,7 +577,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             else if (arg.TypeTerm.Identifier != "#" && arg.TypeTerm.Identifier != "int" &&
                      arg.TypeTerm.Identifier != "long" && arg.TypeTerm.Identifier != "double" &&
                      arg.TypeTerm.Identifier != "int128" && arg.TypeTerm.Identifier != "int256" &&
-                     arg.TypeTerm.Identifier != "true")
+                     arg.TypeTerm.Identifier != "true" && arg.TypeTerm.Identifier != "Bool")
             {
                 if (!first)
                 {
@@ -617,6 +619,18 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
                 
             }
             else if (arg.TypeTerm.Identifier == "int")
+            {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
+                sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?4:0)" : "4");
+            }
+            else if (arg.TypeTerm.Identifier == "Bool")
             {
                 if (appended)
                 {
@@ -762,7 +776,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             else if (arg.TypeTerm.Identifier != "#" && arg.TypeTerm.Identifier != "int" &&
                      arg.TypeTerm.Identifier != "long" && arg.TypeTerm.Identifier != "double" &&
                      arg.TypeTerm.Identifier != "int128" && arg.TypeTerm.Identifier != "int256" &&
-                     arg.TypeTerm.Identifier != "true")
+                     arg.TypeTerm.Identifier != "true" && arg.TypeTerm.Identifier != "Bool")
             {
                 if (!first)
                 {
@@ -1039,6 +1053,11 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         foreach (var arg in combinator.Arguments)
         {
             if (arg.TypeTerm.Identifier == "int")
+            {
+                sb.Append(@"
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 4;");
+            }
+            else if (arg.TypeTerm.Identifier == "Bool")
             {
                 sb.Append(@"
         if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += 4;");

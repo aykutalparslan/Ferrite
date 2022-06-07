@@ -27,7 +27,6 @@ using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using MessagePack;
-using InputPeer = Ferrite.TL.slim.InputPeer;
 
 namespace Ferrite.Core;
 
