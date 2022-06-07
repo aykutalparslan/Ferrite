@@ -590,10 +590,11 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         sb.Append(@")
     {
         return ");
+        bool appended = false;
         if (combinator.Name != null)
         {
             sb.Append("4");
-            sb.Append(combinator.Arguments.Count > 0 ? " + " : ";");
+            appended = true;
         }
 
         for (int i = 0; i < combinator.Arguments.Count; i++)
@@ -601,41 +602,99 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             var arg = combinator.Arguments[i];
             if (arg.TypeTerm.Identifier == "#")
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append("4");
             }
             else if (arg.TypeTerm.Identifier == "true")
             {
-                sb.Append("0");
+                
             }
             else if (arg.TypeTerm.Identifier == "int")
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?4:0)" : "4");
             }
             else if (arg.TypeTerm.Identifier is "long" or "double")
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?8:0)" : "8");
             }
             else if (arg.TypeTerm.Identifier == "int128")
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?16:0)" : "16");
             }
             else if (arg.TypeTerm.Identifier == "int256")
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?32:0)" : "32");
             }
             else if (arg.TypeTerm.Identifier is "bytes" or "string")
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append("BufferUtils.CalculateTLBytesLength(len_" + arg.Identifier+")");
             }
             else
             {
+                if (appended)
+                {
+                    sb.Append(" + ");
+                }
+                else
+                {
+                    appended = true;
+                }
                 sb.Append("len_" + arg.Identifier);
             }
-
-            sb.Append(i == combinator.Arguments.Count - 1 ? ";" : " + ");
         }
 
-        sb.Append(@"
+        if (!appended)
+        {
+            sb.Append("0");
+        }
+        sb.Append(@";
     }");
     }
 
@@ -753,12 +812,22 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             }
             else if (arg.TypeTerm.IsBare && arg.TypeTerm.OptionalType == null)
             {
-                if (arg.ConditionalDefinition != null)
+                if (arg.ConditionalDefinition != null && 
+                    arg.TypeTerm.Identifier != "string" && arg.TypeTerm.Identifier != "bytes" &&
+                    arg.TypeTerm.Identifier != "int128" && arg.TypeTerm.Identifier != "int258")
                 {
                     sb.Append(@"
         if(" + arg.Identifier + @" != null)"+ @"
         {
             obj.Set_"+arg.Identifier+"(("+ arg.TypeTerm.Identifier +")"+arg.Identifier+@");
+        }");
+                }
+                else if (arg.ConditionalDefinition != null)
+                {
+                    sb.Append(@"
+        if(" + arg.Identifier + @" != null)"+ @"
+        {
+            obj.Set_"+arg.Identifier+"("+arg.Identifier+@");
         }");
                 }
                 else

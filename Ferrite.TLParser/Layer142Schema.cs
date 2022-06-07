@@ -20,31 +20,6 @@ namespace Ferrite.TLParser;
 
 public static class Layer142Schema
 {
-    public const string Schema = @"inputPeerEmpty#7f3b18ea = InputPeer;
-inputPeerSelf#7da07ec9 = InputPeer;
-inputPeerChat#35a95cb9 chat_id:long = InputPeer;
-inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;
-inputPeerChannel#27bcbbfc channel_id:long access_hash:long = InputPeer;
-inputPeerUserFromMessage#a87b0a1c peer:InputPeer msg_id:int user_id:long = InputPeer;
-inputPeerChannelFromMessage#bd2a0840 peer:InputPeer msg_id:int channel_id:long = InputPeer;
-storage.fileUnknown#aa963b05 = storage.FileType;
-storage.filePartial#40bc6f52 = storage.FileType;
-storage.fileJpeg#7efe0e = storage.FileType;
-storage.fileGif#cae1aadf = storage.FileType;
-storage.filePng#a4f63c0 = storage.FileType;
-storage.filePdf#ae1e508d = storage.FileType;
-storage.fileMp3#528a0677 = storage.FileType;
-storage.fileMov#4b09ebbc = storage.FileType;
-storage.fileMp4#b3cea0e4 = storage.FileType;
-storage.fileWebp#1081464c = storage.FileType;
-inputGeoPointEmpty#e4c123d6 = InputGeoPoint;
-inputGeoPoint#48222faf flags:# lat:double long:double accuracy_radius:flags.0?int = InputGeoPoint;
-inputMediaGeoLive#971fa843 flags:# stopped:flags.0?true geo_point:InputGeoPoint heading:flags.2?int period:flags.1?int proximity_notification_radius:flags.3?int = InputMedia;
-inputDocumentEmpty#72f0eaae = InputDocument;
-inputDocument#1abfb575 id:long access_hash:long file_reference:bytes = InputDocument;
-inputFile#f52ff27f id:long parts:int name:string md5_checksum:string = InputFile;
-inputFileBig#fa4f0bb5 id:long parts:int name:string = InputFile;
-inputMediaUploadedPhoto#1e287d04 flags:# file:InputFile stickers:flags.0?Vector<InputDocument> ttl_seconds:flags.1?int = InputMedia;
-inputChatUploadedPhoto#c642724e flags:# file:flags.0?InputFile video:flags.1?InputFile video_start_ts:flags.2?double = InputChatPhoto;
+    public const string Schema = @"user#3ff6ecb0 flags:# self:flags.10?true contact:flags.11?true mutual_contact:flags.12?true deleted:flags.13?true bot:flags.14?true bot_chat_history:flags.15?true bot_nochats:flags.16?true verified:flags.17?true restricted:flags.18?true min:flags.20?true bot_inline_geo:flags.21?true support:flags.23?true scam:flags.24?true apply_min_photo:flags.25?true fake:flags.26?true bot_attach_menu:flags.27?true id:long access_hash:flags.0?long first_name:flags.1?string last_name:flags.2?string username:flags.3?string phone:flags.4?string photo:flags.5?UserProfilePhoto status:flags.6?UserStatus bot_info_version:flags.14?int restriction_reason:flags.18?Vector<RestrictionReason> bot_inline_placeholder:flags.19?string lang_code:flags.22?string = User;
 ";
 }
