@@ -36,7 +36,11 @@ public class TypeTermSyntax
             sb.Append(NamespaceIdentifier);
             sb.Append(".");
         }
-        
+
+        if (IsTypeOf)
+        {
+            return "BoxedObject";
+        }
         if (Identifier == "Vector" && OptionalType.Identifier == "int")
         {
             return "VectorOfInt";

@@ -70,10 +70,10 @@ namespace Ferrite.TLParser
         };
 
         private readonly IEnumerable<(TokenType, Regex)> _tokenExpressions;
-
-        private string _source;
+        private readonly StringReader _sr;
         private int _currentLine;
         private int _currentColumn;
+        private string _current = "";
 
         public Lexer(string source)
         {
@@ -81,25 +81,33 @@ namespace Ferrite.TLParser
                 _tokenStrings.Select(
                     t => (t.Item1, new Regex($"^{t.Item2}",
                         RegexOptions.Compiled | RegexOptions.Singleline)));
-            _source = source;
+            _sr = new StringReader(source);
             _currentLine = 0;
             _currentColumn = 0;
         }
 
         public Token Lex()
         {
-            if (_source.Length <= 0)
-                return new Token
+            if (_current.Length == 0)
+            {
+                _current = _sr.ReadLine();
+                if (_current == null)
                 {
-                    Type = TokenType.EOF,
-                };
+                    return new Token
+                    {
+                        Type = TokenType.EOF,
+                    };
+                }
+                _current += "\n";
+            }
+
             var matchLength = 0;
             var tokenType = TokenType.None;
             string value = null;
 
             foreach (var (type, rule) in _tokenExpressions)
             {
-                var match = rule.Match(_source);
+                var match = rule.Match(_current);
                 if (match.Success)
                 {
                     matchLength = match.Length;
@@ -112,9 +120,7 @@ namespace Ferrite.TLParser
             if (matchLength == 0)
             {
 
-                throw new Exception($"Unrecognized symbol '{_source[_currentLine - 1]}' at index {_currentLine - 1}" +
-                                    $" (line {_currentLine}, column {_currentColumn}).");
-
+                throw new Exception($"Unrecognized symbol");
             }
 
             _currentColumn += matchLength;
@@ -124,7 +130,7 @@ namespace Ferrite.TLParser
                 _currentColumn = 0;
             }
 
-            _source = _source.Substring(matchLength);
+            _current = _current.Substring(matchLength);
 
             if (tokenType != TokenType.Spaces &&
                 tokenType != TokenType.LineComment &&
