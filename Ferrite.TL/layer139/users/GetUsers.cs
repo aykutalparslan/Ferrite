@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.users;
@@ -27,10 +30,12 @@ public class GetUsers : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IUsersService _users;
     private bool serialized = false;
-    public GetUsers(ITLObjectFactory objectFactory)
+    public GetUsers(ITLObjectFactory objectFactory, IUsersService users)
     {
         factory = objectFactory;
+        _users = users;
     }
 
     public int Constructor => 227648840;
@@ -61,7 +66,64 @@ public class GetUsers : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var inputUsers = new List<Ferrite.Data.InputUser>();
+        foreach (var u in _id)
+        {
+            if (u is InputUserImpl user)
+            {
+                inputUsers.Add(new Data.InputUser()
+                {
+                    InputUserType = InputUserType.User,
+                    UserId = user.UserId,
+                    AccessHash = user.AccessHash
+                });
+            }
+            else if (u is InputUserFromMessageImpl userFromMessage)
+            {
+                //TODO: handle this case
+            }
+            else if (u is InputUserSelfImpl userSelf)
+            {
+                //TODO: handle this case
+            }
+        }
+
+        var serviceResult = await _users.GetUsers(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
+            inputUsers);
+        if (serviceResult.Success)
+        {
+            var users = factory.Resolve<Vector<User>>();
+            foreach (var u in serviceResult.Result)
+            {
+                var user = factory.Resolve<UserImpl>();
+                user.Id = u.Id;
+                user.FirstName = u.FirstName;
+                user.LastName = u.LastName;
+                user.Phone = u.Phone;
+                user.Self = u.Self;
+                if(u.Status == Data.UserStatus.Empty)
+                {
+                    user.Status = factory.Resolve<UserStatusEmptyImpl>();
+                }
+                if (u.Photo.Empty)
+                {
+                    user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+                }
+                users.Add(user);
+            }
+
+            result.Result = users;
+        }
+        else
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
