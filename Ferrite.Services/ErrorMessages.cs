@@ -29,5 +29,5 @@ public class ErrorMessages
     public static readonly ErrorMessage PhoneNumberInvalid = new ErrorMessage(406, "PHONE_NUMBER_INVALID");
     public static readonly ErrorMessage HashInvalid = new ErrorMessage(400, "HASH_INVALID");
     public static readonly ErrorMessage FreshResetAuthorizationForbidden = new ErrorMessage(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN");
-
+    public static readonly ErrorMessage UserIdInvalid = new ErrorMessage(400, "USER_ID_INVALID");
 }

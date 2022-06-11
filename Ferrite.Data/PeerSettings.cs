@@ -20,4 +20,4 @@ namespace Ferrite.Data;
 
 public record PeerSettings(bool ReportSpam, bool AddContact, bool BlockContact, bool ShareContact, 
     bool NeedContactsException, bool ReportGeo, bool AutoArchived, bool InviteMembers, bool RequestChatBroadcast,
-    int GeoDistance, string? RequestChatTitle, int RequestChatDate);
+    int? GeoDistance, string? RequestChatTitle, int? RequestChatDate);
