@@ -33,6 +33,6 @@
     <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Ferrite.TL\Ferrite.TL.csproj" />
+    <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" />
   </ItemGroup>
 </Project>

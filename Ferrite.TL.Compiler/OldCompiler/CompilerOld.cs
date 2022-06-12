@@ -23,7 +23,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 
-class Compiler
+class CompilerOld
 {
     static string CreateAbstractClass(string className, string namespaceName)
     {
@@ -950,7 +950,7 @@ class Compiler
         return code;
     }
 
-    static void Main()
+    static void MainOld()
     {
         var mtProtoSchema = TLSchema.Load("mtproto.json");
         var tlLayer139Schema = TLSchema.Load("schema.L139.json");
