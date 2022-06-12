@@ -16,20 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
-using Ferrite.Data.Contacts;
+namespace Ferrite.Data;
 
-namespace Ferrite.Services;
-
-public interface IContactsService
-{
-    ICollection<long> GetContactIds(long authKeyId, long hash);
-    ICollection<ContactStatus> GetStatuses(long authKeyId);
-    Data.Contacts.Contacts GetContacts(long authKeyId, long hash);
-    Data.Contacts.ImportedContacts ImportedContacts(long authKeyId, ICollection<InputContact> contacts);
-    UpdatesBase DeleteContacts(long authKeyId, ICollection<InputUser> id);
-    bool DeleteByPhones(long authKeyId, ICollection<string> phones);
-    bool Block(long authKeyId, InputUser id);
-    bool Unblock(long authKeyId, InputUser id);
-    Data.Contacts.Blocked GetBlocked(long authKeyId, int offset, int limit);
-}
+public record InputContact(long ClientId, string Phone, string FirstName, string LastName);
