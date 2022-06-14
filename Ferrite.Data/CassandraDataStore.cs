@@ -181,6 +181,16 @@ namespace Ferrite.Data
                 "peer_ids set<bigint>," +
                 "PRIMARY KEY (user_id, privacy_key, rule_type));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.contacts (" +
+                "user_id bigint," +
+                "contact_user_id bigint," +
+                "client_id bigint," +
+                "firstname text," +
+                "lastname text," +
+                "added_on timestamp," +
+                "PRIMARY KEY (user_id, contact_user_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -946,7 +956,6 @@ namespace Ferrite.Data
 
         public async Task<ICollection<PrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
         {
-            PrivacyRule? rule = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.privacy_rules WHERE user_id = ? AND privacy_key = ?;", 
                 userId, (int)key);
@@ -998,6 +1007,77 @@ namespace Ferrite.Data
             }
 
             return 0;
+        }
+
+        public async Task<ImportedContact?> SaveContactAsync(long userId, InputContact contact)
+        {
+            var contactUser = await GetUserAsync(contact.Phone);
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.contacts SET client_id = ?, firstname = ?, lastname = ?, added_on = ? " +
+                "WHERE user_id = ? AND contact_user_id = ?;",
+                contact.ClientId, contact.FirstName, contact.LastName, DateTime.Now, userId, contactUser.Id).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+
+            return new ImportedContact(contactUser.Id, contact.ClientId);
+        }
+
+        public async Task<bool> DeleteContactAsync(long userId, long contactUserId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE ferrite.contacts WHERE user_id = ? AND contact_user_id = ?;",
+                userId, contactUserId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<ICollection<SavedContact>> GetSavedContactsAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.contacts WHERE user_id = ?;", 
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<SavedContact> result = new();
+            foreach (var row in results)
+            {
+                var contactUserId = row.GetValue<long>("contact_user_id");
+                var contactUser = await GetUserAsync(contactUserId);
+                var added = ((DateTimeOffset)row.GetValue<DateTime>("added_on")).ToUnixTimeSeconds();
+                result.Add(new SavedContact(contactUser.Phone,
+                    row.GetValue<string>("firstname"),
+                    row.GetValue<string>("lastname"), 
+                    (int)added));
+            }
+            return result;
+        }
+
+        public async Task<ICollection<Contact>> GetContactsAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.contacts WHERE user_id = ?;", 
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<Contact> result = new();
+            foreach (var row in results)
+            {
+                var contactUserId = row.GetValue<long>("contact_user_id");
+                var statement2 = new SimpleStatement(
+                    "SELECT * FROM ferrite.contacts WHERE user_id = ? AND contact_user_id = ?;", 
+                    contactUserId, userId);
+                statement = statement.SetKeyspace(keySpace);
+                var resutlsInner = await session.ExecuteAsync(statement2);
+                bool mutual = false;
+                foreach (var rowInner in resutlsInner)
+                {
+                    mutual = true;
+                    break;
+                }
+                result.Add(new Contact(contactUserId, mutual));
+            }
+            return result;
         }
     }
 }

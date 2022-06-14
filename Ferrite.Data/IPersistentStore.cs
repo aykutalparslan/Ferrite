@@ -72,5 +72,9 @@ public interface IPersistentStore
     public Task<Chat?> GetChatAsync(long chatId);
     public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
     public Task<int> GetAccountTTLAsync(long userId);
+    public Task<ImportedContact?> SaveContactAsync(long userId, InputContact contact);
+    public Task<bool> DeleteContactAsync(long userId, long contactUserId);
+    public Task<ICollection<SavedContact>> GetSavedContactsAsync(long userId);
+    public Task<ICollection<Contact>> GetContactsAsync(long userId);
 }
 
