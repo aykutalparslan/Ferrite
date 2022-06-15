@@ -526,6 +526,23 @@ namespace Ferrite.Data
             return user;
         }
 
+        public async Task<long> GetUserIdAsync(string phone)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.users_by_phone WHERE phone = ?;",
+                phone);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+            long userId = -1;
+            foreach (var row in results)
+            {
+                return row.GetValue<long>("user_id");
+            }
+
+            return 0;
+        }
+
         public async Task<User?> GetUserByUsernameAsync(string username)
         {
             User? user = null;

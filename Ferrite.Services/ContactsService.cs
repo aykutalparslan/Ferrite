@@ -23,104 +23,142 @@ namespace Ferrite.Services;
 
 public class ContactsService : IContactsService
 {
-    public ICollection<long> GetContactIds(long authKeyId, long hash)
+    private readonly IPersistentStore _store;
+    public ContactsService(IPersistentStore store)
+    {
+        _store = store;
+    }
+
+    public async Task<ICollection<long>> GetContactIds(long authKeyId, long hash)
+    {
+        return new List<long>();
+    }
+
+    public async Task<ICollection<ContactStatus>> GetStatuses(long authKeyId)
+    {
+        return new List<ContactStatus>();
+    }
+
+    public async Task<Contacts> GetContacts(long authKeyId, long hash)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var contactList = await _store.GetContactsAsync(auth.UserId);
+        List<User> userList = new List<User>();
+        foreach (var c in contactList)
+        {
+            userList.Add(await _store.GetUserAsync(c.UserId));
+        }
+
+        return new Contacts(contactList, contactList.Count, userList);
+    }
+
+    public async Task<ImportedContacts> ImportContacts(long authKeyId, ICollection<InputContact> contacts)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        List<ImportedContact> importedContacts = new();
+        List<User> users = new();
+        foreach (var c in contacts)
+        {
+            var imported = await _store.SaveContactAsync(auth.UserId, c);
+            users.Add(await  _store.GetUserAsync(imported.UserId));
+            importedContacts.Add(imported);
+        }
+
+        return new ImportedContacts(importedContacts, new List<PopularContact>(), 
+            new List<long>(), users);
+    }
+
+    public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUser> id)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        foreach (var c in id)
+        {
+            await _store.DeleteContactAsync(auth.UserId, c.UserId);
+        }
+        
+        return null;
+    }
+
+    public async Task<bool> DeleteByPhones(long authKeyId, ICollection<string> phones)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        foreach (var p in phones)
+        {
+            var userId = await _store.GetUserIdAsync(p);
+            await _store.DeleteContactAsync(auth.UserId, userId);
+        }
+
+        return true;
+    }
+
+    public async Task<bool> Block(long authKeyId, InputUser id)
     {
         throw new NotImplementedException();
     }
 
-    public ICollection<ContactStatus> GetStatuses(long authKeyId)
+    public async Task<bool> Unblock(long authKeyId, InputUser id)
     {
         throw new NotImplementedException();
     }
 
-    public Contacts GetContacts(long authKeyId, long hash)
+    public async Task<Blocked> GetBlocked(long authKeyId, int offset, int limit)
     {
         throw new NotImplementedException();
     }
 
-    public ImportedContacts ImportedContacts(long authKeyId, ICollection<InputContact> contacts)
+    public async Task<Found> Search(long authKeyId, string q, int limit)
     {
         throw new NotImplementedException();
     }
 
-    public UpdatesBase DeleteContacts(long authKeyId, ICollection<InputUser> id)
+    public async Task<ServiceResult<ResolvedPeer>> ResolveUsername(long authKeyId, string username)
     {
         throw new NotImplementedException();
     }
 
-    public bool DeleteByPhones(long authKeyId, ICollection<string> phones)
+    public async Task<TopPeers> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls, bool forwardUsers,
+        bool forwardChats, bool groups, bool channels, int offset, int limit, long hash)
     {
         throw new NotImplementedException();
     }
 
-    public bool Block(long authKeyId, InputUser id)
+    public async Task<ServiceResult<bool>> ResetTopPeerRating(long authKeyId, TopPeerCategory category, Peer peer)
     {
         throw new NotImplementedException();
     }
 
-    public bool Unblock(long authKeyId, InputUser id)
+    public async Task<ServiceResult<ICollection<SavedContact>>> GetSaved(long authKeyId)
     {
         throw new NotImplementedException();
     }
 
-    public Blocked GetBlocked(long authKeyId, int offset, int limit)
+    public async Task<bool> ToggleTopPeers(long authKeyId, bool enabled)
     {
         throw new NotImplementedException();
     }
 
-    public Found Search(long authKeyId, string q, int limit)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ServiceResult<ResolvedPeer> ResolveUsername(long authKeyId, string username)
-    {
-        throw new NotImplementedException();
-    }
-
-    public TopPeers GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls,
-        bool forwardUsers, bool forwardChats, bool groups, bool channels, int offset, int limit, long hash)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ServiceResult<bool> ResetTopPeerRating(long authKeyId, TopPeerCategory category, Peer peer)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ServiceResult<ICollection<SavedContact>> GetSaved(long authKeyId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool ToggleTopPeers(long authKeyId, bool enabled)
-    {
-        throw new NotImplementedException();
-    }
-
-    public ServiceResult<UpdatesBase> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUser id, string firstname, string lastname,
+    public async Task<ServiceResult<UpdatesBase>> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUser id, string firstname, string lastname,
         string phone)
     {
         throw new NotImplementedException();
     }
 
-    public ServiceResult<UpdatesBase> AcceptContact(long authKeyId, InputUser id)
+    public async Task<ServiceResult<UpdatesBase>> AcceptContact(long authKeyId, InputUser id)
     {
         throw new NotImplementedException();
     }
 
-    public ServiceResult<UpdatesBase> GetLocated(long authKeyId, bool background, InputGeoPoint geoPoint, int? selfExpires)
+    public async Task<ServiceResult<UpdatesBase>> GetLocated(long authKeyId, bool background, InputGeoPoint geoPoint, int? selfExpires)
     {
         throw new NotImplementedException();
     }
 
-    public UpdatesBase BlockFromReplies(long authKeyId, bool deleteMessage, bool deleteHistory, bool reportSpam, int messageId)
+    public async Task<UpdatesBase?> BlockFromReplies(long authKeyId, bool deleteMessage, bool deleteHistory, bool reportSpam, int messageId)
     {
         throw new NotImplementedException();
     }
 
-    public ServiceResult<ResolvedPeer> ResolvePhone(long authKeyId, string phone)
+    public async Task<ServiceResult<ResolvedPeer>> ResolvePhone(long authKeyId, string phone)
     {
         throw new NotImplementedException();
     }

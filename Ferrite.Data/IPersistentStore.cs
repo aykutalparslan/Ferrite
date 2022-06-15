@@ -46,6 +46,7 @@ public interface IPersistentStore
     public Task<bool> UpdateUserPhoneAsync(long userId, string phone);
     public Task<User?> GetUserAsync(long userId);
     public Task<User?> GetUserAsync(string phone);
+    public Task<long> GetUserIdAsync(string phone);
     public Task<User?> GetUserByUsernameAsync(string username);
     /// <summary>
     /// Deletes a user. This method does not check if the related user data is deleted
