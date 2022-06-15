@@ -93,12 +93,14 @@ public class ContactsService : IContactsService
 
     public async Task<bool> Block(long authKeyId, InputUser id)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        return await _store.SaveBlockedUserAsync(auth.UserId, id.UserId);
     }
 
     public async Task<bool> Unblock(long authKeyId, InputUser id)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        return await _store.DeleteBlockedUserAsync(auth.UserId, id.UserId);
     }
 
     public async Task<Blocked> GetBlocked(long authKeyId, int offset, int limit)

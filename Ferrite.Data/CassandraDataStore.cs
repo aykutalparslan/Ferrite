@@ -191,6 +191,13 @@ namespace Ferrite.Data
                 "added_on timestamp," +
                 "PRIMARY KEY (user_id, contact_user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.blocked_users (" +
+                "user_id bigint," +
+                "blocked_user_id bigint, " +
+                "blocked_on timestamp," +
+                "PRIMARY KEY (user_id, blocked_user_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -1093,6 +1100,40 @@ namespace Ferrite.Data
                     break;
                 }
                 result.Add(new Contact(contactUserId, mutual));
+            }
+            return result;
+        }
+
+        public async Task<bool> SaveBlockedUserAsync(long userId, long contactUserId)
+        {
+            var statement = new SimpleStatement(
+                "INSERT INTO ferrite.blocked_users (user_id, blocked_user_id, blocked_on) VALUES (?,?,?) IF NOT EXISTS;",
+                userId, contactUserId, DateTime.Now).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<bool> DeleteBlockedUserAsync(long userId, long contactUserId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.blocked_users WHERE user_id = ? AND blocked_user_id = ?;",
+                userId, contactUserId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<ICollection<long>> GetBlockedUserIdsAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.blocked_users WHERE user_id = ?;", 
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<long> result = new();
+            foreach (var row in results)
+            {
+                result.Add(row.GetValue<long>("blocked_user_id"));
             }
             return result;
         }

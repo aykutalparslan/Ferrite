@@ -77,5 +77,8 @@ public interface IPersistentStore
     public Task<bool> DeleteContactAsync(long userId, long contactUserId);
     public Task<ICollection<SavedContact>> GetSavedContactsAsync(long userId);
     public Task<ICollection<Contact>> GetContactsAsync(long userId);
+    public Task<bool> SaveBlockedUserAsync(long userId, long contactUserId);
+    public Task<bool> DeleteBlockedUserAsync(long userId, long contactUserId);
+    public Task<ICollection<long>> GetBlockedUserIdsAsync(long userId);
 }
 
