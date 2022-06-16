@@ -192,11 +192,12 @@ namespace Ferrite.Data
                 "PRIMARY KEY (user_id, contact_user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
-                "CREATE TABLE IF NOT EXISTS ferrite.blocked_users (" +
+                "CREATE TABLE IF NOT EXISTS ferrite.blocked_peers (" +
                 "user_id bigint," +
-                "blocked_user_id bigint, " +
+                "peer_type int," +
+                "peer_id bigint, " +
                 "blocked_on timestamp," +
-                "PRIMARY KEY (user_id, blocked_user_id));");
+                "PRIMARY KEY (user_id, peer_type, peer_id));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -1104,25 +1105,26 @@ namespace Ferrite.Data
             return result;
         }
 
-        public async Task<bool> SaveBlockedUserAsync(long userId, long contactUserId)
+        public async Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType)
         {
             var statement = new SimpleStatement(
-                "INSERT INTO ferrite.blocked_users (user_id, blocked_user_id, blocked_on) VALUES (?,?,?) IF NOT EXISTS;",
-                userId, contactUserId, DateTime.Now).SetKeyspace(keySpace);
+                "INSERT INTO ferrite.blocked_peers (user_id, peer_type, peer_id, blocked_on) " +
+                "VALUES (?,?,?,?) IF NOT EXISTS;",
+                userId, (int)peerType, peerId, DateTimeOffset.Now) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
 
-        public async Task<bool> DeleteBlockedUserAsync(long userId, long contactUserId)
+        public async Task<bool> DeleteBlockedUserAsync(long userId, long peerId, PeerType peerType)
         {
             var statement = new SimpleStatement(
-                "DELETE FROM ferrite.blocked_users WHERE user_id = ? AND blocked_user_id = ?;",
-                userId, contactUserId).SetKeyspace(keySpace);
+                "DELETE FROM ferrite.blocked_users WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
+                userId, (int)peerType, peerId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
 
-        public async Task<ICollection<long>> GetBlockedUserIdsAsync(long userId)
+        public async Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.blocked_users WHERE user_id = ?;", 
@@ -1130,10 +1132,12 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<long> result = new();
+            List<PeerBlocked> result = new();
             foreach (var row in results)
             {
-                result.Add(row.GetValue<long>("blocked_user_id"));
+                result.Add(new PeerBlocked(new Peer((PeerType)row.GetValue<int>("peer_type"),
+                    row.GetValue<long>("blocked_user_id")), 
+                    (int)row.GetValue<DateTimeOffset>("blocked_on").ToUnixTimeSeconds()));
             }
             return result;
         }

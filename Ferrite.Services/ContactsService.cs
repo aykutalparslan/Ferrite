@@ -93,19 +93,57 @@ public class ContactsService : IContactsService
 
     public async Task<bool> Block(long authKeyId, InputUser id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        return await _store.SaveBlockedUserAsync(auth.UserId, id.UserId);
+        throw new NotImplementedException();
     }
 
-    public async Task<bool> Unblock(long authKeyId, InputUser id)
+    public async Task<bool> Block(long authKeyId, InputPeer id)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        return await _store.DeleteBlockedUserAsync(auth.UserId, id.UserId);
+        if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        {
+            return await _store.SaveBlockedUserAsync(auth.UserId, id.ChannelId, PeerType.Channel);
+        }
+        if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
+        {
+            return await _store.SaveBlockedUserAsync(auth.UserId, id.UserId, PeerType.User);
+        }
+        else
+        {
+            return await _store.SaveBlockedUserAsync(auth.UserId, id.ChatId, PeerType.Chat);
+        }
+    }
+
+    public async Task<bool> Unblock(long authKeyId, InputPeer id)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        {
+            return await _store.DeleteBlockedUserAsync(auth.UserId, id.ChannelId, PeerType.Channel);
+        }
+        if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
+        {
+            return await _store.DeleteBlockedUserAsync(auth.UserId, id.UserId, PeerType.User);
+        }
+        else
+        {
+            return await _store.DeleteBlockedUserAsync(auth.UserId, id.ChatId, PeerType.Chat);
+        }
     }
 
     public async Task<Blocked> GetBlocked(long authKeyId, int offset, int limit)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var blockedPeers = await _store.GetBlockedPeersAsync(auth.UserId);
+        List<User> users= new();
+        foreach (var p in blockedPeers)
+        {
+            if (p.PeerId.PeerType == PeerType.User)
+            {
+                users.Add(await _store.GetUserAsync(p.PeerId.PeerId));
+            }
+        }
+        //TODO: also fetch the chats from the db
+        return new Blocked(blockedPeers.Count, blockedPeers,new List<Chat>(), users);
     }
 
     public async Task<Found> Search(long authKeyId, string q, int limit)

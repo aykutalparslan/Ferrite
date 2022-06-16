@@ -29,8 +29,8 @@ public interface IContactsService
     Task<Data.Contacts.ImportedContacts> ImportContacts(long authKeyId, ICollection<InputContact> contacts);
     Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUser> id);
     Task<bool> DeleteByPhones(long authKeyId, ICollection<string> phones);
-    Task<bool> Block(long authKeyId, InputUser id);
-    Task<bool> Unblock(long authKeyId, InputUser id);
+    Task<bool> Block(long authKeyId, InputPeer id);
+    Task<bool> Unblock(long authKeyId, InputPeer id);
     Task<Data.Contacts.Blocked> GetBlocked(long authKeyId, int offset, int limit);
     Task<Data.Contacts.Found> Search(long authKeyId, string q, int limit);
     Task<ServiceResult<ResolvedPeer>> ResolveUsername(long authKeyId, string username);
