@@ -121,7 +121,7 @@ public class DeleteContacts : ITLObject, ITLMethod
             }
         }
 
-        await _contacts.DeleteContacts(ctx.AuthKeyId, users);
+        await _contacts.DeleteContacts(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, users);
         return null;
     }
 

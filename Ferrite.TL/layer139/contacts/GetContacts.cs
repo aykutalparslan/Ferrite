@@ -66,7 +66,7 @@ public class GetContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _contacts.GetContacts(ctx.AuthKeyId, _hash);
+        var serviceResult = await _contacts.GetContacts(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _hash);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var contacts = factory.Resolve<ContactsImpl>();

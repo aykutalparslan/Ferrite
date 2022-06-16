@@ -75,7 +75,7 @@ public class ImportContacts : ITLObject, ITLMethod
             }
         }
 
-        var serviceResult = await _contactsService.ImportContacts(ctx.AuthKeyId, contacts);
+        var serviceResult = await _contactsService.ImportContacts(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, contacts);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var imported = factory.Resolve<ImportedContactsImpl>();

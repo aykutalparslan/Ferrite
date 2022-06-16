@@ -81,6 +81,8 @@ public class Program
             .SingleInstance();
         builder.RegisterType<UpdatesService>().As<IUpdatesService>()
             .SingleInstance();
+        builder.RegisterType<ContactsService>().As<IContactsService>()
+            .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();

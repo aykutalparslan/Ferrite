@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -27,10 +30,12 @@ public class DeleteByPhones : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contacts;
     private bool serialized = false;
-    public DeleteByPhones(ITLObjectFactory objectFactory)
+    public DeleteByPhones(ITLObjectFactory objectFactory, IContactsService contacts)
     {
         factory = objectFactory;
+        _contacts = contacts;
     }
 
     public int Constructor => 269745566;
@@ -61,7 +66,12 @@ public class DeleteByPhones : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var success =
+            await _contacts.DeleteByPhones(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _phones);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
