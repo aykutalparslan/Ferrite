@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -27,10 +30,12 @@ public class Unblock : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contacts;
     private bool serialized = false;
-    public Unblock(ITLObjectFactory objectFactory)
+    public Unblock(ITLObjectFactory objectFactory, IContactsService contacts)
     {
         factory = objectFactory;
+        _contacts = contacts;
     }
 
     public int Constructor => -1096393392;
@@ -61,7 +66,45 @@ public class Unblock : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var success =
+            await _contacts.Unblock(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
+                new Data.InputPeer()
+                    {
+                        InputPeerType = _id.Constructor switch
+                        {
+                            TLConstructor.InputPeerChat => InputPeerType.Chat,
+                            TLConstructor.InputPeerChannel => InputPeerType.Channel,
+                            TLConstructor.InputPeerUserFromMessage => InputPeerType.UserFromMessage,
+                            TLConstructor.InputPeerChannelFromMessage => InputPeerType.ChannelFromMessage,
+                            _ => InputPeerType.User
+                        },
+                        UserId = _id.Constructor switch
+                        {
+                            TLConstructor.InputPeerUser => ((InputPeerUserImpl)_id).UserId,
+                            TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)_id).UserId,
+                            _ => 0
+                        },
+                        AccessHash = _id.Constructor switch
+                        {
+                            TLConstructor.InputPeerUser => ((InputPeerUserImpl)_id).UserId,
+                            TLConstructor.InputPeerUserFromMessage =>
+                                ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)_id).Peer).AccessHash,
+                            _ => 0
+                        },
+                        ChatId = _id.Constructor == TLConstructor.InputPeerChat
+                            ? ((InputPeerChatImpl)_id).ChatId
+                            : 0,
+                        ChannelId = _id.Constructor switch
+                        {
+                            TLConstructor.InputPeerChannel => ((InputPeerChannelImpl)_id).ChannelId,
+                            TLConstructor.InputPeerChannelFromMessage => ((InputPeerChannelFromMessageImpl)_id).ChannelId,
+                            _ => 0
+                        },
+                    });
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = success ? new BoolTrue() : new BoolFalse();
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
