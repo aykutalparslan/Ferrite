@@ -20,9 +20,9 @@ namespace Ferrite.Data;
 
 public record UserStatus
 {
-    private UserStatusType Status { get; init; }
-    private int? Expires { get; init; }
-    private int? WasOnline { get; init; }
+    public UserStatusType Status { get; init; }
+    public int? Expires { get; init; }
+    public int? WasOnline { get; init; }
     public static UserStatus Empty => new UserStatus() { Status = UserStatusType.Empty };
     public static UserStatus Recently => new UserStatus() { Status = UserStatusType.Recently };
     public static UserStatus LastWeek => new UserStatus() { Status = UserStatusType.LastWeek };

@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -27,10 +30,12 @@ public class GetStatuses : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contacts;
     private bool serialized = false;
-    public GetStatuses(ITLObjectFactory objectFactory)
+    public GetStatuses(ITLObjectFactory objectFactory, IContactsService contacts)
     {
         factory = objectFactory;
+        _contacts = contacts;
     }
 
     public int Constructor => -995929106;
@@ -49,7 +54,47 @@ public class GetStatuses : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var statuses = await _contacts.GetStatuses(ctx.AuthKeyId);
+        RpcResult result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var queryResult = factory.Resolve<Vector<ContactStatus>>();
+        foreach (var s in statuses)
+        {
+            var status = factory.Resolve<ContactStatusImpl>();
+            status.UserId = s.UserId;
+            if (s.Status.Status == Data.UserStatusType.Empty)
+            {
+                status.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            else if (s.Status.Status == Data.UserStatusType.Recently)
+            {
+                status.Status = factory.Resolve<UserStatusRecentlyImpl>();
+            }
+            else if (s.Status.Status == Data.UserStatusType.LastWeek)
+            {
+                status.Status = factory.Resolve<UserStatusLastWeekImpl>();
+            }
+            else if (s.Status.Status == Data.UserStatusType.LastMonth)
+            {
+                status.Status = factory.Resolve<UserStatusLastMonthImpl>();
+            }
+            else if(s.Status.Status == UserStatusType.Online)
+            {
+                var stat = factory.Resolve<UserStatusOnlineImpl>();
+                stat.Expires = (int)s.Status.Expires;
+                status.Status = stat;
+            }
+            else if(s.Status.Status == UserStatusType.Offline)
+            {
+                var stat = factory.Resolve<UserStatusOfflineImpl>();
+                stat.WasOnline = (int)s.Status.WasOnline;
+                status.Status = stat;
+            }
+            queryResult.Add(status);
+        }
+
+        result.Result = queryResult;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
