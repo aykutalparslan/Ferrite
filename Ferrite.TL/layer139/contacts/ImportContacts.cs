@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -27,10 +29,12 @@ public class ImportContacts : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contactsService;
     private bool serialized = false;
-    public ImportContacts(ITLObjectFactory objectFactory)
+    public ImportContacts(ITLObjectFactory objectFactory, IContactsService contactsService)
     {
         factory = objectFactory;
+        _contactsService = contactsService;
     }
 
     public int Constructor => 746589157;
@@ -61,7 +65,67 @@ public class ImportContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        List<Data.InputContact> contacts = new();
+        foreach (var c in _contacts)
+        {
+            if (c is InputPhoneContactImpl phoneContact)
+            {
+                contacts.Add(new Data.InputContact(phoneContact.ClientId,
+                    phoneContact.Phone, phoneContact.FirstName, phoneContact.LastName));
+            }
+        }
+
+        var serviceResult = await _contactsService.ImportContacts(ctx.AuthKeyId, contacts);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var imported = factory.Resolve<ImportedContactsImpl>();
+        var importedList = factory.Resolve<Vector<ImportedContact>>();
+        var usersList = factory.Resolve<Vector<User>>();
+        VectorOfLong retry = new VectorOfLong();
+        var popularList = factory.Resolve<Vector<PopularContact>>();
+        foreach (var i in serviceResult.Imported)
+        {
+            var ic = factory.Resolve<ImportedContactImpl>();
+            ic.ClientId = i.ClientId;
+            ic.UserId = i.UserId;
+            importedList.Add(ic);
+        }
+        foreach (var u in serviceResult.Users)
+        {
+            var userImpl = factory.Resolve<UserImpl>();
+            userImpl.Id = u.Id;
+            userImpl.FirstName = u.FirstName;
+            userImpl.LastName = u.LastName;
+            userImpl.Phone = u.Phone;
+            userImpl.Self = u.Self;
+            if(u.Status == Data.UserStatus.Empty)
+            {
+                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (u.Photo.Empty)
+            {
+                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            usersList.Add(userImpl);
+        }
+        foreach (var r in serviceResult.RetryContact)
+        {
+            retry.Add(r);
+        }
+
+        foreach (var p in serviceResult.PopularInvites)
+        {
+            var pop = factory.Resolve<PopularContactImpl>();
+            pop.Importers = p.Importers;
+            pop.ClientId = p.ClientId;
+            popularList.Add(pop);
+        }
+        imported.Imported = importedList;
+        imported.Users = usersList;
+        imported.RetryContacts = retry;
+        imported.PopularInvites = popularList;
+        result.Result = imported;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
