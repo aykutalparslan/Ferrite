@@ -20,6 +20,7 @@ namespace Ferrite.Data;
 
 public interface ISearchEngine
 {
-    public Task<bool> IndexUser( Search.User user);
+    public Task<bool> IndexUser(Search.User user);
+    public Task<bool> DeleteUser(long userId);
     public Task<IReadOnlyCollection<Search.User>> SearchByUsername(string q);
 }

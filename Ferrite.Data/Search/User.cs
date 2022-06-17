@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Search;
 
-public record User(long Id, string Username, string FirstName, string LastName, string Phone);
+public record User(long Id, string? Username, string? FirstName, string? LastName, string Phone);

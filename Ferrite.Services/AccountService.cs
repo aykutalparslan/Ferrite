@@ -29,14 +29,17 @@ public partial class AccountService : IAccountService
 {
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
+    private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
     [RegexGenerator("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled)]
     private static partial Regex UsernameRegex();
     private const int PhoneCodeTimeout = 60;//seconds
-    public AccountService(IDistributedCache cache, IPersistentStore store, IRandomGenerator random)
+    public AccountService(IDistributedCache cache, IPersistentStore store, 
+        ISearchEngine search, IRandomGenerator random)
     {
         _cache = cache;
         _store = store;
+        _search = search;
         _random = random;
     }
     public async Task<bool> RegisterDevice(DeviceInfo deviceInfo)
@@ -81,6 +84,8 @@ public partial class AccountService : IAccountService
                 About = about ?? user.About,
             };
             await _store.SaveUserAsync(userNew);
+            await _search.IndexUser(new Data.Search.User(userNew.Id, userNew.Username, 
+                userNew.FirstName, userNew.LastName, userNew.Phone));
             return userNew;
         }
 
@@ -139,6 +144,8 @@ public partial class AccountService : IAccountService
         if (user == null)
         {
             await _store.UpdateUsernameAsync(auth.UserId, username);
+            await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 
+                user.FirstName, user.LastName, user.Phone));
         }
         return await _store.GetUserAsync(auth.UserId);
     }
@@ -256,6 +263,8 @@ public partial class AccountService : IAccountService
 
         await _store.DeleteUserAsync(user);
 
+        await _search.DeleteUser(user.Id);
+        
         return true;
     }
 

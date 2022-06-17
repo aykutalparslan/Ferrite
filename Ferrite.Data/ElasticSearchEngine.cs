@@ -42,6 +42,12 @@ public class ElasticSearchEngine : ISearchEngine
         return result.Result is Result.Created or Result.Updated;
     }
 
+    public async Task<bool> DeleteUser(long userId)
+    {
+        var result = await _client.DeleteAsync(new DeleteRequest("users", userId));
+        return result.Result is Result.Deleted or Result.NotFound;
+    }
+
     public async Task<IReadOnlyCollection<Search.User>> SearchByUsername(string q)
     {
         var result = await _client.SearchAsync<Search.User>(s =>

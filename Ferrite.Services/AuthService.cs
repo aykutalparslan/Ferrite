@@ -31,15 +31,17 @@ public class AuthService : IAuthService
     private readonly IRandomGenerator _random;
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
+    private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
-    public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store)
+    public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store, ISearchEngine search)
     {
         _random = random;
         _cache = cache;
         _store = store;
+        _search = search;
         _userIdCnt = _cache.GetCounter("counter_user_id");
     }
 
@@ -386,6 +388,8 @@ public class AuthService : IAuthService
             AccessHash = _random.NextLong()
         };
         await _store.SaveUserAsync(user);
+        await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 
+            user.FirstName, user.LastName, user.Phone));
         var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
         await _store.SaveAuthorizationAsync(new AuthInfo()
         {
