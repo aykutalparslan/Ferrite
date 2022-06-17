@@ -116,6 +116,8 @@ public class Program
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.Register(_ => new CassandraDataStore("ferrite","localhost"))
             .As<IPersistentStore>().SingleInstance();
+        builder.Register(_ => new ElasticSearchEngine("https://localhost:9200","ferrite", "ferrite-search"))
+            .As<ISearchEngine>().SingleInstance();
         builder.Register(_ => new LangPackDataStore("ferrite","localhost"))
             .As<ILangPackDataStore>().SingleInstance();
         builder.Register(_=> new RedisCache("localhost:6379", new MTProtoTime()))
