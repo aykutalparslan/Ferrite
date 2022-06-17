@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -27,10 +30,12 @@ public class GetBlocked : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contacts;
     private bool serialized = false;
-    public GetBlocked(ITLObjectFactory objectFactory)
+    public GetBlocked(ITLObjectFactory objectFactory, IContactsService contacts)
     {
         factory = objectFactory;
+        _contacts = contacts;
     }
 
     public int Constructor => -176409329;
@@ -73,7 +78,61 @@ public class GetBlocked : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _contacts.GetBlocked(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
+            _offset, _limit);
+        var blockedList = factory.Resolve<Vector<PeerBlocked>>();
+        var usersList = factory.Resolve<Vector<User>>();
+        foreach (var p in serviceResult.BlockedPeers)
+        { 
+            var peerBlocked = factory.Resolve<PeerBlockedImpl>();
+            peerBlocked.Date = p.Date;
+            if (p.PeerId.PeerType == PeerType.User)
+            {
+                var peerId = factory.Resolve<PeerUserImpl>();
+                peerId.UserId = p.PeerId.PeerId;
+                peerBlocked.PeerId = peerId;
+            }
+            else if (p.PeerId.PeerType == PeerType.Chat)
+            {
+                var peerId = factory.Resolve<PeerChatImpl>();
+                peerId.ChatId = p.PeerId.PeerId;
+                peerBlocked.PeerId = peerId;
+            }
+            else if (p.PeerId.PeerType == PeerType.Channel)
+            {
+                var peerId = factory.Resolve<PeerChannelImpl>();
+                peerId.ChannelId = p.PeerId.PeerId;
+                peerBlocked.PeerId = peerId;
+            }
+            blockedList.Add(peerBlocked);
+        }
+        foreach (var u in serviceResult.Users)
+        {
+            var userImpl = factory.Resolve<UserImpl>();
+            userImpl.Id = u.Id;
+            userImpl.FirstName = u.FirstName;
+            userImpl.LastName = u.LastName;
+            userImpl.Phone = u.Phone;
+            userImpl.Self = u.Self;
+            if(u.Status == Data.UserStatus.Empty)
+            {
+                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (u.Photo.Empty)
+            {
+                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            usersList.Add(userImpl);
+        }
+
+        var blocked = factory.Resolve<BlockedImpl>();
+        blocked.Blocked = blockedList;
+        blocked.Chats = factory.Resolve<Vector<Chat>>();
+        blocked.Users = usersList;
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = blocked;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
