@@ -55,7 +55,7 @@ public class GetLanguagesL67 : ITLObject, ITLMethod
     {
         RpcResult result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var langs = factory.Resolve<Vector<LangPackLanguageImpl>>();
+        var langs = factory.Resolve<Vector<LangPackLanguage>>();
         var languages = await _langPackService.GetLanguagesAsync("android");
         foreach (var language in languages)
         {
@@ -69,7 +69,11 @@ public class GetLanguagesL67 : ITLObject, ITLMethod
             lang.PluralCode = language.PluralCode;
             lang.StringsCount = language.StringsCount;
             lang.TranslationsUrl = language.TranslationsUrl;
-            lang.BaseLangCode = language.BaseLangCode;
+            if (language.BaseLangCode != null && language.BaseLangCode.Length > 0)
+            {
+                lang.BaseLangCode = language.BaseLangCode;
+            }
+            langs.Add(lang);
         }
 
         result.Result = langs;

@@ -81,7 +81,11 @@ public class GetLanguages : ITLObject, ITLMethod
             lang.PluralCode = language.PluralCode;
             lang.StringsCount = language.StringsCount;
             lang.TranslationsUrl = language.TranslationsUrl;
-            lang.BaseLangCode = language.BaseLangCode;
+            if (language.BaseLangCode != null && language.BaseLangCode.Length > 0)
+            {
+                lang.BaseLangCode = language.BaseLangCode;
+            }
+            langs.Add(lang);
         }
 
         result.Result = langs;
