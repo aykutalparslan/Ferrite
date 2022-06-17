@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.layer139.contacts;
@@ -27,10 +29,12 @@ public class GetSaved : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contacts;
     private bool serialized = false;
-    public GetSaved(ITLObjectFactory objectFactory)
+    public GetSaved(ITLObjectFactory objectFactory, IContactsService contacts)
     {
         factory = objectFactory;
+        _contacts = contacts;
     }
 
     public int Constructor => -2098076769;
@@ -49,7 +53,32 @@ public class GetSaved : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _contacts.GetSaved(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        else
+        {
+            var saved = factory.Resolve<Vector<SavedContact>>();
+            foreach (var c in serviceResult.Result)
+            {
+                var savedContact = factory.Resolve<SavedPhoneContactImpl>();
+                savedContact.Date = c.Date;
+                savedContact.Phone = c.Phone;
+                savedContact.FirstName = c.FirstName;
+                savedContact.LastName = c.LastName;
+                saved.Add(savedContact);
+            }
+
+            result.Result = saved;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
