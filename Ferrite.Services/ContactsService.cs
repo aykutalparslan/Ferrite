@@ -167,9 +167,17 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
+    public async Task<bool> ResetSaved(long authKeyId)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        return await _store.DeleteContactsAsync(auth.UserId);
+    }
+
     public async Task<ServiceResult<ICollection<SavedContact>>> GetSaved(long authKeyId)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        return new ServiceResult<ICollection<SavedContact>>(await _store.GetSavedContactsAsync(auth.UserId),
+                true, ErrorMessages.None);
     }
 
     public async Task<bool> ToggleTopPeers(long authKeyId, bool enabled)

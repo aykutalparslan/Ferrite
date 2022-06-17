@@ -1055,6 +1055,15 @@ namespace Ferrite.Data
             return true;
         }
 
+        public async Task<bool> DeleteContactsAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE ferrite.contacts WHERE user_id = ?;",
+                userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
         public async Task<ICollection<SavedContact>> GetSavedContactsAsync(long userId)
         {
             var statement = new SimpleStatement(

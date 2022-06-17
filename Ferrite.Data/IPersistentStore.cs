@@ -75,6 +75,7 @@ public interface IPersistentStore
     public Task<int> GetAccountTTLAsync(long userId);
     public Task<ImportedContact?> SaveContactAsync(long userId, InputContact contact);
     public Task<bool> DeleteContactAsync(long userId, long contactUserId);
+    public Task<bool> DeleteContactsAsync(long userId);
     public Task<ICollection<SavedContact>> GetSavedContactsAsync(long userId);
     public Task<ICollection<Contact>> GetContactsAsync(long userId);
     public Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType);

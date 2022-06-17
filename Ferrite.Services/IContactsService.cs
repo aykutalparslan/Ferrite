@@ -39,6 +39,7 @@ public interface IContactsService
         int offset, int limit, long hash);
 
     Task<ServiceResult<bool>> ResetTopPeerRating(long authKeyId, TopPeerCategory category, Peer peer);
+    Task<bool> ResetSaved(long authKeyId);
     Task<ServiceResult<ICollection<SavedContact>>> GetSaved(long authKeyId);
     Task<bool> ToggleTopPeers(long authKeyId, bool enabled);
     Task<ServiceResult<UpdatesBase>> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUser id,
