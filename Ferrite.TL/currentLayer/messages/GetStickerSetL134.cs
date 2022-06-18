@@ -62,13 +62,10 @@ public class GetStickerSetL134 : ITLObject, ITLMethod
     
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
-        result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<RpcError>();
-        resp.ErrorCode = 501;
-        resp.ErrorMessage = "Not Implemented";
-        result.Result = resp;
-        return result;
+        var ack = factory.Resolve<MsgsAck>();
+        ack.MsgIds = new VectorOfLong();
+        ack.MsgIds.Add(ctx.MessageId);
+        return ack;
     }
 
     public void Parse(ref SequenceReader buff)

@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.currentLayer.updates;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -61,7 +63,22 @@ public class GetPeerDialogs : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var dialogs = factory.Resolve<PeerDialogsImpl>();
+        dialogs.Chats = factory.Resolve<Vector<Chat>>();
+        dialogs.Dialogs = factory.Resolve<Vector<Dialog>>();
+        dialogs.Messages = factory.Resolve<Vector<Message>>();
+        dialogs.Users = factory.Resolve<Vector<User>>();
+        var state = factory.Resolve<StateImpl>();
+        state.Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        state.Pts = 0;
+        state.Qts = 0;
+        state.Seq = 0;
+        state.UnreadCount = 0;
+        dialogs.State = state;
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = dialogs;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

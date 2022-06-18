@@ -114,7 +114,7 @@ public class MTProtoRequestProcessor : IProcessor
             }
             catch (Exception e)
             {
-                _log.Error(e, $"😭 => {this} => {input} => {e.Message}");
+                _log.Error(e, $"😭 => {this} => {msg.Body} => {e.Message}");
             }
         }
     }

@@ -50,8 +50,8 @@ public class StickerSetImpl : StickerSet
         }
     }
 
-    private StickerSet _set;
-    public StickerSet Set
+    private currentLayer.StickerSet _set;
+    public currentLayer.StickerSet Set
     {
         get => _set;
         set
@@ -86,7 +86,7 @@ public class StickerSetImpl : StickerSet
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _set = (StickerSet)factory.Read(buff.ReadInt32(true), ref buff);
+        _set = (currentLayer.StickerSet)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _packs  =  factory . Read < Vector < StickerPack > > ( ref  buff ) ; 
         buff.Skip(4); _documents  =  factory . Read < Vector < Document > > ( ref  buff ) ; 
     }
