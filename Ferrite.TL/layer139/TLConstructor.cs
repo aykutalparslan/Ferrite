@@ -1401,4 +1401,5 @@ public class TLConstructor
     public static readonly int Phone_GetGroupCallStreamChannels = 447879488;
     public static readonly int Phone_GetGroupCallStreamRtmpUrl = -558650433;
     public static readonly int Messages_SearchSentMedia = 276705696;
+    public static int Langpack_GetLangPack67 = unchecked((int)0x9ab5c58e);
 }

@@ -274,7 +274,7 @@ public class MTProtoConnection : IMTProtoConnection
         if (message.Data == null) { return; }
         writer.Clear();
         writer.WriteInt64(state.ServerSalt.Salt, true);
-        writer.WriteInt64(state.SessionId, true);
+        writer.WriteInt64(message.SessionId, true);
         writer.WriteInt64(message.MessageType == MTProtoMessageType.Pong ?
             message.MessageId :
             NextMessageId(message.IsResponse), true);

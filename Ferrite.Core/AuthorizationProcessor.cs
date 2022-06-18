@@ -59,7 +59,9 @@ public class AuthorizationProcessor : IProcessor
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetNearestDc);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetAppUpdate);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCdnConfig);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCountriesList);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLangPack);
+        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLangPack67);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetStrings);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetDifference);
         _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguages);
@@ -128,7 +130,8 @@ public class AuthorizationProcessor : IProcessor
         {
             if (ctx.AuthKeyId != 0)
             {
-                _log.Debug($"AuthKeyId: {(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId)} is not logged in");
+                _log.Debug($"😳 {input} was not processed due to AuthKeyId: " +
+                           $"{(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId)} not being logged in");
             }
             var response = _scope.Resolve<RpcError>();
             response.ErrorCode = 401;

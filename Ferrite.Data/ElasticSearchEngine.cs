@@ -24,7 +24,7 @@ namespace Ferrite.Data;
 public class ElasticSearchEngine : ISearchEngine
 {
     private readonly ElasticClient _client;
-    public ElasticSearchEngine(string url,string username, string password)
+    public ElasticSearchEngine(string url,string username, string password, string fingerprint)
     {
         var uri = new Uri(url);
         var pool = new SingleNodeConnectionPool(uri);
@@ -32,13 +32,14 @@ public class ElasticSearchEngine : ISearchEngine
             .BasicAuthentication(username, password)
             .EnableDebugMode()
             .PrettyJson()
+            .CertificateFingerprint(fingerprint)
             .RequestTimeout(TimeSpan.FromSeconds(5));
         _client = new ElasticClient(connectionSettings);
     }
 
     public async Task<bool> IndexUser(Search.User user)
     {
-        var result = await _client.IndexAsync(user, _ => _.Index("users"));
+        var result = await _client.IndexAsync(user, _ => _.Index("users").Id(user.Id));
         return result.Result is Result.Created or Result.Updated;
     }
 

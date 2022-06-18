@@ -76,8 +76,22 @@ public class GetCountriesList : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var countries = factory.Resolve<CountriesListNotModifiedImpl>();
-        result.Result = new Null();
+        var countries = factory.Resolve<CountriesListImpl>();
+        var countryList = factory.Resolve<Vector<Country>>();
+        var tr = factory.Resolve<CountryImpl>();
+        tr.Iso2 = "TUR";
+        tr.Name = "Türkiye";
+        tr.DefaultName = "Türkiye";
+        var countryCodes = factory.Resolve<Vector<CountryCode>>();
+        var code = factory.Resolve<CountryCodeImpl>();
+        code.CountryCode = "TUR";
+        code.Prefixes = new VectorOfString();
+        code.Patterns = new VectorOfString();
+        code.Prefixes.Add("+90");
+        code.Prefixes.Add("0090");
+        code.Patterns.Add("XXX XXX XX XX");
+        countryCodes.Add(code);
+        result.Result = countryCodes;
         return result;
     }
 
