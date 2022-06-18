@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -49,7 +50,15 @@ public class GetAllDrafts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var updates = factory.Resolve<UpdatesImpl>();
+        updates.Chats = factory.Resolve<Vector<Chat>>();
+        updates.Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        updates.Updates = factory.Resolve<Vector<Update>>();
+        updates.Users = factory.Resolve<Vector<User>>();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = updates;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
