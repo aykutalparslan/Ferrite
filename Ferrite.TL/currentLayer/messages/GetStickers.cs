@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -73,7 +74,12 @@ public class GetStickers : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var stickers = factory.Resolve<StickersImpl>();
+        stickers.Stickers = factory.Resolve<Vector<Document>>();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = stickers;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
