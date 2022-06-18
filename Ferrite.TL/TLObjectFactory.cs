@@ -1146,6 +1146,7 @@ public class TLObjectFactory : ITLObjectFactory
         1051570619 => Read<currentLayer.messages.CheckChatInvite>(ref buff),
         1817183516 => Read<currentLayer.messages.ImportChatInvite>(ref buff),
         -928977804 => Read<currentLayer.messages.GetStickerSet>(ref buff),
+        unchecked((int)0x2619a90e) => Read<currentLayer.messages.GetStickerSetL134>(ref buff),
         -946871200 => Read<currentLayer.messages.InstallStickerSet>(ref buff),
         -110209570 => Read<currentLayer.messages.UninstallStickerSet>(ref buff),
         -421563528 => Read<currentLayer.messages.StartBot>(ref buff),
@@ -1217,6 +1218,7 @@ public class TLObjectFactory : ITLObjectFactory
         -1489903017 => Read<currentLayer.messages.ToggleDialogPin>(ref buff),
         991616823 => Read<currentLayer.messages.ReorderPinnedDialogs>(ref buff),
         -692498958 => Read<currentLayer.messages.GetPinnedDialogs>(ref buff),
+        unchecked((int)0x16fcc2cb) => Read<currentLayer.messages.GetAttachMenuBots>(ref buff),
         -1440257555 => Read<currentLayer.bots.SendCustomRequest>(ref buff),
         -434028723 => Read<currentLayer.bots.AnswerWebhookJSONQuery>(ref buff),
         619086221 => Read<currentLayer.upload.GetWebFile>(ref buff),
@@ -1458,6 +1460,7 @@ public class TLObjectFactory : ITLObjectFactory
         447879488 => Read<currentLayer.phone.GetGroupCallStreamChannels>(ref buff),
         -558650433 => Read<currentLayer.phone.GetGroupCallStreamRtmpUrl>(ref buff),
         276705696 => Read<currentLayer.messages.SearchSentMedia>(ref buff),
+        unchecked((int)0xe1902288) => Read<currentLayer.account.GetSavedRingtones>(ref buff),
         2018609336 => Read<InitConnection>(ref buff),
         _ => throw new DeserializationException("Constructor " + string.Format("0x{0:X}", constructor) + " not found.")};
     public T Read<T>(ref SequenceReader buff)

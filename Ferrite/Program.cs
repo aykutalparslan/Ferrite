@@ -95,7 +95,7 @@ public class Program
             .Where(t => t.Namespace == "Ferrite.TL")
             .AsSelf();
         builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
+            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.currentLayer"))
             .AsSelf();
         builder.RegisterAssemblyTypes(core)
             .Where(t => t.Namespace == "Ferrite.Core.Methods")

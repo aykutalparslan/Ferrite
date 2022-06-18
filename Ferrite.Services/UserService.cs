@@ -49,17 +49,27 @@ public class UserService : IUsersService
 
     public async Task<ServiceResult<UserFull>> GetFullUser(long authKeyId, InputUser id)
     {
-        var user = await _store.GetUserAsync(id.UserId);
+        var userId = id.UserId;
+        if (id.InputUserType == InputUserType.Self)
+        {
+            var auth = await _store.GetAuthorizationAsync(authKeyId);
+            userId = auth.UserId;
+        }
+        var user = await _store.GetUserAsync(userId);
+
         var notifySettings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeer
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
             Peer = new InputPeer
             {
-                UserId = id.UserId,
-                AccessHash = id.AccessHash,
+                UserId = user.Id,
+                AccessHash = user.AccessHash,
                 InputPeerType = InputPeerType.User
             }
-        });
+        }) ?? new PeerNotifySettings()
+        {
+            Sound = ""
+        };
         if (user != null)
         {
             var fullUser = new Ferrite.Data.UserFull

@@ -83,7 +83,10 @@ public class GetFullUser : ITLObject, ITLMethod
         }
         else if (_id is InputUserSelfImpl userSelf)
         {
-            //TODO: handle this case
+            inputUser = new Data.InputUser()
+            {
+                InputUserType = InputUserType.Self
+            };
         }
         var serviceResult = await _users.GetFullUser(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             inputUser);
@@ -107,7 +110,8 @@ public class GetFullUser : ITLObject, ITLMethod
             {
                 peerSettings.RequestChatDate = (int)serviceResult.Result.FullUser.Settings.RequestChatDate;
             }
-            if (serviceResult.Result.FullUser.Settings.RequestChatTitle != null)
+            if (serviceResult.Result.FullUser.Settings.RequestChatTitle != null && 
+                serviceResult.Result.FullUser.Settings.RequestChatTitle.Length > 0)
             {
                 peerSettings.RequestChatTitle = serviceResult.Result.FullUser.Settings.RequestChatTitle;
             }
@@ -123,7 +127,11 @@ public class GetFullUser : ITLObject, ITLMethod
                 notifySettings.Sound = serviceResult.Result.FullUser.NotifySettings.Sound;
             }
             var fullUser = factory.Resolve<currentLayer.UserFullImpl>();
-            fullUser.About = serviceResult.Result.FullUser.About;
+            if (serviceResult.Result.FullUser.About != null &&
+                serviceResult.Result.FullUser.About.Length > 0)
+            {
+                fullUser.About = serviceResult.Result.FullUser.About;
+            }
             fullUser.Blocked = serviceResult.Result.FullUser.Blocked;
             fullUser.Id = serviceResult.Result.FullUser.Id;
             fullUser.Settings = peerSettings;
@@ -136,6 +144,8 @@ public class GetFullUser : ITLObject, ITLMethod
             var userFull = factory.Resolve<UserFullImpl>();
             userFull.Chats = factory.Resolve<Vector<Chat>>();
             userFull.Users = factory.Resolve<Vector<User>>();
+            userFull.FullUser = fullUser;
+            result.Result = userFull;
             //TODO: implemnt this properly
         }
         else

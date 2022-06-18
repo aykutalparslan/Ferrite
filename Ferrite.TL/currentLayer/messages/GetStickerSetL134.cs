@@ -1,4 +1,4 @@
-/*
+﻿/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,21 +20,22 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
-namespace Ferrite.TL.currentLayer.users;
-public class UserFullImpl : UserFull
+namespace Ferrite.TL.currentLayer.messages;
+public class GetStickerSetL134 : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
-    public UserFullImpl(ITLObjectFactory objectFactory)
+    public GetStickerSetL134(ITLObjectFactory objectFactory)
     {
         factory = objectFactory;
     }
 
-    public override int Constructor => 997004590;
-    public override ReadOnlySequence<byte> TLBytes
+    public int Constructor => unchecked((int)0x2619a90e);
+    public ReadOnlySequence<byte> TLBytes
     {
         get
         {
@@ -42,56 +43,41 @@ public class UserFullImpl : UserFull
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
-            writer.Write(_fullUser.TLBytes, false);
-            writer.Write(_chats.TLBytes, false);
-            writer.Write(_users.TLBytes, false);
+            writer.Write(_stickerset.TLBytes, false);
             serialized = true;
             return writer.ToReadOnlySequence();
         }
     }
 
-    private currentLayer.UserFull _fullUser;
-    public currentLayer.UserFull FullUser
+    private InputStickerSet _stickerset;
+    public InputStickerSet Stickerset
     {
-        get => _fullUser;
+        get => _stickerset;
         set
         {
             serialized = false;
-            _fullUser = value;
+            _stickerset = value;
         }
     }
-
-    private Vector<Chat> _chats;
-    public Vector<Chat> Chats
+    
+    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        get => _chats;
-        set
-        {
-            serialized = false;
-            _chats = value;
-        }
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var resp = factory.Resolve<RpcError>();
+        resp.ErrorCode = 501;
+        resp.ErrorMessage = "Not Implemented";
+        result.Result = resp;
+        return result;
     }
 
-    private Vector<User> _users;
-    public Vector<User> Users
-    {
-        get => _users;
-        set
-        {
-            serialized = false;
-            _users = value;
-        }
-    }
-
-    public override void Parse(ref SequenceReader buff)
+    public void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _fullUser = (currentLayer.UserFull)factory.Read(buff.ReadInt32(true), ref buff);
-        buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
-        buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
+        _stickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
-    public override void WriteTo(Span<byte> buff)
+    public void WriteTo(Span<byte> buff)
     {
         TLBytes.CopyTo(buff);
     }

@@ -1090,9 +1090,11 @@ public class TLConstructor
     public static readonly int Messages_CheckChatInvite = 1051570619;
     public static readonly int Messages_ImportChatInvite = 1817183516;
     public static readonly int Messages_GetStickerSet = -928977804;
+    public static readonly int Messages_GetStickerSetL134 = unchecked((int)0x2619a90e);
     public static readonly int Messages_InstallStickerSet = -946871200;
     public static readonly int Messages_UninstallStickerSet = -110209570;
     public static readonly int Messages_StartBot = -421563528;
+    public static readonly int Messages_GetAttachMenuBots = unchecked((int)0x16fcc2cb);
     public static readonly int Help_GetAppChangelog = -1877938321;
     public static readonly int Messages_GetMessagesViews = 1468322785;
     public static readonly int Channels_ReadHistory = -871347913;
@@ -1402,4 +1404,5 @@ public class TLConstructor
     public static readonly int Phone_GetGroupCallStreamRtmpUrl = -558650433;
     public static readonly int Messages_SearchSentMedia = 276705696;
     public static int Langpack_GetLangPack67 = unchecked((int)0x9ab5c58e);
+    public const int Account_GetSavedRingtones = unchecked((int)0xe1902288);
 }
