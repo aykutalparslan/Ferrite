@@ -31,9 +31,9 @@ using Ferrite.TL.mtproto;
 using System.Net;
 using DotNext.IO.Pipelines;
 using Ferrite.Services;
-using Ferrite.TL.layer139.upload;
+using Ferrite.TL.currentLayer.upload;
 using Org.BouncyCastle.Cms;
-using TLConstructor = Ferrite.TL.layer139.TLConstructor;
+using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
 
 namespace Ferrite.Core;
 

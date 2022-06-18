@@ -149,7 +149,7 @@ public class MTProtoConnectionTests
         Assert.IsType<ReqPqMulti>(received[0]);
         Assert.IsType<ReqDhParams>(received[1]);
         Assert.IsType<SetClientDhParams>(received[2]);
-        Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(received[3]);
+        Assert.IsType<Ferrite.TL.currentLayer.InvokeWithLayer>(received[3]);
         //Assert.IsType<Ferrite.TL.layer139.updates.GetState>(received[4]);
         Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(received[4]);
         Assert.IsType<Ferrite.TL.mtproto.MsgContainer>(received[5]);

@@ -22,7 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
-using Ferrite.TL.layer139;
+using Ferrite.TL.currentLayer;
 
 namespace Ferrite.Core;
 

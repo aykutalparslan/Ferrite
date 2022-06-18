@@ -48,28 +48,28 @@ public class AuthorizationProcessor : IProcessor
 
     private void AddUnauthorizedMethods()
     {
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_SendCode);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_ResendCode);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Account_GetPassword);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_CheckPassword);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_SignUp);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_SignIn);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_ImportAuthorization);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetConfig);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetNearestDc);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetAppUpdate);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCdnConfig);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Help_GetCountriesList);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLangPack);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLangPack67);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetStrings);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetDifference);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguages);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguagesL67);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Langpack_GetLanguage);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.InitConnection);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.JsonObject);
-        _unauthorizedMethods.Add(TL.layer139.TLConstructor.Auth_BindTempAuthKey);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_SendCode);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_ResendCode);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Account_GetPassword);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_CheckPassword);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_SignUp);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_SignIn);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_ImportAuthorization);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Help_GetConfig);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Help_GetNearestDc);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Help_GetAppUpdate);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Help_GetCdnConfig);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Help_GetCountriesList);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetLangPack);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetLangPack67);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetStrings);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetDifference);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetLanguages);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetLanguagesL67);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Langpack_GetLanguage);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.InitConnection);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.JsonObject);
+        _unauthorizedMethods.Add(TL.currentLayer.TLConstructor.Auth_BindTempAuthKey);
         _unauthorizedMethods.Add(TLConstructor.GetFutureSalts);
         _unauthorizedMethods.Add(TLConstructor.DestroySession);
         _unauthorizedMethods.Add(TLConstructor.RpcDropAnswer);
@@ -90,38 +90,38 @@ public class AuthorizationProcessor : IProcessor
             {
                 output.Enqueue(input);
             }
-            else if (message2.Body is TL.layer139.InvokeWithLayer invoke2 &&
+            else if (message2.Body is TL.currentLayer.InvokeWithLayer invoke2 &&
                 _unauthorizedMethods.Contains(invoke2.Query.Constructor))
             {
                 output.Enqueue(input);
             }
-            else if (message2.Body is TL.layer139.InvokeAfterMsg invokeAfter &&
+            else if (message2.Body is TL.currentLayer.InvokeAfterMsg invokeAfter &&
                 _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
             {
                 output.Enqueue(input);
             }
-            else if (message2.Body is TL.layer139.InvokeAfterMsgs invokeAfter2 &&
+            else if (message2.Body is TL.currentLayer.InvokeAfterMsgs invokeAfter2 &&
                 _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
             {
                 output.Enqueue(input);
             }
         }
-        else if (input is TL.layer139.InvokeWithLayer invoke &&
+        else if (input is TL.currentLayer.InvokeWithLayer invoke &&
             _unauthorizedMethods.Contains(invoke.Query.Constructor))
         {
             output.Enqueue(input);
         }
-        else if (input is TL.layer139.InvokeAfterMsg invokeAfter &&
+        else if (input is TL.currentLayer.InvokeAfterMsg invokeAfter &&
             _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
         {
             output.Enqueue(input);
         }
-        else if (input is TL.layer139.InvokeAfterMsgs invokeAfter2 &&
+        else if (input is TL.currentLayer.InvokeAfterMsgs invokeAfter2 &&
             _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
         {
             output.Enqueue(input);
         }
-        else if (input is TL.layer139.InvokeWithLayer invokeWithLayer &&
+        else if (input is TL.currentLayer.InvokeWithLayer invokeWithLayer &&
             _unauthorizedMethods.Contains(invokeWithLayer.Query.Constructor))
         {
             output.Enqueue(input);

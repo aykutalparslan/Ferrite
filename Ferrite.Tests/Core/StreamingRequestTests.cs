@@ -40,7 +40,7 @@ using Ferrite.Utils;
 using MessagePack;
 using Moq;
 using Xunit;
-using TLConstructor = Ferrite.TL.layer139.TLConstructor;
+using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
 
 namespace Ferrite.Tests.Core;
 class StubTransportConnection : ITransportConnection

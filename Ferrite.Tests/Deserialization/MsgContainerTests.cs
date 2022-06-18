@@ -70,7 +70,7 @@ public class MsgContainerTests
         var obj = (MsgContainer)factory.Read(reader.ReadInt32(true), ref reader);
 
         Assert.Equal(2, obj.Messages.Count);
-        Assert.IsType<Ferrite.TL.layer139.InvokeWithLayer>(obj.Messages[0].Body);
+        Assert.IsType<Ferrite.TL.currentLayer.InvokeWithLayer>(obj.Messages[0].Body);
         Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(obj.Messages[1].Body);
     }
 
