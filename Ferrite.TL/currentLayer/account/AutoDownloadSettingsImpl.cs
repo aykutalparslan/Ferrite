@@ -50,8 +50,8 @@ public class AutoDownloadSettingsImpl : AutoDownloadSettings
         }
     }
 
-    private AutoDownloadSettings _low;
-    public AutoDownloadSettings Low
+    private currentLayer.AutoDownloadSettings _low;
+    public currentLayer.AutoDownloadSettings Low
     {
         get => _low;
         set
@@ -61,8 +61,8 @@ public class AutoDownloadSettingsImpl : AutoDownloadSettings
         }
     }
 
-    private AutoDownloadSettings _medium;
-    public AutoDownloadSettings Medium
+    private currentLayer.AutoDownloadSettings _medium;
+    public currentLayer.AutoDownloadSettings Medium
     {
         get => _medium;
         set
@@ -72,8 +72,8 @@ public class AutoDownloadSettingsImpl : AutoDownloadSettings
         }
     }
 
-    private AutoDownloadSettings _high;
-    public AutoDownloadSettings High
+    private currentLayer.AutoDownloadSettings _high;
+    public currentLayer.AutoDownloadSettings High
     {
         get => _high;
         set
@@ -86,9 +86,9 @@ public class AutoDownloadSettingsImpl : AutoDownloadSettings
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _low = (AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
-        _medium = (AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
-        _high = (AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
+        _low = (currentLayer.AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
+        _medium = (currentLayer.AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
+        _high = (currentLayer.AutoDownloadSettings)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
     public override void WriteTo(Span<byte> buff)

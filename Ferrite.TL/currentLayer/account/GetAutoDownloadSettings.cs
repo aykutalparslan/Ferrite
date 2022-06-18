@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.account;
@@ -49,7 +50,25 @@ public class GetAutoDownloadSettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        var settings = factory.Resolve<AutoDownloadSettingsImpl>();
+        var high = factory.Resolve<currentLayer.AutoDownloadSettingsImpl>();
+        high.PhotoSizeMax = 1048576;
+        high.VideoUploadMaxbitrate = 50;
+        high.AudioPreloadNext = true;
+        settings.High = high;
+        var medium = factory.Resolve<currentLayer.AutoDownloadSettingsImpl>();
+        medium.PhotoSizeMax = 1048576;
+        medium.VideoUploadMaxbitrate = 50;
+        settings.Medium = medium;
+        var low = factory.Resolve<currentLayer.AutoDownloadSettingsImpl>();
+        low.PhotoSizeMax = 1048576;
+        low.VideoUploadMaxbitrate = 0;
+        low.PhonecallsLessData = true;
+        settings.Low = low;
+        result.Result = settings;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
