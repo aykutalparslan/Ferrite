@@ -210,6 +210,14 @@ namespace Ferrite.Data
                 "PRIMARY KEY (file_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.file_parts (" +
+                "file_id bigint," +
+                "part_num int," +
+                "part_size int, " +
+                "PRIMARY KEY (file_id, part_num))" +
+                "WITH CLUSTERING ORDER BY (part_num ASC);");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.big_files (" +
                 "file_id bigint," +
                 "access_hash bigint," +
@@ -217,6 +225,14 @@ namespace Ferrite.Data
                 "parts int, " +
                 "file_name text," +
                 "PRIMARY KEY (file_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.big_file_parts (" +
+                "file_id bigint," +
+                "part_num int," +
+                "part_size int, " +
+                "PRIMARY KEY (file_id, part_num))" +
+                "WITH CLUSTERING ORDER BY (part_num ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -1228,6 +1244,62 @@ namespace Ferrite.Data
             }
 
             return null;
+        }
+
+        public async Task<bool> SaveFilePartAsync(FilePart part)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.file_parts SET part_size = ? " +
+                "WHERE file_id = ? AND part_num = ?;",
+                part.PartSize, part.PartNum, part.FileId) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<IReadOnlyCollection<FilePart>> GetFilePartsAsync(long fileId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.file_parts WHERE file_id = ?;", 
+                fileId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<FilePart> parts = new();
+            foreach (var row in results)
+            {
+                parts.Add(new FilePart(fileId, row.GetValue<int>("part_num"),
+                    row.GetValue<int>("part_size")));
+            }
+
+            return parts;
+        }
+
+        public async Task<bool> SaveBigFilePartAsync(FilePart part)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.big_file_parts SET part_size = ? " +
+                "WHERE file_id = ? AND part_num = ?;",
+                part.PartSize, part.PartNum, part.FileId) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<IReadOnlyCollection<FilePart>> GetBigFilePartsAsync(long fileId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.big_file_parts WHERE file_id = ?;", 
+                fileId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<FilePart> parts = new();
+            foreach (var row in results)
+            {
+                parts.Add(new FilePart(fileId, row.GetValue<int>("part_num"),
+                    row.GetValue<int>("part_size")));
+            }
+
+            return parts;
         }
     }
 }

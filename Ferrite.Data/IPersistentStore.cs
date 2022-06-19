@@ -85,5 +85,9 @@ public interface IPersistentStore
     public Task<UploadedFileInfo?> GetFileInfoAsync(long fileId);
     public Task<bool> SaveBigFileInfoAsync(UploadedFileInfo uploadedFile);
     public Task<UploadedFileInfo?> GetBigFileInfoAsync(long fileId);
+    public Task<bool> SaveFilePartAsync(FilePart part);
+    public Task<IReadOnlyCollection<FilePart>> GetFilePartsAsync(long fileId);
+    public Task<bool> SaveBigFilePartAsync(FilePart part);
+    public Task<IReadOnlyCollection<FilePart>> GetBigFilePartsAsync(long fileId);
 }
 
