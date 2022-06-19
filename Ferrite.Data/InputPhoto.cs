@@ -18,5 +18,4 @@
 
 namespace Ferrite.Data;
 
-public record UploadedFileInfo(long Id, int PartSize, int Parts, long AccessHash, 
-    string Name, string? MD5Checksum, DateTimeOffset SavedOn, bool IsBigFile);
+public record InputPhoto(long Id, long AccessHAsh, byte[] FileReference);

@@ -16,7 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+namespace Ferrite.Data.Photos;
 
-public record UploadedFileInfo(long Id, int PartSize, int Parts, long AccessHash, 
-    string Name, string? MD5Checksum, DateTimeOffset SavedOn, bool IsBigFile);
+public record Photo(Data.Photo PhotoInner, IReadOnlyCollection<User> Users);

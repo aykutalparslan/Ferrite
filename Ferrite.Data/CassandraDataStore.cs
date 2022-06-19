@@ -1223,7 +1223,7 @@ namespace Ferrite.Data
                 return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
                     row.GetValue<string>("file_name"), row.GetValue<string>("md5_checksum"),
-                row.GetValue<DateTimeOffset>("saved_on"));
+                row.GetValue<DateTimeOffset>("saved_on"), false);
             }
 
             return null;
@@ -1254,7 +1254,7 @@ namespace Ferrite.Data
                 return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
                     row.GetValue<string>("file_name"), null,
-                    row.GetValue<DateTimeOffset>("saved_on"));
+                    row.GetValue<DateTimeOffset>("saved_on"), true);
             }
 
             return null;

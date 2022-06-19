@@ -16,7 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+using Ferrite.Data;
+using Ferrite.Data.Photos;
 
-public record UploadedFileInfo(long Id, int PartSize, int Parts, long AccessHash, 
-    string Name, string? MD5Checksum, DateTimeOffset SavedOn, bool IsBigFile);
+namespace Ferrite.Services;
+
+public interface IPhotosService
+{
+    Task<ServiceResult<Data.Photos.Photo>> UpdateProfilePhoto(long authKeyId, InputPhoto id);
+    Task<ServiceResult<Data.Photos.Photo>> UploadProfilePhoto(long authKeyId, UploadedFileInfo? photo,
+        UploadedFileInfo? video, double? videoStartTimestamp);
+    Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhoto> photos);
+    Task<Photos> GetUserPhotos(long userId, int offset, long maxId, int limit);
+}
