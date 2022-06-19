@@ -89,5 +89,7 @@ public interface IPersistentStore
     public Task<IReadOnlyCollection<FilePart>> GetFilePartsAsync(long fileId);
     public Task<bool> SaveBigFilePartAsync(FilePart part);
     public Task<IReadOnlyCollection<FilePart>> GetBigFilePartsAsync(long fileId);
+    public Task<bool> SaveFileReferenceAsync(FileReference reference);
+    public Task<FileReference?> GetFileReferenceAsync(byte[] referenceBytes);
 }
 

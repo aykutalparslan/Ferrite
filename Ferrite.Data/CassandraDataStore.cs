@@ -25,6 +25,7 @@ namespace Ferrite.Data
         private readonly Cluster cluster;
         private readonly ISession session;
         private readonly string keySpace;
+        private IPersistentStore _persistentStoreImplementation;
 
         public CassandraDataStore(string keyspace, params string[] hosts)
         {
@@ -207,6 +208,7 @@ namespace Ferrite.Data
                 "parts int, " +
                 "file_name text," +
                 "md5_checksum text," +
+                "saved_on timestamp," +
                 "PRIMARY KEY (file_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
@@ -214,6 +216,7 @@ namespace Ferrite.Data
                 "file_id bigint," +
                 "part_num int," +
                 "part_size int, " +
+                "saved_on timestamp," +
                 "PRIMARY KEY (file_id, part_num))" +
                 "WITH CLUSTERING ORDER BY (part_num ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
@@ -224,6 +227,7 @@ namespace Ferrite.Data
                 "part_size int," +
                 "parts int, " +
                 "file_name text," +
+                "saved_on timestamp," +
                 "PRIMARY KEY (file_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
@@ -231,8 +235,16 @@ namespace Ferrite.Data
                 "file_id bigint," +
                 "part_num int," +
                 "part_size int, " +
+                "saved_on timestamp," +
                 "PRIMARY KEY (file_id, part_num))" +
                 "WITH CLUSTERING ORDER BY (part_num ASC);");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.file_references (" +
+                "file_reference blob," +
+                "file_id int," +
+                "is_big_file boolean, " +
+                "PRIMARY KEY (file_reference));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -1190,10 +1202,10 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.files SET part_size = ?, parts = ?, access_hash = ?, " +
-                "file_name = ?, md5_checksum = ? " +
+                "file_name = ?, md5_checksum = ?, savec_on = ? " +
                 "WHERE file_id = ?;",
                 uploadedFile.PartSize, uploadedFile.Parts, uploadedFile.AccessHash, 
-                uploadedFile.Name, uploadedFile.MD5Checksum, uploadedFile.Id) .SetKeyspace(keySpace);
+                uploadedFile.Name, uploadedFile.MD5Checksum, uploadedFile.SavedOn, uploadedFile.Id) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1210,7 +1222,8 @@ namespace Ferrite.Data
             {
                 return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
-                    row.GetValue<string>("file_name"), row.GetValue<string>("md5_checksum"));
+                    row.GetValue<string>("file_name"), row.GetValue<string>("md5_checksum"),
+                row.GetValue<DateTimeOffset>("saved_on"));
             }
 
             return null;
@@ -1220,10 +1233,10 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.big_files SET part_size = ?, parts = ?, access_hash = ?, " +
-                "file_name = ? " +
+                "file_name = ?, saved_on = ? " +
                 "WHERE file_id = ?;",
                 uploadedFile.PartSize, uploadedFile.Parts, uploadedFile.AccessHash, 
-                uploadedFile.Name, uploadedFile.Id) .SetKeyspace(keySpace);
+                uploadedFile.Name, uploadedFile.SavedOn ,uploadedFile.Id) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1240,7 +1253,8 @@ namespace Ferrite.Data
             {
                 return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
-                    row.GetValue<string>("file_name"), null);
+                    row.GetValue<string>("file_name"), null,
+                    row.GetValue<DateTimeOffset>("saved_on"));
             }
 
             return null;
@@ -1249,9 +1263,9 @@ namespace Ferrite.Data
         public async Task<bool> SaveFilePartAsync(FilePart part)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.file_parts SET part_size = ? " +
+                "UPDATE ferrite.file_parts SET part_size = ?, saved_on = ? " +
                 "WHERE file_id = ? AND part_num = ?;",
-                part.PartSize, part.PartNum, part.FileId) .SetKeyspace(keySpace);
+                part.PartSize, DateTimeOffset.Now, part.FileId, part.PartNum) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1277,9 +1291,9 @@ namespace Ferrite.Data
         public async Task<bool> SaveBigFilePartAsync(FilePart part)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.big_file_parts SET part_size = ? " +
+                "UPDATE ferrite.big_file_parts SET part_size = ?, saved_on = ? " +
                 "WHERE file_id = ? AND part_num = ?;",
-                part.PartSize, part.PartNum, part.FileId) .SetKeyspace(keySpace);
+                part.PartSize, DateTimeOffset.Now, part.FileId, part.PartNum) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1300,6 +1314,33 @@ namespace Ferrite.Data
             }
 
             return parts;
+        }
+
+        public async Task<bool> SaveFileReferenceAsync(FileReference reference)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.file_references SET file_id = ?, is_big_file = ? " +
+                "WHERE file_reference = ?;",
+                reference.FileId, reference.IsBigfile, reference.ReferenceBytes) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<FileReference?> GetFileReferenceAsync(byte[] referenceBytes)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.file_references WHERE file_reference = ?;", 
+                referenceBytes);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                return new FileReference(row.GetValue<byte[]>("file_reference"),
+                    row.GetValue<long>("file_id"), row.GetValue<bool>("is_big_file"));
+            }
+
+            return null;
         }
     }
 }
