@@ -81,5 +81,9 @@ public interface IPersistentStore
     public Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType);
     public Task<bool> DeleteBlockedUserAsync(long userId, long peerId, PeerType peerType);
     public Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId);
+    public Task<bool> SaveFileInfoAsync(UploadedFileInfo uploadedFile);
+    public Task<UploadedFileInfo?> GetFileInfoAsync(long fileId);
+    public Task<bool> SaveBigFileInfoAsync(UploadedFileInfo uploadedFile);
+    public Task<UploadedFileInfo?> GetBigFileInfoAsync(long fileId);
 }
 

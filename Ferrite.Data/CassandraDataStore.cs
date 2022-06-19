@@ -199,6 +199,25 @@ namespace Ferrite.Data
                 "blocked_on timestamp," +
                 "PRIMARY KEY (user_id, peer_type, peer_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.files (" +
+                "file_id bigint," +
+                "access_hash bigint," +
+                "part_size int," +
+                "parts int, " +
+                "file_name text," +
+                "md5_checksum text," +
+                "PRIMARY KEY (file_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.big_files (" +
+                "file_id bigint," +
+                "access_hash bigint," +
+                "part_size int," +
+                "parts int, " +
+                "file_name text," +
+                "PRIMARY KEY (file_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -1149,6 +1168,66 @@ namespace Ferrite.Data
                     (int)row.GetValue<DateTimeOffset>("blocked_on").ToUnixTimeSeconds()));
             }
             return result;
+        }
+
+        public async Task<bool> SaveFileInfoAsync(UploadedFileInfo uploadedFile)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.files SET part_size = ?, parts = ?, access_hash = ?, " +
+                "file_name = ?, md5_checksum = ? " +
+                "WHERE file_id = ?;",
+                uploadedFile.PartSize, uploadedFile.Parts, uploadedFile.AccessHash, 
+                uploadedFile.Name, uploadedFile.MD5Checksum, uploadedFile.Id) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<UploadedFileInfo?> GetFileInfoAsync(long fileId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.files WHERE file_id = ?;", 
+                fileId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
+                    row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
+                    row.GetValue<string>("file_name"), row.GetValue<string>("md5_checksum"));
+            }
+
+            return null;
+        }
+
+        public async Task<bool> SaveBigFileInfoAsync(UploadedFileInfo uploadedFile)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.big_files SET part_size = ?, parts = ?, access_hash = ?, " +
+                "file_name = ? " +
+                "WHERE file_id = ?;",
+                uploadedFile.PartSize, uploadedFile.Parts, uploadedFile.AccessHash, 
+                uploadedFile.Name, uploadedFile.Id) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<UploadedFileInfo?> GetBigFileInfoAsync(long fileId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.big_files WHERE file_id = ?;", 
+                fileId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
+                    row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
+                    row.GetValue<string>("file_name"), null);
+            }
+
+            return null;
         }
     }
 }

@@ -31,10 +31,12 @@ public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IDistributedObjectStore _objectStore;
-    public SaveBigFilePart(ITLObjectFactory objectFactory, IDistributedObjectStore objectStore)
+    private readonly IPersistentStore _store;
+    public SaveBigFilePart(ITLObjectFactory objectFactory, IDistributedObjectStore objectStore, IPersistentStore store)
     {
         factory = objectFactory;
         _objectStore = objectStore;
+        _store = store;
     }
 
     public int Constructor => -562337987;
@@ -70,6 +72,11 @@ public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _objectStore.SaveBigFilePart(_fileId, _filePart, _fileTotalParts, stream);
+        if (_filePart == 0)
+        {
+            await _store.SaveFileInfoAsync(new UploadedFileInfo(_fileId, _length, 
+                0, 0, "", ""));
+        }
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

@@ -31,10 +31,12 @@ public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
 {
     private readonly ITLObjectFactory _factory;
     private readonly IDistributedObjectStore _objectStore;
-    public SaveFilePart(ITLObjectFactory factory, IDistributedObjectStore objectStore)
+    private readonly IPersistentStore _store;
+    public SaveFilePart(ITLObjectFactory factory, IDistributedObjectStore objectStore, IPersistentStore store)
     {
         _factory = factory;
         _objectStore = objectStore;
+        _store = store;
     }
 
     public int Constructor => -1291540959;
@@ -73,6 +75,11 @@ public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
         var result = _factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _objectStore.SaveFilePart(_fileId, _filePart, stream);
+        if (_filePart == 0)
+        {
+            await _store.SaveFileInfoAsync(new UploadedFileInfo(_fileId, _length, 
+                0, 0, "", ""));
+        }
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }
