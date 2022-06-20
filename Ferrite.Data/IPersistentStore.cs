@@ -91,5 +91,7 @@ public interface IPersistentStore
     public Task<IReadOnlyCollection<FilePart>> GetBigFilePartsAsync(long fileId);
     public Task<bool> SaveFileReferenceAsync(FileReference reference);
     public Task<FileReference?> GetFileReferenceAsync(byte[] referenceBytes);
+    public Task<bool> SaveProfilePhotoAsync(long userId, long fileId, 
+        byte[] referenceBytes, DateTimeOffset date);
 }
 

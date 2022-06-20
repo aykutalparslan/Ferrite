@@ -246,6 +246,14 @@ namespace Ferrite.Data
                 "is_big_file boolean, " +
                 "PRIMARY KEY (file_reference));");
             session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.profile_photos (" +
+                "user_id blob," +
+                "file_id long," +
+                "file_reference blob," +
+                "added_on timestamp," +
+                "PRIMARY KEY (user_id, file_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
         }
 
         public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
@@ -1341,6 +1349,16 @@ namespace Ferrite.Data
             }
 
             return null;
+        }
+
+        public async Task<bool> SaveProfilePhotoAsync(long userId, long fileId, byte[] referenceBytes, DateTimeOffset date)
+        {
+            var statement = new SimpleStatement(
+                "INSERT INTO ferrite.profile_photos (user_id, file_id, file_reference, saved_on) " +
+                "VALUES (?,?,?,?) IF NOT EXISTS;",
+                userId, fileId, referenceBytes, date) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
         }
     }
 }
