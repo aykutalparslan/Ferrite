@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data;
 
-public record InputPhoto(long Id, long AccessHAsh, byte[] FileReference);
+public record InputPhoto(long Id, long AccessHash, byte[] FileReference);

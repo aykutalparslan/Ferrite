@@ -19,4 +19,4 @@
 namespace Ferrite.Data;
 
 public record Photo(bool HasStickers, long Id, long AccessHash, byte[] FileReference, 
-    int Date, ICollection<PhotoSize> Sizes, ICollection<VideoSize> VideoSizes, int DcId);
+    int Date, ICollection<PhotoSize> Sizes, ICollection<VideoSize>? VideoSizes, int DcId);
