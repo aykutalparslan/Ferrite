@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Photos;
 using Photo = Ferrite.Data.Photos.Photo;
@@ -25,9 +26,11 @@ namespace Ferrite.Services;
 public class PhotosService : IPhotosService
 {
     private readonly IPersistentStore _store;
-    public PhotosService(IPersistentStore store)
+    private readonly IRandomGenerator _random;
+    public PhotosService(IPersistentStore store, IRandomGenerator random)
     {
         _store = store;
+        _random = random;
     }
     public async Task<ServiceResult<Photo>> UpdateProfilePhoto(long authKeyId, InputPhoto id)
     {
@@ -43,7 +46,45 @@ public class PhotosService : IPhotosService
 
     public async Task<ServiceResult<Photo>> UploadProfilePhoto(long authKeyId, UploadedFileInfo? photo, UploadedFileInfo? video, double? videoStartTimestamp)
     {
-        throw new NotImplementedException();
+        UploadedFileInfo? file = null;
+        if (photo != null)
+        {
+            file = photo;
+        } 
+        else if (video != null)
+        {
+            file = video;
+        }
+
+        if (file == null)
+        {
+            return new ServiceResult<Photo>(null, false, ErrorMessages.PhotoFileMissing);
+        }
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var user = await _store.GetUserAsync(auth.UserId);
+        var fileParts = await _store.GetFilePartsAsync(file.Id);
+        if (fileParts.Count != file.Parts ||
+            fileParts.First().PartNum != 0 ||
+            fileParts.Last().PartNum != file.Parts - 1)
+        {
+            return new ServiceResult<Photo>(null, false, ErrorMessages.FilePartsInvalid);
+        }
+        if (file.IsBigFile)
+        {
+            await _store.SaveBigFileInfoAsync(file);
+        }
+        else
+        {
+            await _store.SaveFileInfoAsync(file);
+        }
+        var date = DateTimeOffset.Now;
+        byte[] reference = _random.GetRandomBytes(16);
+        await _store.SaveFileReferenceAsync(new FileReference(reference, file.Id, file.IsBigFile));
+        await _store.SaveProfilePhotoAsync(auth.UserId, file.Id, reference, date);
+        var photoInner = new Data.Photo(false, file.Id, file.AccessHash, reference,
+            (int)date.ToUnixTimeSeconds(), new List<PhotoSize>(), null, 1);
+        var result = new Photo(photoInner, new[] { user });
+        return new ServiceResult<Photo>(result, true, ErrorMessages.None);
     }
 
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhoto> photos)

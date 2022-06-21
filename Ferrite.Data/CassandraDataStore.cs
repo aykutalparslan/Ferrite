@@ -1354,9 +1354,9 @@ namespace Ferrite.Data
         public async Task<bool> SaveProfilePhotoAsync(long userId, long fileId, byte[] referenceBytes, DateTimeOffset date)
         {
             var statement = new SimpleStatement(
-                "INSERT INTO ferrite.profile_photos (user_id, file_id, file_reference, saved_on) " +
-                "VALUES (?,?,?,?) IF NOT EXISTS;",
-                userId, fileId, referenceBytes, date) .SetKeyspace(keySpace);
+                "UPDATE ferrite.profile_photos SET file_reference = ?, saved_on = ? " +
+                "WHERE user_id = ? AND file_id = ?;",
+                 referenceBytes, date, userId, fileId) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }

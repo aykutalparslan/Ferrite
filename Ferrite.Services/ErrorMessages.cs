@@ -30,4 +30,6 @@ public class ErrorMessages
     public static readonly ErrorMessage HashInvalid = new ErrorMessage(400, "HASH_INVALID");
     public static readonly ErrorMessage FreshResetAuthorizationForbidden = new ErrorMessage(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN");
     public static readonly ErrorMessage UserIdInvalid = new ErrorMessage(400, "USER_ID_INVALID");
+    public static readonly ErrorMessage PhotoFileMissing = new ErrorMessage(400, "PHOTO_FILE_MISSING");
+    public static readonly ErrorMessage FilePartsInvalid  = new ErrorMessage(400, "FILE_PARTS_INVALID");
 }
