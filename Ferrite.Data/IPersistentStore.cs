@@ -93,5 +93,6 @@ public interface IPersistentStore
     public Task<FileReference?> GetFileReferenceAsync(byte[] referenceBytes);
     public Task<bool> SaveProfilePhotoAsync(long userId, long fileId, 
         byte[] referenceBytes, DateTimeOffset date);
+    public Task<bool> DeleteProfilePhotoAsync(long userId, long fileId);
 }
 

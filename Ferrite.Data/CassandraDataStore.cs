@@ -1360,6 +1360,16 @@ namespace Ferrite.Data
             await session.ExecuteAsync(statement);
             return true;
         }
+
+        public async Task<bool> DeleteProfilePhotoAsync(long userId, long fileId)
+        {
+            var statement = new SimpleStatement(
+                "DELETE FROM ferrite.profile_photos " +
+                "WHERE user_id = ? AND file_id = ?;",
+                userId, fileId) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
     }
 }
 

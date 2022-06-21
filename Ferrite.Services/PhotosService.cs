@@ -89,7 +89,29 @@ public class PhotosService : IPhotosService
 
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhoto> photos)
     {
-        throw new NotImplementedException();
+        List<long> result = new();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        foreach (var photo in photos)
+        {
+            var reference = await _store.GetFileReferenceAsync(photo.FileReference);
+            UploadedFileInfo? file = null;
+            if (reference.IsBigfile)
+            {
+                file = await _store.GetBigFileInfoAsync(reference.FileId);
+            }
+            else
+            {
+                file = await _store.GetFileInfoAsync(reference.FileId);
+            }
+
+            if (file != null && photo.AccessHash == file.AccessHash &&
+                await _store.DeleteProfilePhotoAsync(auth.UserId, reference.FileId))
+            {
+                result.Add(photo.Id);
+            }
+        }
+
+        return result;
     }
 
     public async Task<Photos> GetUserPhotos(long userId, int offset, long maxId, int limit)
