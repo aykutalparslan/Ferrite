@@ -23,43 +23,57 @@ namespace Ferrite.Services;
 
 public class SkiaPhotoProcessor : IPhotoProcessor
 {
-    public byte[] GenerateThumbnail(ReadOnlySpan<byte> src, int w, ImageFilter type)
+    public byte[]? GenerateThumbnail(ReadOnlySpan<byte> src, int w, ImageFilter type)
     {
-        using var bitmap = SKBitmap.Decode(src);
-        if (type == ImageFilter.Crop)
+        try
         {
-            var width = bitmap.Width;
-            var height = bitmap.Height;
-            var size = Math.Min(width, height);
-            var x = (width - size) / 2;
-            var y = (height - size) / 2;
-            var rect = new SKRectI(x, y, x + size, y + size);
-            using var cropped = new SKBitmap(size, size);
-            bitmap.ExtractSubset(cropped, rect);
-            using var scaled = new SKBitmap(w, w);
-            cropped.ScalePixels(scaled, SKFilterQuality.Medium);
-            using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
-            return data.ToArray();
+            using var bitmap = SKBitmap.Decode(src);
+            if (type == ImageFilter.Crop)
+            {
+                var width = bitmap.Width;
+                var height = bitmap.Height;
+                var size = Math.Min(width, height);
+                var x = (width - size) / 2;
+                var y = (height - size) / 2;
+                var rect = new SKRectI(x, y, x + size, y + size);
+                using var cropped = new SKBitmap(size, size);
+                bitmap.ExtractSubset(cropped, rect);
+                using var scaled = new SKBitmap(w, w);
+                cropped.ScalePixels(scaled, SKFilterQuality.Medium);
+                using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
+                return data.ToArray();
+            }
+            else
+            {
+                var size = Math.Max(bitmap.Width, bitmap.Height);
+                var box = new SKBitmap(size, size);
+                using var canvas = new SKCanvas(box);
+                canvas.Clear(SKColors.Black);
+                var x = (size - bitmap.Width) / 2;
+                var y = (size - bitmap.Height) / 2;
+                canvas.DrawBitmap(bitmap, x, y);
+                using var scaled = new SKBitmap(w, w);
+                box.ScalePixels(scaled, SKFilterQuality.High);
+                using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
+                return data.ToArray();
+            }
         }
-        else
+        catch (Exception e)
         {
-            var size = Math.Max(bitmap.Width, bitmap.Height);
-            var box = new SKBitmap(size, size);
-            using var canvas = new SKCanvas(box);
-            canvas.Clear(SKColors.Black);
-            var x = (size - bitmap.Width) / 2;
-            var y = (size - bitmap.Height) / 2;
-            canvas.DrawBitmap(bitmap, x, y);
-            using var scaled = new SKBitmap(w, w);
-            box.ScalePixels(scaled, SKFilterQuality.High);
-            using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
-            return data.ToArray();
+            return null;
         }
+        
     }
-
-    public (int w, int h) GetImageSıze(ReadOnlySpan<byte> src)
+    public (int w, int h) GetImageSize(ReadOnlySpan<byte> src)
     {
-        using var bitmap = SKBitmap.Decode(src);
-        return (bitmap.Width, bitmap.Height);
+        try
+        {
+            using var bitmap = SKBitmap.Decode(src);
+            return (bitmap.Width, bitmap.Height);
+        }
+        catch (Exception e)
+        {
+            return (0, 0);
+        }
     }
 }
