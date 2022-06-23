@@ -18,5 +18,5 @@
 
 namespace Ferrite.Data;
 
-public record PhotoSize(PhotoSizeType PhotoSizeType, string Type, int W, 
-    int H, int Size, byte[]? Bytes, IReadOnlyCollection<int>? Sizes);
+public record Thumbnail(long FileId, long ThumbnailFileId, string Type, int Size,
+    int Width, int Height, byte[]? Bytes, IReadOnlyCollection<int>? Sizes);

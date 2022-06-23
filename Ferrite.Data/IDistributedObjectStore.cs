@@ -24,4 +24,6 @@ public interface IDistributedObjectStore
 {
     public Task<bool> SaveFilePart(long fileId, int filePart, Stream data);
     public Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
+    public Task<Stream> GetFilePart(long fileId, int filePart);
+    public Task<Stream> GetBigFilePart(long fileId, int filePart);
 }

@@ -251,8 +251,21 @@ namespace Ferrite.Data
                 "user_id blob," +
                 "file_id long," +
                 "file_reference blob," +
+                "access_hash bigint," +
                 "added_on timestamp," +
                 "PRIMARY KEY (user_id, file_id));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.thumbnails (" +
+                "file_id bigint," +
+                "thumb_file_id bigint," +
+                "thumb_type text," +
+                "thumb_size int," +
+                "width int," +
+                "height int," +
+                "bytes blob," +
+                "sizes set<int>," +
+                "PRIMARY KEY (file_id, thumb_file_id, thumb_type));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -1351,12 +1364,13 @@ namespace Ferrite.Data
             return null;
         }
 
-        public async Task<bool> SaveProfilePhotoAsync(long userId, long fileId, byte[] referenceBytes, DateTimeOffset date)
+        public async Task<bool> SaveProfilePhotoAsync(long userId, long fileId, long accessHash, 
+            byte[] referenceBytes, DateTimeOffset date)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.profile_photos SET file_reference = ?, saved_on = ? " +
+                "UPDATE ferrite.profile_photos SET file_reference = ?, saved_on = ?, access_hash = ? " +
                 "WHERE user_id = ? AND file_id = ?;",
-                 referenceBytes, date, userId, fileId) .SetKeyspace(keySpace);
+                 referenceBytes, accessHash, date, userId, fileId) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1369,6 +1383,81 @@ namespace Ferrite.Data
                 userId, fileId) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
+        }
+
+        public async Task<IReadOnlyCollection<Photo>> GetProfilePhotosAsync(long userId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.big_file_parts WHERE file_id = ?;", 
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<Photo> photos = new();
+            foreach (var row in results)
+            {
+                var fileId = row.GetValue<long>("file_id");
+                var statementInner = new SimpleStatement(
+                    "SELECT * FROM ferrite.thumbnails WHERE file_id = ?;", 
+                    fileId);
+                statement = statement.SetKeyspace(keySpace);
+
+                var results2 = await session.ExecuteAsync(statement);
+                List<PhotoSize> photoSizes = new List<PhotoSize>();
+                foreach (var row2 in results2)
+                {
+                    photoSizes.Add(new PhotoSize(PhotoSizeType.Default,
+                        row2.GetValue<string>("thumb_type"),
+                        row2.GetValue<int>("width"),
+                        row2.GetValue<int>("height"),
+                        row2.GetValue<int>("thumb_size"),
+                        row2.GetValue<byte[]>("bytes"),
+                        row2.GetValue<List<int>>("sizes")));
+                }
+                photos.Add(new Photo(false, fileId,
+                    row.GetValue<long>("access_hash"),
+                    row.GetValue<byte[]>("file_reference"),
+                    (int)row.GetValue<DateTimeOffset>("saved_on").ToUnixTimeSeconds(),
+                    photoSizes, new List<VideoSize>(), 1));
+            }
+
+            return photos;
+        }
+
+        public async Task<bool> SaveThumbnailAsync(Thumbnail thumbnail)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.thumbnails SET thumb_size = ?, width = ?, height ?, " +
+                "bytes = ?, sizes = ? "+
+                "WHERE file_id = ? AND thumb_file_id = ? AND thumb_type = ?;",
+                thumbnail.Size, thumbnail.Width, thumbnail.Height,thumbnail.Bytes, 
+                thumbnail.Sizes, thumbnail.FileId, thumbnail.ThumbnailFileId, thumbnail.Type).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<IReadOnlyCollection<Thumbnail>> GetThumbnailsAsync(long photoId)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.thumbnails WHERE file_id = ?;", 
+                photoId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<Thumbnail> thumbs = new();
+            foreach (var row in results)
+            {
+                thumbs.Add(new Thumbnail(photoId, 
+                    row.GetValue<long>("thumb_file_id"),
+                    row.GetValue<string>("thumb_type"),
+                    row.GetValue<int>("thumb_size"),
+                    row.GetValue<int>("width"),
+                    row.GetValue<int>("height"),
+                    row.GetValue<byte[]>("bytes"),
+                    row.GetValue<List<int>>("sizes")));
+            }
+
+            return thumbs;
         }
     }
 }

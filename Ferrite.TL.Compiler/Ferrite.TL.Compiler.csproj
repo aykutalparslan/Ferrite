@@ -26,11 +26,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.1.0" />
-    <PackageReference Include="DotNext" Version="4.4.1" />
-    <PackageReference Include="DotNext.IO" Version="4.4.1" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.2.0" />
+    <PackageReference Include="DotNext" Version="4.6.0" />
+    <PackageReference Include="DotNext.IO" Version="4.6.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.6.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" />

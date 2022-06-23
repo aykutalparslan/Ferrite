@@ -5,10 +5,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
@@ -19,6 +25,9 @@
     <Compile Remove="SessionManager.cs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="DotNext.IO" Version="4.6.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.6.0" />
+    <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
     <PackageReference Include="SkiaSharp" Version="2.88.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.0" />
   </ItemGroup>

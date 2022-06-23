@@ -322,14 +322,17 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.9.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.9.18" />
     <PackageReference Include="Elasticsearch.Net" Version="7.17.2" />
     <PackageReference Include="NEST" Version="7.17.2" />
-    <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.45" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.17.1" />
-    <PackageReference Include="MessagePack" Version="2.3.85" />
-    <PackageReference Include="MessagePackAnalyzer" Version="2.3.85" />
-    <PackageReference Include="Confluent.Kafka" Version="1.8.2" />
+    <PackageReference Include="MessagePack" Version="2.3.112" />
+    <PackageReference Include="MessagePackAnalyzer" Version="2.3.112">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Confluent.Kafka" Version="1.9.0" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Account\" />

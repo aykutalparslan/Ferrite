@@ -24,9 +24,9 @@
     <None Remove="MessagePackAnalyzer" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext.IO" Version="4.4.1" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
-    <PackageReference Include="Autofac" Version="6.3.0" />
+    <PackageReference Include="DotNext.IO" Version="4.6.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.6.0" />
+    <PackageReference Include="Autofac" Version="6.4.0" />
     <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
   </ItemGroup>
   <ItemGroup>

@@ -92,4 +92,24 @@ public class S3ObjectStore : IDistributedObjectStore
         var putObjectResponse = await _s3Client.PutObjectAsync(putObjectRequest);
         return true;
     }
+
+    public async Task<Stream> GetFilePart(long fileId, int filePart)
+    {
+        //get file part from s3 and return as a stream
+        GetObjectRequest getObjectRequest = new GetObjectRequest();
+        getObjectRequest.Key = fileId.ToString("X")+"-"+filePart.ToString("X");
+        getObjectRequest.BucketName = SmallFileBucketName;
+        var getObjectResponse = await _s3Client.GetObjectAsync(getObjectRequest);
+        return getObjectResponse.ResponseStream;
+    }
+
+    public async Task<Stream> GetBigFilePart(long fileId, int filePart)
+    {
+        //get big file part from s3 and return as a stream
+        GetObjectRequest getObjectRequest = new GetObjectRequest();
+        getObjectRequest.Key = fileId.ToString("X")+"-"+filePart.ToString("X");
+        getObjectRequest.BucketName = BigFileBucketName;
+        var getObjectResponse = await _s3Client.GetObjectAsync(getObjectRequest);
+        return getObjectResponse.ResponseStream;
+    }
 }

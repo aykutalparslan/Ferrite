@@ -22,11 +22,14 @@
     <None Remove="MessagePackAnalyzer" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="4.4.1" />
-    <PackageReference Include="DotNext.IO" Version="4.4.1" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
-    <PackageReference Include="MessagePack" Version="2.3.85" />
-    <PackageReference Include="MessagePackAnalyzer" Version="2.3.85" />
+    <PackageReference Include="DotNext" Version="4.6.0" />
+    <PackageReference Include="DotNext.IO" Version="4.6.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.6.0" />
+    <PackageReference Include="MessagePack" Version="2.3.112" />
+    <PackageReference Include="MessagePackAnalyzer" Version="2.3.112">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />

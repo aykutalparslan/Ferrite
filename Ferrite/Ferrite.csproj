@@ -19,10 +19,10 @@
     <None Remove="LanguagePacks\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="4.4.1" />
-    <PackageReference Include="DotNext.IO" Version="4.4.1" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.4.1" />
-    <PackageReference Include="MessagePack" Version="2.3.85" />
+    <PackageReference Include="DotNext" Version="4.6.0" />
+    <PackageReference Include="DotNext.IO" Version="4.6.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.6.0" />
+    <PackageReference Include="MessagePack" Version="2.3.112" />
   </ItemGroup>
   <ItemGroup>
     <None Update="TL\mtproto\T4Template.hhh">
