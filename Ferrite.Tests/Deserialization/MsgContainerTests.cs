@@ -232,7 +232,7 @@ public class MsgContainerTests
             .Where(t => t.Namespace == "Ferrite.TL")
             .AsSelf();
         builder.RegisterAssemblyTypes(tl)
-            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.layer139"))
+            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.currentLayer"))
             .AsSelf();
         builder.Register(_ => new Int128());
         builder.Register(_ => new Int256());

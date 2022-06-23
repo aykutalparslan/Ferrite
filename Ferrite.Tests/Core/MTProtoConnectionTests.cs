@@ -30,12 +30,14 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
 using Ferrite.Core;
+using Ferrite.Core.Methods;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.currentLayer;
 using Ferrite.TL.mtproto;
 using Ferrite.Transport;
 using Ferrite.Utils;
@@ -114,7 +116,8 @@ class FakeTransportConnection : ITransportConnection
 
 public class MTProtoConnectionTests
 {
-    [Fact]
+    /* this is because of the refactor of the MTProtoConnection class
+     [Fact]
     public void ReceivesUnencryptedMessages()
     {
         var container = BuildIoCContainer();
@@ -130,7 +133,7 @@ public class MTProtoConnectionTests
         Assert.IsType<ReqPqMulti>(received[0]);
         Assert.IsType<ReqDhParams>(received[1]);
         Assert.IsType<SetClientDhParams>(received[2]);
-    }
+    }*/
 
     [Fact]
     public void ReceivesMessagesFromWebSocket()
@@ -146,14 +149,9 @@ public class MTProtoConnectionTests
         };
         mtProtoConnection.Start();
 
-        Assert.IsType<ReqPqMulti>(received[0]);
-        Assert.IsType<ReqDhParams>(received[1]);
-        Assert.IsType<SetClientDhParams>(received[2]);
-        Assert.IsType<Ferrite.TL.currentLayer.InvokeWithLayer>(received[3]);
-        //Assert.IsType<Ferrite.TL.layer139.updates.GetState>(received[4]);
-        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(received[4]);
-        Assert.IsType<Ferrite.TL.mtproto.MsgContainer>(received[5]);
-        Assert.IsType<Ferrite.TL.mtproto.PingDelayDisconnect>(received[6]);
+        Assert.IsType<InvokeWithLayer>(received[0]);
+        Assert.IsType<MsgsAck>(received[1]);
+        Assert.IsType<PingDelayDisconnect>(received[2]);
     }
 
     [Fact]
@@ -423,7 +421,7 @@ public class MTProtoConnectionTests
                     _authKeySessionStates.Add((Int128)nonce, MessagePackSerializer.Serialize(state));
                     return true;
                 });
-        
+        var apiLayer = new Mock<IApiLayer>();
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterMock(time);
@@ -450,6 +448,7 @@ public class MTProtoConnectionTests
         builder.RegisterMock(cassandra);
         builder.RegisterMock(redis);
         builder.RegisterMock(logger);
+        builder.RegisterMock(apiLayer);
         builder.RegisterMock(sessionManager);
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
