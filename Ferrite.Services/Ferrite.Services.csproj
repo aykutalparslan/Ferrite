@@ -18,6 +18,10 @@
   <ItemGroup>
     <Compile Remove="SessionManager.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.88.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.0" />
+  </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>
       <Properties>
