@@ -38,6 +38,6 @@ public class LexerTests
             tokens.Add(token);
         }
 
-        Assert.Equal(1020, tokens.Count);
+        Assert.Equal(1015, tokens.Count);
     }
 }
