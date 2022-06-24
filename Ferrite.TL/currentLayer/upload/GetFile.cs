@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.upload;
@@ -46,14 +47,26 @@ public class GetFile : ITLObject
     public int Offset => _offset;
     private int _limit;
     public int Limit => _limit;
-    public async Task<IDistributedFileOwner?> ExecuteAsync(TLExecutionContext ctx)
+    public async Task<TLObjectStream> ExecuteAsync(TLExecutionContext ctx)
     {
         if (_location is InputPhotoFileLocationImpl photoLocation)
         {
-            var file = await _uploadService.GetPhoto(photoLocation.Id, photoLocation.AccessHash, 
+            var result = await _uploadService.GetPhoto(photoLocation.Id, photoLocation.AccessHash,
                 photoLocation.FileReference, photoLocation.ThumbSize, _offset, _limit);
+            if (result.Success)
+            {
+                return new TLObjectStream(result.Result, true, null);
+            }
+
+            var err = _factory.Resolve<RpcError>();
+            err.ErrorCode = result.ErrorMessage.Code;
+            err.ErrorMessage = result.ErrorMessage.Message;
+            return new TLObjectStream(null, false, err);
         }
-        throw new NotImplementedException();
+        var err2 = _factory.Resolve<RpcError>();
+        err2.ErrorCode = 400;
+        err2.ErrorMessage = "LOCATION_INVALID";
+        return new TLObjectStream(null, false, err2);
     }
 
     public void Parse(ref SequenceReader buff)
