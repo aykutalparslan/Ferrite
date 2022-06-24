@@ -44,7 +44,6 @@ public class MTProtoStream : Stream
         {
             return 0;
         }
-        var dest = buffer.AsSpan().Slice(offset, toBeCopied);
         int copied = _pipeStream.Read(buffer, offset, toBeCopied);
         _remaining -= copied;
         return copied;
