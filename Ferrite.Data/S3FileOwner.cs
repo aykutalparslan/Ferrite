@@ -22,13 +22,18 @@ public class S3FileOwner : IDistributedFileOwner
 {
     private readonly UploadedFileInfo _fileInfo;
     private readonly IDistributedObjectStore _objectStore;
-    public S3FileOwner(UploadedFileInfo fileInfo, IDistributedObjectStore objectStore)
+    private readonly int _offset;
+    private readonly int _limit;
+    public S3FileOwner(UploadedFileInfo fileInfo, IDistributedObjectStore objectStore, int offset, int limit)
     {
         _fileInfo = fileInfo;
         _objectStore = objectStore;
+        _offset = offset;
+        _limit = limit;
     }
-    public async Task<Stream> GetFileStream(int offset, int limit)
+    public async Task<Stream> GetFileStream()
     {
+        int offset = _offset;
         Queue<Stream> streams = new Queue<Stream>();
         for (int i = 0; i < _fileInfo.Parts; i++)
         {
@@ -40,17 +45,15 @@ public class S3FileOwner : IDistributedFileOwner
             if (_fileInfo.IsBigFile)
             {
                 var part = await _objectStore.GetBigFilePart(_fileInfo.Id, i);
-                limit += (int)part.Length;
                 streams.Enqueue(part);
             }
             else
             {
                 var part = await _objectStore.GetFilePart(_fileInfo.Id, i);
-                limit += (int)part.Length;
                 streams.Enqueue(part);
             }
         }
 
-        return new ConcatenatedStream(streams, offset, limit);
+        return new ConcatenatedStream(streams, offset, _limit);
     }
 }

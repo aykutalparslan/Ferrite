@@ -20,117 +20,49 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.upload;
-public class GetFile : ITLObject, ITLMethod
+public class GetFile : ITLObject
 {
-    private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private readonly ITLObjectFactory factory;
-    private bool serialized = false;
-    public GetFile(ITLObjectFactory objectFactory)
+    private readonly ITLObjectFactory _factory;
+    private readonly IUploadService _uploadService;
+    public GetFile(ITLObjectFactory factory, IUploadService uploadService)
     {
-        factory = objectFactory;
+        _factory = factory;
+        _uploadService = uploadService;
     }
-
     public int Constructor => -1319462148;
-    public ReadOnlySequence<byte> TLBytes
-    {
-        get
-        {
-            if (serialized)
-                return writer.ToReadOnlySequence();
-            writer.Clear();
-            writer.WriteInt32(Constructor, true);
-            writer.Write<Flags>(_flags);
-            writer.Write(_location.TLBytes, false);
-            writer.WriteInt32(_offset, true);
-            writer.WriteInt32(_limit, true);
-            serialized = true;
-            return writer.ToReadOnlySequence();
-        }
-    }
-
+    public ReadOnlySequence<byte> TLBytes => throw new NotSupportedException();
     private Flags _flags;
-    public Flags Flags
-    {
-        get => _flags;
-        set
-        {
-            serialized = false;
-            _flags = value;
-        }
-    }
-
-    public bool Precise
-    {
-        get => _flags[0];
-        set
-        {
-            serialized = false;
-            _flags[0] = value;
-        }
-    }
-
-    public bool CdnSupported
-    {
-        get => _flags[1];
-        set
-        {
-            serialized = false;
-            _flags[1] = value;
-        }
-    }
-
+    public Flags Flags => _flags;
+    public bool Precise => _flags[0];
+    public bool CdnSupported => _flags[1];
     private InputFileLocation _location;
-    public InputFileLocation Location
-    {
-        get => _location;
-        set
-        {
-            serialized = false;
-            _location = value;
-        }
-    }
-
+    public InputFileLocation Location => _location;
     private int _offset;
-    public int Offset
-    {
-        get => _offset;
-        set
-        {
-            serialized = false;
-            _offset = value;
-        }
-    }
-
+    public int Offset => _offset;
     private int _limit;
-    public int Limit
+    public int Limit => _limit;
+    public async Task<IDistributedFileOwner?> ExecuteAsync(TLExecutionContext ctx)
     {
-        get => _limit;
-        set
+        if (_location is InputPhotoFileLocationImpl photoLocation)
         {
-            serialized = false;
-            _limit = value;
+            var file = await _uploadService.GetPhoto(photoLocation.Id, photoLocation.AccessHash, 
+                photoLocation.FileReference, photoLocation.ThumbSize, _offset, _limit);
         }
-    }
-
-    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
         throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
     {
-        serialized = false;
         _flags = buff.Read<Flags>();
-        _location = (InputFileLocation)factory.Read(buff.ReadInt32(true), ref buff);
+        _location = (InputFileLocation)_factory.Read(buff.ReadInt32(true), ref buff);
         _offset = buff.ReadInt32(true);
         _limit = buff.ReadInt32(true);
     }
 
-    public void WriteTo(Span<byte> buff)
-    {
-        TLBytes.CopyTo(buff);
-    }
+    public void WriteTo(Span<byte> buff) => throw new NotSupportedException();
 }

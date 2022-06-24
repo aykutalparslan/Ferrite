@@ -16,9 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+using System.IO.Pipelines;
+using Ferrite.Data;
 
-public interface IDistributedFileOwner
+namespace Ferrite.Services;
+
+public interface IUploadService
 {
-    public Task<Stream> GetFileStream();
+    public Task<bool> SaveFilePart(long fileId, int filePart, Stream data);
+    public Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
+    public Task<ServiceResult<IDistributedFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
+        string thumbSize, int offset, int limit, bool precise = false, bool cdnSupported = false);
 }
