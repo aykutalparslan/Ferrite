@@ -60,7 +60,14 @@ public class MTProtoPipe : IDisposable
         _encryptedPipe.Writer.Advance(count);
         return await _encryptedPipe.Writer.FlushAsync();
     }
-
+    public async ValueTask<FlushResult> WriteAsync(byte[] data)
+    {
+        return await _encryptedPipe.Writer.WriteAsync(data);
+    }
+    public async ValueTask<FlushResult> WriteAsync(Memory<byte> data)
+    {
+        return await _encryptedPipe.Writer.WriteAsync(data);
+    }
     private async Task DoDecrypt()
     {
         while (true)
