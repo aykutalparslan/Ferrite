@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using Ferrite.Data;
 using MessagePack;
 
 namespace Ferrite.Services;
@@ -37,5 +38,6 @@ public class MTProtoMessage
     public byte[]? Nonce { get; set; }
     [Key(6)]
     public long MessageId { get; set; }
+    public IDistributedFileOwner? StreamingFile { get; set; } = null;
 }
 

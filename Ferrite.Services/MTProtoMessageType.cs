@@ -23,6 +23,7 @@ public enum MTProtoMessageType
     Encrypted,
     Unencrypted,
     Pong,
-    NewSession
+    NewSession,
+    Streaming
 }
 

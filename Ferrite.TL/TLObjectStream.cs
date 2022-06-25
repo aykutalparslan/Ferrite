@@ -20,4 +20,4 @@ using Ferrite.Data;
 
 namespace Ferrite.TL;
 
-public readonly record struct TLObjectStream(IDistributedFileOwner? file, bool success, ITLObject? error);
+public readonly record struct TLObjectStream(IDistributedFileOwner? File, bool Success, ITLObject? Error);
