@@ -107,6 +107,11 @@ public class MTProtoPipe : IDisposable
     {
         _encryptedPipe.Writer.Complete();
     }
+    
+    public async ValueTask CompleteAsync()
+    {
+        await _encryptedPipe.Writer.CompleteAsync();
+    }
 
     public PipeReader Input { get; }
 
