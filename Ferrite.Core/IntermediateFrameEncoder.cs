@@ -18,6 +18,7 @@
 
 using System;
 using System.Buffers;
+using System.IO.Pipelines;
 using DotNext.Buffers;
 using Ferrite.Crypto;
 
@@ -48,5 +49,32 @@ public class IntermediateFrameEncoder : IFrameEncoder
             frame = new ReadOnlySequence<byte>(frameEncrypted);
         }
         return frame;
+    }
+
+    public ReadOnlySequence<byte> EncodeHead(int length)
+    {
+        writer.WriteInt32(length, true);
+        var frame = writer.ToReadOnlySequence();
+        writer.Clear();
+        return frame;
+    }
+
+    public ReadOnlySequence<byte> EncodeBlock(in ReadOnlySequence<byte> input)
+    {
+        writer.Write(input, false);
+        var frame = writer.ToReadOnlySequence();
+        writer.Clear();
+        if (_encryptor != null)
+        {
+            byte[] frameEncrypted = new byte[frame.Length];
+            _encryptor.Transform(frame, frameEncrypted);
+            frame = new ReadOnlySequence<byte>(frameEncrypted);
+        }
+        return frame;
+    }
+
+    public ReadOnlySequence<byte> EncodeTail()
+    {
+        return new ReadOnlySequence<byte>();
     }
 }

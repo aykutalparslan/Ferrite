@@ -55,6 +55,23 @@ namespace Ferrite.Tests.Core
             Assert.Equal(expected, encoded);
         }
         [Fact]
+        public async Task Pipe_ShouldEncodeAbridged()
+        {
+            byte[] data = File.ReadAllBytes("testdata/abridged/raw0");
+            AbridgedFrameEncoder encoder = new AbridgedFrameEncoder();
+            EncoderPipe pipe = new EncoderPipe(encoder);
+            pipe.WriteLength(data.Length);
+            for (int i = 0; i < data.Length; i += 16)
+            {
+                await pipe.WriteAsync(new ReadOnlySequence<byte>(data, i, Math.Min(16, data.Length - i)));
+            }
+            await pipe.CompleteAsync();
+            byte[] expected = File.ReadAllBytes("testdata/abridged/encoded0");
+            var readResult = await pipe.Input.ReadAtLeastAsync(expected.Length);
+            var actual = readResult.Buffer.ToArray();
+            Assert.Equal(expected, actual);
+        }
+        [Fact]
         public void ShouldEncodeObfuscatedAbridged()
         {
             byte[] data = File.ReadAllBytes("testdata/abridged/raw0");
@@ -78,6 +95,25 @@ namespace Ferrite.Tests.Core
             Assert.Equal(expected, encoded);
         }
         [Fact]
+        public async Task Pipe_ShouldEncodeObfuscatedAbridged()
+        {
+            byte[] data = File.ReadAllBytes("testdata/abridged/raw0");
+            byte[] key = File.ReadAllBytes("testdata/abridged/aesKey");
+            byte[] iv = File.ReadAllBytes("testdata/abridged/aesIV");
+            AbridgedFrameEncoder encoder = new AbridgedFrameEncoder(new Aes256Ctr(key,iv));
+            EncoderPipe pipe = new EncoderPipe(encoder);
+            pipe.WriteLength(data.Length);
+            for (int i = 0; i < data.Length; i += 16)
+            {
+                await pipe.WriteAsync(new ReadOnlySequence<byte>(data, i, Math.Min(16, data.Length - i)));
+            }
+            await pipe.CompleteAsync();
+            byte[] expected = File.ReadAllBytes("testdata/abridged/encrypted0");
+            var readResult = await pipe.Input.ReadAtLeastAsync(expected.Length);
+            var actual = readResult.Buffer.ToArray();
+            Assert.Equal(expected, actual);
+        }
+        [Fact]
         public void ShouldEncodeIntermediate()
         {
             byte[] data = File.ReadAllBytes("testdata/intermediate/raw0");
@@ -93,6 +129,23 @@ namespace Ferrite.Tests.Core
             encoded = encoder.Encode(new ReadOnlySequence<byte>(data)).ToArray();
             expected = File.ReadAllBytes("testdata/intermediate/encoded2");
             Assert.Equal(expected, encoded);
+        }
+        [Fact]
+        public async Task Pipe_ShouldEncodeIntermediate()
+        {
+            byte[] data = File.ReadAllBytes("testdata/intermediate/raw0");
+            IntermediateFrameEncoder encoder = new IntermediateFrameEncoder();
+            EncoderPipe pipe = new EncoderPipe(encoder);
+            pipe.WriteLength(data.Length);
+            for (int i = 0; i < data.Length; i += 16)
+            {
+                await pipe.WriteAsync(new ReadOnlySequence<byte>(data, i, Math.Min(16, data.Length - i)));
+            }
+            await pipe.CompleteAsync();
+            byte[] expected = File.ReadAllBytes("testdata/intermediate/encoded0");
+            var readResult = await pipe.Input.ReadAtLeastAsync(expected.Length);
+            var actual = readResult.Buffer.ToArray();
+            Assert.Equal(expected, actual);
         }
         [Fact]
         public void ShouldEncodeObfuscatedIntermediate()
@@ -112,6 +165,25 @@ namespace Ferrite.Tests.Core
             encoded = encoder.Encode(new ReadOnlySequence<byte>(data)).ToArray();
             expected = File.ReadAllBytes("testdata/intermediate/encrypted2");
             Assert.Equal(expected, encoded);
+        }
+        [Fact]
+        public async Task Pipe_ShouldEncodeObfuscatedIntermediate()
+        {
+            byte[] data = File.ReadAllBytes("testdata/intermediate/raw0");
+            byte[] key = File.ReadAllBytes("testdata/intermediate/aesKey");
+            byte[] iv = File.ReadAllBytes("testdata/intermediate/aesIV");
+            IntermediateFrameEncoder encoder = new IntermediateFrameEncoder(new Aes256Ctr(key, iv));
+            EncoderPipe pipe = new EncoderPipe(encoder);
+            pipe.WriteLength(data.Length);
+            for (int i = 0; i < data.Length; i += 16)
+            {
+                await pipe.WriteAsync(new ReadOnlySequence<byte>(data, i, Math.Min(16, data.Length - i)));
+            }
+            await pipe.CompleteAsync();
+            byte[] expected = File.ReadAllBytes("testdata/intermediate/encrypted0");
+            var readResult = await pipe.Input.ReadAtLeastAsync(expected.Length);
+            var actual = readResult.Buffer.ToArray();
+            Assert.Equal(expected, actual);
         }
     }
 }

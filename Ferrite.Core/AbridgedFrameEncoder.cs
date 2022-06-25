@@ -18,6 +18,7 @@
 
 using System;
 using System.Buffers;
+using System.IO.Pipelines;
 using DotNext.Buffers;
 using Ferrite.Crypto;
 
@@ -59,6 +60,44 @@ public class AbridgedFrameEncoder : IFrameEncoder
             frame = new ReadOnlySequence<byte>(frameEncrypted);
         }
         return frame;
+    }
+
+    public ReadOnlySequence<byte> EncodeHead(int length)
+    {
+        int len = length / 4;
+        if (len < 127)
+        {
+            writer.Write((byte)len);
+        }
+        else
+        {
+            writer.Write((byte)0x7f);
+            writer.Write((byte)(len & 0xff));
+            writer.Write((byte)((len >> 8) & 0xFF));
+            writer.Write((byte)((len >> 16) & 0xFF));
+        }
+        var result = writer.ToReadOnlySequence();
+        writer.Clear();
+        return result;
+    }
+
+    public ReadOnlySequence<byte> EncodeBlock(in ReadOnlySequence<byte> input)
+    {
+        writer.Write(input, false);
+        var frame = writer.ToReadOnlySequence();
+        writer.Clear();
+        if (_encryptor != null)
+        {
+            byte[] frameEncrypted = new byte[frame.Length];
+            _encryptor.Transform(frame, frameEncrypted);
+            frame = new ReadOnlySequence<byte>(frameEncrypted);
+        }
+        return frame;
+    }
+
+    public ReadOnlySequence<byte> EncodeTail()
+    {
+        return new ReadOnlySequence<byte>();
     }
 }
 
