@@ -33,6 +33,17 @@ namespace Ferrite.Tests.Crypto
             var messageKeyActual = AesIge.GenerateMessageKey(authKey, plaintext, true);
             Assert.Equal(messageKey, messageKeyActual.ToArray());
         }
+        
+        [Fact]
+        public void ShouldGenerateClientMessageKey_From_Stream()
+        {
+            byte[] authKey = File.ReadAllBytes("testdata/crypto/authKeyClient");
+            byte[] messageKey = File.ReadAllBytes("testdata/crypto/messageKeyClient");
+            byte[] plaintext = File.ReadAllBytes("testdata/crypto/messageClientDecrypted");
+            Stream plaintextStream = new MemoryStream(plaintext);
+            var messageKeyActual = AesIge.GenerateMessageKey(authKey, plaintextStream, true);
+            Assert.Equal(messageKey, messageKeyActual.ToArray());
+        }
 
         [Fact]
         public void ShouldGenerateServerMessageKey()
@@ -41,6 +52,17 @@ namespace Ferrite.Tests.Crypto
             byte[] messageKey = File.ReadAllBytes("testdata/crypto/messageKeyServer");
             byte[] plaintext = File.ReadAllBytes("testdata/crypto/messageServerDecrypted");
             Span<byte> actual = AesIge.GenerateMessageKey(authKey, plaintext);
+            Assert.Equal(messageKey, actual.ToArray());
+        }
+        
+        [Fact]
+        public void ShouldGenerateServerMessageKey_From_Stream()
+        {
+            byte[] authKey = File.ReadAllBytes("testdata/crypto/authKeyServer");
+            byte[] messageKey = File.ReadAllBytes("testdata/crypto/messageKeyServer");
+            byte[] plaintext = File.ReadAllBytes("testdata/crypto/messageServerDecrypted");
+            Stream plaintextStream = new MemoryStream(plaintext);
+            Span<byte> actual = AesIge.GenerateMessageKey(authKey, plaintextStream);
             Assert.Equal(messageKey, actual.ToArray());
         }
 

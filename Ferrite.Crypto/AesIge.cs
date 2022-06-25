@@ -117,6 +117,30 @@ public readonly ref struct AesIge
         Span<byte> messageKey = messageKeyLarge.Slice(8, 16);
         return messageKey;
     }
+    public static Span<byte> GenerateMessageKey(Span<byte> authKey, Stream plaintext, bool fromClient = false)
+    {
+        //x = 0 for messages from client to server and x = 8 for those from server to client.
+        int x = 0;
+        if (!fromClient)
+        {
+            x = 8;
+        }
+        var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        sha256.AppendData(authKey.Slice(88 + x, 32));
+        int remaining = (int)plaintext.Length;
+        var buffer = new byte[1024];
+        while (remaining > 0)
+        {
+            var read = plaintext.Read(buffer, 0, buffer.Length);
+            sha256.AppendData(buffer.AsSpan(0, read));
+            remaining -= read;
+        }
+        //msg_key_large = SHA256(substr(auth_key, 88 + x, 32) + plaintext + random_padding);
+        Span<byte> messageKeyLarge = sha256.GetCurrentHash();
+        //msg_key = substr (msg_key_large, 8, 16);
+        Span<byte> messageKey = messageKeyLarge.Slice(8, 16);
+        return messageKey;
+    }
     public static void GenerateAesKeyAndIV(Span<byte> authKey, Span<byte> messageKey, 
         bool fromClient, Span<byte> aesKey, Span<byte> aesIV)
     {
