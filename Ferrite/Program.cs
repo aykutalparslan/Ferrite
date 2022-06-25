@@ -118,6 +118,9 @@ public class Program
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
+        builder.Register(_ => new S3ObjectStore("http://localhost:9000", 
+                "minioadmin", "minioadmin"))
+            .As<IDistributedObjectStore>().SingleInstance();
         builder.Register(_ => new CassandraDataStore("ferrite","localhost"))
             .As<IPersistentStore>().SingleInstance();
         builder.Register(_ => new ElasticSearchEngine("https://localhost:9200",
@@ -132,9 +135,9 @@ public class Program
         //builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<SessionService>().As<ISessionService>().SingleInstance();
-        builder.RegisterType<FerriteServer>().As<IFerriteServer>();
-        builder.RegisterType<AuthService>().As<IAuthService>();
-        builder.RegisterType<AccountService>().As<IAccountService>();
+        builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();
+        builder.RegisterType<AuthService>().As<IAuthService>().SingleInstance();
+        builder.RegisterType<AccountService>().As<IAccountService>().SingleInstance();
         var container = builder.Build();
 
         return container;

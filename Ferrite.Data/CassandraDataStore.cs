@@ -242,14 +242,14 @@ namespace Ferrite.Data
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.file_references (" +
                 "file_reference blob," +
-                "file_id int," +
+                "file_id bigint," +
                 "is_big_file boolean, " +
                 "PRIMARY KEY (file_reference));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.profile_photos (" +
                 "user_id blob," +
-                "file_id long," +
+                "file_id bigint," +
                 "file_reference blob," +
                 "access_hash bigint," +
                 "added_on timestamp," +

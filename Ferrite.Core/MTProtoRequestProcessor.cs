@@ -20,6 +20,7 @@ using System.Buffers;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 using MessagePack;
@@ -75,15 +76,17 @@ public class MTProtoRequestProcessor : IProcessor
                 _log.Error(e, $"😭 => {this} => {input} => {e.Message}");
             }
         }
-        if (input is Message msg && msg.Body is ITLMethod encMethod)
+        if (input is Message { Body: ITLMethod encMethod } msg)
         {
-            var _context = new TLExecutionContext(ctx.SessionData);
-            _context.MessageId = msg.MsgId;
-            _context.AuthKeyId = ctx.AuthKeyId;
-            _context.PermAuthKeyId = ctx.PermAuthKeyId;
-            _context.SequenceNo = msg.Seqno;
-            _context.Salt = ctx.Salt;
-            _context.SessionId = ctx.SessionId;
+            var _context = new TLExecutionContext(ctx.SessionData)
+            {
+                MessageId = msg.MsgId,
+                AuthKeyId = ctx.AuthKeyId,
+                PermAuthKeyId = ctx.PermAuthKeyId,
+                SequenceNo = msg.Seqno,
+                Salt = ctx.Salt,
+                SessionId = ctx.SessionId
+            };
             try
             {
                 var result = await encMethod.ExecuteAsync(_context);
@@ -115,6 +118,48 @@ public class MTProtoRequestProcessor : IProcessor
             catch (Exception e)
             {
                 _log.Error(e, $"😭 => {this} => {msg.Body} => {e.Message}");
+            }
+        }
+        else if (input is GetFile getFileRequest)
+        {
+            var result = await getFileRequest.ExecuteAsync(ctx);
+            _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
+            
+            if (result.Success && sender != null)
+            {
+                await ((MTProtoConnection)sender).SendAsync(result.File);
+            }
+            else if (sender != null)
+            {
+                MTProtoMessage message = new MTProtoMessage
+                {
+                    MessageType = MTProtoMessageType.Encrypted,
+                    SessionId = ctx.SessionId,
+                    IsResponse = true,
+                    IsContentRelated = true
+                };
+                message.Data = result.Error.TLBytes.ToArray();
+            }
+        }
+        else if (input is Message { Body: GetFile getFileRequest2 })
+        {
+            var result = await getFileRequest2.ExecuteAsync(ctx);
+            _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
+            
+            if (result.Success && sender != null)
+            {
+                await ((MTProtoConnection)sender).SendAsync(result.File);
+            }
+            else if (sender != null)
+            {
+                MTProtoMessage message = new MTProtoMessage
+                {
+                    MessageType = MTProtoMessageType.Encrypted,
+                    SessionId = ctx.SessionId,
+                    IsResponse = true,
+                    IsContentRelated = true
+                };
+                message.Data = result.Error.TLBytes.ToArray();
             }
         }
     }

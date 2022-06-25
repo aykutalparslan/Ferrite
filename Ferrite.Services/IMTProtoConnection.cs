@@ -16,6 +16,7 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Ferrite.Data;
 
 namespace Ferrite.Services;
 
@@ -24,7 +25,8 @@ public interface IMTProtoConnection
     MTProtoTransport TransportType { get; }
     bool IsEncrypted { get; }
     void Abort(Exception abortReason);
-    Task Ping(long pingId, int delayDisconnectInSeconds = 75);
-    Task SendAsync(MTProtoMessage message);
+    ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75);
+    ValueTask SendAsync(MTProtoMessage message);
+    ValueTask SendAsync(IDistributedFileOwner message);
     void Start();
 }

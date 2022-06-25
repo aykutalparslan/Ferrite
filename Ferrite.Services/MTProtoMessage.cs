@@ -38,6 +38,5 @@ public class MTProtoMessage
     public byte[]? Nonce { get; set; }
     [Key(6)]
     public long MessageId { get; set; }
-    public IDistributedFileOwner? StreamingFile { get; set; } = null;
 }
 

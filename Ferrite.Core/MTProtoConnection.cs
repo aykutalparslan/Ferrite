@@ -60,7 +60,10 @@ public class MTProtoConnection : IMTProtoConnection
     private ITransportConnection socketConnection;
     private Task? receiveTask;
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
+    private Channel<IDistributedFileOwner> _outgoingStreams = Channel.CreateUnbounded<IDistributedFileOwner>();
+    private bool _sending = false;
     private Task? sendTask;
+    private Task? sendStreamTask;
     private Timer? disconnectTimer;
     private object disconnectTimerState = new object();
     private readonly ITLObjectFactory factory;
@@ -94,16 +97,20 @@ public class MTProtoConnection : IMTProtoConnection
         _processorManager = processorManager;
     }
 
+    public async ValueTask SendAsync(IDistributedFileOwner message)
+    {
+        if (message != null)
+        {
+            await _outgoingStreams.Writer.WriteAsync(message);
+        }
+    }
+
     public void Start()
     {
         receiveTask = DoReceive();
         sendTask = DoSend();
+        sendStreamTask = DoSendStreams();
         DelayDisconnect();
-    }
-    
-    public async Task WaitForCompletion()
-    {
-        
     }
 
     private void DelayDisconnect(int delayInMiliseconds = 750000)
@@ -151,7 +158,7 @@ public class MTProtoConnection : IMTProtoConnection
             }
         }
     }
-    public async Task Ping(long pingId, int delayDisconnectInSeconds = 75)
+    public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
     {
         DelayDisconnect(delayDisconnectInSeconds * 1000);
         var pong = factory.Resolve<Pong>();
@@ -171,7 +178,6 @@ public class MTProtoConnection : IMTProtoConnection
 
     private async Task DoReceive()
     {
-
         while (true)
         {
             var result = await socketConnection.Transport.Input.ReadAsync();
@@ -215,7 +221,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
 
-    public async Task SendAsync(MTProtoMessage message)
+    public async ValueTask SendAsync(MTProtoMessage message)
     {
         await _outgoing.Writer.WriteAsync(message);
     }
@@ -227,7 +233,11 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-                
+                while (_sending)
+                {
+                    await Task.Delay(20);
+                }
+                _sending = true;
                 var data = msg.Data;
                 _log.Debug($"=>Sending {msg.MessageType} message.");
                 if (_authKeyId == 0)
@@ -240,6 +250,7 @@ public class MTProtoConnection : IMTProtoConnection
                     SendEncrypted(msg, state);
                 }
                 var result = await socketConnection.Transport.Output.FlushAsync();
+                _sending = false;
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -250,6 +261,135 @@ public class MTProtoConnection : IMTProtoConnection
         catch (Exception ex)
         {
             _log.Error(ex, ex.Message);
+        }
+    }
+    private async Task DoSendStreams()
+    {
+        try
+        {
+            while (true)
+            {
+                var msg = await _outgoingStreams.Reader.ReadAsync();
+                while (_sending)
+                {
+                    await Task.Delay(20);
+                }
+                _sending = true;
+                _log.Debug($"=>Sending stream.");
+                if (_authKeyId == 0)
+                {
+                    _sending = false;
+                    return;
+                }
+                else if (await _sessionManager.GetSessionStateAsync(_sessionId)
+                         is { } state)
+                {
+                    await SendStream(msg, state);
+                    
+                    
+                }
+                var result = await socketConnection.Transport.Output.FlushAsync();
+                _sending = false;
+                if (result.IsCompleted ||
+                    result.IsCanceled)
+                {
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.Error(ex, ex.Message);
+        }
+    }
+
+    private async Task SendStream(IDistributedFileOwner message, SessionState state)
+    {
+        if (message == null) { return; }
+        //generate messageKey, aesKey, aesIV
+        var data = await message.GetFileStream();
+        byte[] messageKey = AesIge.GenerateMessageKey(_authKey, 
+            data).ToArray();
+        byte[] aesKey = new byte[32];
+        byte[] aesIV = new byte[32];
+        AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
+        //create a pipe for AES-256-IGE encryption
+        MTProtoPipe pipe = new MTProtoPipe(aesKey, aesIV, true);
+        //write the header to the encryption pipe
+        writer.Clear();
+        writer.WriteInt64(state.ServerSalt.Salt, true);
+        writer.WriteInt64(state.SessionId, true);
+        writer.WriteInt64(NextMessageId(true), true);
+        writer.WriteInt32(GenerateSeqNo(true), true);
+        var stream = await message.GetFileStream();
+        int paddingLength = _random.GetNext(12, 512);
+        while ((stream.Length + paddingLength) % 16 != 0)
+        {
+            paddingLength++;
+        }
+        writer.WriteInt32((int)stream.Length, true);
+        byte[] header = writer.ToReadOnlySequence().ToArray();
+        writer.Clear();
+        await pipe.WriteAsync(header);
+        //create a pipe for frame encoding
+        var encoderPipe = new EncoderPipe(encoder);
+        //encode the length
+        int totalLength = 8 + 16 + (int)stream.Length + paddingLength;
+        long hlen = await encoderPipe.WriteLength(totalLength);
+        //write the header to the encoder pipe
+        writer.WriteInt64(state.AuthKeyId, true);
+        writer.Write(messageKey);
+        header = writer.ToReadOnlySequence().ToArray();
+        writer.Clear();
+        await encoderPipe.WriteAsync(header);
+        //encode the websocket frame length if we are using websockets
+        if (webSocketHandler != null)
+        {
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, hlen + totalLength);
+            await socketConnection.Transport.Output.FlushAsync();
+        }
+        //write the stream content to the encryption pipe
+        using var buffer = UnmanagedMemoryAllocator.Allocate<byte>(1024);
+        int remaining = (int)stream.Length;
+        while (remaining > 0)
+        {
+            var read = await stream.ReadAsync(buffer.Memory);
+            remaining -= read;
+            await pipe.WriteAsync(buffer.Memory.Slice(0, read));
+            //read encrypted data from the encryption pipe and write it to the encoder pipe
+            var encrypted = await pipe.Input.ReadAsync();
+            await encoderPipe.WriteAsync(encrypted.Buffer);
+            //read encoded data from the encoder pipe and write it to the socket
+            var encoded = await encoderPipe.Input.ReadAsync();
+            await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
+        }
+        if (paddingLength > 0)
+        {
+            pipe.WriteAsync(_random.GetRandomBytes(paddingLength));
+            var encrypted = await pipe.Input.ReadAsync();
+            await encoderPipe.WriteAsync(encrypted.Buffer);
+            var encoded = await encoderPipe.Input.ReadAsync();
+            await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
+        }
+        await pipe.CompleteAsync();
+        while (true)
+        {
+            var encrypted = await pipe.Input.ReadAsync();
+            await encoderPipe.WriteAsync(encrypted.Buffer);
+            if (encrypted.IsCompleted)
+            {
+                break;
+            }
+        }
+        await encoderPipe.CompleteAsync();
+        while (true)
+        {
+            var encoded = await encoderPipe.Input.ReadAsync();
+            await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
+            if (encoded.IsCompleted)
+            {
+                break;
+            }
         }
     }
 
