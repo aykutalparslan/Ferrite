@@ -20,12 +20,12 @@ using System.Buffers;
 
 namespace Ferrite.Crypto;
 
-public static class CrcExtensions
+public class IncrementalCrc32
 {
-    static uint[] table = new uint[256];
-    static CrcExtensions()
+    static readonly uint[] Table = new uint[256];
+    static IncrementalCrc32()
     {
-        table[0] = 0;
+        Table[0] = 0;
         uint crc;
         for(uint i = 0; i < 256; i++)
         {
@@ -34,50 +34,28 @@ public static class CrcExtensions
             {
                 var tmp = crc & 1;
                 crc = tmp == 1 ? 0xEDB88320 ^ (crc >> 1) : (crc >> 1);
-                table[i] = crc;
+                Table[i] = crc;
             }
         }
     }
-    public static uint GetCrc32(this ReadOnlySequence<byte> bytes)
+
+    private uint _crc32 = 0xFFFFFFFFu;
+    private uint _index = 0;
+    public uint Crc32 => _crc32 ^= 0xFFFFFFFFu;
+    public IncrementalCrc32()
     {
-        uint crc32 = 0xFFFFFFFFu;
-        uint index = 0;
-        var pos = bytes.Start;
+        
+    }
+    public void AppendData(ReadOnlySequence<byte> bytes)
+    {
         foreach (var m in bytes)
         {
             foreach (var b in m.Span)
             {
-                index = (crc32 ^ b) & 0xff;
-                crc32 = (crc32 >> 8) ^ table[index];
+                _index = (_crc32 ^ b) & 0xff;
+                _crc32 = (_crc32 >> 8) ^ Table[_index];
             }
         }
-        
-        crc32 ^= 0xFFFFFFFFu;
-        return crc32;
-    }
-    public static uint GetCrc32(this ReadOnlySpan<byte> bytes)
-    {
-        uint crc32 = 0xFFFFFFFFu;
-        uint index = 0;
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            index = (crc32 ^ bytes[i]) & 0xff;
-            crc32 = (crc32 >> 8) ^ table[index];
-        }
-        crc32 ^= 0xFFFFFFFFu;
-        return crc32;
-    }
-    public static uint GetCrc32(this Span<byte> bytes)
-    {
-        uint crc32 = 0xFFFFFFFFu;
-        uint index = 0;
-        for (int i = 0; i < bytes.Length; i++)
-        {
-            index = (crc32 ^ bytes[i]) & 0xff;
-            crc32 = (crc32 >> 8) ^ table[index];
-        }
-        crc32 ^= 0xFFFFFFFFu;
-        return crc32;
     }
 }
 
