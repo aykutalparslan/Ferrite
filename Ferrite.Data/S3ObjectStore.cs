@@ -25,8 +25,8 @@ namespace Ferrite.Data;
 public class S3ObjectStore : IDistributedObjectStore
 {
     private readonly AmazonS3Client _s3Client;
-    private const string SmallFileBucketName = "Ferrite-Small-Files";
-    private const string BigFileBucketName = "Ferrite-Big-Files";
+    private const string SmallFileBucketName = "ferrite-small-files";
+    private const string BigFileBucketName = "ferrite-big-files";
     private bool _bucketsInitialized = false;
     private readonly Task _createBuckets;
     public S3ObjectStore(string serviceUrl, string accessKey, string secretKey)
@@ -52,13 +52,13 @@ public class S3ObjectStore : IDistributedObjectStore
         if (!buckets.Buckets.Select(_ => _.BucketName == SmallFileBucketName).Any())
         {
             PutBucketRequest request = new PutBucketRequest();
-            request.BucketName = "my-new-bucket-112";
+            request.BucketName = SmallFileBucketName;
             var res = await _s3Client.PutBucketAsync(request);
         }
         if (!buckets.Buckets.Select(_ => _.BucketName == BigFileBucketName).Any())
         {
             PutBucketRequest request = new PutBucketRequest();
-            request.BucketName = "my-new-bucket-112";
+            request.BucketName = BigFileBucketName;
             var res = await _s3Client.PutBucketAsync(request);
         }
 
