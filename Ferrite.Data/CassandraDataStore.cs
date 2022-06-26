@@ -79,6 +79,9 @@ namespace Ferrite.Data
                             "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+                "DROP TABLE IF EXISTS ferrite.users;");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users (" +
                 "user_id bigint," +
                 "access_hash bigint," +
@@ -87,6 +90,7 @@ namespace Ferrite.Data
                 "username text," +
                 "phone text," +
                 "about text," +
+                "profile_photo bigint,"+
                 "account_days_TTL int," +
                 "PRIMARY KEY (user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
@@ -435,9 +439,9 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
-                "last_name, username, phone, about) VALUES(?,?,?,?,?,?,?);",
+                "last_name, username, phone, about, profile_photo) VALUES(?,?,?,?,?,?,?,?);",
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
-                user.Username, user.Phone, user.About).SetKeyspace(keySpace);
+                user.Username, user.Phone, user.About, 0).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             if ((user.Phone?.Length ?? 0) > 0)
             {
@@ -477,9 +481,10 @@ namespace Ferrite.Data
             }
             var statement = new SimpleStatement(
                 "UPDATE ferrite.users SET access_hash = =, first_name = ?, " +
-                "last_name = ?, username = ?, phone = ?, about = ? WHERE user_id = ?;",
+                "last_name = ?, username = ?, phone = ?, about = ?, profile_photo = ? WHERE user_id = ?;",
                 user.AccessHash, user.FirstName, user.LastName,
-                user.Username, user.Phone, user.About, user.Id).SetKeyspace(keySpace);
+                user.Username, user.Phone, user.About, user.Photo.Empty ? 0 : user.Photo.PhotoId, 
+                user.Id).SetKeyspace(keySpace);
             
             await session.ExecuteAsync(statement);
             if ((user.Phone?.Length ?? 0) > 0)
@@ -554,6 +559,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
+                var photoId = row.GetValue<int>("profile_photo");
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
@@ -562,6 +568,12 @@ namespace Ferrite.Data
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
+                    Photo = new UserProfilePhoto()
+                    {
+                        DcId = 1,
+                        PhotoId = photoId,
+                        Empty = photoId == 0
+                    }
                 };
             }
             return user;
@@ -589,6 +601,7 @@ namespace Ferrite.Data
             results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
+                var photoId = row.GetValue<int>("profile_photo");
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
@@ -597,6 +610,12 @@ namespace Ferrite.Data
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
+                    Photo = new UserProfilePhoto()
+                    {
+                        DcId = 1,
+                        PhotoId = photoId,
+                        Empty = photoId == 0
+                    }
                 };
             }
             return user;
@@ -641,6 +660,7 @@ namespace Ferrite.Data
             results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
+                var photoId = row.GetValue<int>("profile_photo");
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
@@ -649,6 +669,12 @@ namespace Ferrite.Data
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
+                    Photo = new UserProfilePhoto()
+                    {
+                        DcId = 1,
+                        PhotoId = photoId,
+                        Empty = photoId == 0
+                    }
                 };
             }
             return user;
@@ -1372,6 +1398,10 @@ namespace Ferrite.Data
                 "WHERE user_id = ? AND file_id = ?;",
                  referenceBytes, accessHash, date, userId, fileId) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
+            statement = new SimpleStatement(
+                "UPDATE ferrite.users SET profile_photo = ? WHERE user_id = ?;",
+                fileId, userId).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
             return true;
         }
 
@@ -1381,6 +1411,10 @@ namespace Ferrite.Data
                 "DELETE FROM ferrite.profile_photos " +
                 "WHERE user_id = ? AND file_id = ?;",
                 userId, fileId) .SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            statement = new SimpleStatement(
+                "UPDATE ferrite.users SET profile_photo = ? WHERE user_id = ?;",
+                0, userId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
