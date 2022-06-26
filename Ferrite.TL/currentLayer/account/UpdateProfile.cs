@@ -135,7 +135,22 @@ public class UpdateProfile : ITLObject, ITLMethod
             //TODO: get user status
             user.Status = factory.Resolve<UserStatusEmptyImpl>();
             //TODO: get user photo
-            user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            if (userNew.Photo.Empty)
+            {
+                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            else
+            {
+                var photo = factory.Resolve<UserProfilePhotoImpl>();
+                photo.DcId = userNew.Photo.DcId;
+                photo.PhotoId = userNew.Photo.PhotoId;
+                photo.HasVideo = userNew.Photo.HasVideo;
+                if (userNew.Photo.StrippedThumb is { Length: > 0 })
+                {
+                    photo.StrippedThumb = userNew.Photo.StrippedThumb;
+                }
+                user.Photo = photo;
+            }
         }
         return result;
     }

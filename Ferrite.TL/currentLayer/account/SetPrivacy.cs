@@ -171,7 +171,18 @@ public class SetPrivacy : ITLObject, ITLMethod
             {
                 user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
             }
-
+            else
+            {
+                var photo = factory.Resolve<UserProfilePhotoImpl>();
+                photo.DcId = u.Photo.DcId;
+                photo.PhotoId = u.Photo.PhotoId;
+                photo.HasVideo = u.Photo.HasVideo;
+                if (u.Photo.StrippedThumb is { Length: > 0 })
+                {
+                    photo.StrippedThumb = u.Photo.StrippedThumb;
+                }
+                user.Photo = photo;
+            }
             return user;
         }
     }

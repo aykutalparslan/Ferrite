@@ -91,7 +91,18 @@ public class UpdateUsername : ITLObject, ITLMethod
         {
             userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
         }
-
+        else
+        {
+            var photo = factory.Resolve<UserProfilePhotoImpl>();
+            photo.DcId = user.Photo.DcId;
+            photo.PhotoId = user.Photo.PhotoId;
+            photo.HasVideo = user.Photo.HasVideo;
+            if (user.Photo.StrippedThumb is { Length: > 0 })
+            {
+                photo.StrippedThumb = user.Photo.StrippedThumb;
+            }
+            userImpl.Photo = photo;
+        }
         result.Result = userImpl;
         return result;
     }
