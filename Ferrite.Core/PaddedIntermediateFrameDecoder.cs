@@ -36,6 +36,7 @@ public class PaddedIntermediateFrameDecoder : IFrameDecoder
     private Aes256Ctr? _decryptor;
     private readonly IDistributedCache _cache;
     private readonly IPersistentStore _db;
+    byte[] _headerBytes = new byte[72];
 
     public PaddedIntermediateFrameDecoder(IDistributedCache cache, IPersistentStore db)
     {
@@ -134,7 +135,16 @@ public class PaddedIntermediateFrameDecoder : IFrameDecoder
     }
     private bool IsStream(ReadOnlySequence<byte> header)
     {
-        SequenceReader reader = IAsyncBinaryReader.Create(header);
+        SequenceReader reader;
+        if (_decryptor != null)
+        {
+            _decryptor.TransformPeek(header, _headerBytes);
+            reader = IAsyncBinaryReader.Create(_headerBytes);
+        }
+        else
+        {
+            reader = IAsyncBinaryReader.Create(header);
+        }
         long authKeyId = reader.ReadInt64(true);
         var authKey = (_cache.GetAuthKey(authKeyId) ?? 
                        _cache.GetTempAuthKey(authKeyId)) ?? 
