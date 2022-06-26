@@ -20,6 +20,7 @@ using System.Buffers;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.currentLayer.photos;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
@@ -29,11 +30,13 @@ namespace Ferrite.Core;
 
 public class MTProtoRequestProcessor : IProcessor
 {
+    private readonly ITLObjectFactory _factory;
     private readonly ISessionService _sessionManager;
     private readonly IDistributedPipe _pipe;
     private readonly ILogger _log;
-    public MTProtoRequestProcessor(ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
+    public MTProtoRequestProcessor(ITLObjectFactory factory,ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
     {
+        _factory = factory;
         _sessionManager = sessionManager;
         _pipe = pipe;
         _log = log;
@@ -44,6 +47,21 @@ public class MTProtoRequestProcessor : IProcessor
         {
             try
             {
+                if (input is SaveFilePart or SaveBigFilePart or UploadProfilePhoto)
+                {
+                    var ack = _factory.Resolve<MsgsAck>();
+                    ack.MsgIds = new VectorOfLong(1);
+                    ack.MsgIds.Add(ctx.MessageId);
+                    MTProtoMessage message = new MTProtoMessage();
+                    message.SessionId = ctx.SessionId;
+                    message.IsResponse = true;
+                    message.IsContentRelated = true;
+                    message.Data = ack.TLBytes.ToArray();
+                    if(sender is MTProtoConnection connection)
+                    {
+                        await connection.SendAsync(message);
+                    }
+                }
                 var result = await method.ExecuteAsync(ctx);
                 if (result != null)
                 {

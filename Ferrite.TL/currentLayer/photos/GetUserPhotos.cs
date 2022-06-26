@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.photos;
@@ -27,10 +30,14 @@ public class GetUserPhotos : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IPersistentStore _store;
+    private readonly IPhotosService _photos;
     private bool serialized = false;
-    public GetUserPhotos(ITLObjectFactory objectFactory)
+    public GetUserPhotos(ITLObjectFactory objectFactory, IPersistentStore store, IPhotosService photos)
     {
         factory = objectFactory;
+        _store = store;
+        _photos = photos;
     }
 
     public int Constructor => -1848823128;
@@ -97,7 +104,81 @@ public class GetUserPhotos : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(ctx.CurrentAuthKeyId);
+        var userPhotos = await _photos.GetUserPhotos(auth.AuthKeyId, 
+            auth.UserId, _offset, _maxId, _limit);
+        var photos = factory.Resolve<PhotosImpl>();
+        photos.Photos = factory.Resolve<Vector<currentLayer.Photo>>();
+        photos.Users = factory.Resolve<Vector<User>>();
+        foreach (var p in userPhotos.PhotosInner)
+        {
+            var photo = factory.Resolve<currentLayer.PhotoImpl>();
+            photo.Id = p.Id;
+            photo.Date = p.Date;
+            photo.Sizes = factory.Resolve<Vector<PhotoSize>>();
+            foreach (var s in p.Sizes)
+            {
+                var size = factory.Resolve<PhotoSizeImpl>();
+                size.Type = s.Type;
+                size.Size = s.Size;
+                size.H = s.H;
+                size.W = s.W;
+                photo.Sizes.Add(size);
+            }
+            photo.FileReference = p.FileReference;
+            photo.Date = p.Date;
+            photo.AccessHash = p.AccessHash;
+            photo.DcId = p.DcId;
+            photo.HasStickers = p.HasStickers;
+            photo.VideoSizes = factory.Resolve<Vector<VideoSize>>();
+            foreach (var s in p.VideoSizes)
+            {
+                var size = factory.Resolve<VideoSizeImpl>();
+                size.Type = s.Type;
+                size.Size = s.Size;
+                size.H = s.H;
+                size.W = s.W;
+                size.VideoStartTs = s.VideoStartTs;
+                photo.VideoSizes.Add(size);
+            }
+            photos.Photos.Add(photo);
+        }
+
+        foreach (var user in userPhotos.Users)
+        {
+            var userImpl = factory.Resolve<UserImpl>();
+            userImpl.Id = user.Id;
+            userImpl.FirstName = user.FirstName;
+            userImpl.LastName = user.LastName;
+            userImpl.Phone = user.Phone;
+            userImpl.Self = user.Self;
+            if(user.Status == Data.UserStatus.Empty)
+            {
+                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
+            }
+            if (user.Photo.Empty)
+            {
+                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+            }
+            else
+            {
+                var photo = factory.Resolve<UserProfilePhotoImpl>();
+                photo.DcId = user.Photo.DcId;
+                photo.PhotoId = user.Photo.PhotoId;
+                photo.HasVideo = user.Photo.HasVideo;
+                if (user.Photo.StrippedThumb is { Length: > 0 })
+                {
+                    photo.StrippedThumb = user.Photo.StrippedThumb;
+                }
+                userImpl.Photo = photo;
+            }
+            photos.Users.Add(userImpl);
+        }
+
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        result.Result = photos;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

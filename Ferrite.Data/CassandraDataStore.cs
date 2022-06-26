@@ -78,9 +78,9 @@ namespace Ferrite.Data
                             "valid_since bigint," +
                             "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
-            statement = new SimpleStatement(
-                "DROP TABLE IF EXISTS ferrite.users;");
-            session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //    "DROP TABLE IF EXISTS ferrite.users;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users (" +
                 "user_id bigint," +
@@ -441,7 +441,7 @@ namespace Ferrite.Data
                 "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
                 "last_name, username, phone, about, profile_photo) VALUES(?,?,?,?,?,?,?,?);",
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
-                user.Username, user.Phone, user.About, 0).SetKeyspace(keySpace);
+                user.Username, user.Phone, user.About, user.Photo.PhotoId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             if ((user.Phone?.Length ?? 0) > 0)
             {
@@ -559,7 +559,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
-                var photoId = row.GetValue<int>("profile_photo");
+                var photoId = row.GetValue<long>("profile_photo");
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
@@ -601,7 +601,7 @@ namespace Ferrite.Data
             results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
-                var photoId = row.GetValue<int>("profile_photo");
+                var photoId = row.GetValue<long>("profile_photo");
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
@@ -660,7 +660,7 @@ namespace Ferrite.Data
             results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
-                var photoId = row.GetValue<int>("profile_photo");
+                var photoId = row.GetValue<long>("profile_photo");
                 user = new User()
                 {
                     Id = row.GetValue<long>("user_id"),
@@ -1249,7 +1249,7 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.files SET part_size = ?, parts = ?, access_hash = ?, " +
-                "file_name = ?, md5_checksum = ?, savec_on = ? " +
+                "file_name = ?, md5_checksum = ?, saved_on = ? " +
                 "WHERE file_id = ?;",
                 uploadedFile.PartSize, uploadedFile.Parts, uploadedFile.AccessHash, 
                 uploadedFile.Name, uploadedFile.MD5Checksum, uploadedFile.SavedOn, uploadedFile.Id) .SetKeyspace(keySpace);
@@ -1394,7 +1394,7 @@ namespace Ferrite.Data
             byte[] referenceBytes, DateTimeOffset date)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.profile_photos SET file_reference = ?, saved_on = ?, access_hash = ? " +
+                "UPDATE ferrite.profile_photos SET file_reference = ?, added_on = ?, access_hash = ? " +
                 "WHERE user_id = ? AND file_id = ?;",
                  referenceBytes, accessHash, date, userId, fileId) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
@@ -1451,7 +1451,7 @@ namespace Ferrite.Data
                 photos.Add(new Photo(false, fileId,
                     row.GetValue<long>("access_hash"),
                     row.GetValue<byte[]>("file_reference"),
-                    (int)row.GetValue<DateTimeOffset>("saved_on").ToUnixTimeSeconds(),
+                    (int)row.GetValue<DateTimeOffset>("added_on").ToUnixTimeSeconds(),
                     photoSizes, new List<VideoSize>(), 1));
             }
 
@@ -1461,7 +1461,7 @@ namespace Ferrite.Data
         public async Task<bool> SaveThumbnailAsync(Thumbnail thumbnail)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.thumbnails SET thumb_size = ?, width = ?, height ?, " +
+                "UPDATE ferrite.thumbnails SET thumb_size = ?, width = ?, height = ?, " +
                 "bytes = ?, sizes = ? "+
                 "WHERE file_id = ? AND thumb_file_id = ? AND thumb_type = ?;",
                 thumbnail.Size, thumbnail.Width, thumbnail.Height,thumbnail.Bytes, 

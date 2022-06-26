@@ -22,6 +22,7 @@ namespace Ferrite.TL
     public class TLExecutionContext
     {
         public Dictionary<string, object> SessionData { get; set; }
+        public long CurrentAuthKeyId => PermAuthKeyId != 0 ? PermAuthKeyId : AuthKeyId;
         public long AuthKeyId { get; set; }
         public long PermAuthKeyId { get; set; }
         public long Salt { get; set; }

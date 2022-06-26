@@ -85,6 +85,8 @@ public class Program
             .SingleInstance();
         builder.RegisterType<UserService>().As<IUsersService>()
             .SingleInstance();
+        builder.RegisterType<SkiaPhotoProcessor>().As<IPhotoProcessor>()
+            .SingleInstance();
         builder.RegisterType<PhotosService>().As<IPhotosService>()
             .SingleInstance();
         builder.RegisterAssemblyTypes(tl)

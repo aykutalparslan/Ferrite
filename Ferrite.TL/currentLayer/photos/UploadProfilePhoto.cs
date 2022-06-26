@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.photos;
@@ -27,10 +30,12 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IPhotosService _photos;
     private bool serialized = false;
-    public UploadProfilePhoto(ITLObjectFactory objectFactory)
+    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos, IPersistentStore store)
     {
         factory = objectFactory;
+        _photos = photos;
     }
 
     public int Constructor => -1980559511;
@@ -112,7 +117,109 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        Data.InputFile? photo = null;
+        Data.InputFile? video = null;
+        if (_file is InputFileImpl file)
+        {
+            photo = new Data.InputFile(file.Id, file.Parts, 
+                file.Name, file.Md5Checksum, false);
+        }
+        else if (_file is InputFileImpl bigFile)
+        {
+            photo = new Data.InputFile(bigFile.Id, bigFile.Parts, 
+                bigFile.Name, bigFile.Md5Checksum, true);
+        }
+        if (_video is InputFileImpl videoFile)
+        {
+            photo = new Data.InputFile(videoFile.Id, videoFile.Parts, 
+                videoFile.Name, videoFile.Md5Checksum, false);
+        }
+        else if (_video is InputFileImpl bigVideoFile)
+        {
+            photo = new Data.InputFile(bigVideoFile.Id, bigVideoFile.Parts, 
+                bigVideoFile.Name, bigVideoFile.Md5Checksum, true);
+        }
+
+        var serviceResult = await _photos.UploadProfilePhoto(ctx.CurrentAuthKeyId,
+            photo, video, _videoStartTs);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        else
+        {
+            var photoResult = factory.Resolve<PhotoImpl>();
+            var photoInner = factory.Resolve<currentLayer.PhotoImpl>();
+            photoInner.Date = serviceResult.Result.PhotoInner.Date;
+            photoInner.Id = serviceResult.Result.PhotoInner.Id;
+            photoInner.AccessHash = serviceResult.Result.PhotoInner.AccessHash;
+            photoInner.DcId = serviceResult.Result.PhotoInner.DcId;
+            photoInner.HasStickers = serviceResult.Result.PhotoInner.HasStickers;
+            photoInner.FileReference = serviceResult.Result.PhotoInner.FileReference;
+            photoInner.Sizes = factory.Resolve<Vector<PhotoSize>>();
+            foreach (var s in serviceResult.Result.PhotoInner.Sizes)
+            {
+                var size = factory.Resolve<PhotoSizeImpl>();
+                size.Type = s.Type;
+                size.Size = s.Size;
+                size.H = s.H;
+                size.W = s.W;
+            }
+
+            if (serviceResult.Result.PhotoInner.VideoSizes is { Count: > 0 })
+            {
+                photoInner.VideoSizes = factory.Resolve<Vector<VideoSize>>();
+                foreach (var s in serviceResult.Result.PhotoInner.VideoSizes)
+                {
+                    var size = factory.Resolve<VideoSizeImpl>();
+                    size.Type = s.Type;
+                    size.Size = s.Size;
+                    size.H = s.H;
+                    size.W = s.W;
+                    size.VideoStartTs = s.VideoStartTs;
+                }
+            }
+            photoResult.Photo = photoInner;
+            photoResult.Users = factory.Resolve<Vector<User>>();
+            foreach (var user in serviceResult.Result.Users)
+            {
+                var userImpl = factory.Resolve<UserImpl>();
+                userImpl.Id = user.Id;
+                userImpl.FirstName = user.FirstName;
+                userImpl.LastName = user.LastName;
+                userImpl.Phone = user.Phone;
+                userImpl.Self = user.Self;
+                if(user.Status == Data.UserStatus.Empty)
+                {
+                    userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
+                }
+                if (user.Photo.Empty)
+                {
+                    userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+                }
+                else
+                {
+                    var userPhoto = factory.Resolve<UserProfilePhotoImpl>();
+                    userPhoto.DcId = user.Photo.DcId;
+                    userPhoto.PhotoId = user.Photo.PhotoId;
+                    userPhoto.HasVideo = user.Photo.HasVideo;
+                    if (user.Photo.StrippedThumb is { Length: > 0 })
+                    {
+                        userPhoto.StrippedThumb = user.Photo.StrippedThumb;
+                    }
+                    userImpl.Photo = userPhoto;
+                }
+                photoResult.Users.Add(userImpl);
+            }
+            result.Result = photoResult;
+        }
+
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

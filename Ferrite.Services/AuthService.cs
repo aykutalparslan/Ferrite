@@ -385,7 +385,11 @@ public class AuthService : IAuthService
             Phone = phoneNumber,
             FirstName = firstName,
             LastName = lastName,
-            AccessHash = _random.NextLong()
+            AccessHash = _random.NextLong(),
+            Photo = new UserProfilePhoto()
+            {
+                Empty = true
+            }
         };
         await _store.SaveUserAsync(user);
         await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 

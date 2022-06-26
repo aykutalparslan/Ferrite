@@ -49,8 +49,8 @@ public class PhotoImpl : Photo
         }
     }
 
-    private Photo _photo;
-    public Photo Photo
+    private currentLayer.Photo _photo;
+    public currentLayer.Photo Photo
     {
         get => _photo;
         set
@@ -74,7 +74,7 @@ public class PhotoImpl : Photo
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _photo = (Photo)factory.Read(buff.ReadInt32(true), ref buff);
+        _photo = (currentLayer.Photo)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
     }
 
