@@ -49,15 +49,15 @@ public class ConcatenatedStream: Stream
         {
             return 0;
         }
-        int toBeCopied = (int)Math.Min(count, _currentStream.Length - _currentStreamPosition);
-        toBeCopied = Math.Min(toBeCopied, _limit - _position);
-        if (toBeCopied == 0)
+        int read = (int)Math.Min(count, _currentStream.Length - _currentStreamPosition);
+        read = Math.Min(read, _limit - _position);
+        if (read == 0)
         {
             return 0;
         }
-        _currentStream.Read(buffer, offset, toBeCopied);
-        _currentStreamPosition += toBeCopied;
-        _position += toBeCopied;
+        read = _currentStream.Read(buffer, offset, read);
+        _currentStreamPosition += read;
+        _position += read;
         if (_streams.Count == 0 &&
             _currentStreamPosition == _currentStream.Length)
         {
@@ -65,7 +65,7 @@ public class ConcatenatedStream: Stream
             _currentStream = null;
         }
 
-        return toBeCopied;
+        return read;
     }
 
     private void Discard()
@@ -135,5 +135,17 @@ public class ConcatenatedStream: Stream
             stream.Dispose();
         }
         base.Close();
+    }
+
+    public override ValueTask DisposeAsync()
+    {
+        _currentStream?.Dispose();
+        for (int i = 0; i < _streams.Count; i++)
+        {
+            var stream = _streams.Dequeue();
+            stream.Dispose();
+        }
+        base.Close();
+        return base.DisposeAsync();
     }
 }

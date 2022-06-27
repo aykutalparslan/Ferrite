@@ -28,6 +28,7 @@ public class ConcatenatedStreamTests
     [InlineData(16, 2 * 1024, 16 * 1024 + 100)]
     [InlineData(16, 512, 16 * 1024 + 100)]
     [InlineData(16, 512, 13000)]
+    [InlineData(32, 0, 29000)]
     public void ConcatenatedStream_Should_Read(int count, int offset, int limit)
     {
         byte[] data = new byte[count * 1024 + 100];

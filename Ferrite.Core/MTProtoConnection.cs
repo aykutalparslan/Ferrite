@@ -29,6 +29,8 @@ using Ferrite.Utils;
 using Ferrite.Core.Exceptions;
 using Ferrite.TL.mtproto;
 using System.Net;
+using System.Security.Cryptography;
+using DotNext.Collections.Generic;
 using DotNext.IO.Pipelines;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer.storage;
@@ -303,131 +305,203 @@ public class MTProtoConnection : IMTProtoConnection
             _log.Error(ex, ex.Message);
         }
     }
-
+    
     private async Task SendStream(IDistributedFileOwner message, SessionState state)
     {
-        if (message == null) { return; }
-        //generate messageKey, aesKey, aesIV
+        if (message == null) return;
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = message.ReqMsgId;
         var data = await message.GetFileStream();
-        if (data.Length < 0)
-        {
-            return;
-        }
-
-        int lenBytes = data.Length < 254 ? 1 : 4;
-        int pad = 0;
-        while ((24 + lenBytes + pad) % 4 != 0)
-        {
-            pad++;
-        }
-        byte[] resultBytes = new byte[24 + lenBytes];
-        RpcResult result = factory.Resolve<RpcResult>();
-        result.ReqMsgId = message.ReqMsgId;
+        if (data.Length < 0) return;
+        
         var fileImpl = factory.Resolve<FileImpl>();
         fileImpl.Type = factory.Resolve<FileJpegImpl>();
         fileImpl.Mtime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
         fileImpl.Bytes = Array.Empty<byte>();
-        result.Result = fileImpl;
-        result.TLBytes.Slice(0, 24).CopyTo(resultBytes);
+        rpcResult.Result = fileImpl;
+        byte[] resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
+        rpcResult.TLBytes.Slice(0, 24).CopyTo(resultHeader);
+        int pad = 0;
         if (data.Length < 254)
         {
-            resultBytes[24] = (byte)data.Length;
+            resultHeader[24] = (byte)data.Length;
+            pad = (int)((4 - ((data.Length + 1) % 4)) % 4);
         }
         else
         {
-            resultBytes[24] = (byte)254;
-            resultBytes[25] = (byte)(data.Length & 0xFF);
-            resultBytes[26] = (byte)((data.Length >> 8) & 0xFF);
-            resultBytes[27] = (byte)((data.Length >> 16) & 0xFF);
+            resultHeader[24] = 254;
+            resultHeader[25] = (byte)(data.Length & 0xff);
+            resultHeader[26] = (byte)((data.Length & 0xff) >> 8);
+            resultHeader[27] = (byte)((data.Length & 0xff) >> 16);
+            pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
         }
-        
-        MemoryStream ms = new MemoryStream(resultBytes);
-        Queue<Stream> streams = new Queue<Stream>();
-        ms.SetLength(resultBytes.Length);
-        streams.Enqueue(ms);
-        streams.Enqueue(data);
-        var resultStream = new ConcatenatedStream(streams,0, resultBytes.Length + (int)data.Length);
-        byte[] messageKey = AesIge.GenerateMessageKey(_authKey, 
-            resultStream).ToArray();
-        byte[] aesKey = new byte[32];
-        byte[] aesIV = new byte[32];
-        AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
-        //create a pipe for AES-256-IGE encryption
-        MTProtoPipe pipe = new MTProtoPipe(aesKey, aesIV, true);
-        //write the header to the encryption pipe
         writer.Clear();
         writer.WriteInt64(state.ServerSalt.Salt, true);
         writer.WriteInt64(state.SessionId, true);
         writer.WriteInt64(NextMessageId(true), true);
         writer.WriteInt32(GenerateSeqNo(true), true);
-        var stream = await message.GetFileStream();
+        writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
+        var cryptographicHeader = writer.ToReadOnlySequence().ToArray();
         int paddingLength = _random.GetNext(12, 512);
-        while ((resultBytes.Length + stream.Length + paddingLength) % 16 != 0)
+        while ((resultHeader.Length + data.Length + pad + paddingLength) % 16 != 0)
         {
             paddingLength++;
         }
-        writer.WriteInt32(resultBytes.Length + (int)stream.Length, true);
-        byte[] header = writer.ToReadOnlySequence().ToArray();
+        var paddingBytes = _random.GetRandomBytes(paddingLength);
+        Queue<Stream> streams = new Queue<Stream>();
+        streams.Enqueue(new MemoryStream(cryptographicHeader));
+        streams.Enqueue(new MemoryStream(resultHeader));
+        streams.Enqueue(data);
+        streams.Enqueue(new MemoryStream(new byte[pad]));
+        streams.Enqueue(new MemoryStream(paddingBytes));
+        var stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
+
+        var messageKey = AesIge.GenerateMessageKey(_authKey, stream).ToArray();
+        byte[] aesKey = new byte[32];
+        byte[] aesIV = new byte[32];
+        AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
+        //--
         writer.Clear();
-        await pipe.WriteAsync(header);
-        await pipe.WriteAsync(resultBytes);
-        //create a pipe for frame encoding
-        var encoderPipe = new EncoderPipe(encoder);
-        //encode the length
-        int totalLength = 8 + 16 + resultBytes.Length + (int)stream.Length + paddingLength;
-        long hlen = await encoderPipe.WriteLength(totalLength);
-        //write the header to the encoder pipe
         writer.WriteInt64(state.AuthKeyId, true);
         writer.Write(messageKey);
-        header = writer.ToReadOnlySequence().ToArray();
-        writer.Clear();
-        await encoderPipe.WriteAsync(header);
-        //encode the websocket frame length if we are using websockets
+        var frameHead = encoder.EncodeHead(24 + (int)stream.Length);
+        var header = writer.ToReadOnlySequence();
         if (webSocketHandler != null)
         {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, hlen + totalLength);
-            await socketConnection.Transport.Output.FlushAsync();
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 
+                frameHead.Length + 24 + (int)stream.Length);
         }
-        //write the stream content to the encryption pipe
-        using var buffer = UnmanagedMemoryAllocator.Allocate<byte>(1024);
-        
-        var enc = await pipe.Input.ReadAtLeastAsync(header.Length + resultBytes.Length);
-        await encoderPipe.WriteAsync(enc.Buffer);
-        pipe.Input.AdvanceTo(enc.Buffer.End);
-        //read encoded data from the encoder pipe and write it to the socket
-        var coded = await encoderPipe.Input.ReadAtLeastAsync(header.Length + resultBytes.Length);
-        await socketConnection.Transport.Output.WriteAsync(coded.Buffer);
-        encoderPipe.Input.AdvanceTo(coded.Buffer.End);
-        
-        int remaining = (int)stream.Length;
+        socketConnection.Transport.Output.Write(encoder.EncodeBlock(frameHead));
+        socketConnection.Transport.Output.Write(encoder.EncodeBlock(header));
+        //--
+        MTProtoPipe pipe = new MTProtoPipe(aesKey, aesIV, true);
+        await pipe.WriteAsync(cryptographicHeader);
+        await pipe.WriteAsync(resultHeader);
+        var dataStream = await message.GetFileStream();
+        int remaining = (int)dataStream.Length;;
+        var buffer = new byte[1024];
         while (remaining > 0)
         {
-            var read = await stream.ReadAtLeastAsync(Math.Min((int)buffer.Size, remaining),buffer.Memory);
+            var read = await dataStream.ReadAsync(buffer.AsMemory(0, Math.Min(remaining, 1024)));
+            await pipe.WriteAsync(new ReadOnlySequence<byte>(buffer, 0, read));
             remaining -= read;
-            await pipe.WriteAsync(buffer.Memory.Slice(0, read));
-            //read encrypted data from the encryption pipe and write it to the encoder pipe
-            var encrypted = await pipe.Input.ReadAtLeastAsync(read);
-            await encoderPipe.WriteAsync(encrypted.Buffer);
+            var encrypted = await pipe.Input.ReadAsync();
+            socketConnection.Transport.Output.Write(encoder.EncodeBlock(encrypted.Buffer));
             pipe.Input.AdvanceTo(encrypted.Buffer.End);
-            //read encoded data from the encoder pipe and write it to the socket
-            var encoded = await encoderPipe.Input.ReadAtLeastAsync(read);
-            await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
-            encoderPipe.Input.AdvanceTo(encoded.Buffer.End);
+        }
+        if (pad > 0)
+        {
+            await pipe.WriteAsync(new byte[pad]);
         }
         if (paddingLength > 0)
         {
-            await pipe.WriteAsync(new byte[paddingLength]);
-            var encrypted = await pipe.Input.ReadAtLeastAsync(paddingLength);
-            await encoderPipe.WriteAsync(encrypted.Buffer);
-            pipe.Input.AdvanceTo(encrypted.Buffer.End);
-            var encoded = await encoderPipe.Input.ReadAtLeastAsync(paddingLength);
-            await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
-            encoderPipe.Input.AdvanceTo(encoded.Buffer.End);
+            await pipe.WriteAsync(paddingBytes);
         }
-        await pipe.CompleteAsync();
-        await encoderPipe.CompleteAsync();
-    }
 
+        await pipe.CompleteAsync();
+
+        var readResult = await pipe.Input.ReadAsync();
+        socketConnection.Transport.Output.Write(encoder.EncodeBlock(readResult.Buffer));
+        pipe.Input.AdvanceTo(readResult.Buffer.End);
+        while (!readResult.IsCompleted)
+        {
+            readResult = await pipe.Input.ReadAsync();
+            socketConnection.Transport.Output.Write(encoder.EncodeBlock(readResult.Buffer));
+            pipe.Input.AdvanceTo(readResult.Buffer.End);
+        }
+
+        var frameTail = encoder.EncodeTail();
+        if (frameTail.Length > 0)
+        {
+            socketConnection.Transport.Output.Write(frameTail);
+        }
+    }
+    private async Task SendStream2(IDistributedFileOwner message, SessionState state)
+    {
+        if (message == null) return;
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = message.ReqMsgId;
+        var data = await message.GetFileStream();
+        if (data.Length < 0) return;
+        
+        var fileImpl = factory.Resolve<FileImpl>();
+        fileImpl.Type = factory.Resolve<FileJpegImpl>();
+        fileImpl.Mtime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        fileImpl.Bytes = Array.Empty<byte>();
+        rpcResult.Result = fileImpl;
+        byte[] resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
+        rpcResult.TLBytes.Slice(0, 24).CopyTo(resultHeader);
+        int pad = 0;
+        if (data.Length < 254)
+        {
+            resultHeader[24] = (byte)data.Length;
+            pad = (int)((4 - ((data.Length + 1) % 4)) % 4);
+        }
+        else
+        {
+            resultHeader[24] = 254;
+            resultHeader[25] = (byte)(data.Length & 0xff);
+            resultHeader[26] = (byte)((data.Length & 0xff) >> 8);
+            resultHeader[27] = (byte)((data.Length & 0xff) >> 16);
+            pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
+        }
+        writer.Clear();
+        writer.WriteInt64(state.ServerSalt.Salt, true);
+        writer.WriteInt64(state.SessionId, true);
+        writer.WriteInt64(NextMessageId(true), true);
+        writer.WriteInt32(GenerateSeqNo(true), true);
+        writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
+        var cryptographicHeader = writer.ToReadOnlySequence().ToArray();
+        int paddingLength = _random.GetNext(12, 512);
+        while ((resultHeader.Length + data.Length + pad + paddingLength) % 16 != 0)
+        {
+            paddingLength++;
+        }
+        var paddingBytes = _random.GetRandomBytes(paddingLength);
+        Queue<Stream> streams = new Queue<Stream>();
+        streams.Enqueue(new MemoryStream(cryptographicHeader));
+        streams.Enqueue(new MemoryStream(resultHeader));
+        streams.Enqueue(data);
+        streams.Enqueue(new MemoryStream(new byte[pad]));
+        streams.Enqueue(new MemoryStream(paddingBytes));
+        var stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
+
+        var messageKey = AesIge.GenerateMessageKey(_authKey, stream).ToArray();
+        byte[] aesKey = new byte[32];
+        byte[] aesIV = new byte[32];
+        AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
+        Aes aes = Aes.Create();
+        aes.Key = aesKey;
+        
+        streams = new Queue<Stream>();
+        streams.Enqueue(new MemoryStream(cryptographicHeader));
+        streams.Enqueue(new MemoryStream(resultHeader));
+        streams.Enqueue(await message.GetFileStream());
+        streams.Enqueue(new MemoryStream(new byte[pad]));
+        streams.Enqueue(new MemoryStream(paddingBytes));
+        stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
+        var buffer = new byte[stream.Length];
+        int remaining = (int)stream.Length;
+        int offset = 0;
+        while (remaining > 0)
+        {
+            var read = await stream.ReadAsync(buffer.AsMemory(offset, Math.Min(remaining, 1024)));
+            remaining -= read;
+            offset += read;
+        }
+        aes.EncryptIge(buffer, aesIV);
+        writer.Clear();
+        writer.WriteInt64(state.AuthKeyId, true);
+        writer.Write(messageKey);
+        writer.Write(buffer);
+        var msg = writer.ToReadOnlySequence();
+        var encoded = encoder.Encode(msg);
+        if (webSocketHandler != null)
+        {
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
+        }
+        socketConnection.Transport.Output.Write(encoded);
+    }
     private void SendUnencrypted(Span<byte> data, long messageId)
     {
         writer.Clear();
