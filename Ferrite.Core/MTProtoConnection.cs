@@ -64,7 +64,7 @@ public class MTProtoConnection : IMTProtoConnection
     private Task? receiveTask;
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
     private Channel<IDistributedFileOwner> _outgoingStreams = Channel.CreateUnbounded<IDistributedFileOwner>();
-    private bool _sending = false;
+    private SemaphoreSlim _sendQueueSemaphore = new SemaphoreSlim(1, 1);
     private Task? sendTask;
     private Task? sendStreamTask;
     private Timer? disconnectTimer;
@@ -236,11 +236,7 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-                while (_sending)
-                {
-                    await Task.Delay(20);
-                }
-                _sending = true;
+                await _sendQueueSemaphore.WaitAsync();
                 var data = msg.Data;
                 _log.Debug($"=>Sending {msg.MessageType} message.");
                 if (_authKeyId == 0)
@@ -253,7 +249,7 @@ public class MTProtoConnection : IMTProtoConnection
                     SendEncrypted(msg, state);
                 }
                 var result = await socketConnection.Transport.Output.FlushAsync();
-                _sending = false;
+                _sendQueueSemaphore.Release();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -264,6 +260,10 @@ public class MTProtoConnection : IMTProtoConnection
         catch (Exception ex)
         {
             _log.Error(ex, ex.Message);
+        }
+        finally
+        {
+            _sendQueueSemaphore.Release();
         }
     }
     private async Task DoSendStreams()
@@ -273,26 +273,22 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoingStreams.Reader.ReadAsync();
-                while (_sending)
-                {
-                    await Task.Delay(20);
-                }
-                _sending = true;
+                await _sendQueueSemaphore.WaitAsync();
                 _log.Debug($"=>Sending stream.");
                 if (_authKeyId == 0)
                 {
-                    _sending = false;
+                    _sendQueueSemaphore.Release();
                     return;
                 }
                 else if (await _sessionManager.GetSessionStateAsync(_sessionId)
                          is { } state)
                 {
                     await SendStream(msg, state);
-                    
-                    
+
                 }
+
                 var result = await socketConnection.Transport.Output.FlushAsync();
-                _sending = false;
+                _sendQueueSemaphore.Release();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -303,6 +299,10 @@ public class MTProtoConnection : IMTProtoConnection
         catch (Exception ex)
         {
             _log.Error(ex, ex.Message);
+        }
+        finally
+        {
+            _sendQueueSemaphore.Release();
         }
     }
     
@@ -388,6 +388,7 @@ public class MTProtoConnection : IMTProtoConnection
             var encrypted = await pipe.Input.ReadAsync();
             socketConnection.Transport.Output.Write(encoder.EncodeBlock(encrypted.Buffer));
             pipe.Input.AdvanceTo(encrypted.Buffer.End);
+            await socketConnection.Transport.Output.FlushAsync();
         }
         if (pad > 0)
         {
