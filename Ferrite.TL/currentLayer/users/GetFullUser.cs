@@ -140,13 +140,78 @@ public class GetFullUser : ITLObject, ITLMethod
             fullUser.PhoneCallsAvailable = serviceResult.Result.FullUser.PhoneCallsAvailable;
             fullUser.PhoneCallsPrivate = serviceResult.Result.FullUser.PhoneCallsPrivate;
             fullUser.CommonChatsCount = serviceResult.Result.FullUser.CommonChatsCount;
+            if (serviceResult.Result.FullUser.ProfilePhoto != null)
+            {
+                var profilePhoto = factory.Resolve<PhotoImpl>();
+                profilePhoto.Id = serviceResult.Result.FullUser.ProfilePhoto.Id;
+                profilePhoto.AccessHash = serviceResult.Result.FullUser.ProfilePhoto.AccessHash;
+                profilePhoto.Date = serviceResult.Result.FullUser.ProfilePhoto.Date;
+                profilePhoto.DcId = serviceResult.Result.FullUser.ProfilePhoto.DcId;
+                profilePhoto.FileReference = serviceResult.Result.FullUser.ProfilePhoto.FileReference;
+                profilePhoto.HasStickers = serviceResult.Result.FullUser.ProfilePhoto.HasStickers;
+                profilePhoto.Sizes = factory.Resolve<Vector<PhotoSize>>();
+                foreach (var s in serviceResult.Result.FullUser.ProfilePhoto.Sizes)
+                {
+                    var size = factory.Resolve<PhotoSizeImpl>();
+                    size.Type = s.Type;
+                    size.Size = s.Size;
+                    size.H = s.H;
+                    size.W = s.W;
+                    profilePhoto.Sizes.Add(size);
+                }
+                if (serviceResult.Result.FullUser.ProfilePhoto.VideoSizes is { Count: > 0 })
+                {
+                    profilePhoto.VideoSizes = factory.Resolve<Vector<VideoSize>>();
+                    foreach (var s in serviceResult.Result.FullUser.ProfilePhoto.VideoSizes)
+                    {
+                        var size = factory.Resolve<VideoSizeImpl>();
+                        size.Type = s.Type;
+                        size.Size = s.Size;
+                        size.H = s.H;
+                        size.W = s.W;
+                        size.VideoStartTs = s.VideoStartTs;
+                        profilePhoto.VideoSizes.Add(size);
+                    }
+                }
+
+                fullUser.ProfilePhoto = profilePhoto;
+            }
             
             var userFull = factory.Resolve<UserFullImpl>();
             userFull.Chats = factory.Resolve<Vector<Chat>>();
             userFull.Users = factory.Resolve<Vector<User>>();
+            foreach (var u in serviceResult.Result.Users)
+            {
+                var userImpl = factory.Resolve<UserImpl>();
+                userImpl.Id = u.Id;
+                userImpl.FirstName = u.FirstName;
+                userImpl.LastName = u.LastName;
+                userImpl.Phone = u.Phone;
+                userImpl.Self = u.Self;
+                if(u.Status == Data.UserStatus.Empty)
+                {
+                    userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
+                }
+                if (u.Photo.Empty)
+                {
+                    userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
+                }
+                else
+                {
+                    var photo = factory.Resolve<UserProfilePhotoImpl>();
+                    photo.DcId = u.Photo.DcId;
+                    photo.PhotoId = u.Photo.PhotoId;
+                    photo.HasVideo = u.Photo.HasVideo;
+                    if (u.Photo.StrippedThumb is { Length: > 0 })
+                    {
+                        photo.StrippedThumb = u.Photo.StrippedThumb;
+                    }
+                    userImpl.Photo = photo;
+                }
+                userFull.Users.Add(userImpl);
+            }
             userFull.FullUser = fullUser;
             result.Result = userFull;
-            //TODO: implemnt this properly
         }
         else
         {

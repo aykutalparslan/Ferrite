@@ -89,6 +89,8 @@ public class Program
             .SingleInstance();
         builder.RegisterType<PhotosService>().As<IPhotosService>()
             .SingleInstance();
+        builder.RegisterType<UploadService>().As<IUploadService>()
+            .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();

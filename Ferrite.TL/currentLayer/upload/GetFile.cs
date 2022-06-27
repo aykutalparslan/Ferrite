@@ -19,14 +19,16 @@
 using System;
 using System.Buffers;
 using DotNext.Buffers;
+using DotNext.Collections.Generic;
 using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
+using Ferrite.TL.currentLayer.storage;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.upload;
-public class GetFile : ITLObject
+public class GetFile : ITLObject, ITLMethod
 {
     private readonly ITLObjectFactory _factory;
     private readonly IUploadService _uploadService;
@@ -47,12 +49,12 @@ public class GetFile : ITLObject
     public int Offset => _offset;
     private int _limit;
     public int Limit => _limit;
-    public async Task<TLObjectStream> ExecuteAsync(TLExecutionContext ctx)
+    public async Task<TLObjectStream> ExecuteAsync2(TLExecutionContext ctx)
     {
         if (_location is InputPhotoFileLocationImpl photoLocation)
         {
             var result = await _uploadService.GetPhoto(photoLocation.Id, photoLocation.AccessHash,
-                photoLocation.FileReference, photoLocation.ThumbSize, _offset, _limit);
+                photoLocation.FileReference, photoLocation.ThumbSize, _offset, _limit, ctx.MessageId);
             if (result.Success)
             {
                 return new TLObjectStream(result.Result, true, null);
@@ -78,4 +80,41 @@ public class GetFile : ITLObject
     }
 
     public void WriteTo(Span<byte> buff) => throw new NotSupportedException();
+    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
+    {
+        var rpcResult = _factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        if (_location is InputPhotoFileLocationImpl photoLocation)
+        {
+            var result = await _uploadService.GetPhoto(photoLocation.Id, photoLocation.AccessHash,
+                photoLocation.FileReference, photoLocation.ThumbSize, _offset, _limit, ctx.MessageId);
+            if (result.Success)
+            {
+                var data = await result.Result.GetFileStream();
+                if (data.Length < 0) return null;
+                //read stream into a byte array in 1024 bytes at a time
+                var buffer = new byte[data.Length];
+                int remaining = (int)data.Length;
+                int offset = 0;
+                while (remaining > 0)
+                {
+                    var read = await data.ReadAsync(buffer.AsMemory(offset, Math.Min(remaining, 1024)));
+                    remaining -= read;
+                    offset += read;
+                }
+                var fileImpl = _factory.Resolve<FileImpl>();
+                fileImpl.Type = _factory.Resolve<FileJpegImpl>();
+                fileImpl.Mtime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+                
+                fileImpl.Bytes = buffer;
+
+                rpcResult.Result = fileImpl;
+                return rpcResult;
+            }
+
+            return null;
+        }
+
+        return null;
+    }
 }

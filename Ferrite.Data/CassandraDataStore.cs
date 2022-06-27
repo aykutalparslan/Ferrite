@@ -62,14 +62,17 @@ namespace Ferrite.Data
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+                "DROP TABLE IF EXISTS ferrite.exported_authorizations;");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.exported_authorizations (" +
                             "user_id bigint," +
+                            "data blob," +
                             "auth_key_id bigint," +
                             "phone text," +
                             "previous_dc_id int," +
                             "next_dc_id int," +
-                            "data blob," +
-                            "PRIMARY KEY (user_id, auth_key_id));");
+                "PRIMARY KEY (user_id, data));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.server_salts (" +
@@ -79,7 +82,7 @@ namespace Ferrite.Data
                             "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
             //statement = new SimpleStatement(
-            //    "DROP TABLE IF EXISTS ferrite.users;");
+              //  "DROP TABLE IF EXISTS ferrite.users;");
             //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users (" +
@@ -250,13 +253,16 @@ namespace Ferrite.Data
                 "is_big_file boolean, " +
                 "PRIMARY KEY (file_reference));");
             session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //    "DROP TABLE IF EXISTS ferrite.profile_photos;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.profile_photos (" +
                 "user_id blob," +
                 "file_id bigint," +
                 "file_reference blob," +
                 "access_hash bigint," +
-                "added_on timestamp," +
+                //"added_on timestamp," +
                 "PRIMARY KEY (user_id, file_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
@@ -570,7 +576,7 @@ namespace Ferrite.Data
                     Username = row.GetValue<string>("username"),
                     Photo = new UserProfilePhoto()
                     {
-                        DcId = 1,
+                        DcId = 2,
                         PhotoId = photoId,
                         Empty = photoId == 0
                     }
@@ -612,7 +618,7 @@ namespace Ferrite.Data
                     Username = row.GetValue<string>("username"),
                     Photo = new UserProfilePhoto()
                     {
-                        DcId = 1,
+                        DcId = 2,
                         PhotoId = photoId,
                         Empty = photoId == 0
                     }
@@ -671,7 +677,7 @@ namespace Ferrite.Data
                     Username = row.GetValue<string>("username"),
                     Photo = new UserProfilePhoto()
                     {
-                        DcId = 1,
+                        DcId = 2,
                         PhotoId = photoId,
                         Empty = photoId == 0
                     }
@@ -742,7 +748,7 @@ namespace Ferrite.Data
             if (oldAuthorization != null)
             {
                 statement = new SimpleStatement(
-                "DELETE FROM ferrite.exported_authorizations WHERE user_id = ? AND auth_key_id = ?;",
+                "DELETE FROM ferrite.exported_authorizations WHERE user_id = ?;",
                 oldAuthorization.UserId, authKeyId);
                 statement = statement.SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
@@ -762,19 +768,18 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.exported_authorizations SET phone = ?, " +
-                "previous_dc_id = ?, next_dc_id = ?, data = ?  WHERE user_id = ? AND auth_key_id = ?;",
-                info.Phone, info.UserId, info.ApiLayer,
-                info.FutureAuthToken, info.LoggedIn, info.AuthKeyId).SetKeyspace(keySpace);
+                "previous_dc_id = ?, next_dc_id = ?, data = ?  WHERE user_id = ? AND data = ?;",
+                info.Phone, previousDc, nextDc, info.UserId, data).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
 
-        public async Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id)
+        public async Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, byte[] data)
         {
             ExportedAuthInfo? info = null;
             var statement = new SimpleStatement(
-                "SELECT * FROM ferrite.authorizations WHERE user_id = ? AND auth_key_id = ?;",
-                user_id, auth_key_id);
+                "SELECT * FROM ferrite.exported_authorizations WHERE user_id = ? AND data = ?;",
+                user_id, data);
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
@@ -1213,7 +1218,7 @@ namespace Ferrite.Data
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.blocked_peers (user_id, peer_type, peer_id, blocked_on) " +
                 "VALUES (?,?,?,?) IF NOT EXISTS;",
-                userId, (int)peerType, peerId, DateTimeOffset.Now) .SetKeyspace(keySpace);
+                userId, (int)peerType, peerId, DateTime.Now) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1240,7 +1245,7 @@ namespace Ferrite.Data
             {
                 result.Add(new PeerBlocked(new Peer((PeerType)row.GetValue<int>("peer_type"),
                     row.GetValue<long>("blocked_user_id")), 
-                    (int)row.GetValue<DateTimeOffset>("blocked_on").ToUnixTimeSeconds()));
+                    (int)((DateTimeOffset)row.GetValue<DateTime>("blocked_on")).ToUnixTimeSeconds()));
             }
             return result;
         }
@@ -1270,7 +1275,7 @@ namespace Ferrite.Data
                 return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
                     row.GetValue<string>("file_name"), row.GetValue<string>("md5_checksum"),
-                row.GetValue<DateTimeOffset>("saved_on"), false);
+                row.GetValue<DateTime>("saved_on"), false);
             }
 
             return null;
@@ -1301,7 +1306,7 @@ namespace Ferrite.Data
                 return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
                     row.GetValue<string>("file_name"), null,
-                    row.GetValue<DateTimeOffset>("saved_on"), true);
+                    row.GetValue<DateTime>("saved_on"), true);
             }
 
             return null;
@@ -1312,7 +1317,7 @@ namespace Ferrite.Data
             var statement = new SimpleStatement(
                 "UPDATE ferrite.file_parts SET part_size = ?, saved_on = ? " +
                 "WHERE file_id = ? AND part_num = ?;",
-                part.PartSize, DateTimeOffset.Now, part.FileId, part.PartNum) .SetKeyspace(keySpace);
+                part.PartSize, DateTime.Now, part.FileId, part.PartNum) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1340,7 +1345,7 @@ namespace Ferrite.Data
             var statement = new SimpleStatement(
                 "UPDATE ferrite.big_file_parts SET part_size = ?, saved_on = ? " +
                 "WHERE file_id = ? AND part_num = ?;",
-                part.PartSize, DateTimeOffset.Now, part.FileId, part.PartNum) .SetKeyspace(keySpace);
+                part.PartSize, DateTime.Now, part.FileId, part.PartNum) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -1391,12 +1396,12 @@ namespace Ferrite.Data
         }
 
         public async Task<bool> SaveProfilePhotoAsync(long userId, long fileId, long accessHash, 
-            byte[] referenceBytes, DateTimeOffset date)
+            byte[] referenceBytes, DateTime date)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.profile_photos SET file_reference = ?, added_on = ?, access_hash = ? " +
+                "UPDATE ferrite.profile_photos SET file_reference = ?, access_hash = ? " +
                 "WHERE user_id = ? AND file_id = ?;",
-                 referenceBytes, accessHash, date, userId, fileId) .SetKeyspace(keySpace);
+                 referenceBytes, accessHash, userId, fileId) .SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             statement = new SimpleStatement(
                 "UPDATE ferrite.users SET profile_photo = ? WHERE user_id = ?;",
@@ -1422,7 +1427,7 @@ namespace Ferrite.Data
         public async Task<IReadOnlyCollection<Photo>> GetProfilePhotosAsync(long userId)
         {
             var statement = new SimpleStatement(
-                "SELECT * FROM ferrite.big_file_parts WHERE file_id = ?;", 
+                "SELECT * FROM ferrite.profile_photos WHERE user_id = ?;", 
                 userId);
             statement = statement.SetKeyspace(keySpace);
 
@@ -1434,9 +1439,9 @@ namespace Ferrite.Data
                 var statementInner = new SimpleStatement(
                     "SELECT * FROM ferrite.thumbnails WHERE file_id = ?;", 
                     fileId);
-                statement = statement.SetKeyspace(keySpace);
+                statementInner = statementInner.SetKeyspace(keySpace);
 
-                var results2 = await session.ExecuteAsync(statement);
+                var results2 = await session.ExecuteAsync(statementInner);
                 List<PhotoSize> photoSizes = new List<PhotoSize>();
                 foreach (var row2 in results2)
                 {
@@ -1451,11 +1456,49 @@ namespace Ferrite.Data
                 photos.Add(new Photo(false, fileId,
                     row.GetValue<long>("access_hash"),
                     row.GetValue<byte[]>("file_reference"),
-                    (int)row.GetValue<DateTimeOffset>("added_on").ToUnixTimeSeconds(),
-                    photoSizes, new List<VideoSize>(), 1));
+                    (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
+                    photoSizes, null, 2));
             }
 
             return photos;
+        }
+
+        public async Task<Photo?> GetProfilePhotoAsync(long userId, long fileId)
+        {
+            Photo? photo = null;
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.profile_photos WHERE user_id = ? AND file_id = ?;", 
+                userId, fileId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            List<Photo> photos = new();
+            foreach (var row in results)
+            {
+                var statementInner = new SimpleStatement(
+                    "SELECT * FROM ferrite.thumbnails WHERE file_id = ?;", 
+                    fileId);
+                statementInner = statementInner.SetKeyspace(keySpace);
+
+                var results2 = await session.ExecuteAsync(statementInner);
+                List<PhotoSize> photoSizes = new List<PhotoSize>();
+                foreach (var row2 in results2)
+                {
+                    photoSizes.Add(new PhotoSize(PhotoSizeType.Default,
+                        row2.GetValue<string>("thumb_type"),
+                        row2.GetValue<int>("width"),
+                        row2.GetValue<int>("height"),
+                        row2.GetValue<int>("thumb_size"),
+                        row2.GetValue<byte[]>("bytes"),
+                        row2.GetValue<List<int>>("sizes")));
+                }
+                photo =new Photo(false, fileId,
+                    row.GetValue<long>("access_hash"),
+                    row.GetValue<byte[]>("file_reference"),
+                    (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
+                    photoSizes, null, 2);
+            }
+            return photo;
         }
 
         public async Task<bool> SaveThumbnailAsync(Thumbnail thumbnail)

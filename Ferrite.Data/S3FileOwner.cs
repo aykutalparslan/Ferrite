@@ -24,12 +24,14 @@ public class S3FileOwner : IDistributedFileOwner
     private readonly IDistributedObjectStore _objectStore;
     private readonly int _offset;
     private readonly int _limit;
-    public S3FileOwner(UploadedFileInfo fileInfo, IDistributedObjectStore objectStore, int offset, int limit)
+
+    public S3FileOwner(UploadedFileInfo fileInfo, IDistributedObjectStore objectStore, int offset, int limit, long reqMsgId)
     {
         _fileInfo = fileInfo;
         _objectStore = objectStore;
         _offset = offset;
         _limit = limit;
+        ReqMsgId = reqMsgId;
     }
     public async Task<Stream> GetFileStream()
     {
@@ -56,4 +58,6 @@ public class S3FileOwner : IDistributedFileOwner
 
         return new ConcatenatedStream(streams, offset, _limit);
     }
+
+    public long ReqMsgId { get; }
 }

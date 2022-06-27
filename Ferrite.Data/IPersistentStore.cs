@@ -26,7 +26,7 @@ public interface IPersistentStore
     public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
     public byte[]? GetAuthKey(long authKeyId);
     public Task<bool> SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data);
-    public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, long auth_key_id);
+    public Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, byte[] data);
     public Task<bool> SaveAuthorizationAsync(AuthInfo info);
     public Task<AuthInfo?> GetAuthorizationAsync(long authKeyId);
     public Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone);
@@ -92,9 +92,10 @@ public interface IPersistentStore
     public Task<bool> SaveFileReferenceAsync(FileReference reference);
     public Task<FileReference?> GetFileReferenceAsync(byte[] referenceBytes);
     public Task<bool> SaveProfilePhotoAsync(long userId, long fileId, long accessHash,
-        byte[] referenceBytes, DateTimeOffset date);
+        byte[] referenceBytes, DateTime date);
     public Task<bool> DeleteProfilePhotoAsync(long userId, long fileId);
     public Task<IReadOnlyCollection<Photo>> GetProfilePhotosAsync(long userId);
+    public Task<Photo?> GetProfilePhotoAsync(long userId, long fileId);
     public Task<bool> SaveThumbnailAsync(Thumbnail thumbnail);
     public Task<IReadOnlyCollection<Thumbnail>> GetThumbnailsAsync(long photoId);
 }

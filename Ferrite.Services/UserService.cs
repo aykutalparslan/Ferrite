@@ -72,6 +72,7 @@ public class UserService : IUsersService
         };
         if (user != null)
         {
+            var profilePhoto = await _store.GetProfilePhotoAsync(user.Id, user.Photo.PhotoId);
             var fullUser = new Ferrite.Data.UserFull
             {
                 About = user.About,
@@ -83,9 +84,10 @@ public class UserService : IUsersService
                 PhoneCallsAvailable = true,
                 PhoneCallsPrivate = true,
                 CommonChatsCount = 0,
+                ProfilePhoto = profilePhoto
             };
             return new ServiceResult<UserFull>(new UserFull(fullUser, new List<Chat>(), 
-                new List<User>()), true, ErrorMessages.None);
+                new List<User>(){user}), true, ErrorMessages.None);
         }
 
         return new ServiceResult<UserFull>(null, false, ErrorMessages.UserIdInvalid);

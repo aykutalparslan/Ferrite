@@ -41,27 +41,39 @@ public class UploadService : IUploadService
     }
 
     public async Task<ServiceResult<IDistributedFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
-        string thumbSize, int offset, int limit, bool precise = false, bool cdnSupported = false)
+        string thumbSize, int offset, int limit, long regMsgId, bool precise = false, bool cdnSupported = false)
     {
         var reference = await _store.GetFileReferenceAsync(fileReference);
         if (reference.IsBigfile)
         {
-            var file = await _store.GetBigFileInfoAsync(fileId);
-            if (file.AccessHash != accessHash)
+            var thumbs = await _store.GetThumbnailsAsync(fileId);
+            long thumbFileId = 0;
+            foreach (var t in thumbs)
             {
-                return new ServiceResult<IDistributedFileOwner>(null, false, ErrorMessages.FileIdInvalid);
+                if(t.Type == thumbSize)
+                {
+                    thumbFileId = t.FileId;
+                    break;
+                }
             }
-            var owner = new S3FileOwner(file, _objectStore, offset, limit);
+            var file = await _store.GetBigFileInfoAsync(thumbFileId);
+            var owner = new S3FileOwner(file, _objectStore, offset, limit, regMsgId);
             return new ServiceResult<IDistributedFileOwner>(owner, true, ErrorMessages.None);
         }
         else
         {
-            var file = await _store.GetFileInfoAsync(fileId);
-            if (file.AccessHash != accessHash)
+            var thumbs = await _store.GetThumbnailsAsync(fileId);
+            long thumbFileId = 0;
+            foreach (var t in thumbs)
             {
-                return new ServiceResult<IDistributedFileOwner>(null, false, ErrorMessages.FileIdInvalid);
+                if(t.Type == thumbSize)
+                {
+                    thumbFileId = t.ThumbnailFileId;
+                    break;
+                }
             }
-            var owner = new S3FileOwner(file, _objectStore, offset, limit);
+            var file = await _store.GetFileInfoAsync(thumbFileId);
+            var owner = new S3FileOwner(file, _objectStore, offset, limit, regMsgId);
             return new ServiceResult<IDistributedFileOwner>(owner, true, ErrorMessages.None);
         }
     }

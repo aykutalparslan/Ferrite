@@ -138,7 +138,7 @@ public class MTProtoRequestProcessor : IProcessor
                 _log.Error(e, $"😭 => {this} => {msg.Body} => {e.Message}");
             }
         }
-        else if (input is GetFile getFileRequest)
+        /*else if (input is GetFile getFileRequest)
         {
             var result = await getFileRequest.ExecuteAsync(ctx);
             _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
@@ -179,7 +179,7 @@ public class MTProtoRequestProcessor : IProcessor
                 };
                 message.Data = result.Error.TLBytes.ToArray();
             }
-        }
+        }*/
     }
 
     public async Task Process(object? sender, IMemoryOwner<byte> input, Queue<IMemoryOwner<byte>> output, TLExecutionContext ctx)

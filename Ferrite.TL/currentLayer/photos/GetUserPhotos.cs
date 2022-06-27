@@ -130,17 +130,21 @@ public class GetUserPhotos : ITLObject, ITLMethod
             photo.AccessHash = p.AccessHash;
             photo.DcId = p.DcId;
             photo.HasStickers = p.HasStickers;
-            photo.VideoSizes = factory.Resolve<Vector<VideoSize>>();
-            foreach (var s in p.VideoSizes)
+            if (p.VideoSizes is { Count: > 0 })
             {
-                var size = factory.Resolve<VideoSizeImpl>();
-                size.Type = s.Type;
-                size.Size = s.Size;
-                size.H = s.H;
-                size.W = s.W;
-                size.VideoStartTs = s.VideoStartTs;
-                photo.VideoSizes.Add(size);
+                photo.VideoSizes = factory.Resolve<Vector<VideoSize>>();
+                foreach (var s in p.VideoSizes)
+                {
+                    var size = factory.Resolve<VideoSizeImpl>();
+                    size.Type = s.Type;
+                    size.Size = s.Size;
+                    size.H = s.H;
+                    size.W = s.W;
+                    size.VideoStartTs = s.VideoStartTs;
+                    photo.VideoSizes.Add(size);
+                }
             }
+            
             photos.Photos.Add(photo);
         }
 

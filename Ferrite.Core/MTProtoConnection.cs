@@ -31,6 +31,7 @@ using Ferrite.TL.mtproto;
 using System.Net;
 using DotNext.IO.Pipelines;
 using Ferrite.Services;
+using Ferrite.TL.currentLayer.storage;
 using Ferrite.TL.currentLayer.upload;
 using Org.BouncyCastle.Cms;
 using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
@@ -308,8 +309,46 @@ public class MTProtoConnection : IMTProtoConnection
         if (message == null) { return; }
         //generate messageKey, aesKey, aesIV
         var data = await message.GetFileStream();
+        if (data.Length < 0)
+        {
+            return;
+        }
+
+        int lenBytes = data.Length < 254 ? 1 : 4;
+        int pad = 0;
+        while ((24 + lenBytes + pad) % 4 != 0)
+        {
+            pad++;
+        }
+        byte[] resultBytes = new byte[24 + lenBytes];
+        RpcResult result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = message.ReqMsgId;
+        var fileImpl = factory.Resolve<FileImpl>();
+        fileImpl.Type = factory.Resolve<FileJpegImpl>();
+        fileImpl.Mtime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        fileImpl.Bytes = Array.Empty<byte>();
+        result.Result = fileImpl;
+        result.TLBytes.Slice(0, 24).CopyTo(resultBytes);
+        if (data.Length < 254)
+        {
+            resultBytes[24] = (byte)data.Length;
+        }
+        else
+        {
+            resultBytes[24] = (byte)254;
+            resultBytes[25] = (byte)(data.Length & 0xFF);
+            resultBytes[26] = (byte)((data.Length >> 8) & 0xFF);
+            resultBytes[27] = (byte)((data.Length >> 16) & 0xFF);
+        }
+        
+        MemoryStream ms = new MemoryStream(resultBytes);
+        Queue<Stream> streams = new Queue<Stream>();
+        ms.SetLength(resultBytes.Length);
+        streams.Enqueue(ms);
+        streams.Enqueue(data);
+        var resultStream = new ConcatenatedStream(streams,0, resultBytes.Length + (int)data.Length);
         byte[] messageKey = AesIge.GenerateMessageKey(_authKey, 
-            data).ToArray();
+            resultStream).ToArray();
         byte[] aesKey = new byte[32];
         byte[] aesIV = new byte[32];
         AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
@@ -323,18 +362,19 @@ public class MTProtoConnection : IMTProtoConnection
         writer.WriteInt32(GenerateSeqNo(true), true);
         var stream = await message.GetFileStream();
         int paddingLength = _random.GetNext(12, 512);
-        while ((stream.Length + paddingLength) % 16 != 0)
+        while ((resultBytes.Length + stream.Length + paddingLength) % 16 != 0)
         {
             paddingLength++;
         }
-        writer.WriteInt32((int)stream.Length, true);
+        writer.WriteInt32(resultBytes.Length + (int)stream.Length, true);
         byte[] header = writer.ToReadOnlySequence().ToArray();
         writer.Clear();
         await pipe.WriteAsync(header);
+        await pipe.WriteAsync(resultBytes);
         //create a pipe for frame encoding
         var encoderPipe = new EncoderPipe(encoder);
         //encode the length
-        int totalLength = 8 + 16 + (int)stream.Length + paddingLength;
+        int totalLength = 8 + 16 + resultBytes.Length + (int)stream.Length + paddingLength;
         long hlen = await encoderPipe.WriteLength(totalLength);
         //write the header to the encoder pipe
         writer.WriteInt64(state.AuthKeyId, true);
@@ -350,47 +390,42 @@ public class MTProtoConnection : IMTProtoConnection
         }
         //write the stream content to the encryption pipe
         using var buffer = UnmanagedMemoryAllocator.Allocate<byte>(1024);
+        
+        var enc = await pipe.Input.ReadAtLeastAsync(header.Length + resultBytes.Length);
+        await encoderPipe.WriteAsync(enc.Buffer);
+        pipe.Input.AdvanceTo(enc.Buffer.End);
+        //read encoded data from the encoder pipe and write it to the socket
+        var coded = await encoderPipe.Input.ReadAtLeastAsync(header.Length + resultBytes.Length);
+        await socketConnection.Transport.Output.WriteAsync(coded.Buffer);
+        encoderPipe.Input.AdvanceTo(coded.Buffer.End);
+        
         int remaining = (int)stream.Length;
         while (remaining > 0)
         {
-            var read = await stream.ReadAsync(buffer.Memory);
+            var read = await stream.ReadAtLeastAsync(Math.Min((int)buffer.Size, remaining),buffer.Memory);
             remaining -= read;
             await pipe.WriteAsync(buffer.Memory.Slice(0, read));
             //read encrypted data from the encryption pipe and write it to the encoder pipe
-            var encrypted = await pipe.Input.ReadAsync();
+            var encrypted = await pipe.Input.ReadAtLeastAsync(read);
             await encoderPipe.WriteAsync(encrypted.Buffer);
+            pipe.Input.AdvanceTo(encrypted.Buffer.End);
             //read encoded data from the encoder pipe and write it to the socket
-            var encoded = await encoderPipe.Input.ReadAsync();
+            var encoded = await encoderPipe.Input.ReadAtLeastAsync(read);
             await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
+            encoderPipe.Input.AdvanceTo(encoded.Buffer.End);
         }
         if (paddingLength > 0)
         {
-            pipe.WriteAsync(_random.GetRandomBytes(paddingLength));
-            var encrypted = await pipe.Input.ReadAsync();
+            await pipe.WriteAsync(new byte[paddingLength]);
+            var encrypted = await pipe.Input.ReadAtLeastAsync(paddingLength);
             await encoderPipe.WriteAsync(encrypted.Buffer);
-            var encoded = await encoderPipe.Input.ReadAsync();
+            pipe.Input.AdvanceTo(encrypted.Buffer.End);
+            var encoded = await encoderPipe.Input.ReadAtLeastAsync(paddingLength);
             await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
+            encoderPipe.Input.AdvanceTo(encoded.Buffer.End);
         }
         await pipe.CompleteAsync();
-        while (true)
-        {
-            var encrypted = await pipe.Input.ReadAsync();
-            await encoderPipe.WriteAsync(encrypted.Buffer);
-            if (encrypted.IsCompleted)
-            {
-                break;
-            }
-        }
         await encoderPipe.CompleteAsync();
-        while (true)
-        {
-            var encoded = await encoderPipe.Input.ReadAsync();
-            await socketConnection.Transport.Output.WriteAsync(encoded.Buffer);
-            if (encoded.IsCompleted)
-            {
-                break;
-            }
-        }
     }
 
     private void SendUnencrypted(Span<byte> data, long messageId)

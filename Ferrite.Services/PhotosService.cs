@@ -44,10 +44,10 @@ public class PhotosService : IPhotosService
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var user = await _store.GetUserAsync(auth.UserId);
-        var date = DateTimeOffset.Now;
+        var date = DateTime.Now;
         await _store.SaveProfilePhotoAsync(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
         var photoInner = new Data.Photo(false, id.Id, id.AccessHash, id.FileReference,
-            (int)date.ToUnixTimeSeconds(), new List<PhotoSize>(), null, 1);
+            (int)((DateTimeOffset)date).ToUnixTimeSeconds(), new List<PhotoSize>(), null, 1);
         var photo = new Photo(photoInner, new[] { user });
         return new ServiceResult<Photo>(photo, true, ErrorMessages.None);
     }
@@ -116,7 +116,7 @@ public class PhotosService : IPhotosService
         {
             await _store.SaveFileInfoAsync(file);
         }
-        var date = DateTimeOffset.Now;
+        var date = DateTime.Now;
         byte[] reference = _random.GetRandomBytes(16);
         await _store.SaveFileReferenceAsync(new FileReference(reference, file.Id, file.IsBigFile));
 
@@ -160,7 +160,7 @@ public class PhotosService : IPhotosService
         
         await _store.SaveProfilePhotoAsync(auth.UserId, file.Id, file.AccessHash, reference, date);
         var photoInner = new Data.Photo(false, file.Id, file.AccessHash, reference,
-            (int)date.ToUnixTimeSeconds(), photoSizes, null, 1);
+            (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 1);
         var result = new Photo(photoInner, new[] { user });
         return new ServiceResult<Photo>(result, true, ErrorMessages.None);
     }
@@ -179,36 +179,36 @@ public class PhotosService : IPhotosService
 
         if (w >= 320 && h >= 320)
         {
-            await GenerateThumbnail(imageData, file, 160, "a", ImageFilter.Crop, thumbnails);
+            await GenerateThumbnail(imageData, file, 320, "b", ImageFilter.Crop, thumbnails);
         }
         else if (w >= 320 || h >= 320)
         {
-            await GenerateThumbnail(imageData, file, 320, "a", ImageFilter.Box, thumbnails);
+            await GenerateThumbnail(imageData, file, 320, "m", ImageFilter.Box, thumbnails);
         }
 
         if (w >= 640 && h >= 640)
         {
-            await GenerateThumbnail(imageData, file, 640, "a", ImageFilter.Crop, thumbnails);
+            await GenerateThumbnail(imageData, file, 640, "c", ImageFilter.Crop, thumbnails);
         }
 
         if (w >= 800 || h >= 800)
         {
-            await GenerateThumbnail(imageData, file, 800, "a", ImageFilter.Box, thumbnails);
+            await GenerateThumbnail(imageData, file, 800, "x", ImageFilter.Box, thumbnails);
         }
 
         if (w >= 1280 && h >= 1280)
         {
-            await GenerateThumbnail(imageData, file, 1280, "a", ImageFilter.Crop, thumbnails);
+            await GenerateThumbnail(imageData, file, 1280, "d", ImageFilter.Crop, thumbnails);
         }
 
         if (w >= 1280 || h >= 1280)
         {
-            await GenerateThumbnail(imageData, file, 1280, "a", ImageFilter.Box, thumbnails);
+            await GenerateThumbnail(imageData, file, 1280, "y", ImageFilter.Box, thumbnails);
         }
 
         if (w >= 2560 || h >= 2560)
         {
-            await GenerateThumbnail(imageData, file, 2560, "a", ImageFilter.Box, thumbnails);
+            await GenerateThumbnail(imageData, file, 2560, "w", ImageFilter.Box, thumbnails);
         }
     }
 

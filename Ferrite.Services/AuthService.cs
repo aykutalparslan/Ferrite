@@ -162,7 +162,7 @@ public class AuthService : IAuthService
     public async Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var exported = await _store.GetExportedAuthorizationAsync(userId, authKeyId);
+        var exported = await _store.GetExportedAuthorizationAsync(userId, bytes);
         
         if (auth != null && exported != null &&
             auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
