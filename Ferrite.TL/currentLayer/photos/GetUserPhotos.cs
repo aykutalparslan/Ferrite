@@ -156,6 +156,10 @@ public class GetUserPhotos : ITLObject, ITLMethod
             userImpl.LastName = user.LastName;
             userImpl.Phone = user.Phone;
             userImpl.Self = user.Self;
+            if(user.Username?.Length > 0)
+            {
+                userImpl.Username = user.Username;
+            }
             if(user.Status == Data.UserStatus.Empty)
             {
                 userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();

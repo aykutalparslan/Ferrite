@@ -144,10 +144,11 @@ public partial class AccountService : IAccountService
         if (user == null)
         {
             await _store.UpdateUsernameAsync(auth.UserId, username);
-            await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 
-                user.FirstName, user.LastName, user.Phone));
         }
-        return await _store.GetUserAsync(auth.UserId);
+        user = await _store.GetUserAsync(auth.UserId);
+        await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 
+                user.FirstName, user.LastName, user.Phone));
+        return user;
     }
 
     public async Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRule> rules)

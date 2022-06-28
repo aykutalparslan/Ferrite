@@ -62,7 +62,10 @@ public class RpcDropAnswer : ITLObject, ITLMethod
     public bool IsMethod => true;
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        return factory.Resolve<RpcAnswerDroppedRunning>();
+        var result = factory.Resolve<RpcResult>();
+        result.Result = factory.Resolve<RpcAnswerUnknown>();
+        result.ReqMsgId = ctx.MessageId;
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

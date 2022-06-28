@@ -53,17 +53,14 @@ public class LangPackDataStore : ILangPackDataStore
         loadingFromDisk = true;
         string[] langPacks = {"android", "ios", "tdesktop", "macos", "android_x" };
         var statement = new SimpleStatement(
-            "SELECT COUNT(*) FROM ferrite.lang_pack_languages WHERE lang_pack = ?;",
+            "SELECT * FROM ferrite.lang_pack_languages WHERE lang_pack = ?;",
             "android");
         statement = statement.SetKeyspace(keySpace);
         var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
         foreach (var row in results)
         {
-            if (row.GetValue<long>(0) > 0)
-            {
-                loadingFromDisk = false;
-                return;
-            }
+            loadingFromDisk = false;
+            return;
         }
         foreach (var langPack in langPacks)
         {

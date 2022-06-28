@@ -1,4 +1,4 @@
-﻿/*
+/*
  *   Project Ferrite is an Implementation Telegram Server API
  *   Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
  *
@@ -20,22 +20,21 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
-using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
-namespace Ferrite.TL.currentLayer.messages;
-public class GetStickerSetL134 : ITLObject, ITLMethod
+namespace Ferrite.TL.currentLayer;
+public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
-    public GetStickerSetL134(ITLObjectFactory objectFactory)
+    public AttachMenuBotsNotModifiedImpl(ITLObjectFactory objectFactory)
     {
         factory = objectFactory;
     }
 
-    public int Constructor => unchecked((int)0x2619a90e);
-    public ReadOnlySequence<byte> TLBytes
+    public override int Constructor => -unchecked((int)0xf1d88a5c);
+    public override ReadOnlySequence<byte> TLBytes
     {
         get
         {
@@ -43,38 +42,17 @@ public class GetStickerSetL134 : ITLObject, ITLMethod
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
-            writer.Write(_stickerset.TLBytes, false);
             serialized = true;
             return writer.ToReadOnlySequence();
         }
     }
 
-    private InputStickerSet _stickerset;
-    public InputStickerSet Stickerset
-    {
-        get => _stickerset;
-        set
-        {
-            serialized = false;
-            _stickerset = value;
-        }
-    }
-    
-    public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
-    {
-        var resp = factory.Resolve<RpcResult>();
-        resp.ReqMsgId = ctx.MessageId;
-        resp.Result = factory.Resolve<StickerSetNotModifiedImpl>();
-        return resp;
-    }
-
-    public void Parse(ref SequenceReader buff)
+    public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _stickerset = (InputStickerSet)factory.Read(buff.ReadInt32(true), ref buff);
     }
 
-    public void WriteTo(Span<byte> buff)
+    public override void WriteTo(Span<byte> buff)
     {
         TLBytes.CopyTo(buff);
     }

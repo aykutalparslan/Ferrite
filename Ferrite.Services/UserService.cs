@@ -50,10 +50,12 @@ public class UserService : IUsersService
     public async Task<ServiceResult<UserFull>> GetFullUser(long authKeyId, InputUser id)
     {
         var userId = id.UserId;
+        bool self = false;
         if (id.InputUserType == InputUserType.Self)
         {
             var auth = await _store.GetAuthorizationAsync(authKeyId);
             userId = auth.UserId;
+            self = true;
         }
         var user = await _store.GetUserAsync(userId);
 
@@ -84,10 +86,10 @@ public class UserService : IUsersService
                 PhoneCallsAvailable = true,
                 PhoneCallsPrivate = true,
                 CommonChatsCount = 0,
-                ProfilePhoto = profilePhoto
+                ProfilePhoto = profilePhoto,
             };
             return new ServiceResult<UserFull>(new UserFull(fullUser, new List<Chat>(), 
-                new List<User>(){user}), true, ErrorMessages.None);
+                new List<User>(){user with{Self = self}}), true, ErrorMessages.None);
         }
 
         return new ServiceResult<UserFull>(null, false, ErrorMessages.UserIdInvalid);

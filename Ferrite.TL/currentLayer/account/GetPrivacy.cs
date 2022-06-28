@@ -149,6 +149,10 @@ public class GetPrivacy : ITLObject, ITLMethod
             user.LastName = u.LastName;
             user.Phone = u.Phone;
             user.Self = u.Self;
+            if (u.Username?.Length > 0)
+            {
+                user.Username = u.Username;
+            }
             if (u.Status == Data.UserStatus.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();

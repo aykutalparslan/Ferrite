@@ -67,6 +67,7 @@ public class GetFullUser : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
         Data.InputUser inputUser = null;
         if (_id is InputUserImpl user)
         {
@@ -188,6 +189,10 @@ public class GetFullUser : ITLObject, ITLMethod
                 userImpl.LastName = u.LastName;
                 userImpl.Phone = u.Phone;
                 userImpl.Self = u.Self;
+                if (u.Username?.Length > 0)
+                {
+                    userImpl.Username = u.Username;
+                }
                 if(u.Status == Data.UserStatus.Empty)
                 {
                     userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();

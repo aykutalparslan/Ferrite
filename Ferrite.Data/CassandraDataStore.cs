@@ -574,6 +574,7 @@ namespace Ferrite.Data
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
+                    About = row.GetValue<string>("about"),
                     Photo = new UserProfilePhoto()
                     {
                         DcId = 2,

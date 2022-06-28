@@ -64,10 +64,7 @@ public class GetAttachMenuBots : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var resp = factory.Resolve<RpcError>();
-        resp.ErrorCode = 501;
-        resp.ErrorMessage = "Not Implemented";
-        result.Result = resp;
+        result.Result = factory.Resolve<AttachMenuBotsNotModifiedImpl>();
         return result;
     }
 

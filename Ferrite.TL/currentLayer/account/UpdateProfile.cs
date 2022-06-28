@@ -134,7 +134,10 @@ public class UpdateProfile : ITLObject, ITLMethod
             user.Self = true;
             //TODO: get user status
             user.Status = factory.Resolve<UserStatusEmptyImpl>();
-            //TODO: get user photo
+            if (userNew.Username?.Length > 0)
+            {
+                user.Username = userNew.Username;
+            }
             if (userNew.Photo.Empty)
             {
                 user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
@@ -151,6 +154,8 @@ public class UpdateProfile : ITLObject, ITLMethod
                 }
                 user.Photo = photo;
             }
+
+            result.Result = user;
         }
         return result;
     }

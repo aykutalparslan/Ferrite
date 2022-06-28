@@ -263,7 +263,10 @@ public class MTProtoConnection : IMTProtoConnection
         }
         finally
         {
-            _sendQueueSemaphore.Release();
+            if (_sendQueueSemaphore.CurrentCount != 0)
+            {
+                _sendQueueSemaphore.Release();
+            }
         }
     }
     private async Task DoSendStreams()
@@ -278,13 +281,12 @@ public class MTProtoConnection : IMTProtoConnection
                 if (_authKeyId == 0)
                 {
                     _sendQueueSemaphore.Release();
-                    return;
+                    continue;
                 }
                 else if (await _sessionManager.GetSessionStateAsync(_sessionId)
                          is { } state)
                 {
                     await SendStream(msg, state);
-
                 }
 
                 var result = await socketConnection.Transport.Output.FlushAsync();
@@ -302,7 +304,10 @@ public class MTProtoConnection : IMTProtoConnection
         }
         finally
         {
-            _sendQueueSemaphore.Release();
+            if (_sendQueueSemaphore.CurrentCount != 0)
+            {
+                _sendQueueSemaphore.Release();
+            }
         }
     }
     
