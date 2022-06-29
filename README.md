@@ -10,6 +10,7 @@ The project is currently in a very early stage of development. The following are
 - Creation of an Auth Key
 - MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
 - TL Serialization/Deserialization
+- auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
 
 ## License
 
