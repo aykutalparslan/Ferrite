@@ -12,6 +12,17 @@ The project is currently in a very early stage of development. The following are
 - TL Serialization/Deserialization
 - auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
 
+## Roadmap
+
+Development is currently focused on getting the Android application to run in a stable state and the planned order steps to achive that are:
+- All settings screens should work on the Android application
+- Contacts related features should work as expected
+- Phone calls.
+- Basic messaging
+- Groups and channels
+
+After the Android application is working as expected the development will focus on the iOS application
+
 ## License
 
 Project Ferrite is licensed under GNU AGPL-3.0
