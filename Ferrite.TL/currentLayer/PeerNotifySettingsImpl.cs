@@ -33,7 +33,7 @@ public class PeerNotifySettingsImpl : PeerNotifySettings
         factory = objectFactory;
     }
 
-    public override int Constructor => -1353671392;
+    public override int Constructor => unchecked((int)0xa83b0426);
     public override ReadOnlySequence<byte> TLBytes
     {
         get
@@ -60,9 +60,17 @@ public class PeerNotifySettingsImpl : PeerNotifySettings
 
             if (_flags[3])
             {
-                writer.WriteTLString(_sound);
+                writer.Write(_iOSSound.TLBytes, false);
+            }
+            if(_flags[4])
+            {
+                writer.Write(_androidSound.TLBytes, false);
             }
 
+            if (_flags[5])
+            {
+                writer.Write(_otherSound.TLBytes, false);
+            }
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -115,15 +123,37 @@ public class PeerNotifySettingsImpl : PeerNotifySettings
         }
     }
 
-    private string _sound;
-    public string Sound
+    private NotificationSound _iOSSound;
+    public NotificationSound iOSSound
     {
-        get => _sound;
+        get => _iOSSound;
         set
         {
             serialized = false;
             _flags[3] = true;
-            _sound = value;
+            _iOSSound = value;
+        }
+    }
+    private NotificationSound _androidSound;
+    public NotificationSound AndroidSound
+    {
+        get => _androidSound;
+        set
+        {
+            serialized = false;
+            _flags[4] = true;
+            _androidSound = value;
+        }
+    }
+    private NotificationSound _otherSound;
+    public NotificationSound OtherSound
+    {
+        get => _otherSound;
+        set
+        {
+            serialized = false;
+            _flags[5] = true;
+            _otherSound = value;
         }
     }
 
@@ -148,7 +178,15 @@ public class PeerNotifySettingsImpl : PeerNotifySettings
 
         if (_flags[3])
         {
-            _sound = buff.ReadTLString();
+            _iOSSound = (NotificationSound)factory.Read(buff.ReadInt32(true), ref buff);
+        }
+        if(_flags[4])
+        {
+            _androidSound = (NotificationSound)factory.Read(buff.ReadInt32(true), ref buff);
+        }
+        if(_flags[5])
+        {
+            _otherSound = (NotificationSound)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

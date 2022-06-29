@@ -138,10 +138,13 @@ namespace Ferrite.Data
                 "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+              "DROP TABLE IF EXISTS ferrite.app_infos_by_hash;");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.app_infos_by_hash (" +
                 "hash bigint," +
                 "auth_key_id bigint," +
-                "PRIMARY KEY (hash, auth_key_id));");
+                "PRIMARY KEY (hash));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.devices (" +
@@ -161,17 +164,24 @@ namespace Ferrite.Data
                 "app_token text," +
                 "PRIMARY KEY (auth_key_id, user_id, app_token));");
             session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //  "DROP TABLE IF EXISTS ferrite.notify_settings;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.notify_settings (" +
                 "auth_key_id bigint," +
                 "notify_peer_type int," +
                 "peer_type int," +
                 "peer_id bigint," +
+                "device_type int," +
                 "show_previews boolean," +
                 "silent boolean," +
                 "mute_until int," +
-                "sound text," +
-                "PRIMARY KEY (auth_key_id, notify_peer_type, peer_type, peer_id));");
+                "sound_type int," +
+                "sound_title text," +
+                "sound_data text," +
+                "sound_id bigint," +
+                "PRIMARY KEY (auth_key_id, notify_peer_type, peer_type, peer_id, device_type));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.report_reasons (" +
@@ -811,13 +821,13 @@ namespace Ferrite.Data
                 appInfo.Hash, appInfo.ApiId, appInfo.DeviceModel, appInfo.SystemVersion,
                 appInfo.AppVersion, appInfo.SystemLangCode, appInfo.LangPack,
                 appInfo.LangCode, appInfo.IP, appInfo.AuthKeyId).SetKeyspace(keySpace);
-            batchStatement.Add(statement);
+            batchStatement = batchStatement.Add(statement);
             var statement2 = new SimpleStatement(
                 "UPDATE ferrite.app_infos_by_hash SET auth_key_id = ? " +
                 "WHERE hash = ?;",
                 appInfo.AuthKeyId, appInfo.Hash).SetKeyspace(keySpace);
-            batchStatement.Add(statement2);
-            await session.ExecuteAsync(batchStatement);
+            batchStatement = batchStatement.Add(statement2);
+            var result = await session.ExecuteAsync(batchStatement);
             return true;
         }
         
@@ -962,12 +972,12 @@ namespace Ferrite.Data
             }
             
             var statement = new SimpleStatement(
-                "UPDATE ferrite.notify_settings SET peer_type = ?, peer_id = ?, " +
-                "show_previews = ?, silent = ?, " +
-                "mute_until = ?, sound = ? " +
-                "WHERE auth_key_id = ? AND notify_peer_type = ?;",
-                peerType, peerId,settings.ShowPreviews, settings.Silent,
-                settings.MuteUntil, settings.Sound, authKeyId, (int)peer.NotifyPeerType).SetKeyspace(keySpace);
+                "UPDATE ferrite.notify_settings SET show_previews = ?, silent = ?, " +
+                "mute_until = ?, sound_type = ?, sound_title = ?, sound_data = ?, sound_id = ? " +
+                "WHERE auth_key_id = ? AND notify_peer_type = ? AND peer_type = ? AND peer_id = ? AND device_type = ?;",
+                settings.ShowPreviews, settings.Silent, settings.MuteUntil,
+                (int)settings.NotifySoundType, settings.Title,settings.Data, settings.Id,
+                    authKeyId, (int)peer.NotifyPeerType, peerType, peerId, (int)settings.DeviceType).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }
@@ -999,7 +1009,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<PeerNotifySettings?> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
+        public async Task<IReadOnlyCollection<PeerNotifySettings>> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
         {
             long peerId = 0;
             int peerType = 0;
@@ -1027,7 +1037,7 @@ namespace Ferrite.Data
                     peerId = peer.Peer.ChannelId;
                 }
             }
-            PeerNotifySettings? settings = null;
+            List<PeerNotifySettings> settings = new List<PeerNotifySettings>();
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.notify_settings WHERE auth_key_id = ? AND notify_peer_type = ? " +
                 "AND peer_type = ? AND peer_id = ?;", authKeyId, (int)peer.NotifyPeerType, 
@@ -1037,13 +1047,18 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                settings = new PeerNotifySettings()
+                var notifySettings = new PeerNotifySettings()
                 {
+                    DeviceType = (DeviceType)row.GetValue<int>("device_type"),
+                    NotifySoundType = (NotifySoundType)row.GetValue<int>("sound_type"),
                     Silent = row.GetValue<bool>("silent"),
-                    Sound = row.GetValue<string>("sound") ?? "",
+                    Title = row.GetValue<string>("sound") ?? "",
+                    Data = row.GetValue<string>("sound") ?? "",
+                    Id = row.GetValue<long>("sound_id"),
                     MuteUntil = row.GetValue<int>("mute_until"),
-                    ShowPreviews = row.GetValue<bool>("show_previews")
+                    ShowPreviews = row.GetValue<bool>("show_previews"),
                 };
+                settings.Add(notifySettings);
             }
             return settings;
         }

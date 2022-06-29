@@ -58,8 +58,18 @@ public class UserService : IUsersService
             self = true;
         }
         var user = await _store.GetUserAsync(userId);
+        var info = await _store.GetAppInfoAsync(authKeyId);
+        DeviceType deviceType = DeviceType.Other;
+        if (info.LangPack.ToLower().Contains("android"))
+        {
+            deviceType = DeviceType.Android;
+        }
+        else if (info.LangPack.ToLower().Contains("ios"))
+        {
+            deviceType = DeviceType.iOS;
+        }
 
-        var notifySettings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeer
+        var settings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeer
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
             Peer = new InputPeer
@@ -68,10 +78,17 @@ public class UserService : IUsersService
                 AccessHash = user.AccessHash,
                 InputPeerType = InputPeerType.User
             }
-        }) ?? new PeerNotifySettings()
+        });
+        PeerNotifySettings notifySettings = null;
+        if (settings.Count == 0)
         {
-            Sound = ""
-        };
+            notifySettings = new PeerNotifySettings();
+        }
+        else
+        {
+            notifySettings = settings.First(_ => _.DeviceType == deviceType);
+        }
+
         if (user != null)
         {
             var profilePhoto = await _store.GetProfilePhotoAsync(user.Id, user.Photo.PhotoId);

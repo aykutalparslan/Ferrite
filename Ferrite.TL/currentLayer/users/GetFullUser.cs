@@ -123,9 +123,77 @@ public class GetFullUser : ITLObject, ITLMethod
             {
                 notifySettings.MuteUntil = serviceResult.Result.FullUser.NotifySettings.MuteUntil;
             }
-            if (serviceResult.Result.FullUser.NotifySettings.Sound.Length>0)
+            if (serviceResult.Result.FullUser.NotifySettings.DeviceType == DeviceType.Android)
             {
-                notifySettings.Sound = serviceResult.Result.FullUser.NotifySettings.Sound;
+                if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Default)
+                {
+                    notifySettings.AndroidSound = factory.Resolve<NotificationSoundDefaultImpl>();
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Ringtone)
+                {
+                    var sound = factory.Resolve<NotificationSoundRingtoneImpl>();
+                    sound.Id = serviceResult.Result.FullUser.NotifySettings.Id;
+                    notifySettings.AndroidSound = sound;
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType != NotifySoundType.None)
+                {
+                    notifySettings.AndroidSound = factory.Resolve<NotificationSoundNoneImpl>();
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Local)
+                {
+                    var sound = factory.Resolve<NotificationSoundLocalImpl>();
+                    sound.Title = serviceResult.Result.FullUser.NotifySettings.Title;
+                    sound.Data = serviceResult.Result.FullUser.NotifySettings.Data;
+                    notifySettings.AndroidSound = sound;
+                }
+            }
+            else if(serviceResult.Result.FullUser.NotifySettings.DeviceType == DeviceType.iOS)
+            {
+                if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Default)
+                {
+                    notifySettings.iOSSound = factory.Resolve<NotificationSoundDefaultImpl>();
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Ringtone)
+                {
+                    var sound = factory.Resolve<NotificationSoundRingtoneImpl>();
+                    sound.Id = serviceResult.Result.FullUser.NotifySettings.Id;
+                    notifySettings.iOSSound = sound;
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType != NotifySoundType.None)
+                {
+                    notifySettings.iOSSound = factory.Resolve<NotificationSoundNoneImpl>();
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Local)
+                {
+                    var sound = factory.Resolve<NotificationSoundLocalImpl>();
+                    sound.Title = serviceResult.Result.FullUser.NotifySettings.Title;
+                    sound.Data = serviceResult.Result.FullUser.NotifySettings.Data;
+                    notifySettings.iOSSound = sound;
+                }
+            }
+            else
+            {
+                if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Default)
+                {
+                    notifySettings.OtherSound = factory.Resolve<NotificationSoundDefaultImpl>();
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Ringtone)
+                {
+                    var sound = factory.Resolve<NotificationSoundRingtoneImpl>();
+                    sound.Id = serviceResult.Result.FullUser.NotifySettings.Id;
+                    notifySettings.OtherSound = sound;
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType != NotifySoundType.None)
+                {
+                    notifySettings.OtherSound = factory.Resolve<NotificationSoundNoneImpl>();
+                }
+                else if (serviceResult.Result.FullUser.NotifySettings.NotifySoundType == NotifySoundType.Local)
+                {
+                    var sound = factory.Resolve<NotificationSoundLocalImpl>();
+                    sound.Title = serviceResult.Result.FullUser.NotifySettings.Title;
+                    sound.Data = serviceResult.Result.FullUser.NotifySettings.Data;
+                    notifySettings.OtherSound = sound;
+                }
             }
             var fullUser = factory.Resolve<currentLayer.UserFullImpl>();
             if (serviceResult.Result.FullUser.About != null &&

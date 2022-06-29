@@ -23,17 +23,17 @@ using DotNext.IO;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer;
-public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
+public class NotificationSoundNoneImpl : NotificationSound
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
-    public AttachMenuBotsNotModifiedImpl(ITLObjectFactory objectFactory)
+    public NotificationSoundNoneImpl(ITLObjectFactory objectFactory)
     {
         factory = objectFactory;
     }
 
-    public override int Constructor => unchecked((int)0xf1d88a5c);
+    public override int Constructor => unchecked((int)0x6f0c34df);
     public override ReadOnlySequence<byte> TLBytes
     {
         get

@@ -160,8 +160,8 @@ public class TLObjectFactory : ITLObjectFactory
         -1195615476 => Read<currentLayer.InputNotifyPeerImpl>(ref buff),
         423314455 => Read<currentLayer.InputNotifyUsersImpl>(ref buff),
         1251338318 => Read<currentLayer.InputNotifyChatsImpl>(ref buff),
-        -1673717362 => Read<currentLayer.InputPeerNotifySettingsImpl>(ref buff),
-        -1353671392 => Read<currentLayer.PeerNotifySettingsImpl>(ref buff),
+        unchecked((int)0xdf1f002b) => Read<currentLayer.InputPeerNotifySettingsImpl>(ref buff),
+        unchecked((int)0xa83b0426) => Read<currentLayer.PeerNotifySettingsImpl>(ref buff),
         -1525149427 => Read<currentLayer.PeerSettingsImpl>(ref buff),
         -1539849235 => Read<currentLayer.WallPaperImpl>(ref buff),
         1490799288 => Read<currentLayer.InputReportReasonSpamImpl>(ref buff),
@@ -1048,6 +1048,7 @@ public class TLObjectFactory : ITLObjectFactory
         -1518699091 => Read<currentLayer.auth.ImportAuthorization>(ref buff),
         -841733627 => Read<currentLayer.auth.BindTempAuthKey>(ref buff),
         -326762118 => Read<currentLayer.account.RegisterDevice>(ref buff),
+        unchecked((int)0x637ea878) => Read<currentLayer.account.RegisterDeviceL57>(ref buff),
         1779249670 => Read<currentLayer.account.UnregisterDevice>(ref buff),
         -2067899501 => Read<currentLayer.account.UpdateNotifySettings>(ref buff),
         313765169 => Read<currentLayer.account.GetNotifySettings>(ref buff),
@@ -1462,6 +1463,10 @@ public class TLObjectFactory : ITLObjectFactory
         276705696 => Read<currentLayer.messages.SearchSentMedia>(ref buff),
         unchecked((int)0xe1902288) => Read<currentLayer.account.GetSavedRingtones>(ref buff),
         2018609336 => Read<InitConnection>(ref buff),
+        unchecked((int)0x97e8bebe) => Read<currentLayer.NotificationSoundDefaultImpl>(ref buff),
+        unchecked((int)0x830b9ae4) => Read<currentLayer.NotificationSoundLocalImpl>(ref buff),
+        unchecked((int)0x6f0c34df) => Read<currentLayer.NotificationSoundNoneImpl>(ref buff),
+        unchecked((int)0xff6c8049) => Read<currentLayer.NotificationSoundRingtoneImpl>(ref buff),
         _ => throw new DeserializationException("Constructor " + string.Format("0x{0:X}", constructor) + " not found.")};
     public T Read<T>(ref SequenceReader buff)
         where T : ITLObject

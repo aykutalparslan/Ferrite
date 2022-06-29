@@ -23,17 +23,29 @@ using DotNext.IO;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer;
-public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
+
+public class NotificationSoundRingtoneImpl : NotificationSound
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
-    public AttachMenuBotsNotModifiedImpl(ITLObjectFactory objectFactory)
+    public NotificationSoundRingtoneImpl(ITLObjectFactory objectFactory)
     {
         factory = objectFactory;
     }
+    
+    private long _id;
+    public long Id
+    {
+        get => _id;
+        set
+        {
+            _id = value;
+            serialized = false;
+        }
+    }
 
-    public override int Constructor => unchecked((int)0xf1d88a5c);
+    public override int Constructor => unchecked((int)0xff6c8049);
     public override ReadOnlySequence<byte> TLBytes
     {
         get
@@ -42,6 +54,7 @@ public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
+            writer.WriteInt64(_id, true);
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -50,6 +63,7 @@ public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
+        _id = buff.ReadInt64(true);
     }
 
     public override void WriteTo(Span<byte> buff)

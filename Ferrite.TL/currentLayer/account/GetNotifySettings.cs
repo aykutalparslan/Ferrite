@@ -148,9 +148,78 @@ public class GetNotifySettings : ITLObject, ITLMethod
         {
             resp.MuteUntil = settings.MuteUntil;
         }
-        if (settings.Sound.Length>0)
+
+        if (settings.DeviceType == DeviceType.Android)
         {
-            resp.Sound = settings.Sound;
+            if (settings.NotifySoundType == NotifySoundType.Default)
+            {
+                resp.AndroidSound = factory.Resolve<NotificationSoundDefaultImpl>();
+            }
+            else if (settings.NotifySoundType == NotifySoundType.Ringtone)
+            {
+                var sound = factory.Resolve<NotificationSoundRingtoneImpl>();
+                sound.Id = settings.Id;
+                resp.AndroidSound = sound;
+            }
+            else if (settings.NotifySoundType != NotifySoundType.None)
+            {
+                resp.AndroidSound = factory.Resolve<NotificationSoundNoneImpl>();
+            }
+            else if (settings.NotifySoundType == NotifySoundType.Local)
+            {
+                var sound = factory.Resolve<NotificationSoundLocalImpl>();
+                sound.Title = settings.Title;
+                sound.Data = settings.Data;
+                resp.AndroidSound = sound;
+            }
+        }
+        else if (settings.DeviceType == DeviceType.iOS)
+        {
+            if (settings.NotifySoundType == NotifySoundType.Default)
+            {
+                resp.iOSSound = factory.Resolve<NotificationSoundDefaultImpl>();
+            }
+            else if (settings.NotifySoundType == NotifySoundType.Ringtone)
+            {
+                var sound = factory.Resolve<NotificationSoundRingtoneImpl>();
+                sound.Id = settings.Id;
+                resp.iOSSound = sound;
+            }
+            else if (settings.NotifySoundType != NotifySoundType.None)
+            {
+                resp.iOSSound = factory.Resolve<NotificationSoundNoneImpl>();
+            }
+            else if (settings.NotifySoundType == NotifySoundType.Local)
+            {
+                var sound = factory.Resolve<NotificationSoundLocalImpl>();
+                sound.Title = settings.Title;
+                sound.Data = settings.Data;
+                resp.iOSSound = sound;
+            }
+        }
+        else if (settings.DeviceType == DeviceType.Other)
+        {
+            if (settings.NotifySoundType == NotifySoundType.Default)
+            {
+                resp.OtherSound = factory.Resolve<NotificationSoundDefaultImpl>();
+            }
+            else if (settings.NotifySoundType == NotifySoundType.Ringtone)
+            {
+                var sound = factory.Resolve<NotificationSoundRingtoneImpl>();
+                sound.Id = settings.Id;
+                resp.OtherSound = sound;
+            }
+            else if (settings.NotifySoundType != NotifySoundType.None)
+            {
+                resp.OtherSound = factory.Resolve<NotificationSoundNoneImpl>();
+            }
+            else if (settings.NotifySoundType == NotifySoundType.Local)
+            {
+                var sound = factory.Resolve<NotificationSoundLocalImpl>();
+                sound.Title = settings.Title;
+                sound.Data = settings.Data;
+                resp.OtherSound = sound;
+            }
         }
         result.Result = resp;
         return result;

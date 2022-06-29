@@ -146,14 +146,38 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
         var settings = (InputPeerNotifySettingsImpl)_settings;
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
+        NotifySoundType soundType = NotifySoundType.Default;
+        string? title = null;
+        string? data = null;
+        long soundId = 0;
+        if (settings.Sound is NotificationSoundNoneImpl)
+        {
+            soundType = NotifySoundType.None;
+        }
+        else if(settings.Sound is NotificationSoundLocalImpl localSound)
+        {
+            soundType = NotifySoundType.Local;
+            title = localSound.Title;
+            data = localSound.Data;
+        }
+        else if(settings.Sound is NotificationSoundRingtoneImpl ringtoneSound)
+        {
+            soundType = NotifySoundType.Ringtone;
+            soundId = ringtoneSound.Id;
+        }
+        
         var success = notifyPeer != null && await _account.UpdateNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             notifyPeer,
             new Data.PeerNotifySettings()
             {
+                DeviceType = DeviceType.Android,//TODO: get device type from the db
                 Silent = settings.Silent,
-                Sound = settings.Sound,
+                NotifySoundType = soundType,
                 MuteUntil = settings.MuteUntil,
-                ShowPreviews = settings.ShowPreviews
+                ShowPreviews = settings.ShowPreviews,
+                Title = title,
+                Data = data,
+                Id = soundId,
             });
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;

@@ -23,17 +23,38 @@ using DotNext.IO;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer;
-public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
+public class NotificationSoundLocalImpl : NotificationSound
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private bool serialized = false;
-    public AttachMenuBotsNotModifiedImpl(ITLObjectFactory objectFactory)
+    public NotificationSoundLocalImpl(ITLObjectFactory objectFactory)
     {
         factory = objectFactory;
     }
+    
+    private string _title;
+    public string Title
+    {
+        get => _title;
+        set
+        {
+            _title = value;
+            serialized = false;
+        }
+    }
+    private string _data;
+    public string Data
+    {
+        get => _data;
+        set
+        {
+            _data = value;
+            serialized = false;
+        }
+    }
 
-    public override int Constructor => unchecked((int)0xf1d88a5c);
+    public override int Constructor => unchecked((int)0x830b9ae4);
     public override ReadOnlySequence<byte> TLBytes
     {
         get
@@ -42,6 +63,8 @@ public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
                 return writer.ToReadOnlySequence();
             writer.Clear();
             writer.WriteInt32(Constructor, true);
+            writer.WriteTLString(_title);
+            writer.WriteTLString(_data);
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -50,6 +73,8 @@ public class AttachMenuBotsNotModifiedImpl : AttachMenuBots
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
+        _title = buff.ReadTLString();
+        _data = buff.ReadTLString();
     }
 
     public override void WriteTo(Span<byte> buff)

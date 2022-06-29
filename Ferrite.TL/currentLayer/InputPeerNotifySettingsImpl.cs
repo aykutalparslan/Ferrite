@@ -33,7 +33,7 @@ public class InputPeerNotifySettingsImpl : InputPeerNotifySettings
         factory = objectFactory;
     }
 
-    public override int Constructor => -1673717362;
+    public override int Constructor => unchecked((int)0xdf1f002b);
     public override ReadOnlySequence<byte> TLBytes
     {
         get
@@ -60,7 +60,7 @@ public class InputPeerNotifySettingsImpl : InputPeerNotifySettings
 
             if (_flags[3])
             {
-                writer.WriteTLString(_sound);
+                writer.Write(_sound.TLBytes, false);
             }
 
             serialized = true;
@@ -115,8 +115,8 @@ public class InputPeerNotifySettingsImpl : InputPeerNotifySettings
         }
     }
 
-    private string _sound;
-    public string Sound
+    private NotificationSound _sound;
+    public NotificationSound Sound
     {
         get => _sound;
         set
@@ -148,7 +148,7 @@ public class InputPeerNotifySettingsImpl : InputPeerNotifySettings
 
         if (_flags[3])
         {
-            _sound = buff.ReadTLString();
+            _sound = (NotificationSound)factory.Read(buff.ReadInt32(true), ref buff);
         }
     }
 

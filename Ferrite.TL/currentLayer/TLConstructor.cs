@@ -104,8 +104,8 @@ public class TLConstructor
     public const int InputNotifyPeer = -1195615476;
     public const int InputNotifyUsers = 423314455;
     public const int InputNotifyChats = 1251338318;
-    public const int InputPeerNotifySettings = -1673717362;
-    public const int PeerNotifySettings = -1353671392;
+    public const int InputPeerNotifySettings = unchecked((int)0xdf1f002b);
+    public const int PeerNotifySettings = unchecked((int)0xa83b0426);
     public const int PeerSettings = -1525149427;
     public const int WallPaper = -1539849235;
     public const int InputReportReasonSpam = 1490799288;
@@ -992,6 +992,7 @@ public class TLConstructor
     public static readonly int Auth_ImportAuthorization = -1518699091;
     public static readonly int Auth_BindTempAuthKey = -841733627;
     public static readonly int Account_RegisterDevice = -326762118;
+    public static readonly int Account_RegisterDeviceL57 = unchecked((int)0x637ea878);
     public static readonly int Account_UnregisterDevice = 1779249670;
     public static readonly int Account_UpdateNotifySettings = -2067899501;
     public static readonly int Account_GetNotifySettings = 313765169;

@@ -59,12 +59,22 @@ public partial class AccountService : IAccountService
 
     public async Task<PeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer)
     {
-        var result = await _store.GetNotifySettingsAsync(authKeyId, peer) ?? 
-                     new PeerNotifySettings()
-                     {
-                         Sound = ""
-                     };
-        return result;
+        var info = await _store.GetAppInfoAsync(authKeyId);
+        DeviceType deviceType = DeviceType.Other;
+        if (info.LangPack.ToLower().Contains("android"))
+        {
+            deviceType = DeviceType.Android;
+        }
+        else if (info.LangPack.ToLower().Contains("ios"))
+        {
+            deviceType = DeviceType.iOS;
+        }
+        var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
+        if (settings.Count == 0)
+        {
+            return new PeerNotifySettings();
+        }
+        return settings.First(_ => _.DeviceType == deviceType);
     }
 
     public async Task<bool> ResetNotifySettings(long authKeyId)
