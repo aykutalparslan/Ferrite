@@ -21,7 +21,11 @@ Development is currently focused on getting the Android application to run in a 
 - Basic messaging
 - Groups and channels
 
-After the Android application is working as expected the development will focus on the iOS application
+After the Android application is working as expected the development will focus on the iOS application and then the Destop and Web applications. Basic features are planned to be implemented in the beginning. After all this the next planned steps are:
+- There will be a refactor to support memory efficient serialization
+- Support for so called API layers will be added
+- Optimizations and benchmarks
+- Implementation of the missing features
 
 ## License
 
