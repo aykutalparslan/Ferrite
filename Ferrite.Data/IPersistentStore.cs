@@ -98,5 +98,7 @@ public interface IPersistentStore
     public Task<Photo?> GetProfilePhotoAsync(long userId, long fileId);
     public Task<bool> SaveThumbnailAsync(Thumbnail thumbnail);
     public Task<IReadOnlyCollection<Thumbnail>> GetThumbnailsAsync(long photoId);
+    public Task<bool> SaveSignUoNotificationAsync(long userId, bool silent);
+    public Task<bool> GetSignUoNotificationAsync(long userId, bool silent);
 }
 

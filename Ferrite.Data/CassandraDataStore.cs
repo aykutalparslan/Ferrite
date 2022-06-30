@@ -137,9 +137,9 @@ namespace Ferrite.Data
                 "ip_address text," +
                 "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
-            statement = new SimpleStatement(
-              "DROP TABLE IF EXISTS ferrite.app_infos_by_hash;");
-            session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //  "DROP TABLE IF EXISTS ferrite.app_infos_by_hash;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.app_infos_by_hash (" +
                 "hash bigint," +
@@ -286,6 +286,12 @@ namespace Ferrite.Data
                 "bytes blob," +
                 "sizes set<int>," +
                 "PRIMARY KEY (file_id, thumb_file_id, thumb_type));");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "CREATE TABLE IF NOT EXISTS ferrite.signup_notifications (" +
+                "user_id bigint," +
+                "silent boolean," +
+                "PRIMARY KEY (user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
         }
 
@@ -1551,6 +1557,32 @@ namespace Ferrite.Data
             }
 
             return thumbs;
+        }
+
+        public async Task<bool> SaveSignUoNotificationAsync(long userId, bool silent)
+        {
+            var statement = new SimpleStatement(
+                "UPDATE ferrite.signup_notifications SET silent = ? "+
+                "WHERE user_id = ?;",
+                userId, silent).SetKeyspace(keySpace);
+            await session.ExecuteAsync(statement);
+            return true;
+        }
+
+        public async Task<bool> GetSignUoNotificationAsync(long userId, bool silent)
+        {
+            var statement = new SimpleStatement(
+                "SELECT * FROM ferrite.signup_notifications WHERE user_id = ?;", 
+                userId);
+            statement = statement.SetKeyspace(keySpace);
+
+            var results = await session.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                return row.GetValue<bool>("silent");
+            }
+
+            return false;
         }
     }
 }
