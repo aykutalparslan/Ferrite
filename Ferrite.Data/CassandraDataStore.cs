@@ -1569,7 +1569,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> GetSignUoNotificationAsync(long userId, bool silent)
+        public async Task<bool> GetSignUoNotificationAsync(long userId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.signup_notifications WHERE user_id = ?;", 

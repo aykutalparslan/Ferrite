@@ -400,4 +400,16 @@ public partial class AccountService : IAccountService
         });
         return new ServiceResult<bool>(true, true, ErrorMessages.None);
     }
+
+    public async Task<bool> SetContactSignUpNotification(long authKeyId, bool silent)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        return await _store.SaveSignUoNotificationAsync(auth.UserId, silent);
+    }
+
+    public async Task<bool> GetContactSignUpNotification(long authKeyId)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        return await _store.GetSignUoNotificationAsync(auth.UserId);
+    }
 }

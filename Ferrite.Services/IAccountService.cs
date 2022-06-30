@@ -44,4 +44,6 @@ public interface IAccountService
     public Task<bool> UpdateDeviceLocked(long authKeyId, int period);
     public Task<Authorizations> GetAuthorizations(long authKeyId);
     public Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash);
+    public Task<bool> SetContactSignUpNotification(long authKeyId, bool silent);
+    public Task<bool> GetContactSignUpNotification(long authKeyId);
 }

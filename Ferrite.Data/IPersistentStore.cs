@@ -99,6 +99,6 @@ public interface IPersistentStore
     public Task<bool> SaveThumbnailAsync(Thumbnail thumbnail);
     public Task<IReadOnlyCollection<Thumbnail>> GetThumbnailsAsync(long photoId);
     public Task<bool> SaveSignUoNotificationAsync(long userId, bool silent);
-    public Task<bool> GetSignUoNotificationAsync(long userId, bool silent);
+    public Task<bool> GetSignUoNotificationAsync(long userId);
 }
 
