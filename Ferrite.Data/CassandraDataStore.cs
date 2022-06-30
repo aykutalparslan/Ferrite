@@ -1564,7 +1564,7 @@ namespace Ferrite.Data
             var statement = new SimpleStatement(
                 "UPDATE ferrite.signup_notifications SET silent = ? "+
                 "WHERE user_id = ?;",
-                userId, silent).SetKeyspace(keySpace);
+                silent, userId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
         }

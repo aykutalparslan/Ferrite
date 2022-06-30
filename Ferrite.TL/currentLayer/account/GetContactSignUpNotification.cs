@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
@@ -28,10 +29,12 @@ public class GetContactSignUpNotification : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public GetContactSignUpNotification(ITLObjectFactory objectFactory)
+    public GetContactSignUpNotification(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => -1626880216;
@@ -52,7 +55,8 @@ public class GetContactSignUpNotification : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        result.Result = new BoolFalse();
+        var silent = await _account.GetContactSignUpNotification(ctx.CurrentAuthKeyId);
+        result.Result = silent ? new BoolTrue() : new BoolFalse();
         return result;
     }
 
