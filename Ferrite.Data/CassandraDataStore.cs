@@ -50,6 +50,9 @@ namespace Ferrite.Data
                             "auth_key blob," +
                 "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //    "DROP TABLE IF EXISTS ferrite.authorizations;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.authorizations (" +
                             "auth_key_id bigint," +
@@ -61,9 +64,9 @@ namespace Ferrite.Data
                             "logged_in_at timestamp," +
                             "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
-            statement = new SimpleStatement(
-                "DROP TABLE IF EXISTS ferrite.exported_authorizations;");
-            session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //    "DROP TABLE IF EXISTS ferrite.exported_authorizations;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.exported_authorizations (" +
                             "user_id bigint," +
@@ -81,9 +84,9 @@ namespace Ferrite.Data
                             "valid_since bigint," +
                             "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
-            //statement = new SimpleStatement(
-              //  "DROP TABLE IF EXISTS ferrite.users;");
-            //session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
+                "DROP TABLE IF EXISTS ferrite.users;");
+            session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users (" +
                 "user_id bigint," +
@@ -438,9 +441,9 @@ namespace Ferrite.Data
                 var statement2 = new SimpleStatement(
                     "SELECT * FROM ferrite.authorizations WHERE auth_key_id = ?;",
                     authKeyId);
-                statement = statement.SetKeyspace(keySpace);
+                statement2 = statement2.SetKeyspace(keySpace);
 
-                var results2 = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
+                var results2 = await session.ExecuteAsync(statement2);
                 foreach (var row2 in results2)
                 {
                     AuthInfo info = new AuthInfo()
@@ -461,7 +464,7 @@ namespace Ferrite.Data
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
-                "last_name, username, phone, about, profile_photo) VALUES(?,?,?,?,?,?,?,?);",
+                "last_name, username, phone, about, profile_photo, account_days_TTL) VALUES(?,?,?,?,?,?,?,?,0);",
                 user.Id, user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone, user.About, user.Photo.PhotoId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
@@ -1149,7 +1152,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                return row.GetValue<int>("account_days_TTL");
+                return row.GetValue<int>(0);
             }
 
             return 0;
