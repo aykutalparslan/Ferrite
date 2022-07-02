@@ -120,12 +120,18 @@ namespace Ferrite.Data
                             "user_id bigint," +
                             "PRIMARY KEY (username, user_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //    "DROP TABLE IF EXISTS ferrite.authorizations_by_phone;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.authorizations_by_phone (" +
                             "phone text," +
                             "auth_key_id bigint," +
                             "PRIMARY KEY (phone, auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            // "DROP TABLE IF EXISTS ferrite.app_infos;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.app_infos (" +
                 "auth_key_id bigint," +
@@ -138,6 +144,8 @@ namespace Ferrite.Data
                 "lang_pack text," +
                 "lang_code text," +
                 "ip_address text," +
+                "encrypted_requests_disabled boolean,"+
+                "call_requests_disabled boolean,"+
                 "PRIMARY KEY (auth_key_id));");
             session.Execute(statement.SetKeyspace(keySpace));
             //statement = new SimpleStatement(
@@ -825,11 +833,13 @@ namespace Ferrite.Data
                 "UPDATE ferrite.app_infos SET hash = ?, api_id = ?, device_model = ?, " +
                 "system_version = ?, app_version = ?, " +
                 "system_lang_code = ?, lang_pack = ?, " +
-                "lang_code = ?, ip_address = ? " +
+                "lang_code = ?, ip_address = ?, " +
+                "encrypted_requests_disabled = ?, call_requests_disabled = ? " +
                 "WHERE auth_key_id = ?;",
                 appInfo.Hash, appInfo.ApiId, appInfo.DeviceModel, appInfo.SystemVersion,
                 appInfo.AppVersion, appInfo.SystemLangCode, appInfo.LangPack,
-                appInfo.LangCode, appInfo.IP, appInfo.AuthKeyId).SetKeyspace(keySpace);
+                appInfo.LangCode, appInfo.IP, appInfo.EncryptedRequestsDisabled, appInfo.CallRequestsDisabled,
+                appInfo.AuthKeyId).SetKeyspace(keySpace);
             batchStatement = batchStatement.Add(statement);
             var statement2 = new SimpleStatement(
                 "UPDATE ferrite.app_infos_by_hash SET auth_key_id = ? " +
@@ -855,6 +865,8 @@ namespace Ferrite.Data
                     Hash = row.GetValue<long>("hash"),
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     ApiId = row.GetValue<int>("api_id"),
+                    EncryptedRequestsDisabled = row.GetValue<bool>("encrypted_requests_disabled"),
+                    CallRequestsDisabled = row.GetValue<bool>("call_requests_disabled"),
                     DeviceModel = row.GetValue<string>("device_model"),
                     SystemVersion = row.GetValue<string>("system_version"),
                     AppVersion = row.GetValue<string>("app_version"),

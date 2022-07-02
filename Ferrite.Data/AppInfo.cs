@@ -23,6 +23,8 @@ public record AppInfo
     public long Hash { get; init; }
     public long AuthKeyId { get; init; }
     public int ApiId { get; init; }
+    public bool EncryptedRequestsDisabled { get; init; }
+    public bool CallRequestsDisabled { get; init; }
     public string DeviceModel { get; init; } = default!;
     public string SystemVersion { get; init; } = default!;
     public string AppVersion { get; init; } = default!;

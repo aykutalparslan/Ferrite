@@ -46,4 +46,6 @@ public interface IAccountService
     public Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash);
     public Task<bool> SetContactSignUpNotification(long authKeyId, bool silent);
     public Task<bool> GetContactSignUpNotification(long authKeyId);
+    public Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
+        bool encryptedRequestsDisabled,bool callRequestsDisabled);
 }

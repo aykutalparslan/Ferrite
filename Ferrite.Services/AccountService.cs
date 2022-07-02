@@ -412,4 +412,21 @@ public partial class AccountService : IAccountService
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         return await _store.GetSignUoNotificationAsync(auth.UserId);
     }
+
+    public async Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
+        bool encryptedRequestsDisabled, bool callRequestsDisabled)
+    {
+        var appAuthKeyId = await _store.GetAuthKeyIdByAppHashAsync(hash);
+        if(appAuthKeyId == null)
+        {
+            return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
+        }
+        var info = await _store.GetAppInfoAsync((long)appAuthKeyId);
+        var success =await _store.SaveAppInfoAsync(info with
+        {
+            EncryptedRequestsDisabled = encryptedRequestsDisabled,
+            CallRequestsDisabled = callRequestsDisabled
+        });
+        return new ServiceResult<bool>(success, success, ErrorMessages.None);
+    }
 }

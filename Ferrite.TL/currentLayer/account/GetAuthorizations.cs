@@ -67,13 +67,13 @@ public class GetAuthorizations : ITLObject, ITLMethod
             auth.ApiId = info.ApiId;
             auth.AppName = "Unknown";
             auth.AppVersion = info.AppVersion;
-            auth.CallRequestsDisabled = false;
+            auth.CallRequestsDisabled = info.CallRequestsDisabled;
             auth.Country = "Turkey";
             auth.Current = true;
             auth.DateActive = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
             auth.DateCreated = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
             auth.DeviceModel = info.DeviceModel;
-            auth.EncryptedRequestsDisabled = false;
+            auth.EncryptedRequestsDisabled = info.EncryptedRequestsDisabled;
             auth.Hash = info.Hash;
             auth.Ip = info.IP;
             auth.OfficialApp = true;

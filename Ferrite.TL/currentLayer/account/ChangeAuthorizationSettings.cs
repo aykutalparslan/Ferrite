@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.account;
@@ -27,10 +29,12 @@ public class ChangeAuthorizationSettings : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IAccountService _account;
     private bool serialized = false;
-    public ChangeAuthorizationSettings(ITLObjectFactory objectFactory)
+    public ChangeAuthorizationSettings(ITLObjectFactory objectFactory, IAccountService account)
     {
         factory = objectFactory;
+        _account = account;
     }
 
     public int Constructor => 1089766498;
@@ -107,7 +111,21 @@ public class ChangeAuthorizationSettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _account.ChangeAuthorizationSettings(ctx.AuthKeyId, _hash, 
+            _encryptedRequestsDisabled, _callRequestsDisabled);
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+        }
+        else
+        {
+            rpcResult.Result = serviceResult.Result ? new BoolTrue() : new BoolFalse();
+        }
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)
