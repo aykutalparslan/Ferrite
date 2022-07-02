@@ -84,9 +84,9 @@ namespace Ferrite.Data
                             "valid_since bigint," +
                             "PRIMARY KEY (auth_key_id, valid_since)) WITH CLUSTERING ORDER BY (valid_since ASC);");
             session.Execute(statement.SetKeyspace(keySpace));
-            statement = new SimpleStatement(
-                "DROP TABLE IF EXISTS ferrite.users;");
-            session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //    "DROP TABLE IF EXISTS ferrite.users;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.users (" +
                 "user_id bigint," +
@@ -1248,10 +1248,10 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> DeleteBlockedUserAsync(long userId, long peerId, PeerType peerType)
+        public async Task<bool> DeleteBlockedPeerAsync(long userId, long peerId, PeerType peerType)
         {
             var statement = new SimpleStatement(
-                "DELETE FROM ferrite.blocked_users WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
+                "DELETE FROM ferrite.blocked_peers WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
                 userId, (int)peerType, peerId).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
             return true;
@@ -1260,7 +1260,7 @@ namespace Ferrite.Data
         public async Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId)
         {
             var statement = new SimpleStatement(
-                "SELECT * FROM ferrite.blocked_users WHERE user_id = ?;", 
+                "SELECT * FROM ferrite.blocked_peers WHERE user_id = ?;", 
                 userId);
             statement = statement.SetKeyspace(keySpace);
 

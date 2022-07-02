@@ -118,15 +118,15 @@ public class ContactsService : IContactsService
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
-            return await _store.DeleteBlockedUserAsync(auth.UserId, id.ChannelId, PeerType.Channel);
+            return await _store.DeleteBlockedPeerAsync(auth.UserId, id.ChannelId, PeerType.Channel);
         }
         if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
         {
-            return await _store.DeleteBlockedUserAsync(auth.UserId, id.UserId, PeerType.User);
+            return await _store.DeleteBlockedPeerAsync(auth.UserId, id.UserId, PeerType.User);
         }
         else
         {
-            return await _store.DeleteBlockedUserAsync(auth.UserId, id.ChatId, PeerType.Chat);
+            return await _store.DeleteBlockedPeerAsync(auth.UserId, id.ChatId, PeerType.Chat);
         }
     }
 
