@@ -14,7 +14,7 @@ The project is currently in a very early stage of development. The following are
 
 ## Roadmap
 
-Development is currently focused on getting the Android application to run in a stable state and the planned order steps to achive that are:
+Development is currently focused on getting the Android application to run in a stable state and the planned order of steps to achive that are:
 - All settings screens should work on the Android application
 - Contacts related features should work as expected
 - Phone calls.
