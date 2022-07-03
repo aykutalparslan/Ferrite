@@ -202,9 +202,9 @@ namespace Ferrite.Data
                 "report_reason int," +
                 "PRIMARY KEY (peer_id, peer_type, reported_by_user));");
             session.Execute(statement.SetKeyspace(keySpace));
-            statement = new SimpleStatement(
-              "DROP TABLE IF EXISTS ferrite.privacy_rules;");
-            session.Execute(statement.SetKeyspace(keySpace));
+            //statement = new SimpleStatement(
+            //  "DROP TABLE IF EXISTS ferrite.privacy_rules;");
+            //session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.privacy_rules (" +
                 "user_id bigint," +
