@@ -16,11 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
+namespace Ferrite.Data.Messages;
 
-namespace Ferrite.Services;
-
-public interface IMessagesService
-{
-    Task<ServiceResult<Data.Messages.PeerSettings>> GetPeerSettings(long authKeyId, InputPeer peer);
-}
+public record PeerSettings(Data.PeerSettings Settings, IReadOnlyCollection<Chat> Chats, IReadOnlyCollection<User> Users);

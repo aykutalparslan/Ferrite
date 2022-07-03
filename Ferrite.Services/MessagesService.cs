@@ -17,6 +17,7 @@
 // 
 
 using Ferrite.Data;
+using PeerSettings = Ferrite.Data.Messages.PeerSettings;
 
 namespace Ferrite.Services;
 
@@ -27,8 +28,29 @@ public class MessagesService : IMessagesService
     {
         _store = store;
     }
-    public async Task<ServiceResult<PeerSettings>> GetPeerSettings(InputPeer peer)
+    public async Task<ServiceResult<Data.Messages.PeerSettings>> GetPeerSettings(long authKeyId, InputPeer peer)
     {
-        throw new NotImplementedException();
+        if (peer.InputPeerType == InputPeerType.Self)
+        {
+            var settings = new Data.PeerSettings(false, false, false, 
+                false, false, false, 
+                false, false, false, 
+                null, null, null);
+            return new ServiceResult<PeerSettings>(new PeerSettings(settings, new List<Chat>(), new List<User>())
+                , true, ErrorMessages.None);
+        }
+        else if (peer.InputPeerType == InputPeerType.User)
+        {
+            var settings = new Data.PeerSettings(true, true, true, 
+                false, false,  false, 
+                false, false, false, 
+                null, null, null);
+            var users = new List<User>();
+            var user = await _store.GetUserAsync(peer.UserId);
+            users.Add(user);
+            return new ServiceResult<PeerSettings>(new PeerSettings(settings, new List<Chat>(), users)
+                , true, ErrorMessages.None);
+        }
+        return new ServiceResult<PeerSettings>(null, false, ErrorMessages.PeerIdInvalid);
     }
 }

@@ -50,8 +50,8 @@ public class PeerSettingsImpl : PeerSettings
         }
     }
 
-    private PeerSettings _settings;
-    public PeerSettings Settings
+    private currentLayer.PeerSettings _settings;
+    public currentLayer.PeerSettings Settings
     {
         get => _settings;
         set
@@ -86,7 +86,7 @@ public class PeerSettingsImpl : PeerSettings
     public override void Parse(ref SequenceReader buff)
     {
         serialized = false;
-        _settings = (PeerSettings)factory.Read(buff.ReadInt32(true), ref buff);
+        _settings = (currentLayer.PeerSettings)factory.Read(buff.ReadInt32(true), ref buff);
         buff.Skip(4); _chats  =  factory . Read < Vector < Chat > > ( ref  buff ) ; 
         buff.Skip(4); _users  =  factory . Read < Vector < User > > ( ref  buff ) ; 
     }
