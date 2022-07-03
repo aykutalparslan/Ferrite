@@ -203,12 +203,15 @@ namespace Ferrite.Data
                 "PRIMARY KEY (peer_id, peer_type, reported_by_user));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
+              "DROP TABLE IF EXISTS ferrite.privacy_rules;");
+            session.Execute(statement.SetKeyspace(keySpace));
+            statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.privacy_rules (" +
                 "user_id bigint," +
                 "privacy_key int," +
                 "rule_type int," +
                 "peer_ids set<bigint>," +
-                "PRIMARY KEY (user_id, privacy_key, rule_type));");
+                "PRIMARY KEY (user_id, privacy_key));");
             session.Execute(statement.SetKeyspace(keySpace));
             statement = new SimpleStatement(
                 "CREATE TABLE IF NOT EXISTS ferrite.contacts (" +
@@ -1097,9 +1100,10 @@ namespace Ferrite.Data
             foreach (var rule in rules)
             {
                 var statement = new SimpleStatement(
-                    "UPDATE ferrite.privacy_rules SET peer_ids = ? " +
-                    "WHERE user_id = ? AND privacy_key = ? AND rule_type = ?;",
-                    rule.Peers, userId, (int)key, (int)rule.PrivacyRuleType).SetKeyspace(keySpace);
+                    "UPDATE ferrite.privacy_rules SET peer_ids = ?, rule_type = ? " +
+                    "WHERE user_id = ? AND privacy_key = ?;",
+                    rule.Peers ?? new List<long>(){-1}, (int)rule.PrivacyRuleType,
+                    userId, (int)key).SetKeyspace(keySpace);
                 await session.ExecuteAsync(statement);
             }
             return true;
