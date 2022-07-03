@@ -71,7 +71,7 @@ public class ImportContacts : ITLObject, ITLMethod
             if (c is InputPhoneContactImpl phoneContact)
             {
                 contacts.Add(new Data.InputContact(phoneContact.ClientId,
-                    phoneContact.Phone, phoneContact.FirstName, phoneContact.LastName));
+                    phoneContact.Phone.Replace("+",""), phoneContact.FirstName, phoneContact.LastName));
             }
         }
 
