@@ -516,7 +516,7 @@ namespace Ferrite.Data
                 await session.ExecuteAsync(stmt);
             }
             var statement = new SimpleStatement(
-                "UPDATE ferrite.users SET access_hash = =, first_name = ?, " +
+                "UPDATE ferrite.users SET access_hash = ?, first_name = ?, " +
                 "last_name = ?, username = ?, phone = ?, about = ?, profile_photo = ? WHERE user_id = ?;",
                 user.AccessHash, user.FirstName, user.LastName,
                 user.Username, user.Phone, user.About, user.Photo.Empty ? 0 : user.Photo.PhotoId, 
