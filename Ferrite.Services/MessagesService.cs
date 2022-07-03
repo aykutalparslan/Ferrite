@@ -25,7 +25,7 @@ public class MessagesService : IMessagesService
     private readonly IPersistentStore _store;
     public MessagesService(IPersistentStore store)
     {
-        store = _store;
+        _store = store;
     }
     public async Task<ServiceResult<PeerSettings>> GetPeerSettings(InputPeer peer)
     {
