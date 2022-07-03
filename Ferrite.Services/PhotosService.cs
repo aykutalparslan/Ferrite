@@ -160,7 +160,7 @@ public class PhotosService : IPhotosService
         
         await _store.SaveProfilePhotoAsync(auth.UserId, file.Id, file.AccessHash, reference, date);
         var photoInner = new Data.Photo(false, file.Id, file.AccessHash, reference,
-            (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 1);
+            (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 2);
         var result = new Photo(photoInner, new[] { user });
         return new ServiceResult<Photo>(result, true, ErrorMessages.None);
     }

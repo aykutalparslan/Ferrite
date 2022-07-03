@@ -169,6 +169,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
                 size.Size = s.Size;
                 size.H = s.H;
                 size.W = s.W;
+                photoInner.Sizes.Add(size);
             }
 
             if (serviceResult.Result.PhotoInner.VideoSizes is { Count: > 0 })
@@ -182,6 +183,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
                     size.H = s.H;
                     size.W = s.W;
                     size.VideoStartTs = s.VideoStartTs;
+                    photoInner.VideoSizes.Add(size);
                 }
             }
             photoResult.Photo = photoInner;
@@ -193,7 +195,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
                 userImpl.FirstName = user.FirstName;
                 userImpl.LastName = user.LastName;
                 userImpl.Phone = user.Phone;
-                userImpl.Self = user.Self;
+                userImpl.Self = true;
                 if(user.Status == Data.UserStatus.Empty)
                 {
                     userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
@@ -214,7 +216,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
                     }
                     userImpl.Photo = userPhoto;
                 }
-                photoResult.Users.Add(userImpl);
+                //photoResult.Users.Add(userImpl);
             }
             result.Result = photoResult;
         }

@@ -597,7 +597,7 @@ public class MTProtoConnection : IMTProtoConnection
             hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
             if (isStream)
             {
-                _ = ProcessStream(frame, hasMore);
+                ProcessStream(frame, hasMore).Wait();
                 return reader.Position;
             }
             if (frame.Length > 0)
