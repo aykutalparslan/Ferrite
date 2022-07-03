@@ -66,6 +66,19 @@ public class GetPeerDialogs : ITLObject, ITLMethod
         var dialogs = factory.Resolve<PeerDialogsImpl>();
         dialogs.Chats = factory.Resolve<Vector<Chat>>();
         dialogs.Dialogs = factory.Resolve<Vector<Dialog>>();
+        foreach (InputDialogPeerImpl p in _peers)
+        {
+            if (p.Peer is InputPeerUserImpl inputPeer)
+            {
+                var dialog = factory.Resolve<DialogImpl>();
+                var peerUser = factory.Resolve<PeerUserImpl>();
+                peerUser.UserId = inputPeer.UserId;
+                dialog.Peer = peerUser;
+                dialog.NotifySettings = factory.Resolve<PeerNotifySettingsImpl>();
+                dialogs.Dialogs.Add(dialog);
+            }
+        }
+        
         dialogs.Messages = factory.Resolve<Vector<Message>>();
         dialogs.Users = factory.Resolve<Vector<User>>();
         var state = factory.Resolve<StateImpl>();
