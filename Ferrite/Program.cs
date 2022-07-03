@@ -91,6 +91,8 @@ public class Program
             .SingleInstance();
         builder.RegisterType<UploadService>().As<IUploadService>()
             .SingleInstance();
+        builder.RegisterType<MessagesService>().As<IMessagesService>()
+            .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
