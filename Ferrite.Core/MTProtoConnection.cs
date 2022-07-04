@@ -498,6 +498,19 @@ public class MTProtoConnection : IMTProtoConnection
 
         socketConnection.Transport.Output.Write(msg);
     }
+    
+    private void SendTransportError(int errorCode)
+    {
+        writer.Clear();
+        writer.WriteInt32(-errorCode, true);
+        var msg = writer.ToReadOnlySequence();
+        if (webSocketHandler != null)
+        {
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
+        }
+
+        socketConnection.Transport.Output.Write(msg);
+    }
 
     public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
     public event AsyncEventHandler<MTProtoAsyncEventArgs>? MessageReceived;
@@ -733,6 +746,13 @@ public class MTProtoConnection : IMTProtoConnection
                 _permAuthKeyId = _authKeyId;
                 _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
             }
+        }
+
+        if (_authKey == null)
+        {
+            _sendQueueSemaphore.Wait();
+            SendTransportError(404);
+            Abort(new Exception("Auth key not found"));
         }
     }
 
