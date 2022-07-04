@@ -51,9 +51,11 @@ public class PaddedIntermediateFrameDecoder : IFrameDecoder
         _db = db;
     }
 
-    public bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, out bool isStream)
+    public bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, 
+        out bool isStream, out bool requiresQuickAck)
     {
         isStream = _isStream;
+        requiresQuickAck = false;
         if (_length == 0)
         {
             if (reader.Remaining < 4)
@@ -67,11 +69,17 @@ public class PaddedIntermediateFrameDecoder : IFrameDecoder
                 if (_decryptor != null)
                 {
                     _decryptor.Transform(_lengthBytes);
-                    _length = (_lengthBytes[0]) |
-                        (_lengthBytes[1] << 8) |
-                        (_lengthBytes[2] << 16) |
-                        (_lengthBytes[3] << 24);
+                    
                 }
+                if ((_lengthBytes[0] & 0x80) == 0x80)
+                {
+                    requiresQuickAck = true;
+                    _lengthBytes[0] &= 0x7f;
+                }
+                _length = (_lengthBytes[0]) |
+                          (_lengthBytes[1] << 8) |
+                          (_lengthBytes[2] << 16) |
+                          (_lengthBytes[3] << 24);
                 reader.Advance(4);
             }
         }

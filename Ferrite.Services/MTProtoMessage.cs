@@ -38,5 +38,7 @@ public class MTProtoMessage
     public byte[]? Nonce { get; set; }
     [Key(6)]
     public long MessageId { get; set; }
+    [Key(7)]
+    public int QuickAck { get; set; }
 }
 

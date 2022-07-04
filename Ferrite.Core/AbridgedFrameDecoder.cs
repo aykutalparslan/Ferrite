@@ -52,9 +52,11 @@ public class AbridgedFrameDecoder : IFrameDecoder
         _db = db;
     }
 
-    public bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, out bool isStream)
+    public bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, 
+        out bool isStream, out bool requiresQuickAck)
     {
         isStream = _isStream;
+        requiresQuickAck = false;
         if (_length == 0)
         {
             if (reader.Remaining == 0)
@@ -72,6 +74,12 @@ public class AbridgedFrameDecoder : IFrameDecoder
                     _decryptor.Transform(_lengthBytes.AsSpan().Slice(0, 1));
                 }
             }
+            if ((_lengthBytes[0] & 0x80) == 0x80)
+            {
+                requiresQuickAck = true;
+                _lengthBytes[0] &= 0x7f;
+            }
+            
             if (_lengthBytes[0] < 127)
             {
                 _length = _lengthBytes[0] * 4;

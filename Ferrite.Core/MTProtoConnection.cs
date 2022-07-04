@@ -17,6 +17,7 @@
  */
 
 using System.Buffers;
+using System.Buffers.Binary;
 using DotNext.IO;
 using DotNext.Buffers;
 using Ferrite.TL;
@@ -30,6 +31,7 @@ using Ferrite.Core.Exceptions;
 using Ferrite.TL.mtproto;
 using System.Net;
 using System.Security.Cryptography;
+using DotNext;
 using DotNext.Collections.Generic;
 using DotNext.IO.Pipelines;
 using Ferrite.Services;
@@ -237,14 +239,17 @@ public class MTProtoConnection : IMTProtoConnection
             {
                 var msg = await _outgoing.Reader.ReadAsync();
                 await _sendQueueSemaphore.WaitAsync();
-                var data = msg.Data;
                 _log.Debug($"=>Sending {msg.MessageType} message.");
-                if (_authKeyId == 0)
+                if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    SendUnencrypted(data, NextMessageId(msg.IsResponse));
+                    SendQuickAck((uint)msg.QuickAck);
+                }
+                else if (_authKeyId == 0)
+                {
+                    SendUnencrypted(msg.Data, NextMessageId(msg.IsResponse));
                 }
                 else if (await _sessionManager.GetSessionStateAsync(_sessionId)
-                    is { } state)
+                         is { } state)
                 {
                     SendEncrypted(msg, state);
                 }
@@ -422,92 +427,6 @@ public class MTProtoConnection : IMTProtoConnection
             socketConnection.Transport.Output.Write(frameTail);
         }
     }
-    private async Task SendStream2(IDistributedFileOwner message, SessionState state)
-    {
-        if (message == null) return;
-        var rpcResult = factory.Resolve<RpcResult>();
-        rpcResult.ReqMsgId = message.ReqMsgId;
-        var data = await message.GetFileStream();
-        if (data.Length < 0) return;
-        
-        var fileImpl = factory.Resolve<FileImpl>();
-        fileImpl.Type = factory.Resolve<FileJpegImpl>();
-        fileImpl.Mtime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
-        fileImpl.Bytes = Array.Empty<byte>();
-        rpcResult.Result = fileImpl;
-        byte[] resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
-        rpcResult.TLBytes.Slice(0, 24).CopyTo(resultHeader);
-        int pad = 0;
-        if (data.Length < 254)
-        {
-            resultHeader[24] = (byte)data.Length;
-            pad = (int)((4 - ((data.Length + 1) % 4)) % 4);
-        }
-        else
-        {
-            resultHeader[24] = 254;
-            resultHeader[25] = (byte)(data.Length & 0xff);
-            resultHeader[26] = (byte)((data.Length & 0xff) >> 8);
-            resultHeader[27] = (byte)((data.Length & 0xff) >> 16);
-            pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
-        }
-        writer.Clear();
-        writer.WriteInt64(state.ServerSalt.Salt, true);
-        writer.WriteInt64(state.SessionId, true);
-        writer.WriteInt64(NextMessageId(true), true);
-        writer.WriteInt32(GenerateSeqNo(true), true);
-        writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
-        var cryptographicHeader = writer.ToReadOnlySequence().ToArray();
-        int paddingLength = _random.GetNext(12, 512);
-        while ((resultHeader.Length + data.Length + pad + paddingLength) % 16 != 0)
-        {
-            paddingLength++;
-        }
-        var paddingBytes = _random.GetRandomBytes(paddingLength);
-        Queue<Stream> streams = new Queue<Stream>();
-        streams.Enqueue(new MemoryStream(cryptographicHeader));
-        streams.Enqueue(new MemoryStream(resultHeader));
-        streams.Enqueue(data);
-        streams.Enqueue(new MemoryStream(new byte[pad]));
-        streams.Enqueue(new MemoryStream(paddingBytes));
-        var stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
-
-        var messageKey = AesIge.GenerateMessageKey(_authKey, stream).ToArray();
-        byte[] aesKey = new byte[32];
-        byte[] aesIV = new byte[32];
-        AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
-        Aes aes = Aes.Create();
-        aes.Key = aesKey;
-        
-        streams = new Queue<Stream>();
-        streams.Enqueue(new MemoryStream(cryptographicHeader));
-        streams.Enqueue(new MemoryStream(resultHeader));
-        streams.Enqueue(await message.GetFileStream());
-        streams.Enqueue(new MemoryStream(new byte[pad]));
-        streams.Enqueue(new MemoryStream(paddingBytes));
-        stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
-        var buffer = new byte[stream.Length];
-        int remaining = (int)stream.Length;
-        int offset = 0;
-        while (remaining > 0)
-        {
-            var read = await stream.ReadAsync(buffer.AsMemory(offset, Math.Min(remaining, 1024)));
-            remaining -= read;
-            offset += read;
-        }
-        aes.EncryptIge(buffer, aesIV);
-        writer.Clear();
-        writer.WriteInt64(state.AuthKeyId, true);
-        writer.Write(messageKey);
-        writer.Write(buffer);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(msg);
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
-        }
-        socketConnection.Transport.Output.Write(encoded);
-    }
     private void SendUnencrypted(Span<byte> data, long messageId)
     {
         writer.Clear();
@@ -543,25 +462,41 @@ public class MTProtoConnection : IMTProtoConnection
         }
         writer.Write(_random.GetRandomBytes(paddingLength), false);
 
-        using (var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)writer.WrittenCount))
+        using var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)writer.WrittenCount);
+        var messageSpan = messageData.Memory.Slice(0, (int)writer.WrittenCount).Span;
+        writer.ToReadOnlySequence().CopyTo(messageSpan);
+        Span<byte> messageKey = AesIge.GenerateMessageKey(_authKey, messageSpan);
+        AesIge aesIge = new AesIge(_authKey, messageKey, false);
+        aesIge.Encrypt(messageSpan);
+        writer.Clear();
+        writer.WriteInt64(state.AuthKeyId, true);
+        writer.Write(messageKey);
+        writer.Write(messageSpan);
+        var msg = writer.ToReadOnlySequence();
+        var encoded = encoder.Encode(msg);
+        if (webSocketHandler != null)
         {
-            var messageSpan = messageData.Memory.Slice(0, (int)writer.WrittenCount).Span;
-            writer.ToReadOnlySequence().CopyTo(messageSpan);
-            Span<byte> messageKey = AesIge.GenerateMessageKey(_authKey, messageSpan);
-            AesIge aesIge = new AesIge(_authKey, messageKey, false);
-            aesIge.Encrypt(messageSpan);
-            writer.Clear();
-            writer.WriteInt64(state.AuthKeyId, true);
-            writer.Write(messageKey);
-            writer.Write(messageSpan);
-            var msg = writer.ToReadOnlySequence();
-            var encoded = encoder.Encode(msg);
-            if (webSocketHandler != null)
-            {
-                webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
-            }
-            socketConnection.Transport.Output.Write(encoded);
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
         }
+        socketConnection.Transport.Output.Write(encoded);
+    }
+
+    private void SendQuickAck(uint ack)
+    {
+        writer.Clear();
+        if (encoder is AbridgedFrameEncoder)
+        {
+            ack = BinaryPrimitives.ReverseEndianness(ack);
+        }
+        ack |= 0x80000000;
+        writer.WriteInt32((int)ack, true);
+        var msg = writer.ToReadOnlySequence();
+        if (webSocketHandler != null)
+        {
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
+        }
+
+        socketConnection.Transport.Output.Write(msg);
     }
 
     public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
@@ -594,7 +529,8 @@ public class MTProtoConnection : IMTProtoConnection
         bool hasMore;
         do
         {
-            hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
+            hasMore = decoder.Decode(ref reader, out var frame, 
+                out var isStream, out var requiresQuickAck);
             if (isStream)
             {
                 ProcessStream(frame, hasMore).Wait();
@@ -602,7 +538,7 @@ public class MTProtoConnection : IMTProtoConnection
             }
             if (frame.Length > 0)
             {
-                ProcessFrame(frame);
+                ProcessFrame(frame, requiresQuickAck);
             }
         } while (hasMore);
 
@@ -749,7 +685,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
 
-    private void ProcessEncryptedMessageAsync(ReadOnlySequence<byte> bytes)
+    private void ProcessEncryptedMessageAsync(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 16)
         {
@@ -758,7 +694,7 @@ public class MTProtoConnection : IMTProtoConnection
 
         try
         {
-            DecryptAndRaiseEvent(in bytes);
+            DecryptAndRaiseEvent(in bytes, requiresQuickAck);
         }
         catch (Exception ex)
         {
@@ -800,7 +736,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
 
-    private void DecryptAndRaiseEvent(in ReadOnlySequence<byte> bytes)
+    private void DecryptAndRaiseEvent(in ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         SequenceReader reader = IAsyncBinaryReader.Create(bytes);
         Span<byte> messageKey = stackalloc byte[16];
@@ -810,6 +746,7 @@ public class MTProtoConnection : IMTProtoConnection
         var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
         reader.Read(messageSpan);
         aesIge.Decrypt(messageSpan);
+
         var messageKeyActual = AesIge.GenerateMessageKey(_authKey, messageSpan, true);
         if (!messageKey.SequenceEqual(messageKeyActual))
         {
@@ -829,7 +766,10 @@ public class MTProtoConnection : IMTProtoConnection
         {
             _context.IP = endpoint.Address.ToString();
         }
-
+        if (requiresQuickAck)
+        {
+            _context.QuickAck = GenerateQuickAck(messageSpan);
+        }
         int messageDataLength = rd.ReadInt32(true);
         int constructor = rd.ReadInt32(true);
         if (_sessionId == 0)
@@ -882,6 +822,15 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
 
+    private int GenerateQuickAck(Span<byte> messageSpan)
+    {
+        var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        sha256.AppendData(_authKey.AsSpan().Slice(88, 32));
+        sha256.AppendData(messageSpan);
+        var ack = sha256.GetHashAndReset();
+        return BitConverter.ToInt32(ack, 0);
+    }
+
     private void ProcessUnencryptedMessage(in ReadOnlySequence<byte> bytes)
     {
         if (bytes.Length < 16)
@@ -914,7 +863,7 @@ public class MTProtoConnection : IMTProtoConnection
         //OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
 
-    private void ProcessFrame(ReadOnlySequence<byte> bytes)
+    private void ProcessFrame(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 8)
         {
@@ -935,7 +884,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
         else
         {
-            ProcessEncryptedMessageAsync(bytes.Slice(8));
+            ProcessEncryptedMessageAsync(bytes.Slice(8), requiresQuickAck);
         }
     }
     private int GenerateSeqNo(bool isContentRelated)

@@ -42,6 +42,17 @@ public class ServiceMessagesProcessor : IProcessor
     {
         if(sender is MTProtoConnection connection)
         {
+            if (ctx.QuickAck != 0)
+            {
+                MTProtoMessage message = new MTProtoMessage()
+                {
+                    QuickAck = ctx.QuickAck,
+                    MessageType = MTProtoMessageType.QuickAck,
+                    SessionId = ctx.SessionId,
+                    MessageId = ctx.MessageId
+                };
+                await connection.SendAsync(message);
+            }
             if (input.Constructor == TLConstructor.Ping &&
             input is Ping ping)
             {

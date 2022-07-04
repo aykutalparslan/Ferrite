@@ -56,7 +56,8 @@ namespace Ferrite.Tests.Core
                 bool hasMore = false;
                 do
                 {
-                    hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
+                    hasMore = decoder.Decode(ref reader, out var frame, 
+                        out var isStream, out var requiresQuickAck);
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);
@@ -115,7 +116,8 @@ namespace Ferrite.Tests.Core
                 bool hasMore = false;
                 do
                 {
-                    hasMore = decoder.Decode(ref reader, out var frame, out var isStream);
+                    hasMore = decoder.Decode(ref reader, out var frame, 
+                        out var isStream, out var requiresQuickAck);
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);

@@ -31,6 +31,6 @@ public interface IFrameDecoder
     /// <param name="isStream">If the frame belongs to an API method.
     /// that is an ITLStream instead of an ITLObject.</param>
     /// <returns>True if there's more data to process.</returns>
-    bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, out bool isStream);
+    bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, out bool isStream, out bool requiresQuickAck);
 }
 
