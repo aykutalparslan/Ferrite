@@ -16,8 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
-
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+public enum RichTextType
+{
+    Empty,
+    Plain,
+    Bold,
+    Italic,
+    Underline,
+    Strike,
+    Fixed,
+    Url,
+    Email,
+    Concat,
+    Subscript,
+    Superscript,
+    Marked,
+    Phone,
+    Image,
+    Anchor
+}

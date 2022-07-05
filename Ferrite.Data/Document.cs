@@ -20,4 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record Document(long Id, long AccessHash, byte[] FileReference, 
+    int Date, string MimeType, int Size, IReadOnlyCollection<PhotoSize> Thumbs, 
+    IReadOnlyCollection<VideoSize>? VideoThumbs, int DcId, IReadOnlyCollection<DocumentAttribute> Attributes);

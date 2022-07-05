@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public record VideoSize(string Type, int W, int H, int Size, double VideoStartTs);
+[MessagePackObject(true)] public record VideoSize(string Type, int W, int H, int Size, double VideoStartTs);

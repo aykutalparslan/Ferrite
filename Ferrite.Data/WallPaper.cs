@@ -20,4 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record WallPaper(bool NoFile, long Id, bool Creator, 
+    bool Default, bool Dark, bool Pattern, long AccessHash, string Slug, Document Document, 
+    WallPaperSettings Settings);

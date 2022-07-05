@@ -20,4 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record MessageFwdHeader(bool Imported, Peer FromId,
+    string FromName, int Date, int ChannelPost, string PostAuthor, Peer SavedFromPeer, int SavedFromMsgId,
+    string PsaType);

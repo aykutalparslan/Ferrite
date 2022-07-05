@@ -23,6 +23,7 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using MessagePack;
+using Message = Ferrite.TL.mtproto.Message;
 
 namespace Ferrite.Core;
 

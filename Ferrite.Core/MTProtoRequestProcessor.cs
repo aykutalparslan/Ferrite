@@ -25,6 +25,7 @@ using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 using MessagePack;
+using Message = Ferrite.TL.mtproto.Message;
 
 namespace Ferrite.Core;
 

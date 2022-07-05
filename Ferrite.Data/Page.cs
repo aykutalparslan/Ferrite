@@ -20,4 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record Page(bool Part, bool Rtl, bool V2, string? Url,
+    IReadOnlyCollection<PageBlock> Blocks, IReadOnlyCollection<Photo> Photos,
+    IReadOnlyCollection<Document> Documents, int? Views);

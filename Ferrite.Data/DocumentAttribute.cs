@@ -20,4 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record DocumentAttribute(int? W, int? H, bool Mask, string? Alt,
+    InputStickerSet? StickerSet, MaskCoords? MaskCoords, bool RoundMessage, bool SupportsStreaming,
+    int? Duration, bool Voice, string? Title, string? Performer, byte[]? Waveform, string? FileName);

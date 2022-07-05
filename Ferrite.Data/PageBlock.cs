@@ -20,4 +20,13 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record PageBlock(PageBlockType PageBlockType,
+    RichText? Text, RichText? Author, int? PublishedDate, string? Language, 
+    IReadOnlyCollection<PageListItem>? PageListItems, RichText? Caption,
+    long? PhotoId, PageCaption? PageCaption, string? Url, long? WebPageId,
+    bool Autoplay, bool Loop, long? VideoId, PageBlock? Cover, bool FullWidth,
+    bool AllowScrolling, string? Html, long PosterPhotoId, int? W, int? H,
+    long? AuthorPhotoId, IReadOnlyCollection<PageBlock>? Blocks, IReadOnlyCollection<PageBlock>? Items,
+    Chat? Channel, long? AudioId, bool Bordered, bool Striped, IReadOnlyCollection<PageTableRow>? Rows,
+    IReadOnlyCollection<PageListOrderedItem>? PageListOrderedItems, bool Open,
+    IReadOnlyCollection<PageRelatedArticle>? Articles, GeoPoint? Geo, int? Zoom);

@@ -20,4 +20,10 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record MessageMedia(Photo? Photo, int? TtlSeconds,
+    GeoPoint? Geo, string? PhoneNumber, string? FirstName, string? LastName, string? VCard, long UserId,
+    Document? Document, WebPage? WebPage, string? Title, string? Address, string? Provider, long? VenueId,
+    string? VenueType, Game? Game, bool ShippingAddressRequested, bool Test, string? Description,
+    WebDocument? WebPhoto, int? ReceiptMessageId, string? Currency, long? TotalAmount, int? StartParam,
+    int? Heading, int? Period, int ProximityNotificationRadius, Poll? Poll, PollResults? Results,
+    int? Value, string? Emoticon);

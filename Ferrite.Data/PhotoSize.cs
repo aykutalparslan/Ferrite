@@ -16,7 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public record PhotoSize(PhotoSizeType PhotoSizeType, string Type, int W, 
+[MessagePackObject(true)] public record PhotoSize(PhotoSizeType PhotoSizeType, string Type, int W, 
     int H, int Size, byte[]? Bytes, IReadOnlyCollection<int>? Sizes);

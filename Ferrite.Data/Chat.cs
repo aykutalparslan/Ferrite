@@ -16,16 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)] 
 public record Chat
 {
-    public ChatType ChatType { get; init; }
-    public long Id { get; init; }
-    public long AccessHash { get; init; }
-    public string Title { get; init; } = default!;
-    public ChatPhoto Photo { get; init; } = default!;
-    public int ParticipantsCount { get; init; }
-    public int Date { get; init; }
-    public int Version { get; init; }
+    public ChatType ChatType { get; set; }
+    public long Id { get; set; }
+    public long AccessHash { get; set; }
+    public string Title { get; set; }
+    public ChatPhoto Photo { get; set; }
+    public int ParticipantsCount { get; set; }
+    public int Date { get; set; }
+    public int Version { get; set; }
 }

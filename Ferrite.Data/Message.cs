@@ -20,4 +20,10 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record Message(bool Out, bool Mentioned, bool MediaUnread,
+    bool Silent, bool Post, bool FromScheduled, bool Legacy, bool EditHide, bool Pinned, bool NoForwards, int Id, 
+    Peer FromId, Peer PeerId, MessageFwdHeader FwdFrom, long ViaBotId, MessageReplyHeader ReplyTo,
+    int Date, string MessageText, MessageMedia? Media, ReplyMarkup? ReplyMarkup,
+    IReadOnlyCollection<MessageEntity>? Entities, int Views, int Forwards, MessageReplies? Replies,
+    int? EditDate, string? PostAuthor, long? GroupedId, MessageReactions? Reactions,
+    IReadOnlyCollection<RestrictionReason>? RestrictionReason, int? TtlPeriod);

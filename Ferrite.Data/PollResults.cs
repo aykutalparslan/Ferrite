@@ -20,4 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record PollResults(bool min, 
+    IReadOnlyCollection<PollAnswerVoters> Results, int? TotalVoters, IReadOnlyCollection<int>? RecentVoters,
+    string? Solution, IReadOnlyCollection<MessageEntity>? SolutionEntities);

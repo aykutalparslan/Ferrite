@@ -16,14 +16,17 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record InputUser
 {
-    public InputUserType InputUserType { get; init; }
-    public long UserId { get; init; }
-    public long AccessHash { get; init; }
-    public InputPeer Peer { get; init; } = default!;
-    public int MsgId { get; init; }
+    public InputUserType InputUserType { get; set; }
+    public long UserId { get; set; }
+    public long AccessHash { get; set; }
+    public InputPeer Peer { get; set; }
+    public int MsgId { get; set; }
 }
 

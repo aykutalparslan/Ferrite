@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record MessageReplies(bool Comments, int Replies,
+    int RepliesPts, IReadOnlyCollection<Peer>? RecentRepliers, long? ChannelId, int? MaxId, int? ReadMaxId);

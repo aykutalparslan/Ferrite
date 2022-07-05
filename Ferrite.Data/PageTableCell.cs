@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record PageTableCell(bool Header, bool AlignCenter, bool AlignRight, bool VAlignMiddle,
+    bool VAlignBottom, RichText Text, int Colspan, int Rowspan);

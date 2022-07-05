@@ -16,15 +16,18 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record InputPeer
 {
-    public InputPeerType InputPeerType { get; init; }
-    public long ChatId { get; init; }
-    public long UserId { get; init; }
-    public long ChannelId { get; init; }
-    public long AccessHash { get; init; }
-    public int MsgId { get; init; }
+    public InputPeerType InputPeerType { get; set; }
+    public long ChatId { get; set; }
+    public long UserId { get; set; }
+    public long ChannelId { get; set; }
+    public long AccessHash { get; set; }
+    public int MsgId { get; set; }
 }
 

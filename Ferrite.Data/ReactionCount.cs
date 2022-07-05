@@ -20,4 +20,4 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record ReactionCount(bool Chosen, int Count, string Reaction);

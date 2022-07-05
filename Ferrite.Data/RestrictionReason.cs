@@ -16,13 +16,16 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)] 
 public record RestrictionReason
 {
-    public string Platform { get; init; } = default!;
-    public string Reason { get; init; } = default!;
-    public string Text { get; init; } = default!;
+    public string Platform { get; set; }
+    public string Reason { get; set; }
+    public string Text { get; set; }
 
 }
 

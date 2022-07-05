@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record PageListItem(PageListItemType PageListItemType, RichText? Text, 
+    IReadOnlyCollection<PageBlock>? Blocks);

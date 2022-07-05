@@ -16,7 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public record Photo(bool HasStickers, long Id, long AccessHash, byte[] FileReference, 
+[MessagePackObject(true)] public record Photo(bool HasStickers, long Id, long AccessHash, byte[] FileReference, 
     int Date, ICollection<PhotoSize> Sizes, ICollection<VideoSize>? VideoSizes, int DcId);

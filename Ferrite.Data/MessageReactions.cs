@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record MessageReactions(bool Min, bool CanSeeList,
+    IReadOnlyCollection<ReactionCount> Results, IReadOnlyCollection<MessagePeerReaction>? RecentReactions);

@@ -16,8 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
-
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+public enum InputStickerSetType
+{
+    Empty,
+    ID,
+    ShortName,
+    AnimatedEmoji,
+    Dice,
+    AnimatedEmojiAnimations
+}

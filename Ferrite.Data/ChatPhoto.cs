@@ -16,13 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)] 
 public record ChatPhoto
 {
-    public bool Empty { get; init; }
-    public bool HasVideo { get; init; }
-    public long PhotoId { get; init; }
-    public byte[] StrippedThumb { get; init; } = default!;
-    public int DcId { get; init; }
+    public bool Empty { get; set; }
+    public bool HasVideo { get; set; }
+    public long PhotoId { get; set; }
+    public byte[] StrippedThumb { get; set; } = default!;
+    public int DcId { get; set; }
 }

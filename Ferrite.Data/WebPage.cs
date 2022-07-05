@@ -20,4 +20,8 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record WebPage(WebPageType WebPageType, long? Id, int? Date,
+    string? Url, string? DisplayUrl, int? Hash, string? Type, string? SiteName, string? Title,
+    string? Description, Photo? Photo, string? EmbedUrl, string? EmbedType, string? EmbedWidth,
+    string? EmbedHeight, string? Duration, string? Author, Document? Document, Page? CachedPage,
+    IReadOnlyCollection<WebPageAttribute>? Attributes, int? CachedPageViews);

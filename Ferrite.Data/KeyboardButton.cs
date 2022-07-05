@@ -20,4 +20,7 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record KeyboardButton(KeyboardButtonType KeyboardButtonType,
+    string Text, string? Url, bool RequiresPassword, byte[]? Data, bool SamePeer, string? Query,
+    string? FwdText, int? ButtonId, bool RequestWriteAccess, InputUser Bot, bool? Quiz,
+    InputUser? User, long? UserId);

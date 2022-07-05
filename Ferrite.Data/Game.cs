@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record Game(long Id, long AccessHash, string ShortName,
+    string Title, string Description, Photo Photo, Document? Document);

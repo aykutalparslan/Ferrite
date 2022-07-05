@@ -16,16 +16,18 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public record MessageEntity
+[MessagePackObject(true)] public record MessageEntity
 {
-    public MessageEntityType MessageEntityType { get; init; }
-    public int Offset { get; init; }
-    public int Length { get; init; }
-    public string Language { get; init; } = default!;
-    public string Url { get; init; } = default!;
-    public long UserId { get; init; }
-    public InputUser User { get; init; } = default!;
+    public MessageEntityType MessageEntityType { get; set; }
+    public int Offset { get; set; }
+    public int Length { get; set; }
+    public string Language { get; set; }
+    public string Url { get; set; }
+    public long UserId { get; set; }
+    public InputUser User { get; set; }
 }
 

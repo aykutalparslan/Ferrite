@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+[MessagePackObject(true)] public record ThemeSettings(bool MessageColorsAnimated, BaseTheme BaseTheme,
+    int AccentColor, int? OutboxAccentColor, IReadOnlyCollection<int>? MessageColors, WallPaper? WallPaper);

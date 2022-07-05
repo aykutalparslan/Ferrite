@@ -16,8 +16,37 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
-
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]public record Peer(PeerType PeerType, long PeerId);
+public enum PageBlockType
+{
+    Unsupported,
+    Title,
+    Subtitle,
+    AuthorDate,
+    Header,
+    Subheader,
+    Paragraph,
+    Preformatted,
+    Footer,
+    Divider,
+    Anchor,
+    List,
+    Blockquote,
+    Pullquote,
+    Photo,
+    Video,
+    Cover,
+    Embed,
+    EmbedPost,
+    Collage,
+    Slideshow,
+    Channel,
+    Audio,
+    Kicker,
+    Table,
+    OrderedList,
+    Details,
+    RelatedArticles,
+    Map,
+}
