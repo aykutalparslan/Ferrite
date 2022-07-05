@@ -325,6 +325,7 @@
     <PackageReference Include="AWSSDK.S3" Version="3.7.9.18" />
     <PackageReference Include="Elasticsearch.Net" Version="7.17.2" />
     <PackageReference Include="NEST" Version="7.17.2" />
+    <PackageReference Include="RocksDB" Version="7.3.1.30723" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.45" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.17.1" />
     <PackageReference Include="MessagePack" Version="2.3.112" />
@@ -341,6 +342,7 @@
     <Folder Include="Updates\" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
   </ItemGroup>
 </Project>

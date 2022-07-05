@@ -242,6 +242,10 @@ public static class XXHashExtensions
     {
         return XxHash64(data, seed);
     }
+    public static ulong GetXxHash64(this ReadOnlySpan<byte> data, uint seed = 0)
+    {
+        return XxHash64(data, seed);
+    }
     private static ulong XxHash64(ReadOnlySpan<byte> data, uint seed)
     {
         int numblocks = data.Length / 32;
