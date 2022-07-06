@@ -18,11 +18,12 @@
 
 namespace Ferrite.Data.Repositories;
 
-public interface IServerSaltRepository
+public interface IUnitOfWork
 {
-    public bool PutServerSalt(long authKeyId, ServerSalt salt, int TTL);
-    public IReadOnlyCollection<ServerSalt> GetServerSalts(long authKeyId, int count);
-    public ValueTask<IReadOnlyCollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count);
-    public long GetServerSaltValidity(long authKeyId, long serverSalt);
-    public ValueTask<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
+    IAuthKeyRepository AuthKeyRepository { get; }
+    IAuthorizationRepository AuthorizationRepository { get; }
+    IServerSaltRepository ServerSaltRepository { get; }
+    IMessageRepository MessageRepository { get; }
+    public bool Save();
+    public ValueTask<bool> SaveAsync();
 }

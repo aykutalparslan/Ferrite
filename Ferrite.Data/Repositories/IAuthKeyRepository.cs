@@ -21,19 +21,14 @@ namespace Ferrite.Data.Repositories;
 public interface IAuthKeyRepository
 {
     public bool PutAuthKey(long authKeyId, byte[] authKey);
-    public ValueTask<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
     public byte[]? GetAuthKey(long authKeyId);
     public ValueTask<byte[]?> GetAuthKeyAsync(long authKeyId);
     public bool DeleteAuthKey(long authKeyId);
-    public ValueTask<bool> DeleteAuthKeyAsync(long authKeyId);
     public bool PutTempAuthKey(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
-    public ValueTask<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
     public byte[]? GetTempAuthKey(long tempAuthKeyId);
     public ValueTask<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
     public bool DeleteTempAuthKeys(long authKeyId, IReadOnlyCollection<long> exceptIds);
-    public ValueTask<bool> DeleteTempAuthKeysAsync(long authKeyId, IReadOnlyCollection<long> exceptIds);
     public bool PutBoundAuthKey(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
-    public ValueTask<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
     public long? GetBoundAuthKey(long tempAuthKeyId);
     public ValueTask<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
 }

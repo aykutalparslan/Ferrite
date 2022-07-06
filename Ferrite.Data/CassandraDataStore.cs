@@ -25,7 +25,6 @@ namespace Ferrite.Data
         private readonly Cluster cluster;
         private readonly ISession session;
         private readonly string keySpace;
-        private IPersistentStore _persistentStoreImplementation;
 
         public CassandraDataStore(string keyspace, params string[] hosts)
         {

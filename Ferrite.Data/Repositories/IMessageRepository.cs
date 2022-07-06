@@ -18,11 +18,12 @@
 
 namespace Ferrite.Data.Repositories;
 
-public interface IServerSaltRepository
+public interface IMessageRepository
 {
-    public bool PutServerSalt(long authKeyId, ServerSalt salt, int TTL);
-    public IReadOnlyCollection<ServerSalt> GetServerSalts(long authKeyId, int count);
-    public ValueTask<IReadOnlyCollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count);
-    public long GetServerSaltValidity(long authKeyId, long serverSalt);
-    public ValueTask<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
+    public bool PutMessage(Message message);
+    public IReadOnlyCollection<Message> GetMessages(long userId, long? peerId = null);
+    public ValueTask<IReadOnlyCollection<Message>> GetMessagesAsync(long userId, long? peerId = null);
+    public Message GetMessage(long userId, int messageId);
+    public ValueTask<Message> GetMessageAsync(long userId, int messageId);
+    public bool DeleteMessage(int id);
 }
