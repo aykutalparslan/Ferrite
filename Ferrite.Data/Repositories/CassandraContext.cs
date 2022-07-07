@@ -48,8 +48,15 @@ public class CassandraContext
         _executionQueue.Enqueue(statement);
         _executionSemaphore.Release();
     }
-
-    public RowSet Execute()
+    public RowSet Execute(Statement statement)
+    {
+        return _session.Execute(statement);
+    }
+    public async Task<RowSet> ExecuteAsync(Statement statement)
+    {
+        return await _session.ExecuteAsync(statement);
+    }
+    public RowSet ExecuteQueue()
     {
         _executionSemaphore.Wait();
         if (_executionQueue.Count == 1)
@@ -72,7 +79,7 @@ public class CassandraContext
             return result;
         }
     }
-    public async Task<RowSet> ExecuteAsync()
+    public async Task<RowSet> ExecuteQueueAsync()
     {
         await _executionSemaphore.WaitAsync();
         if (_executionQueue.Count == 1)

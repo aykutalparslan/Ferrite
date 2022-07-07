@@ -42,7 +42,7 @@ public class CassandraMessageRepository : IMessageRepository
             "date bigint," +
             "PRIMARY KEY (user_id, peer_type, peer_id, outgoing, message_id));");
         _context.Enqueue(statement);
-        _context.Execute();
+        _context.ExecuteQueue();
         statement = new SimpleStatement(
             "CREATE TABLE IF NOT EXISTS ferrite.messages_by_id (" +
             "user_id bigint," +
@@ -52,7 +52,7 @@ public class CassandraMessageRepository : IMessageRepository
             "outgoing boolean," +
             "PRIMARY KEY (user_id, message_id));");
         _context.Enqueue(statement);
-        _context.Execute();
+        _context.ExecuteQueue();
     }
     
     public bool PutMessage(Message message)
@@ -92,28 +92,184 @@ public class CassandraMessageRepository : IMessageRepository
         return true;
     }
 
-    public IReadOnlyCollection<Message> GetMessages(long userId, long? peerId = null)
+    public IReadOnlyCollection<Message> GetMessages(long userId, Peer? peerId = null)
     {
-        throw new NotImplementedException();
+        List<Message> messages = new List<Message>();
+        if (peerId != null)
+        {
+            var statement = new SimpleStatement(
+                "SELECT message_data FROM ferrite.messages " +
+                "WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
+                userId, peerId?.PeerType, peerId?.PeerId);
+            var results = _context.Execute(statement);
+            foreach (var row in results)
+            {
+                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                messages.Add(message);
+            }
+        }
+        else
+        {
+            var statement = new SimpleStatement(
+                "SELECT message_data FROM ferrite.messages " +
+                "WHERE user_id = ?;",
+                userId);
+            var results = _context.Execute(statement);
+            foreach (var row in results)
+            {
+                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                messages.Add(message);
+            }
+        }
+
+        return messages;
     }
 
-    public async ValueTask<IReadOnlyCollection<Message>> GetMessagesAsync(long userId, long? peerId = null)
+    public async ValueTask<IReadOnlyCollection<Message>> GetMessagesAsync(long userId, Peer? peerId = null)
     {
-        throw new NotImplementedException();
+        List<Message> messages = new List<Message>();
+if (peerId != null)
+        {
+            var statement = new SimpleStatement(
+                "SELECT message_data FROM ferrite.messages " +
+                "WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
+                userId, peerId?.PeerType, peerId?.PeerId);
+            var results = await _context.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                messages.Add(message);
+            }
+        }
+        else
+        {
+            var statement = new SimpleStatement(
+                "SELECT message_data FROM ferrite.messages " +
+                "WHERE user_id = ?;",
+                userId);
+            var results = await _context.ExecuteAsync(statement);
+            foreach (var row in results)
+            {
+                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                messages.Add(message);
+            }
+        }
+        return messages;
     }
 
-    public Message GetMessage(long userId, int messageId)
+    public Message? GetMessage(long userId, int messageId)
     {
-        throw new NotImplementedException();
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.messages_by_id " +
+            "WHERE user_id = ? AND message_id = ?;",
+            userId, messageId);
+        var results = _context.Execute(statement);
+        var row = results.FirstOrDefault();
+        if (row == null)
+        {
+            return null;
+        }
+        var peerType = row.GetValue<int>("peer_type");
+        var peerId = row.GetValue<long>("peer_id");
+        var outgoing = row.GetValue<bool>("outgoing");
+        var messageStatement = new SimpleStatement(
+            "SELECT * FROM ferrite.messages " +
+            "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
+            userId, peerType, peerId, outgoing, messageId);
+        var results2 = _context.Execute(messageStatement);
+        var messageRow = results2.FirstOrDefault();
+        if (messageRow == null)
+        {
+            return null;
+        }
+        var message = MessagePackSerializer.Deserialize<Message>(messageRow.GetValue<byte[]>("message_data"));
+        return message;
     }
 
     public async ValueTask<Message> GetMessageAsync(long userId, int messageId)
     {
-        throw new NotImplementedException();
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.messages_by_id " +
+            "WHERE user_id = ? AND message_id = ?;",
+            userId, messageId);
+        var results = await _context.ExecuteAsync(statement);
+        var row = results.FirstOrDefault();
+        if (row == null)
+        {
+            return null;
+        }
+        var peerType = row.GetValue<int>("peer_type");
+        var peerId = row.GetValue<long>("peer_id");
+        var outgoing = row.GetValue<bool>("outgoing");
+        var messageStatement = new SimpleStatement(
+            "SELECT * FROM ferrite.messages " +
+            "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
+            userId, peerType, peerId, outgoing, messageId);
+        var results2 = await _context.ExecuteAsync(messageStatement);
+        var messageRow = results2.FirstOrDefault();
+        if (messageRow == null)
+        {
+            return null;
+        }
+        var message = MessagePackSerializer.Deserialize<Message>(messageRow.GetValue<byte[]>("message_data"));
+        return message;
     }
 
-    public bool DeleteMessage(int id)
+    public bool DeleteMessage(long userId, int id)
     {
-        throw new NotImplementedException();
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.messages_by_id " +
+            "WHERE user_id = ? AND message_id = ?;",
+            userId, id);
+        var results = _context.Execute(statement);
+        var row = results.FirstOrDefault();
+        if (row == null)
+        {
+            return false;
+        }
+        var peerType = row.GetValue<int>("peer_type");
+        var peerId = row.GetValue<long>("peer_id");
+        var outgoing = row.GetValue<bool>("outgoing");
+        var messageStatement = new SimpleStatement(
+            "DELETE FROM ferrite.messages " +
+            "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
+            userId, peerType, peerId, outgoing, id);
+        _context.Enqueue(messageStatement);
+        var messageByIdStatement = new SimpleStatement(
+            "DELETE FROM ferrite.messages_by_id " +
+            "WHERE user_id = ? AND message_id = ?;",
+            userId, id);
+        _context.Enqueue(messageByIdStatement);
+        _context.ExecuteQueue();
+        return true;
+    }
+
+    public async ValueTask<bool> DeleteMessageAsync(long userId, int id)
+    {
+        var statement = new SimpleStatement(
+            "SELECT * FROM ferrite.messages_by_id " +
+            "WHERE user_id = ? AND message_id = ?;",
+            userId, id);
+        var results = await _context.ExecuteAsync(statement);
+        var row = results.FirstOrDefault();
+        if (row == null)
+        {
+            return false;
+        }
+        var peerType = row.GetValue<int>("peer_type");
+        var peerId = row.GetValue<long>("peer_id");
+        var outgoing = row.GetValue<bool>("outgoing");
+        var messageStatement = new SimpleStatement(
+            "DELETE FROM ferrite.messages " +
+            "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
+            userId, peerType, peerId, outgoing, id);
+        _context.Enqueue(messageStatement);
+        var messageByIdStatement = new SimpleStatement(
+            "DELETE FROM ferrite.messages_by_id " +
+            "WHERE user_id = ? AND message_id = ?;",
+            userId, id);
+        _context.Enqueue(messageByIdStatement);
+        await _context.ExecuteQueueAsync();
+        return true;
     }
 }

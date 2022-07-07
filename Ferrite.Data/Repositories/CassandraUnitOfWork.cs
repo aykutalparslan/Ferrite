@@ -37,7 +37,7 @@ public class CassandraUnitOfWork : IUnitOfWork
     {
         try
         {
-            _cassandra.Execute();
+            _cassandra.ExecuteQueue();
         }
         catch (Exception e)
         {
@@ -51,7 +51,7 @@ public class CassandraUnitOfWork : IUnitOfWork
     {
         try
         {
-            await _cassandra.ExecuteAsync();
+            await _cassandra.ExecuteQueueAsync();
         }
         catch (Exception e)
         {
