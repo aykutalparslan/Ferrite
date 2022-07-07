@@ -36,6 +36,10 @@ public class CassandraContext
 
         _keySpace = keyspace;
         _session = _cluster.Connect();
+        Dictionary<string, string> replication = new Dictionary<string, string>();
+        replication.Add("class", "SimpleStrategy");
+        replication.Add("replication_factor", "1");
+        _session.CreateKeyspaceIfNotExists(_keySpace, replication);
     }
     
     public void Enqueue(Statement statement)
