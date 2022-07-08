@@ -16,9 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
+using Nest;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record MessageReplyHeader(int ReplyToMsgId, 
-    Peer? ReplyToPeerId, int? ReplyToTopId);
+public record UpdateMessageId(int Id, long RandomId) : UpdateBase;

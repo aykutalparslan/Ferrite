@@ -17,6 +17,7 @@
 // 
 
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using PeerSettings = Ferrite.Data.Messages.PeerSettings;
 
 namespace Ferrite.Services;
@@ -24,6 +25,8 @@ namespace Ferrite.Services;
 public class MessagesService : IMessagesService
 {
     private readonly IPersistentStore _store;
+    private readonly IDistributedCache _cache;
+    private readonly IUnitOfWork _unitOfWork;
     public MessagesService(IPersistentStore store)
     {
         _store = store;
@@ -54,10 +57,67 @@ public class MessagesService : IMessagesService
         return new ServiceResult<PeerSettings>(null, false, ErrorMessages.PeerIdInvalid);
     }
 
-    public async Task<ServiceResult<UpdatesBase>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
-        InputPeer peer, string message, string randomId, int? replyToMsgId, ReplyMarkup? replyMarkup,
+    public async Task<ServiceResult<UpdateBase>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
+        InputPeer peer, string message, long randomId, int? replyToMsgId, ReplyMarkup? replyMarkup,
         IReadOnlyCollection<MessageEntity>? entities, int? scheduleDate, InputPeer? sendAs)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var messageCounter = _cache.GetCounter(auth.UserId + "_in");
+        int messageId = (int)await messageCounter.IncrementAndGet();
+        var from = new Peer(PeerType.User, auth.UserId);
+        var to = PeerFromInputPeer(peer);
+        var outgoingMessage = new Message()
+        {
+            Id = messageId,
+            Out = true,
+            Silent = silent,
+            FromId = from,
+            PeerId = to,
+            MessageText = message,
+            ReplyMarkup = replyMarkup,
+            Entities = entities,
+        };
+        if (replyToMsgId != null)
+        {
+            outgoingMessage.ReplyTo = new MessageReplyHeader((int)replyToMsgId, null, null);
+        }
+        var incomingMessage = outgoingMessage with
+        {
+            Out = false,
+            FromId = to,
+            PeerId = from,
+        };
+        _unitOfWork.MessageRepository.PutMessage(outgoingMessage);
+        _unitOfWork.MessageRepository.PutMessage(incomingMessage);
+        await _unitOfWork.SaveAsync();
+        return new ServiceResult<UpdateBase>(new UpdateMessageId(messageId, randomId), 
+            true, ErrorMessages.None);
+    }
+
+    private Peer PeerFromInputPeer(InputPeer peer, long userId = 0)
+    {
+        if (peer.InputPeerType == InputPeerType.Self)
+        {
+            return new Peer(PeerType.User, userId);
+        }
+        else if(peer.InputPeerType == InputPeerType.User)
+        {
+            return new Peer(PeerType.User, peer.UserId);
+        }
+        else if(peer.InputPeerType == InputPeerType.Chat)
+        {
+            return new Peer(PeerType.Chat, peer.ChatId);
+        }
+        else if(peer.InputPeerType == InputPeerType.Channel)
+        {
+            return new Peer(PeerType.Channel, peer.ChannelId);
+        }
+        else if (peer.InputPeerType == InputPeerType.UserFromMessage)
+        {
+            return new Peer(PeerType.User, peer.UserId);
+        }
+        {
+            return new Peer(PeerType.Channel, peer.ChannelId);
+        }
     }
 }

@@ -18,8 +18,4 @@
 using System;
 namespace Ferrite.Data;
 
-public enum UpdateType
-{
-    LoginToken
-}
-
+public abstract record UpdateBase();

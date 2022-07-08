@@ -23,8 +23,8 @@ namespace Ferrite.Services;
 public interface IMessagesService
 {
     Task<ServiceResult<Data.Messages.PeerSettings>> GetPeerSettings(long authKeyId, InputPeer peer);
-    Task<ServiceResult<Data.UpdatesBase>> SendMessage(long authKeyId, bool noWebpage, bool silent,
-        bool background, bool clearDraft, bool noForwards, InputPeer peer, string message, string randomId,
+    Task<ServiceResult<Data.UpdateBase>> SendMessage(long authKeyId, bool noWebpage, bool silent,
+        bool background, bool clearDraft, bool noForwards, InputPeer peer, string message, long randomId,
         int? replyToMsgId, ReplyMarkup? replyMarkup, IReadOnlyCollection<MessageEntity> ? entities,
         int? scheduleDate, InputPeer? sendAs);
 }
