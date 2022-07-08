@@ -53,4 +53,11 @@ public class MessagesService : IMessagesService
         }
         return new ServiceResult<PeerSettings>(null, false, ErrorMessages.PeerIdInvalid);
     }
+
+    public async Task<ServiceResult<UpdatesBase>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
+        InputPeer peer, string message, string randomId, int? replyToMsgId, ReplyMarkup? replyMarkup,
+        IReadOnlyCollection<MessageEntity>? entities, int? scheduleDate, InputPeer? sendAs)
+    {
+        throw new NotImplementedException();
+    }
 }

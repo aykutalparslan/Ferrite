@@ -37,6 +37,7 @@ using Ferrite.TL;
 using System.Reflection;
 using Ferrite.Core.Methods;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using StackExchange.Redis;
 using MessagePack;
 using Ferrite.Services;
@@ -92,6 +93,10 @@ public class Program
         builder.RegisterType<UploadService>().As<IUploadService>()
             .SingleInstance();
         builder.RegisterType<MessagesService>().As<IMessagesService>()
+            .SingleInstance();
+        builder.RegisterType<CassandraMessageRepository>().As<IMessageRepository>()
+            .SingleInstance();
+        builder.RegisterType<CassandraUnitOfWork>().As<IUnitOfWork>()
             .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
