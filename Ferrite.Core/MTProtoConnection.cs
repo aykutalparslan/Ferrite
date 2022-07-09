@@ -622,7 +622,7 @@ public class MTProtoConnection : IMTProtoConnection
         {
             _sessionId = context.SessionId;
             SessionState state = new SessionState();
-            var salt = new ServerSalt();
+            var salt = new ServerSaltDTO();
             state.SessionId = _sessionId;
             state.ServerSalt = salt;
             state.AuthKeyId = _authKeyId;
@@ -796,7 +796,7 @@ public class MTProtoConnection : IMTProtoConnection
         {
             _sessionId = _context.SessionId;
             SessionState state = new SessionState();
-            var salt = new ServerSalt();
+            var salt = new ServerSaltDTO();
             state.SessionId = _sessionId;
             state.ServerSalt = salt;
             state.AuthKeyId = _authKeyId;

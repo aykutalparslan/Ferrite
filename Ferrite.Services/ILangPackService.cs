@@ -22,10 +22,10 @@ namespace Ferrite.Services;
 
 public interface ILangPackService
 {
-    Task<LangPackDifference?> GetLangPackAsync(string langPack, string langCode);
-    Task<ICollection<LangPackString>> GetStringsAsync(string langPack, string langCode, ICollection<string> keys);
-    Task<LangPackDifference?> GetDifferenceAsync(string langPack, string langCode, int fromVersion);
-    Task<ICollection<LangPackLanguage>> GetLanguagesAsync(string langPack);
-    Task<LangPackLanguage?> GetLanguageAsync(string langPack, string langCode);
+    Task<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode);
+    Task<ICollection<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode, ICollection<string> keys);
+    Task<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion);
+    Task<ICollection<LangPackLanguageDTO>> GetLanguagesAsync(string langPack);
+    Task<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode);
 }
 

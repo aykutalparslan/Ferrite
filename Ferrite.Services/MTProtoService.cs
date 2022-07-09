@@ -34,7 +34,7 @@ public class MTProtoService : IMTProtoService
         _time = time;
     }
 
-    public async Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+    public async Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count)
     {
         var serverSalts = await _store.GetServerSaltsAsync(authKeyId, count);
         if (serverSalts.Count == 0)

@@ -102,7 +102,7 @@ public class SendCode : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         var sent = await _auth.SendCode(_phoneNumber, _apiId, _apiHash,
-            new Data.Auth.CodeSettings());
+            new Data.Auth.CodeSettingsDTO());
         var sentCode = factory.Resolve<SentCodeImpl>();
         var codeType = factory.Resolve<SentCodeTypeSmsImpl>();
         var nextType = factory.Resolve<CodeTypeSmsImpl>();

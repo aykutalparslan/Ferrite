@@ -75,7 +75,7 @@ public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
         var result = _factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _objectStore.SaveFilePart(_fileId, _filePart, stream);
-        await _store.SaveFilePartAsync(new FilePart(_fileId, _filePart, _length));
+        await _store.SaveFilePartAsync(new FilePartDTO(_fileId, _filePart, _length));
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

@@ -34,9 +34,9 @@ public class UpdatesService : IUpdatesService
         _pipe = pipe;
     }
 
-    public async Task<State> GetState()
+    public async Task<StateDTO> GetState()
     {
-        return new State()
+        return new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds()
         };

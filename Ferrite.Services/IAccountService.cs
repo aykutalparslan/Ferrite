@@ -24,25 +24,25 @@ namespace Ferrite.Services;
 
 public interface IAccountService
 {
-    public Task<bool> RegisterDevice(DeviceInfo deviceInfo);
+    public Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo);
     public Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds);
-    public Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeer peer, PeerNotifySettings settings);
-    public Task<PeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer);
+    public Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings);
+    public Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer);
     public Task<bool> ResetNotifySettings(long authKeyId);
     public Task<User?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
     public Task<bool> UpdateStatus(long authKeyId, bool status);
-    public Task<bool> ReportPeer(long authKeyId, InputPeer peer, ReportReason reason);
+    public Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason);
     public Task<bool> CheckUsername(string username);
     public Task<User?> UpdateUsername(long authKeyId, string username);
-    public Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRule> rules);
-    public Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key);
+    public Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
+    public Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key);
     public Task<bool> DeleteAccount(long authKeyId);
     public Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL);
     public Task<int> GetAccountTTL(long authKeyId);
-    public Task<ServiceResult<SentCode>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings);
+    public Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings);
     public Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
     public Task<bool> UpdateDeviceLocked(long authKeyId, int period);
-    public Task<Authorizations> GetAuthorizations(long authKeyId);
+    public Task<AuthorizationsDTO> GetAuthorizations(long authKeyId);
     public Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash);
     public Task<bool> SetContactSignUpNotification(long authKeyId, bool silent);
     public Task<bool> GetContactSignUpNotification(long authKeyId);

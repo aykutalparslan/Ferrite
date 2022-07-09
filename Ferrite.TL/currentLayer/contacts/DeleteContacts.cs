@@ -65,12 +65,12 @@ public class DeleteContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        List<Data.InputUser> users = new();
+        List<Data.InputUserDTO> users = new();
         foreach (var u in _id)
         {
             if (u is InputUserImpl inputUser)
             {
-                users.Add(new Data.InputUser()
+                users.Add(new Data.InputUserDTO()
                 {
                     InputUserType = InputUserType.User,
                     UserId = inputUser.UserId,
@@ -79,12 +79,12 @@ public class DeleteContacts : ITLObject, ITLMethod
             }
             else if (u is InputUserFromMessageImpl inputUserFromMessage)
             {
-                users.Add(new Data.InputUser()
+                users.Add(new Data.InputUserDTO()
                 {
                     InputUserType = InputUserType.UserFromMessage,
                     UserId = inputUserFromMessage.UserId,
                     MsgId = inputUserFromMessage.MsgId,
-                    Peer = new Data.InputPeer()
+                    Peer = new Data.InputPeerDTO()
                     {
                         InputPeerType = inputUserFromMessage.Peer.Constructor switch
                         {

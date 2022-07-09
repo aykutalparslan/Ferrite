@@ -68,10 +68,10 @@ public class GetFullUser : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        Data.InputUser inputUser = null;
+        Data.InputUserDTO inputUser = null;
         if (_id is InputUserImpl user)
         {
-            inputUser = new Data.InputUser()
+            inputUser = new Data.InputUserDTO()
             {
                 InputUserType = InputUserType.User,
                 UserId = user.UserId,
@@ -84,7 +84,7 @@ public class GetFullUser : ITLObject, ITLMethod
         }
         else if (_id is InputUserSelfImpl userSelf)
         {
-            inputUser = new Data.InputUser()
+            inputUser = new Data.InputUserDTO()
             {
                 InputUserType = InputUserType.Self
             };
@@ -261,7 +261,7 @@ public class GetFullUser : ITLObject, ITLMethod
                 {
                     userImpl.Username = u.Username;
                 }
-                if(u.Status == Data.UserStatus.Empty)
+                if(u.Status == Data.UserStatusDTO.Empty)
                 {
                     userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
                 }

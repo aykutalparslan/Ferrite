@@ -65,12 +65,12 @@ public class ImportContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        List<Data.InputContact> contacts = new();
+        List<Data.InputContactDTO> contacts = new();
         foreach (var c in _contacts)
         {
             if (c is InputPhoneContactImpl phoneContact)
             {
-                contacts.Add(new Data.InputContact(phoneContact.ClientId,
+                contacts.Add(new Data.InputContactDTO(phoneContact.ClientId,
                     phoneContact.Phone.Replace("+",""), phoneContact.FirstName, phoneContact.LastName));
             }
         }
@@ -98,7 +98,7 @@ public class ImportContacts : ITLObject, ITLMethod
             userImpl.LastName = u.LastName;
             userImpl.Phone = u.Phone;
             userImpl.Self = u.Self;
-            if(u.Status == Data.UserStatus.Empty)
+            if(u.Status == Data.UserStatusDTO.Empty)
             {
                 userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

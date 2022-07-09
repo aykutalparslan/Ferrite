@@ -17,8 +17,9 @@
 // 
 
 using Ferrite.Data;
+using Ferrite.Data.Messages;
 using Ferrite.Data.Repositories;
-using PeerSettings = Ferrite.Data.Messages.PeerSettings;
+using PeerSettingsDTO = Ferrite.Data.Messages.PeerSettingsDTO;
 
 namespace Ferrite.Services;
 
@@ -31,35 +32,35 @@ public class MessagesService : IMessagesService
     {
         _store = store;
     }
-    public async Task<ServiceResult<Data.Messages.PeerSettings>> GetPeerSettings(long authKeyId, InputPeer peer)
+    public async Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
     {
         if (peer.InputPeerType == InputPeerType.Self)
         {
-            var settings = new Data.PeerSettings(false, false, false, 
+            var settings = new Data.PeerSettingsDTO(false, false, false, 
                 false, false, false, 
                 false, false, false, 
                 null, null, null);
-            return new ServiceResult<PeerSettings>(new PeerSettings(settings, new List<Chat>(), new List<User>())
+            return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), new List<User>())
                 , true, ErrorMessages.None);
         }
         else if (peer.InputPeerType == InputPeerType.User)
         {
-            var settings = new Data.PeerSettings(true, true, true, 
+            var settings = new Data.PeerSettingsDTO(true, true, true, 
                 false, false,  false, 
                 false, false, false, 
                 null, null, null);
             var users = new List<User>();
             var user = await _store.GetUserAsync(peer.UserId);
             users.Add(user);
-            return new ServiceResult<PeerSettings>(new PeerSettings(settings, new List<Chat>(), users)
+            return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), users)
                 , true, ErrorMessages.None);
         }
-        return new ServiceResult<PeerSettings>(null, false, ErrorMessages.PeerIdInvalid);
+        return new ServiceResult<PeerSettingsDTO>(null, false, ErrorMessages.PeerIdInvalid);
     }
 
     public async Task<ServiceResult<UpdateBase>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
-        InputPeer peer, string message, long randomId, int? replyToMsgId, ReplyMarkup? replyMarkup,
-        IReadOnlyCollection<MessageEntity>? entities, int? scheduleDate, InputPeer? sendAs)
+        InputPeerDTO peer, string message, long randomId, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
+        IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var messageCounter = _cache.GetCounter(auth.UserId + "_in");
@@ -68,9 +69,9 @@ public class MessagesService : IMessagesService
         {
             await messageCounter.IncrementAndGet();
         }
-        var from = new Peer(PeerType.User, auth.UserId);
+        var from = new PeerDTO(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
-        var outgoingMessage = new Message()
+        var outgoingMessage = new MessageDTO()
         {
             Id = messageId,
             Out = true,
@@ -83,7 +84,7 @@ public class MessagesService : IMessagesService
         };
         if (replyToMsgId != null)
         {
-            outgoingMessage.ReplyTo = new MessageReplyHeader((int)replyToMsgId, null, null);
+            outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
         }
         var incomingMessage = outgoingMessage with
         {
@@ -100,34 +101,34 @@ public class MessagesService : IMessagesService
         {
             await userPts.IncrementAndGet();
         }
-        return new ServiceResult<UpdateBase>(new UpdateMessageId(messageId, randomId), 
+        return new ServiceResult<UpdateBase>(new UpdateMessageIdDTO(messageId, randomId), 
             true, ErrorMessages.None);
     }
 
-    private Peer PeerFromInputPeer(InputPeer peer, long userId = 0)
+    private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)
     {
         if (peer.InputPeerType == InputPeerType.Self)
         {
-            return new Peer(PeerType.User, userId);
+            return new PeerDTO(PeerType.User, userId);
         }
         else if(peer.InputPeerType == InputPeerType.User)
         {
-            return new Peer(PeerType.User, peer.UserId);
+            return new PeerDTO(PeerType.User, peer.UserId);
         }
         else if(peer.InputPeerType == InputPeerType.Chat)
         {
-            return new Peer(PeerType.Chat, peer.ChatId);
+            return new PeerDTO(PeerType.Chat, peer.ChatId);
         }
         else if(peer.InputPeerType == InputPeerType.Channel)
         {
-            return new Peer(PeerType.Channel, peer.ChannelId);
+            return new PeerDTO(PeerType.Channel, peer.ChannelId);
         }
         else if (peer.InputPeerType == InputPeerType.UserFromMessage)
         {
-            return new Peer(PeerType.User, peer.UserId);
+            return new PeerDTO(PeerType.User, peer.UserId);
         }
         {
-            return new Peer(PeerType.Channel, peer.ChannelId);
+            return new PeerDTO(PeerType.Channel, peer.ChannelId);
         }
     }
 }

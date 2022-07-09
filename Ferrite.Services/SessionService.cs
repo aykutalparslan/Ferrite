@@ -88,7 +88,7 @@ public class SessionService : ISessionService
             if (state.ServerSalt.ValidSince <= (DateTimeOffset.Now.ToUnixTimeSeconds() - 1800))
             {
                 state.ServerSaltOld = state.ServerSalt;
-                var salt = new ServerSalt();
+                var salt = new ServerSaltDTO();
                 state.ServerSalt = salt;
                 await _cache.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state),
                     new TimeSpan(0, 0, FerriteConfig.SessionTTL));

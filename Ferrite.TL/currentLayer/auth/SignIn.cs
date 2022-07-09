@@ -116,7 +116,7 @@ public class SignIn : ITLObject, ITLMethod
             user.LastName = signInResult.User.LastName;
             user.Phone = signInResult.User.Phone;
             user.Self = signInResult.User.Self;
-            if(signInResult.User.Status == Data.UserStatus.Empty)
+            if(signInResult.User.Status == Data.UserStatusDTO.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

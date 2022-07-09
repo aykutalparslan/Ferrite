@@ -166,7 +166,7 @@ public class RedisCache: IDistributedCache
         return new RedisCounter(redis, name);
     }
 
-    public async Task<LoginViaQR?> GetLoginTokenAsync(byte[] token)
+    public async Task<LoginViaQRDTO?> GetLoginTokenAsync(byte[] token)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
@@ -177,7 +177,7 @@ public class RedisCache: IDistributedCache
         {
             return null;
         }
-        var login = MessagePackSerializer.Deserialize<LoginViaQR>(result);
+        var login = MessagePackSerializer.Deserialize<LoginViaQRDTO>(result);
         return login;
     }
 
@@ -339,7 +339,7 @@ public class RedisCache: IDistributedCache
         return true;
     }
 
-    public async Task<bool> PutLoginTokenAsync(LoginViaQR login, TimeSpan expiresIn)
+    public async Task<bool> PutLoginTokenAsync(LoginViaQRDTO login, TimeSpan expiresIn)
     {
         if (expiresIn.TotalSeconds > ExpiryMaxSeconds)
         {
@@ -349,7 +349,7 @@ public class RedisCache: IDistributedCache
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);
         RedisKey key = login.Token;
         key = key.Prepend(LoginTokenPrefix);
-        var loginBytes = MessagePackSerializer.Serialize<LoginViaQR>(login);
+        var loginBytes = MessagePackSerializer.Serialize<LoginViaQRDTO>(login);
         return await db.StringSetAsync(key, loginBytes, expiresIn);
     }
 

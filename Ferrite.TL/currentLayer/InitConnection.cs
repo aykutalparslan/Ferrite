@@ -201,7 +201,7 @@ public class InitConnection : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        _ = _auth.SaveAppInfo(new Data.AppInfo()
+        _ = _auth.SaveAppInfo(new Data.AppInfoDTO()
         {
             Hash = _random.NextLong(),
             ApiId = _apiId,

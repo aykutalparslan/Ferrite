@@ -79,14 +79,14 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        Data.InputNotifyPeer? notifyPeer = null;
+        Data.InputNotifyPeerDTO? notifyPeer = null;
         if (_peer.Constructor == TLConstructor.InputNotifyPeer)
         {
             var peer = (InputNotifyPeerImpl)_peer;
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Peer,
-                Peer = new Data.InputPeer()
+                Peer = new Data.InputPeerDTO()
                 {
                     InputPeerType = peer.Peer.Constructor switch
                     {
@@ -123,21 +123,21 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
         } 
         else if (_peer.Constructor == TLConstructor.InputNotifyChats)
         {
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Chats
             };
         }
         else if (_peer.Constructor == TLConstructor.InputNotifyUsers)
         {
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Users
             };
         }
         else if (_peer.Constructor == TLConstructor.InputNotifyBroadcasts)
         {
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Broadcasts
             };
@@ -168,7 +168,7 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
         
         var success = notifyPeer != null && await _account.UpdateNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             notifyPeer,
-            new Data.PeerNotifySettings()
+            new Data.PeerNotifySettingsDTO()
             {
                 DeviceType = DeviceType.Android,//TODO: get device type from the db
                 Silent = settings.Silent,

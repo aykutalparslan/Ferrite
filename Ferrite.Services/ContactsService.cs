@@ -34,12 +34,12 @@ public class ContactsService : IContactsService
         return new List<long>();
     }
 
-    public async Task<ICollection<ContactStatus>> GetStatuses(long authKeyId)
+    public async Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId)
     {
-        return new List<ContactStatus>();
+        return new List<ContactStatusDTO>();
     }
 
-    public async Task<Contacts> GetContacts(long authKeyId, long hash)
+    public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var contactList = await _store.GetContactsAsync(auth.UserId);
@@ -49,13 +49,13 @@ public class ContactsService : IContactsService
             userList.Add(await _store.GetUserAsync(c.UserId));
         }
 
-        return new Contacts(contactList, contactList.Count, userList);
+        return new ContactsDTO(contactList, contactList.Count, userList);
     }
 
-    public async Task<ImportedContacts> ImportContacts(long authKeyId, ICollection<InputContact> contacts)
+    public async Task<ImportedContactsDTO> ImportContacts(long authKeyId, ICollection<InputContactDTO> contacts)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        List<ImportedContact> importedContacts = new();
+        List<ImportedContactDTO> importedContacts = new();
         List<User> users = new();
         foreach (var c in contacts)
         {
@@ -64,11 +64,11 @@ public class ContactsService : IContactsService
             importedContacts.Add(imported);
         }
 
-        return new ImportedContacts(importedContacts, new List<PopularContact>(), 
+        return new ImportedContactsDTO(importedContacts, new List<PopularContactDTO>(), 
             new List<long>(), users);
     }
 
-    public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUser> id)
+    public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUserDTO> id)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         foreach (var c in id)
@@ -91,12 +91,12 @@ public class ContactsService : IContactsService
         return true;
     }
 
-    public async Task<bool> Block(long authKeyId, InputUser id)
+    public async Task<bool> Block(long authKeyId, InputUserDTO id)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<bool> Block(long authKeyId, InputPeer id)
+    public async Task<bool> Block(long authKeyId, InputPeerDTO id)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
@@ -113,7 +113,7 @@ public class ContactsService : IContactsService
         }
     }
 
-    public async Task<bool> Unblock(long authKeyId, InputPeer id)
+    public async Task<bool> Unblock(long authKeyId, InputPeerDTO id)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
@@ -130,7 +130,7 @@ public class ContactsService : IContactsService
         }
     }
 
-    public async Task<Blocked> GetBlocked(long authKeyId, int offset, int limit)
+    public async Task<BlockedDTO> GetBlocked(long authKeyId, int offset, int limit)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var blockedPeers = await _store.GetBlockedPeersAsync(auth.UserId);
@@ -143,26 +143,26 @@ public class ContactsService : IContactsService
             }
         }
         //TODO: also fetch the chats from the db
-        return new Blocked(blockedPeers.Count, blockedPeers,new List<Chat>(), users);
+        return new BlockedDTO(blockedPeers.Count, blockedPeers,new List<ChatDTO>(), users);
     }
 
-    public async Task<Found> Search(long authKeyId, string q, int limit)
+    public async Task<FoundDTO> Search(long authKeyId, string q, int limit)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<ResolvedPeer>> ResolveUsername(long authKeyId, string username)
+    public async Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<TopPeers> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls, bool forwardUsers,
+    public async Task<TopPeersDTO> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls, bool forwardUsers,
         bool forwardChats, bool groups, bool channels, int offset, int limit, long hash)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<bool>> ResetTopPeerRating(long authKeyId, TopPeerCategory category, Peer peer)
+    public async Task<ServiceResult<bool>> ResetTopPeerRating(long authKeyId, TopPeerCategory category, PeerDTO peer)
     {
         throw new NotImplementedException();
     }
@@ -173,10 +173,10 @@ public class ContactsService : IContactsService
         return await _store.DeleteContactsAsync(auth.UserId);
     }
 
-    public async Task<ServiceResult<ICollection<SavedContact>>> GetSaved(long authKeyId)
+    public async Task<ServiceResult<ICollection<SavedContactDTO>>> GetSaved(long authKeyId)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        return new ServiceResult<ICollection<SavedContact>>(await _store.GetSavedContactsAsync(auth.UserId),
+        return new ServiceResult<ICollection<SavedContactDTO>>(await _store.GetSavedContactsAsync(auth.UserId),
                 true, ErrorMessages.None);
     }
 
@@ -185,18 +185,18 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<UpdatesBase>> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUser id, string firstname, string lastname,
+    public async Task<ServiceResult<UpdatesBase>> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUserDTO id, string firstname, string lastname,
         string phone)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<UpdatesBase>> AcceptContact(long authKeyId, InputUser id)
+    public async Task<ServiceResult<UpdatesBase>> AcceptContact(long authKeyId, InputUserDTO id)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<UpdatesBase>> GetLocated(long authKeyId, bool background, InputGeoPoint geoPoint, int? selfExpires)
+    public async Task<ServiceResult<UpdatesBase>> GetLocated(long authKeyId, bool background, InputGeoPointDTO geoPoint, int? selfExpires)
     {
         throw new NotImplementedException();
     }
@@ -206,7 +206,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<ResolvedPeer>> ResolvePhone(long authKeyId, string phone)
+    public async Task<ServiceResult<ResolvedPeerDTO>> ResolvePhone(long authKeyId, string phone)
     {
         throw new NotImplementedException();
     }

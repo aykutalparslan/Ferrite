@@ -68,7 +68,7 @@ public class Block : ITLObject, ITLMethod
     {
         var success =
             await _contacts.Block(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
-                new Data.InputPeer()
+                new Data.InputPeerDTO()
                     {
                         InputPeerType = _id.Constructor switch
                         {

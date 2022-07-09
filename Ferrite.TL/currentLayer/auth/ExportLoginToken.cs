@@ -103,7 +103,7 @@ public class ExportLoginToken : ITLObject, ITLMethod
             user.LastName = token.Authorization.User.LastName;
             user.Phone = token.Authorization.User.Phone;
             user.Self = token.Authorization.User.Self;
-            if (token.Authorization.User.Status == Data.UserStatus.Empty)
+            if (token.Authorization.User.Status == Data.UserStatusDTO.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

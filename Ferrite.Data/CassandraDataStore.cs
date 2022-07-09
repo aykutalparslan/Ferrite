@@ -362,7 +362,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<ICollection<ServerSalt>> GetServerSaltsAsync(long authKeyId, int count)
+        public async Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.server_salts WHERE auth_key_id = ? LIMIT ?;",
@@ -370,12 +370,12 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
-            List<ServerSalt> serverSalts = new();
+            List<ServerSaltDTO> serverSalts = new();
             foreach (var row in results)
             {
                 var serverSalt = row.GetValue<long>("server_salt");
                 var validSince = row.GetValue<long>("valid_since");
-                serverSalts.Add(new ServerSalt()
+                serverSalts.Add(new ServerSaltDTO()
                 {
                     Salt = serverSalt,
                     ValidSince = validSince
@@ -384,7 +384,7 @@ namespace Ferrite.Data
             return serverSalts;
         }
 
-        public async Task<bool> SaveAuthorizationAsync(AuthInfo info)
+        public async Task<bool> SaveAuthorizationAsync(AuthInfoDTO info)
         {
             var oldAuth = await GetAuthorizationAsync(info.AuthKeyId);
             var statement = new SimpleStatement(
@@ -411,9 +411,9 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<AuthInfo?> GetAuthorizationAsync(long authKeyId)
+        public async Task<AuthInfoDTO?> GetAuthorizationAsync(long authKeyId)
         {
-            AuthInfo? info = null;
+            AuthInfoDTO? info = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.authorizations WHERE auth_key_id = ?;",
                 authKeyId);
@@ -422,7 +422,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement.SetKeyspace(keySpace));
             foreach (var row in results)
             {
-                info = new AuthInfo()
+                info = new AuthInfoDTO()
                 {
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     Phone = row.GetValue<string>("phone"),
@@ -436,9 +436,9 @@ namespace Ferrite.Data
             return info;
         }
 
-        public async Task<ICollection<AuthInfo>> GetAuthorizationsAsync(string phone)
+        public async Task<ICollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone)
         {
-            List<AuthInfo> result = new List<AuthInfo>();
+            List<AuthInfoDTO> result = new List<AuthInfoDTO>();
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.authorizations_by_phone WHERE phone = ?;",
                 phone);
@@ -456,7 +456,7 @@ namespace Ferrite.Data
                 var results2 = await session.ExecuteAsync(statement2);
                 foreach (var row2 in results2)
                 {
-                    AuthInfo info = new AuthInfo()
+                    AuthInfoDTO info = new AuthInfoDTO()
                     {
                         AuthKeyId = row2.GetValue<long>("auth_key_id"),
                         Phone = row2.GetValue<string>("phone"),
@@ -604,7 +604,7 @@ namespace Ferrite.Data
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
                     About = row.GetValue<string>("about"),
-                    Photo = new UserProfilePhoto()
+                    Photo = new UserProfilePhotoDTO()
                     {
                         DcId = 2,
                         PhotoId = photoId,
@@ -646,7 +646,7 @@ namespace Ferrite.Data
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
-                    Photo = new UserProfilePhoto()
+                    Photo = new UserProfilePhotoDTO()
                     {
                         DcId = 2,
                         PhotoId = photoId,
@@ -705,7 +705,7 @@ namespace Ferrite.Data
                     LastName = row.GetValue<string>("last_name"),
                     Phone = row.GetValue<string>("phone"),
                     Username = row.GetValue<string>("username"),
-                    Photo = new UserProfilePhoto()
+                    Photo = new UserProfilePhotoDTO()
                     {
                         DcId = 2,
                         PhotoId = photoId,
@@ -794,7 +794,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> SaveExportedAuthorizationAsync(AuthInfo info, int previousDc, int nextDc, byte[] data)
+        public async Task<bool> SaveExportedAuthorizationAsync(AuthInfoDTO info, int previousDc, int nextDc, byte[] data)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.exported_authorizations SET phone = ?, " +
@@ -804,9 +804,9 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, byte[] data)
+        public async Task<ExportedAuthInfoDTO?> GetExportedAuthorizationAsync(long user_id, byte[] data)
         {
-            ExportedAuthInfo? info = null;
+            ExportedAuthInfoDTO? info = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.exported_authorizations WHERE user_id = ? AND data = ?;",
                 user_id, data);
@@ -815,7 +815,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                info = new ExportedAuthInfo()
+                info = new ExportedAuthInfoDTO()
                 {
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     Phone = row.GetValue<string>("phone"),
@@ -828,7 +828,7 @@ namespace Ferrite.Data
             return info;
         }
 
-        public async Task<bool> SaveAppInfoAsync(AppInfo appInfo)
+        public async Task<bool> SaveAppInfoAsync(AppInfoDTO appInfo)
         {
             BatchStatement batchStatement = new BatchStatement();
             var statement = new SimpleStatement(
@@ -852,9 +852,9 @@ namespace Ferrite.Data
             return true;
         }
         
-        public async Task<AppInfo?> GetAppInfoAsync(long authKeyId)
+        public async Task<AppInfoDTO?> GetAppInfoAsync(long authKeyId)
         {
-            AppInfo? info = null;
+            AppInfoDTO? info = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.app_infos WHERE auth_key_id = ?;", authKeyId);
             statement = statement.SetKeyspace(keySpace);
@@ -862,7 +862,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                info = new AppInfo()
+                info = new AppInfoDTO()
                 {
                     Hash = row.GetValue<long>("hash"),
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
@@ -895,7 +895,7 @@ namespace Ferrite.Data
             return null;
         }
 
-        public async Task<bool> SaveDeviceInfoAsync(DeviceInfo deviceInfo)
+        public async Task<bool> SaveDeviceInfoAsync(DeviceInfoDTO deviceInfo)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.devices SET no_muted = ?, token_type = ?, " +
@@ -915,9 +915,9 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<DeviceInfo?> GetDeviceInfoAsync(long authKeyId)
+        public async Task<DeviceInfoDTO?> GetDeviceInfoAsync(long authKeyId)
         {
-            DeviceInfo? info = null;
+            DeviceInfoDTO? info = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.devices WHERE auth_key_id = ?;", authKeyId);
             statement = statement.SetKeyspace(keySpace);
@@ -933,7 +933,7 @@ namespace Ferrite.Data
                 {
                     userIds.Add(row2.GetValue<long>("user_id"));
                 }
-                info = new DeviceInfo()
+                info = new DeviceInfoDTO()
                 {
                     AuthKeyId = row.GetValue<long>("auth_key_id"),
                     TokenType = row.GetValue<int>("token_type"),
@@ -965,7 +965,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeer peer, PeerNotifySettings settings)
+        public async Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
         {
             long peerId = 0;
             int peerType = 0;
@@ -1005,7 +1005,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> SavePeerReportReasonAsync(long reportedByUser, InputPeer peer, ReportReason reason)
+        public async Task<bool> SavePeerReportReasonAsync(long reportedByUser, InputPeerDTO peer, ReportReason reason)
         {
             long peerId = 0;
             if (peer.InputPeerType == InputPeerType.User)
@@ -1032,7 +1032,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<IReadOnlyCollection<PeerNotifySettings>> GetNotifySettingsAsync(long authKeyId, InputNotifyPeer peer)
+        public async Task<IReadOnlyCollection<PeerNotifySettingsDTO>> GetNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer)
         {
             long peerId = 0;
             int peerType = 0;
@@ -1060,7 +1060,7 @@ namespace Ferrite.Data
                     peerId = peer.Peer.ChannelId;
                 }
             }
-            List<PeerNotifySettings> settings = new List<PeerNotifySettings>();
+            List<PeerNotifySettingsDTO> settings = new List<PeerNotifySettingsDTO>();
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.notify_settings WHERE auth_key_id = ? AND notify_peer_type = ? " +
                 "AND peer_type = ? AND peer_id = ?;", authKeyId, (int)peer.NotifyPeerType, 
@@ -1070,7 +1070,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                var notifySettings = new PeerNotifySettings()
+                var notifySettings = new PeerNotifySettingsDTO()
                 {
                     DeviceType = (DeviceType)row.GetValue<int>("device_type"),
                     NotifySoundType = (NotifySoundType)row.GetValue<int>("sound_type"),
@@ -1094,7 +1094,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRule> rules)
+        public async Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
         {
             foreach (var rule in rules)
             {
@@ -1118,7 +1118,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<ICollection<PrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
+        public async Task<ICollection<PrivacyRuleDTO>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.privacy_rules WHERE user_id = ? AND privacy_key = ?;", 
@@ -1126,10 +1126,10 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<PrivacyRule> result = new();
+            List<PrivacyRuleDTO> result = new();
             foreach (var row in results)
             {
-                result.Add(new PrivacyRule()
+                result.Add(new PrivacyRuleDTO()
                 {
                     PrivacyRuleType = (PrivacyRuleType)row.GetValue<int>("rule_type"),
                     Peers = row.GetValue<List<long>>("peer_ids"),
@@ -1138,12 +1138,12 @@ namespace Ferrite.Data
             return result;
         }
 
-        public async Task<bool> SaveChatAsync(Chat chat)
+        public async Task<bool> SaveChatAsync(ChatDTO chat)
         {
             throw new NotImplementedException();
         }
 
-        public async Task<Chat?> GetChatAsync(long chatId)
+        public async Task<ChatDTO?> GetChatAsync(long chatId)
         {
             throw new NotImplementedException();
         }
@@ -1173,7 +1173,7 @@ namespace Ferrite.Data
             return 0;
         }
 
-        public async Task<ImportedContact?> SaveContactAsync(long userId, InputContact contact)
+        public async Task<ImportedContactDTO?> SaveContactAsync(long userId, InputContactDTO contact)
         {
             var contactUser = await GetUserAsync(contact.Phone);
             var statement = new SimpleStatement(
@@ -1182,7 +1182,7 @@ namespace Ferrite.Data
                 contact.ClientId, contact.FirstName, contact.LastName, DateTime.Now, userId, contactUser.Id).SetKeyspace(keySpace);
             await session.ExecuteAsync(statement);
 
-            return new ImportedContact(contactUser.Id, contact.ClientId);
+            return new ImportedContactDTO(contactUser.Id, contact.ClientId);
         }
 
         public async Task<bool> DeleteContactAsync(long userId, long contactUserId)
@@ -1203,7 +1203,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<ICollection<SavedContact>> GetSavedContactsAsync(long userId)
+        public async Task<ICollection<SavedContactDTO>> GetSavedContactsAsync(long userId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.contacts WHERE user_id = ?;", 
@@ -1211,13 +1211,13 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<SavedContact> result = new();
+            List<SavedContactDTO> result = new();
             foreach (var row in results)
             {
                 var contactUserId = row.GetValue<long>("contact_user_id");
                 var contactUser = await GetUserAsync(contactUserId);
                 var added = ((DateTimeOffset)row.GetValue<DateTime>("added_on")).ToUnixTimeSeconds();
-                result.Add(new SavedContact(contactUser.Phone,
+                result.Add(new SavedContactDTO(contactUser.Phone,
                     row.GetValue<string>("firstname"),
                     row.GetValue<string>("lastname"), 
                     (int)added));
@@ -1225,7 +1225,7 @@ namespace Ferrite.Data
             return result;
         }
 
-        public async Task<ICollection<Contact>> GetContactsAsync(long userId)
+        public async Task<ICollection<ContactDTO>> GetContactsAsync(long userId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.contacts WHERE user_id = ?;", 
@@ -1233,7 +1233,7 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<Contact> result = new();
+            List<ContactDTO> result = new();
             foreach (var row in results)
             {
                 var contactUserId = row.GetValue<long>("contact_user_id");
@@ -1248,7 +1248,7 @@ namespace Ferrite.Data
                     mutual = true;
                     break;
                 }
-                result.Add(new Contact(contactUserId, mutual));
+                result.Add(new ContactDTO(contactUserId, mutual));
             }
             return result;
         }
@@ -1283,14 +1283,14 @@ namespace Ferrite.Data
             List<PeerBlocked> result = new();
             foreach (var row in results)
             {
-                result.Add(new PeerBlocked(new Peer((PeerType)row.GetValue<int>("peer_type"),
+                result.Add(new PeerBlocked(new PeerDTO((PeerType)row.GetValue<int>("peer_type"),
                     row.GetValue<long>("blocked_user_id")), 
                     (int)((DateTimeOffset)row.GetValue<DateTime>("blocked_on")).ToUnixTimeSeconds()));
             }
             return result;
         }
 
-        public async Task<bool> SaveFileInfoAsync(UploadedFileInfo uploadedFile)
+        public async Task<bool> SaveFileInfoAsync(UploadedFileInfoDTO uploadedFile)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.files SET part_size = ?, parts = ?, access_hash = ?, " +
@@ -1302,7 +1302,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<UploadedFileInfo?> GetFileInfoAsync(long fileId)
+        public async Task<UploadedFileInfoDTO?> GetFileInfoAsync(long fileId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.files WHERE file_id = ?;", 
@@ -1312,7 +1312,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
+                return new UploadedFileInfoDTO(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
                     row.GetValue<string>("file_name"), row.GetValue<string>("md5_checksum"),
                 row.GetValue<DateTime>("saved_on"), false);
@@ -1321,7 +1321,7 @@ namespace Ferrite.Data
             return null;
         }
 
-        public async Task<bool> SaveBigFileInfoAsync(UploadedFileInfo uploadedFile)
+        public async Task<bool> SaveBigFileInfoAsync(UploadedFileInfoDTO uploadedFile)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.big_files SET part_size = ?, parts = ?, access_hash = ?, " +
@@ -1333,7 +1333,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<UploadedFileInfo?> GetBigFileInfoAsync(long fileId)
+        public async Task<UploadedFileInfoDTO?> GetBigFileInfoAsync(long fileId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.big_files WHERE file_id = ?;", 
@@ -1343,7 +1343,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                return new UploadedFileInfo(fileId, row.GetValue<int>("part_size"),
+                return new UploadedFileInfoDTO(fileId, row.GetValue<int>("part_size"),
                     row.GetValue<int>("parts"), row.GetValue<long>("access_hash"),
                     row.GetValue<string>("file_name"), null,
                     row.GetValue<DateTime>("saved_on"), true);
@@ -1352,7 +1352,7 @@ namespace Ferrite.Data
             return null;
         }
 
-        public async Task<bool> SaveFilePartAsync(FilePart part)
+        public async Task<bool> SaveFilePartAsync(FilePartDTO part)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.file_parts SET part_size = ?, saved_on = ? " +
@@ -1362,7 +1362,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<IReadOnlyCollection<FilePart>> GetFilePartsAsync(long fileId)
+        public async Task<IReadOnlyCollection<FilePartDTO>> GetFilePartsAsync(long fileId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.file_parts WHERE file_id = ?;", 
@@ -1370,17 +1370,17 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<FilePart> parts = new();
+            List<FilePartDTO> parts = new();
             foreach (var row in results)
             {
-                parts.Add(new FilePart(fileId, row.GetValue<int>("part_num"),
+                parts.Add(new FilePartDTO(fileId, row.GetValue<int>("part_num"),
                     row.GetValue<int>("part_size")));
             }
 
             return parts;
         }
 
-        public async Task<bool> SaveBigFilePartAsync(FilePart part)
+        public async Task<bool> SaveBigFilePartAsync(FilePartDTO part)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.big_file_parts SET part_size = ?, saved_on = ? " +
@@ -1390,7 +1390,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<IReadOnlyCollection<FilePart>> GetBigFilePartsAsync(long fileId)
+        public async Task<IReadOnlyCollection<FilePartDTO>> GetBigFilePartsAsync(long fileId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.big_file_parts WHERE file_id = ?;", 
@@ -1398,17 +1398,17 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<FilePart> parts = new();
+            List<FilePartDTO> parts = new();
             foreach (var row in results)
             {
-                parts.Add(new FilePart(fileId, row.GetValue<int>("part_num"),
+                parts.Add(new FilePartDTO(fileId, row.GetValue<int>("part_num"),
                     row.GetValue<int>("part_size")));
             }
 
             return parts;
         }
 
-        public async Task<bool> SaveFileReferenceAsync(FileReference reference)
+        public async Task<bool> SaveFileReferenceAsync(FileReferenceDTO reference)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.file_references SET file_id = ?, is_big_file = ? " +
@@ -1418,7 +1418,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<FileReference?> GetFileReferenceAsync(byte[] referenceBytes)
+        public async Task<FileReferenceDTO?> GetFileReferenceAsync(byte[] referenceBytes)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.file_references WHERE file_reference = ?;", 
@@ -1428,7 +1428,7 @@ namespace Ferrite.Data
             var results = await session.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                return new FileReference(row.GetValue<byte[]>("file_reference"),
+                return new FileReferenceDTO(row.GetValue<byte[]>("file_reference"),
                     row.GetValue<long>("file_id"), row.GetValue<bool>("is_big_file"));
             }
 
@@ -1464,7 +1464,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<IReadOnlyCollection<Photo>> GetProfilePhotosAsync(long userId)
+        public async Task<IReadOnlyCollection<PhotoDTO>> GetProfilePhotosAsync(long userId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.profile_photos WHERE user_id = ?;", 
@@ -1472,7 +1472,7 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<Photo> photos = new();
+            List<PhotoDTO> photos = new();
             foreach (var row in results)
             {
                 var fileId = row.GetValue<long>("file_id");
@@ -1482,10 +1482,10 @@ namespace Ferrite.Data
                 statementInner = statementInner.SetKeyspace(keySpace);
 
                 var results2 = await session.ExecuteAsync(statementInner);
-                List<PhotoSize> photoSizes = new List<PhotoSize>();
+                List<PhotoSizeDTO> photoSizes = new List<PhotoSizeDTO>();
                 foreach (var row2 in results2)
                 {
-                    photoSizes.Add(new PhotoSize(PhotoSizeType.Default,
+                    photoSizes.Add(new PhotoSizeDTO(PhotoSizeType.Default,
                         row2.GetValue<string>("thumb_type"),
                         row2.GetValue<int>("width"),
                         row2.GetValue<int>("height"),
@@ -1493,7 +1493,7 @@ namespace Ferrite.Data
                         row2.GetValue<byte[]>("bytes"),
                         row2.GetValue<List<int>>("sizes")));
                 }
-                photos.Add(new Photo(false, fileId,
+                photos.Add(new PhotoDTO(false, fileId,
                     row.GetValue<long>("access_hash"),
                     row.GetValue<byte[]>("file_reference"),
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
@@ -1503,16 +1503,16 @@ namespace Ferrite.Data
             return photos;
         }
 
-        public async Task<Photo?> GetProfilePhotoAsync(long userId, long fileId)
+        public async Task<PhotoDTO?> GetProfilePhotoAsync(long userId, long fileId)
         {
-            Photo? photo = null;
+            PhotoDTO? photo = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.profile_photos WHERE user_id = ? AND file_id = ?;", 
                 userId, fileId);
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<Photo> photos = new();
+            List<PhotoDTO> photos = new();
             foreach (var row in results)
             {
                 var statementInner = new SimpleStatement(
@@ -1521,10 +1521,10 @@ namespace Ferrite.Data
                 statementInner = statementInner.SetKeyspace(keySpace);
 
                 var results2 = await session.ExecuteAsync(statementInner);
-                List<PhotoSize> photoSizes = new List<PhotoSize>();
+                List<PhotoSizeDTO> photoSizes = new List<PhotoSizeDTO>();
                 foreach (var row2 in results2)
                 {
-                    photoSizes.Add(new PhotoSize(PhotoSizeType.Default,
+                    photoSizes.Add(new PhotoSizeDTO(PhotoSizeType.Default,
                         row2.GetValue<string>("thumb_type"),
                         row2.GetValue<int>("width"),
                         row2.GetValue<int>("height"),
@@ -1532,7 +1532,7 @@ namespace Ferrite.Data
                         row2.GetValue<byte[]>("bytes"),
                         row2.GetValue<List<int>>("sizes")));
                 }
-                photo =new Photo(false, fileId,
+                photo =new PhotoDTO(false, fileId,
                     row.GetValue<long>("access_hash"),
                     row.GetValue<byte[]>("file_reference"),
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
@@ -1541,7 +1541,7 @@ namespace Ferrite.Data
             return photo;
         }
 
-        public async Task<bool> SaveThumbnailAsync(Thumbnail thumbnail)
+        public async Task<bool> SaveThumbnailAsync(ThumbnailDTO thumbnail)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.thumbnails SET thumb_size = ?, width = ?, height = ?, " +
@@ -1553,7 +1553,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<IReadOnlyCollection<Thumbnail>> GetThumbnailsAsync(long photoId)
+        public async Task<IReadOnlyCollection<ThumbnailDTO>> GetThumbnailsAsync(long photoId)
         {
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.thumbnails WHERE file_id = ?;", 
@@ -1561,10 +1561,10 @@ namespace Ferrite.Data
             statement = statement.SetKeyspace(keySpace);
 
             var results = await session.ExecuteAsync(statement);
-            List<Thumbnail> thumbs = new();
+            List<ThumbnailDTO> thumbs = new();
             foreach (var row in results)
             {
-                thumbs.Add(new Thumbnail(photoId, 
+                thumbs.Add(new ThumbnailDTO(photoId, 
                     row.GetValue<long>("thumb_file_id"),
                     row.GetValue<string>("thumb_type"),
                     row.GetValue<int>("thumb_size"),

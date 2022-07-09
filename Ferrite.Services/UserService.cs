@@ -17,7 +17,8 @@
 // 
 
 using Ferrite.Data;
-using UserFull = Ferrite.Data.Users.UserFull;
+using Ferrite.Data.Users;
+using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
 
 namespace Ferrite.Services;
 
@@ -29,7 +30,7 @@ public class UserService : IUsersService
     {
         _store = store;
     }
-    public async Task<ServiceResult<ICollection<User>>> GetUsers(long authKeyId, ICollection<InputUser> id)
+    public async Task<ServiceResult<ICollection<User>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)
     {
         List<User> users = new();
         foreach (var u in id)
@@ -47,7 +48,7 @@ public class UserService : IUsersService
         return new ServiceResult<ICollection<User>>(users, true, ErrorMessages.None);
     }
 
-    public async Task<ServiceResult<UserFull>> GetFullUser(long authKeyId, InputUser id)
+    public async Task<ServiceResult<UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id)
     {
         var userId = id.UserId;
         bool self = false;
@@ -69,20 +70,20 @@ public class UserService : IUsersService
             deviceType = DeviceType.iOS;
         }
 
-        var settings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeer
+        var settings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeerDTO
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
-            Peer = new InputPeer
+            Peer = new InputPeerDTO
             {
                 UserId = user.Id,
                 AccessHash = user.AccessHash,
                 InputPeerType = InputPeerType.User
             }
         });
-        PeerNotifySettings notifySettings = null;
+        PeerNotifySettingsDTO notifySettings = null;
         if (settings.Count == 0)
         {
-            notifySettings = new PeerNotifySettings();
+            notifySettings = new PeerNotifySettingsDTO();
         }
         else
         {
@@ -92,12 +93,12 @@ public class UserService : IUsersService
         if (user != null)
         {
             var profilePhoto = await _store.GetProfilePhotoAsync(user.Id, user.Photo.PhotoId);
-            var fullUser = new Ferrite.Data.UserFull
+            var fullUser = new Ferrite.Data.UserFullDTO
             {
                 About = user.About,
                 Blocked = false,
                 Id = user.Id,
-                Settings = new PeerSettings(true, true, true, false, false,
+                Settings = new PeerSettingsDTO(true, true, true, false, false,
                     false, false, false, false, null, null, null),
                 NotifySettings = notifySettings,
                 PhoneCallsAvailable = true,
@@ -105,14 +106,14 @@ public class UserService : IUsersService
                 CommonChatsCount = 0,
                 ProfilePhoto = profilePhoto,
             };
-            return new ServiceResult<UserFull>(new UserFull(fullUser, new List<Chat>(), 
+            return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
                 new List<User>(){user with{Self = self}}), true, ErrorMessages.None);
         }
 
-        return new ServiceResult<UserFull>(null, false, ErrorMessages.UserIdInvalid);
+        return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);
     }
 
-    public async Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUser id, ICollection<SecureValueError> errors)
+    public async Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors)
     {
         throw new NotImplementedException();
     }

@@ -30,27 +30,27 @@ public class LangPackService : ILangPackService
         _store = store;
     }
 
-    public async Task<LangPackDifference?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
+    public async Task<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
     {
         return await _store.GetDifferenceAsync(langPack, langCode, fromVersion);
     }
 
-    public async Task<LangPackDifference?> GetLangPackAsync(string langPack, string langCode)
+    public async Task<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode)
     {
         return await _store.GetLangPackAsync(langPack, langCode);
     }
 
-    public async Task<LangPackLanguage?> GetLanguageAsync(string langPack, string langCode)
+    public async Task<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode)
     {
         return await _store.GetLanguageAsync(langPack, langCode);
     }
 
-    public async Task<ICollection<LangPackLanguage>> GetLanguagesAsync(string langPack)
+    public async Task<ICollection<LangPackLanguageDTO>> GetLanguagesAsync(string langPack)
     {
         return await _store.GetLanguagesAsync(langPack);
     }
 
-    public async Task<ICollection<LangPackString>> GetStringsAsync(string langPack, string langCode,
+    public async Task<ICollection<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode,
         ICollection<string> keys)
     {
         return await _store.GetStringsAsync(langPack, langCode, keys);

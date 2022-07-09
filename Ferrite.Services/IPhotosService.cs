@@ -23,9 +23,9 @@ namespace Ferrite.Services;
 
 public interface IPhotosService
 {
-    Task<ServiceResult<Data.Photos.Photo>> UpdateProfilePhoto(long authKeyId, InputPhoto id);
-    Task<ServiceResult<Data.Photos.Photo>> UploadProfilePhoto(long authKeyId, InputFile? photo,
-        InputFile? video, double? videoStartTimestamp);
-    Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhoto> photos);
-    Task<Photos> GetUserPhotos(long authKeyId, long userId, int offset, long maxId, int limit);
+    Task<ServiceResult<Data.Photos.PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id);
+    Task<ServiceResult<Data.Photos.PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo,
+        InputFileDTO? video, double? videoStartTimestamp);
+    Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
+    Task<PhotosDTO> GetUserPhotos(long authKeyId, long userId, int offset, long maxId, int limit);
 }

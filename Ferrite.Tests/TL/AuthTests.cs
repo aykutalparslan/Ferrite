@@ -44,7 +44,6 @@ using Ferrite.Utils;
 using MessagePack;
 using Moq;
 using Xunit;
-using CodeSettings = Ferrite.Data.Auth.CodeSettings;
 
 namespace Ferrite.Tests.TL;
 
@@ -56,7 +55,7 @@ public class AuthTests
         var builder = GetBuilder();
         var auth = new Mock<IAuthService>();
         auth.Setup(x => x.SendCode(It.IsAny<string>(), It.IsAny<int>(),
-            It.IsAny<string>(), It.IsAny<CodeSettings>())).ReturnsAsync(() => new Ferrite.Data.Auth.SentCode()
+            It.IsAny<string>(), It.IsAny<CodeSettingsDTO>())).ReturnsAsync(() => new Ferrite.Data.Auth.SentCodeDTO()
         {
             CodeType = Ferrite.Data.Auth.SentCodeType.Sms,
             NextType = Ferrite.Data.Auth.SentCodeType.Sms,
@@ -89,7 +88,7 @@ public class AuthTests
         var auth = new Mock<IAuthService>();
         auth.Setup(x => x.SignIn(It.IsAny<long>(), 
             It.IsAny<string>(), It.IsAny<string>(), 
-            It.IsAny<string>())).ReturnsAsync(() => new Ferrite.Data.Auth.Authorization()
+            It.IsAny<string>())).ReturnsAsync(() => new Ferrite.Data.Auth.AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.SignUpRequired
         });
@@ -118,7 +117,7 @@ public class AuthTests
             It.IsAny<string>(), It.IsAny<string>(), 
             It.IsAny<string>())).ReturnsAsync((long authKeyId, string phoneNumber, 
             string phoneCodeHash, string phoneCode) => 
-                new Ferrite.Data.Auth.Authorization()
+                new Ferrite.Data.Auth.AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.Authorization,
                 User = new Ferrite.Data.User()
@@ -127,9 +126,9 @@ public class AuthTests
                     FirstName = "a",
                     LastName = "b",
                     Phone = phoneNumber,
-                    Status = Ferrite.Data.UserStatus.Empty,
+                    Status = Ferrite.Data.UserStatusDTO.Empty,
                     Self = true,
-                    Photo = new Ferrite.Data.UserProfilePhoto()
+                    Photo = new Ferrite.Data.UserProfilePhotoDTO()
                     {
                         Empty = true
                     }
@@ -171,7 +170,7 @@ public class AuthTests
         var authStub = new Mock<IAuthService>();
         authStub.Setup(x => x.SignUp(It.IsAny<long>(), It.IsAny<string>(), 
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(() =>
-            new Ferrite.Data.Auth.Authorization()
+            new Ferrite.Data.Auth.AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.SignUpRequired
             }
@@ -201,7 +200,7 @@ public class AuthTests
         authStub.Setup(x => x.SignUp(It.IsAny<long>(), It.IsAny<string>(), 
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName) => 
-            new Ferrite.Data.Auth.Authorization()
+            new Ferrite.Data.Auth.AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.Authorization,
                 User = new Ferrite.Data.User()
@@ -210,9 +209,9 @@ public class AuthTests
                     FirstName = firstName,
                     LastName = lastName,
                     Phone = phoneNumber,
-                    Status = Ferrite.Data.UserStatus.Empty,
+                    Status = Ferrite.Data.UserStatusDTO.Empty,
                     Self = true,
-                    Photo = new Ferrite.Data.UserProfilePhoto()
+                    Photo = new Ferrite.Data.UserProfilePhotoDTO()
                     {
                         Empty = true
                     }
@@ -256,7 +255,7 @@ public class AuthTests
                 {
                     return null;
                 }
-                return new Ferrite.Data.Auth.LoggedOut()
+                return new Ferrite.Data.Auth.LoggedOutDTO()
                 {
                     FutureAuthToken = new byte[] { 1, 2, 3 }
                 };
@@ -286,7 +285,7 @@ public class AuthTests
                 {
                     return null;
                 }
-                return new Ferrite.Data.Auth.LoggedOut()
+                return new Ferrite.Data.Auth.LoggedOutDTO()
                 {
                     FutureAuthToken = new byte[] { 1, 2, 3 }
                 };
@@ -349,7 +348,7 @@ public class AuthTests
         var builder = GetBuilder();
         var authStub = new Mock<IAuthService>();
         authStub.Setup(x => x.ExportAuthorization(It.IsAny<long>(), It.IsAny<int>())).ReturnsAsync(() =>
-            new Ferrite.Data.Auth.ExportedAuthorization()
+            new Ferrite.Data.Auth.ExportedAuthorizationDTO()
             {
                 Id = 111,
                 Bytes = new byte[] { 1, 2, 3 }
@@ -379,7 +378,7 @@ public class AuthTests
         var authStub = new Mock<IAuthService>();
         authStub.Setup(x => x.ImportAuthorization(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<byte[]>()))
             .ReturnsAsync(() =>
-                new Ferrite.Data.Auth.Authorization()
+                new Ferrite.Data.Auth.AuthorizationDTO()
                 {
                     AuthorizationType = AuthorizationType.Authorization,
                     User = new Ferrite.Data.User()
@@ -388,9 +387,9 @@ public class AuthTests
                         FirstName = "a",
                         LastName = "b",
                         Phone = "5554443322",
-                        Status = Ferrite.Data.UserStatus.Empty,
+                        Status = Ferrite.Data.UserStatusDTO.Empty,
                         Self = true,
-                        Photo = new Ferrite.Data.UserProfilePhoto()
+                        Photo = new Ferrite.Data.UserProfilePhotoDTO()
                         {
                             Empty = true
                         }
@@ -428,7 +427,7 @@ public class AuthTests
         var authStub = new Mock<IAuthService>();
         authStub.Setup(x => x.ImportAuthorization(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<byte[]>()))
             .ReturnsAsync(() =>
-                new Ferrite.Data.Auth.Authorization()
+                new Ferrite.Data.Auth.AuthorizationDTO()
                 {
                     AuthorizationType = AuthorizationType.AuthBytesInvalid
                 }
@@ -752,7 +751,7 @@ public class AuthTests
         var authStub = new Mock<IAuthService>();
         authStub.Setup(x => x.ResendCode(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(() =>
-                new Ferrite.Data.Auth.SentCode()
+                new Ferrite.Data.Auth.SentCodeDTO()
                 {
                     CodeType = Ferrite.Data.Auth.SentCodeType.Sms,
                     NextType = Ferrite.Data.Auth.SentCodeType.Sms,
@@ -909,7 +908,7 @@ public class AuthTests
         authStub.Setup(x => x.ExportLoginToken(It.IsAny<long>(), It.IsAny<long>(), 
                 It.IsAny<int>(), It.IsAny<string>(), It.IsAny<ICollection<long>>()))
             .ReturnsAsync(() =>
-                new Ferrite.Data.Auth.LoginToken()
+                new Ferrite.Data.Auth.LoginTokenDTO()
                 {
                     LoginTokenType = LoginTokenType.Token,
                     Expires = 30,

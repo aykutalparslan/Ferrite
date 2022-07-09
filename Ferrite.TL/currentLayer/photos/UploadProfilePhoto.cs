@@ -117,26 +117,26 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        Data.InputFile? photo = null;
-        Data.InputFile? video = null;
+        Data.InputFileDTO? photo = null;
+        Data.InputFileDTO? video = null;
         if (_file is InputFileImpl file)
         {
-            photo = new Data.InputFile(file.Id, file.Parts, 
+            photo = new Data.InputFileDTO(file.Id, file.Parts, 
                 file.Name, file.Md5Checksum, false);
         }
         else if (_file is InputFileImpl bigFile)
         {
-            photo = new Data.InputFile(bigFile.Id, bigFile.Parts, 
+            photo = new Data.InputFileDTO(bigFile.Id, bigFile.Parts, 
                 bigFile.Name, bigFile.Md5Checksum, true);
         }
         if (_video is InputFileImpl videoFile)
         {
-            photo = new Data.InputFile(videoFile.Id, videoFile.Parts, 
+            photo = new Data.InputFileDTO(videoFile.Id, videoFile.Parts, 
                 videoFile.Name, videoFile.Md5Checksum, false);
         }
         else if (_video is InputFileImpl bigVideoFile)
         {
-            photo = new Data.InputFile(bigVideoFile.Id, bigVideoFile.Parts, 
+            photo = new Data.InputFileDTO(bigVideoFile.Id, bigVideoFile.Parts, 
                 bigVideoFile.Name, bigVideoFile.Md5Checksum, true);
         }
 
@@ -196,7 +196,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
                 userImpl.LastName = user.LastName;
                 userImpl.Phone = user.Phone;
                 userImpl.Self = true;
-                if(user.Status == Data.UserStatus.Empty)
+                if(user.Status == Data.UserStatusDTO.Empty)
                 {
                     userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
                 }

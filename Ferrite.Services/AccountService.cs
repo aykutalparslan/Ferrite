@@ -42,7 +42,7 @@ public partial class AccountService : IAccountService
         _search = search;
         _random = random;
     }
-    public async Task<bool> RegisterDevice(DeviceInfo deviceInfo)
+    public async Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo)
     {
         return await _store.SaveDeviceInfoAsync(deviceInfo);
     }
@@ -52,12 +52,12 @@ public partial class AccountService : IAccountService
         return await _store.DeleteDeviceInfoAsync(authKeyId, token, otherUserIds);
     }
 
-    public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeer peer, PeerNotifySettings settings)
+    public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
     {
         return await _store.SaveNotifySettingsAsync(authKeyId, peer, settings);
     }
 
-    public async Task<PeerNotifySettings> GetNotifySettings(long authKeyId, InputNotifyPeer peer)
+    public async Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
     {
         var info = await _store.GetAppInfoAsync(authKeyId);
         DeviceType deviceType = DeviceType.Other;
@@ -72,7 +72,7 @@ public partial class AccountService : IAccountService
         var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
         if (settings.Count == 0)
         {
-            return new PeerNotifySettings();
+            return new PeerNotifySettingsDTO();
         }
         return settings.First(_ => _.DeviceType == deviceType);
     }
@@ -94,7 +94,7 @@ public partial class AccountService : IAccountService
                 About = about ?? user.About,
             };
             await _store.SaveUserAsync(userNew);
-            await _search.IndexUser(new Data.Search.User(userNew.Id, userNew.Username, 
+            await _search.IndexUser(new Data.Search.UserDTO(userNew.Id, userNew.Username, 
                 userNew.FirstName, userNew.LastName, userNew.Phone));
             return userNew;
         }
@@ -113,7 +113,7 @@ public partial class AccountService : IAccountService
         return false;
     }
 
-    public async Task<bool> ReportPeer(long authKeyId, InputPeer peer, ReportReason reason)
+    public async Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth == null)
@@ -156,12 +156,12 @@ public partial class AccountService : IAccountService
             await _store.UpdateUsernameAsync(auth.UserId, username);
         }
         user = await _store.GetUserAsync(auth.UserId);
-        await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 
+        await _search.IndexUser(new Data.Search.UserDTO(user.Id, user.Username, 
                 user.FirstName, user.LastName, user.Phone));
         return user;
     }
 
-    public async Task<PrivacyRules?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRule> rules)
+    public async Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth == null)
@@ -171,9 +171,9 @@ public partial class AccountService : IAccountService
 
         await _store.SavePrivacyRulesAsync(auth.UserId, key, rules);
         var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
-        List<PrivacyRule> privacyRules = new();
+        List<PrivacyRuleDTO> privacyRules = new();
         List<User> users = new();
-        List<Chat> chats = new();
+        List<ChatDTO> chats = new();
         foreach (var r in savedRules)
         {
             privacyRules.Add(r);
@@ -200,7 +200,7 @@ public partial class AccountService : IAccountService
             }
         }
         
-        PrivacyRules result = new PrivacyRules()
+        PrivacyRulesDTO result = new PrivacyRulesDTO()
         {
             Rules = privacyRules,
             Users = users,
@@ -209,7 +209,7 @@ public partial class AccountService : IAccountService
         return result;
     }
 
-    public async Task<PrivacyRules?> GetPrivacy(long authKeyId, InputPrivacyKey key)
+    public async Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth == null)
@@ -218,9 +218,9 @@ public partial class AccountService : IAccountService
         }
         
         var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
-        List<PrivacyRule> privacyRules = new();
+        List<PrivacyRuleDTO> privacyRules = new();
         List<User> users = new();
-        List<Chat> chats = new();
+        List<ChatDTO> chats = new();
         foreach (var r in savedRules)
         {
             privacyRules.Add(r);
@@ -247,7 +247,7 @@ public partial class AccountService : IAccountService
             }
         }
         
-        PrivacyRules result = new PrivacyRules()
+        PrivacyRulesDTO result = new PrivacyRulesDTO()
         {
             Rules = privacyRules,
             Users = users,
@@ -301,18 +301,18 @@ public partial class AccountService : IAccountService
         return await _store.GetAccountTTLAsync(auth.UserId);
     }
 
-    public async Task<ServiceResult<SentCode>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettings settings)
+    public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
-            return new ServiceResult<SentCode>(null, false, 
+            return new ServiceResult<SentCodeDTO>(null, false, 
                 ErrorMessages.FreshChangePhoneForbidden);
         }
         var user = await _store.GetUserAsync(phoneNumber);
         if (user != new User())
         {
-            return new ServiceResult<SentCode>(null, false, 
+            return new ServiceResult<SentCodeDTO>(null, false, 
                 ErrorMessages.PhoneNumberOccupied);
         }
         
@@ -323,14 +323,14 @@ public partial class AccountService : IAccountService
         await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         
-        var result = new SentCode()
+        var result = new SentCodeDTO()
         {
             CodeType = SentCodeType.Sms,
             CodeLength = 5,
             Timeout = PhoneCodeTimeout,
             PhoneCodeHash = hash
         };
-        return new ServiceResult<SentCode>(result, true, ErrorMessages.None);
+        return new ServiceResult<SentCodeDTO>(result, true, ErrorMessages.None);
     }
 
     public async Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
@@ -362,17 +362,17 @@ public partial class AccountService : IAccountService
         return await _cache.PutDeviceLockedAsync(authKeyId, period);
     }
 
-    public async Task<Authorizations> GetAuthorizations(long authKeyId)
+    public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
-        List<AppInfo> auths = new();
+        List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
         {
             auths.Add(await _store.GetAppInfoAsync(a.AuthKeyId));
         }
 
-        return new Authorizations(await _store.GetAccountTTLAsync(auth.UserId), auths);
+        return new AuthorizationsDTO(await _store.GetAccountTTLAsync(auth.UserId), auths);
     }
 
     public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)

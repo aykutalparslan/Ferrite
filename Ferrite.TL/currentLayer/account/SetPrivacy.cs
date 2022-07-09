@@ -107,7 +107,7 @@ public class SetPrivacy : ITLObject, ITLMethod
         return result;
     }
 
-    private Chat CreateChat(Data.Chat c)
+    private Chat CreateChat(Data.ChatDTO c)
     {
         if (c.ChatType == ChatType.Chat)
         {
@@ -166,7 +166,7 @@ public class SetPrivacy : ITLObject, ITLMethod
             {
                 user.Username = u.Username;
             }
-            if (u.Status == Data.UserStatus.Empty)
+            if (u.Status == Data.UserStatusDTO.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }
@@ -191,7 +191,7 @@ public class SetPrivacy : ITLObject, ITLMethod
         }
     }
 
-    private PrivacyRule CreatePrivacyRule(Data.PrivacyRule value)
+    private PrivacyRule CreatePrivacyRule(Data.PrivacyRuleDTO value)
     {
         if (value.PrivacyRuleType == PrivacyRuleType.AllowAll)
         {
@@ -252,19 +252,19 @@ public class SetPrivacy : ITLObject, ITLMethod
         return factory.Resolve<PrivacyValueAllowContactsImpl>();
     }
 
-    private List<Data.PrivacyRule> GetPrivacyRules()
+    private List<Data.PrivacyRuleDTO> GetPrivacyRules()
     {
-        List<Data.PrivacyRule> rules = new();
+        List<Data.PrivacyRuleDTO> rules = new();
         foreach (var r in _rules)
         {
             if (r.Constructor == TLConstructor.InputPrivacyValueAllowContacts)
             {
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                     { PrivacyRuleType = PrivacyRuleType.AllowContacts });
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueAllowAll)
             {
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                     { PrivacyRuleType = PrivacyRuleType.AllowAll });
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueAllowUsers)
@@ -275,7 +275,7 @@ public class SetPrivacy : ITLObject, ITLMethod
                     userIds.Add(user.GetUserId());
                 }
 
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                 {
                     PrivacyRuleType = PrivacyRuleType.AllowUsers,
                     Peers = userIds
@@ -283,12 +283,12 @@ public class SetPrivacy : ITLObject, ITLMethod
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowContacts)
             {
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                     { PrivacyRuleType = PrivacyRuleType.DisallowContacts });
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowAll)
             {
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                     { PrivacyRuleType = PrivacyRuleType.DisallowAll });
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowUsers)
@@ -299,7 +299,7 @@ public class SetPrivacy : ITLObject, ITLMethod
                     userIds.Add(user.GetUserId());
                 }
 
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                 {
                     PrivacyRuleType = PrivacyRuleType.DisallowUsers,
                     Peers = userIds
@@ -307,7 +307,7 @@ public class SetPrivacy : ITLObject, ITLMethod
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueAllowChatParticipants)
             {
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                 {
                     PrivacyRuleType = PrivacyRuleType.AllowChatParticipants,
                     Peers = ((InputPrivacyValueAllowChatParticipantsImpl)r).Chats
@@ -315,7 +315,7 @@ public class SetPrivacy : ITLObject, ITLMethod
             }
             else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowChatParticipants)
             {
-                rules.Add(new Data.PrivacyRule()
+                rules.Add(new Data.PrivacyRuleDTO()
                 {
                     PrivacyRuleType = PrivacyRuleType.DisallowChatParticipants,
                     Peers = ((InputPrivacyValueDisallowChatParticipantsImpl)r).Chats

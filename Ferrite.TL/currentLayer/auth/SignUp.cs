@@ -128,7 +128,7 @@ public class SignUp : ITLObject, ITLMethod
             user.LastName = signUpResult.User.LastName;
             user.Phone = signUpResult.User.Phone;
             user.Self = signUpResult.User.Self;
-            if (signUpResult.User.Status == Data.UserStatus.Empty)
+            if (signUpResult.User.Status == Data.UserStatusDTO.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

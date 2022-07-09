@@ -68,12 +68,12 @@ public class GetUsers : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var inputUsers = new List<Ferrite.Data.InputUser>();
+        var inputUsers = new List<Ferrite.Data.InputUserDTO>();
         foreach (var u in _id)
         {
             if (u is InputUserImpl user)
             {
-                inputUsers.Add(new Data.InputUser()
+                inputUsers.Add(new Data.InputUserDTO()
                 {
                     InputUserType = InputUserType.User,
                     UserId = user.UserId,
@@ -103,7 +103,7 @@ public class GetUsers : ITLObject, ITLMethod
                 user.LastName = u.LastName;
                 user.Phone = u.Phone;
                 user.Self = u.Self;
-                if(u.Status == Data.UserStatus.Empty)
+                if(u.Status == Data.UserStatusDTO.Empty)
                 {
                     user.Status = factory.Resolve<UserStatusEmptyImpl>();
                 }

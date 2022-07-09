@@ -68,7 +68,7 @@ public class Unblock : ITLObject, ITLMethod
     {
         var success =
             await _contacts.Unblock(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
-                new Data.InputPeer()
+                new Data.InputPeerDTO()
                     {
                         InputPeerType = _id.Constructor switch
                         {

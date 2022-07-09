@@ -103,7 +103,7 @@ public class ImportAuthorization : ITLObject, ITLMethod
             user.LastName = auth.User.LastName;
             user.Phone = auth.User.Phone;
             user.Self = auth.User.Self;
-            if (auth.User.Status == Data.UserStatus.Empty)
+            if (auth.User.Status == Data.UserStatusDTO.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

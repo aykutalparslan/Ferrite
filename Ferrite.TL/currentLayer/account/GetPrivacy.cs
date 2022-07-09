@@ -94,7 +94,7 @@ public class GetPrivacy : ITLObject, ITLMethod
         return result;
     }
     
-    private Chat CreateChat(Data.Chat c)
+    private Chat CreateChat(Data.ChatDTO c)
     {
         if (c.ChatType == ChatType.Chat)
         {
@@ -153,7 +153,7 @@ public class GetPrivacy : ITLObject, ITLMethod
             {
                 user.Username = u.Username;
             }
-            if (u.Status == Data.UserStatus.Empty)
+            if (u.Status == Data.UserStatusDTO.Empty)
             {
                 user.Status = factory.Resolve<UserStatusEmptyImpl>();
             }
@@ -178,7 +178,7 @@ public class GetPrivacy : ITLObject, ITLMethod
         }
     }
 
-    private PrivacyRule CreatePrivacyRule(Data.PrivacyRule value)
+    private PrivacyRule CreatePrivacyRule(Data.PrivacyRuleDTO value)
     {
         if (value.PrivacyRuleType == PrivacyRuleType.AllowAll)
         {

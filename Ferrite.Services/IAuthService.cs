@@ -24,8 +24,8 @@ namespace Ferrite.Services;
 
 public interface IAuthService
 {
-    public Task<bool> SaveAppInfo(AppInfo info);
-    public Task<AppInfo?> GetAppInfo(long authKeyId);
+    public Task<bool> SaveAppInfo(AppInfoDTO info);
+    public Task<AppInfoDTO?> GetAppInfo(long authKeyId);
     public Task<bool> IsAuthorized(long authKeyId);
     /// <summary>
 	/// Send the verification code for login
@@ -35,24 +35,24 @@ public interface IAuthService
 	/// <param name="apiHash">Application secret hash</param>
 	/// <param name="settings">Settings for the code type to send</param>
 	/// <returns>The method returns an auth.SentCode object with information on the message sent.</returns>
-    public Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings);
-    public Task<Authorization> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName);
-    public Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
-    public Task<LoggedOut?> LogOut(long authKeyId);
+    public Task<SentCodeDTO> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettingsDTO settings);
+    public Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName);
+    public Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
+    public Task<LoggedOutDTO?> LogOut(long authKeyId);
     public Task<bool> ResetAuthorizations(long authKeyId);
-    public Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId);
-    public Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes);
+    public Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId);
+    public Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes);
     public Task<bool> BindTempAuthKey(long tempAuthKeyId, long permAuthKeyId, int expiresAt);
-    public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
-    public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
+    public Task<AuthorizationDTO> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
+    public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
     public Task<string> RequestPasswordRecovery();
-    public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings);
-    public Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash);
+    public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings);
+    public Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash);
     public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash);
     public Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
-    public Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
-    public Task<LoginToken> ImportLoginToken(byte[] token);
-    public Task<AppInfo?> AcceptLoginToken(long authKeyId, byte[] token);
+    public Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
+    public Task<LoginTokenDTO> ImportLoginToken(byte[] token);
+    public Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token);
     public Task<bool> CheckRecoveryPassword(string code);
 }
 

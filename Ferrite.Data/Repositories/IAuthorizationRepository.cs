@@ -20,13 +20,13 @@ namespace Ferrite.Data.Repositories;
 
 public interface IAuthorizationRepository
 {
-    public bool PutAuthorization(AuthInfo info);
-    public AuthInfo? GetAuthorization(long authKeyId);
-    public ValueTask<AuthInfo?> GetAuthorizationAsync(long authKeyId);
-    public IReadOnlyCollection<AuthInfo> GetAuthorizations(string phone);
-    public ValueTask<IReadOnlyCollection<AuthInfo>> GetAuthorizationsAsync(string phone);
+    public bool PutAuthorization(AuthInfoDTO info);
+    public AuthInfoDTO? GetAuthorization(long authKeyId);
+    public ValueTask<AuthInfoDTO?> GetAuthorizationAsync(long authKeyId);
+    public IReadOnlyCollection<AuthInfoDTO> GetAuthorizations(string phone);
+    public ValueTask<IReadOnlyCollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone);
     public bool DeleteAuthorization(long authKeyId);
-    public bool PutExportedAuthorization(ExportedAuthInfo exportedInfo);
-    public ExportedAuthInfo? GetExportedAuthorization(long user_id, byte[] data);
-    public ValueTask<ExportedAuthInfo?> GetExportedAuthorizationAsync(long user_id, byte[] data);
+    public bool PutExportedAuthorization(ExportedAuthInfoDTO exportedInfo);
+    public ExportedAuthInfoDTO? GetExportedAuthorization(long user_id, byte[] data);
+    public ValueTask<ExportedAuthInfoDTO?> GetExportedAuthorizationAsync(long user_id, byte[] data);
 }

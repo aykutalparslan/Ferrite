@@ -113,7 +113,7 @@ public class ChangePhone : ITLObject, ITLMethod
             {
                 userImpl.Username = user.Username;
             }
-            if(user.Status == Data.UserStatus.Empty)
+            if(user.Status == Data.UserStatusDTO.Empty)
             {
                 userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

@@ -55,7 +55,7 @@ public class CassandraMessageRepository : IMessageRepository
         _context.ExecuteQueue();
     }
     
-    public bool PutMessage(Message message)
+    public bool PutMessage(MessageDTO message)
     {
         var data = MessagePackSerializer.Serialize(message);
         if (message.Out)
@@ -92,9 +92,9 @@ public class CassandraMessageRepository : IMessageRepository
         return true;
     }
 
-    public IReadOnlyCollection<Message> GetMessages(long userId, Peer? peerId = null)
+    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, PeerDTO? peerId = null)
     {
-        List<Message> messages = new List<Message>();
+        List<MessageDTO> messages = new List<MessageDTO>();
         if (peerId != null)
         {
             var statement = new SimpleStatement(
@@ -104,7 +104,7 @@ public class CassandraMessageRepository : IMessageRepository
             var results = _context.Execute(statement);
             foreach (var row in results)
             {
-                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
                 messages.Add(message);
             }
         }
@@ -117,7 +117,7 @@ public class CassandraMessageRepository : IMessageRepository
             var results = _context.Execute(statement);
             foreach (var row in results)
             {
-                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
                 messages.Add(message);
             }
         }
@@ -125,9 +125,9 @@ public class CassandraMessageRepository : IMessageRepository
         return messages;
     }
 
-    public async ValueTask<IReadOnlyCollection<Message>> GetMessagesAsync(long userId, Peer? peerId = null)
+    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, PeerDTO? peerId = null)
     {
-        List<Message> messages = new List<Message>();
+        List<MessageDTO> messages = new List<MessageDTO>();
 if (peerId != null)
         {
             var statement = new SimpleStatement(
@@ -137,7 +137,7 @@ if (peerId != null)
             var results = await _context.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
                 messages.Add(message);
             }
         }
@@ -150,14 +150,14 @@ if (peerId != null)
             var results = await _context.ExecuteAsync(statement);
             foreach (var row in results)
             {
-                var message = MessagePackSerializer.Deserialize<Message>(row.GetValue<byte[]>("message_data"));
+                var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
                 messages.Add(message);
             }
         }
         return messages;
     }
 
-    public Message? GetMessage(long userId, int messageId)
+    public MessageDTO? GetMessage(long userId, int messageId)
     {
         var statement = new SimpleStatement(
             "SELECT * FROM ferrite.messages_by_id " +
@@ -182,11 +182,11 @@ if (peerId != null)
         {
             return null;
         }
-        var message = MessagePackSerializer.Deserialize<Message>(messageRow.GetValue<byte[]>("message_data"));
+        var message = MessagePackSerializer.Deserialize<MessageDTO>(messageRow.GetValue<byte[]>("message_data"));
         return message;
     }
 
-    public async ValueTask<Message> GetMessageAsync(long userId, int messageId)
+    public async ValueTask<MessageDTO> GetMessageAsync(long userId, int messageId)
     {
         var statement = new SimpleStatement(
             "SELECT * FROM ferrite.messages_by_id " +
@@ -211,7 +211,7 @@ if (peerId != null)
         {
             return null;
         }
-        var message = MessagePackSerializer.Deserialize<Message>(messageRow.GetValue<byte[]>("message_data"));
+        var message = MessagePackSerializer.Deserialize<MessageDTO>(messageRow.GetValue<byte[]>("message_data"));
         return message;
     }
 

@@ -36,7 +36,7 @@ public class SessionState
     [Key(3)]
     public Guid NodeId { get; set; }
     [Key(4)]
-    public ServerSalt ServerSalt { get; set; }
+    public ServerSaltDTO ServerSalt { get; set; }
     [Key(5)]
-    public ServerSalt ServerSaltOld { get; set; }
+    public ServerSaltDTO ServerSaltOld { get; set; }
 }

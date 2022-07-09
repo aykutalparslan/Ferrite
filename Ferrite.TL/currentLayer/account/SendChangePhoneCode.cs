@@ -81,7 +81,7 @@ public class SendChangePhoneCode : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var serviceResult = await _accountService.SendChangePhoneCode(ctx.PermAuthKeyId!=0 ? 
-            ctx.PermAuthKeyId : ctx.AuthKeyId, _phoneNumber, new Data.Auth.CodeSettings());
+            ctx.PermAuthKeyId : ctx.AuthKeyId, _phoneNumber, new Data.Auth.CodeSettingsDTO());
         if (!serviceResult.Success)
         {
             var err = factory.Resolve<RpcError>();

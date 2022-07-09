@@ -336,12 +336,6 @@
     <PackageReference Include="Confluent.Kafka" Version="1.9.0" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Account\" />
-    <Folder Include="Auth\" />
-    <Folder Include="Help\" />
-    <Folder Include="Updates\" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
   </ItemGroup>

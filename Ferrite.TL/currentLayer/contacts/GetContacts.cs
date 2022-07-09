@@ -88,7 +88,7 @@ public class GetContacts : ITLObject, ITLMethod
             userImpl.LastName = u.LastName;
             userImpl.Phone = u.Phone;
             userImpl.Self = u.Self;
-            if(u.Status == Data.UserStatus.Empty)
+            if(u.Status == Data.UserStatusDTO.Empty)
             {
                 userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
             }

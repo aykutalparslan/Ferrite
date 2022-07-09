@@ -68,14 +68,14 @@ public class GetNotifySettings : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        Data.InputNotifyPeer? notifyPeer = null;
+        Data.InputNotifyPeerDTO? notifyPeer = null;
         if (_peer.Constructor == TLConstructor.InputNotifyPeer)
         {
             var peer = (InputNotifyPeerImpl)_peer;
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Peer,
-                Peer = new Data.InputPeer()
+                Peer = new Data.InputPeerDTO()
                 {
                     InputPeerType = peer.Peer.Constructor switch
                     {
@@ -112,21 +112,21 @@ public class GetNotifySettings : ITLObject, ITLMethod
         } 
         else if (_peer.Constructor == TLConstructor.InputNotifyChats)
         {
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Chats
             };
         }
         else if (_peer.Constructor == TLConstructor.InputNotifyUsers)
         {
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Users
             };
         }
         else if (_peer.Constructor == TLConstructor.InputNotifyBroadcasts)
         {
-            notifyPeer = new Data.InputNotifyPeer()
+            notifyPeer = new Data.InputNotifyPeerDTO()
             {
                 NotifyPeerType = InputNotifyPeerType.Broadcasts
             };

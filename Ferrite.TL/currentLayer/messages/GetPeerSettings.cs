@@ -68,33 +68,33 @@ public class GetPeerSettings : ITLObject, ITLMethod
     {
         var inputPeer = _peer.Constructor switch
         {
-            TLConstructor.InputPeerUser => new Data.InputPeer()
+            TLConstructor.InputPeerUser => new Data.InputPeerDTO()
             {
                 UserId = ((InputPeerUserImpl)_peer).UserId,
                 AccessHash = ((InputPeerUserImpl)_peer).UserId,
             },
-            TLConstructor.InputPeerChat => new Data.InputPeer()
+            TLConstructor.InputPeerChat => new Data.InputPeerDTO()
             {
                 ChatId = ((InputPeerChatImpl)_peer).ChatId,
             },
-            TLConstructor.InputPeerUserFromMessage => new Data.InputPeer()
+            TLConstructor.InputPeerUserFromMessage => new Data.InputPeerDTO()
             {
                 UserId = ((InputPeerUserFromMessageImpl)_peer).UserId,
                 MsgId = ((InputPeerUserFromMessageImpl)_peer).MsgId,
                 ChatId = ((InputPeerChatImpl)((InputPeerUserFromMessageImpl)_peer).Peer).ChatId
             },
-            TLConstructor.InputPeerChannel => new Data.InputPeer()
+            TLConstructor.InputPeerChannel => new Data.InputPeerDTO()
             {
                 ChannelId = ((InputPeerChannelImpl)_peer).ChannelId,
                 AccessHash = ((InputPeerChannelImpl)_peer).AccessHash,
             },
-            TLConstructor.InputPeerSelf => new Data.InputPeer(){ InputPeerType = InputPeerType.Self},
-            TLConstructor.InputPeerChannelFromMessage => new Data.InputPeer()
+            TLConstructor.InputPeerSelf => new Data.InputPeerDTO(){ InputPeerType = InputPeerType.Self},
+            TLConstructor.InputPeerChannelFromMessage => new Data.InputPeerDTO()
             {
                 ChannelId = ((InputPeerChannelFromMessageImpl)_peer).ChannelId,
                 ChatId = ((InputPeerChatImpl)((InputPeerChannelFromMessageImpl)_peer).Peer).ChatId
             },
-            _ => new Data.InputPeer(){ InputPeerType = InputPeerType.Empty},
+            _ => new Data.InputPeerDTO(){ InputPeerType = InputPeerType.Empty},
         };
         var serviceResult = await _messages.GetPeerSettings(ctx.CurrentAuthKeyId ,inputPeer);
         var rpcResult = factory.Resolve<RpcResult>();
@@ -146,7 +146,7 @@ public class GetPeerSettings : ITLObject, ITLMethod
                 {
                     userImpl.Username = u.Username;
                 }
-                if(u.Status == Data.UserStatus.Empty)
+                if(u.Status == Data.UserStatusDTO.Empty)
                 {
                     userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
                 }

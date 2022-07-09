@@ -138,7 +138,7 @@ public class RegisterDevice : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var success = await _account.RegisterDevice(new DeviceInfo()
+        var success = await _account.RegisterDevice(new DeviceInfoDTO()
         {
             AuthKeyId = ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             Secret = _secret,

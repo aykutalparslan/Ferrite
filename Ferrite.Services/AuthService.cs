@@ -45,13 +45,13 @@ public class AuthService : IAuthService
         _userIdCnt = _cache.GetCounter("counter_user_id");
     }
 
-    public async Task<AppInfo?> AcceptLoginToken(long authKeyId, byte[] token)
+    public async Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token)
     {
         var t = await _cache.GetLoginTokenAsync(token);
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth != null && t != null&& t.ExceptUserIds.Contains(auth.UserId))
         {
-            var login = new LoginViaQR()
+            var login = new LoginViaQRDTO()
             {
                 AuthKeyId = t.AuthKeyId,
                 SessionId = t.SessionId,
@@ -61,7 +61,7 @@ public class AuthService : IAuthService
                 Status = true
             };
             _ = _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 60));
-            await _store.SaveAuthorizationAsync(new AuthInfo()
+            await _store.SaveAuthorizationAsync(new AuthInfoDTO()
             {
                 AuthKeyId = t.AuthKeyId,
                 Phone = auth.Phone,
@@ -85,7 +85,7 @@ public class AuthService : IAuthService
         return await _cache.DeletePhoneCodeAsync(phoneNumber, phoneCodeHash);
     }
 
-    public Task<Authorization> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
+    public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
     {
         throw new NotImplementedException();
     }
@@ -100,29 +100,29 @@ public class AuthService : IAuthService
         return await _cache.DeleteTempAuthKeysAsync(authKeyId, exceptAuthKeys);
     }
 
-    public async Task<ExportedAuthorization> ExportAuthorization(long authKeyId, int dcId)
+    public async Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var data = _random.GetRandomBytes(128);
         //TODO: get current dc id
         await _store.SaveExportedAuthorizationAsync(auth, 1, dcId, data);
-        return new ExportedAuthorization()
+        return new ExportedAuthorizationDTO()
         {
             Id = auth.UserId,
             Bytes = data
         };
     }
 
-    public async Task<LoginToken> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
+    public async Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth!= null && auth.LoggedIn &&
             await _store.GetUserAsync(auth.UserId) is User user)
         {
-            return new LoginToken()
+            return new LoginTokenDTO()
             {
                 LoginTokenType = LoginTokenType.TokenSuccess,
-                Authorization = new Authorization()
+                Authorization = new AuthorizationDTO()
                 {
                     AuthorizationType = AuthorizationType.Authorization,
                     User = new User()
@@ -131,9 +131,9 @@ public class AuthService : IAuthService
                         FirstName = user.FirstName,
                         LastName = user.LastName,
                         Phone = user.Phone,
-                        Status = UserStatus.Empty,
+                        Status = UserStatusDTO.Empty,
                         Self = true,
-                        Photo = new UserProfilePhoto()
+                        Photo = new UserProfilePhotoDTO()
                         {
                             Empty = true
                         }
@@ -142,7 +142,7 @@ public class AuthService : IAuthService
         };
         }
         var token = _random.GetRandomBytes(16);
-        LoginViaQR login = new LoginViaQR()
+        LoginViaQRDTO login = new LoginViaQRDTO()
         {
             Token = token,
             AuthKeyId = authKeyId,
@@ -151,7 +151,7 @@ public class AuthService : IAuthService
             ExceptUserIds = exceptIds
         };
         await _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 30));
-        return new LoginToken()
+        return new LoginTokenDTO()
         {
             LoginTokenType = LoginTokenType.Token,
             Token = token,
@@ -159,7 +159,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<Authorization> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
+    public async Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var exported = await _store.GetExportedAuthorizationAsync(userId, bytes);
@@ -170,12 +170,12 @@ public class AuthService : IAuthService
             var user = await _store.GetUserAsync(auth.UserId);
             if(user == null)
             {
-                return new Authorization()
+                return new AuthorizationDTO()
                 {
                     AuthorizationType = AuthorizationType.UserIdInvalid
                 };
             }
-            return new Authorization()
+            return new AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.Authorization,
                 User = new User()
@@ -184,27 +184,27 @@ public class AuthService : IAuthService
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     Phone = user.Phone,
-                    Status = UserStatus.Empty,
+                    Status = UserStatusDTO.Empty,
                     Self = true,
-                    Photo = new UserProfilePhoto()
+                    Photo = new UserProfilePhotoDTO()
                     {
                         Empty = true
                     }
                 }
             };
         }
-        return new Authorization()
+        return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.AuthBytesInvalid
         };
     }
 
-    public Task<Authorization> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)
+    public Task<AuthorizationDTO> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)
     {
         throw new NotImplementedException();
     }
 
-    public Task<LoginToken> ImportLoginToken(byte[] token)
+    public Task<LoginTokenDTO> ImportLoginToken(byte[] token)
     {
         throw new NotImplementedException();
     }
@@ -219,7 +219,7 @@ public class AuthService : IAuthService
         return authKeyDetails?.LoggedIn ?? false;
     }
 
-    public async Task<LoggedOut?> LogOut(long authKeyId)
+    public async Task<LoggedOutDTO?> LogOut(long authKeyId)
     {
         var futureAuthToken = _random.GetRandomBytes(32);
         var info = await _store.GetAuthorizationAsync(authKeyId);
@@ -234,13 +234,13 @@ public class AuthService : IAuthService
             UserId = 0,
             LoggedIn = false
         });
-        return new LoggedOut()
+        return new LoggedOutDTO()
         {
             FutureAuthToken = futureAuthToken
         };
     }
 
-    public Task<Authorization> RecoverPassword(string code, PasswordInputSettings newSettings)
+    public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings)
     {
         throw new NotImplementedException();
     }
@@ -250,7 +250,7 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public async Task<SentCode> ResendCode(string phoneNumber, string phoneCodeHash)
+    public async Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash)
     {
         var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
         if (phoneCode != null)
@@ -259,7 +259,7 @@ public class AuthService : IAuthService
             await _cache.PutPhoneCodeAsync(phoneNumber, phoneCodeHash, phoneCode,
                 new TimeSpan(0, 0, PhoneCodeTimeout * 2));
 
-            return new SentCode()
+            return new SentCodeDTO()
             {
                 CodeType = SentCodeType.Sms,
                 CodeLength = 5,
@@ -288,7 +288,7 @@ public class AuthService : IAuthService
         return false;
     }
 
-    public async Task<SentCode> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettings settings)
+    public async Task<SentCodeDTO> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettingsDTO settings)
     {
         var code = _random.GetNext(10000, 99999);
         Console.WriteLine("auth.sentCode=>" + code.ToString());
@@ -297,7 +297,7 @@ public class AuthService : IAuthService
         await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         
-        return new SentCode()
+        return new SentCodeDTO()
         {
             CodeType = SentCodeType.Sms,
             CodeLength = 5,
@@ -306,12 +306,12 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<Authorization> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
         var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
-            return new Authorization()
+            return new AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
@@ -320,13 +320,13 @@ public class AuthService : IAuthService
         var user = await _store.GetUserAsync(phoneNumber);
         if(user == null)
         {
-            return new Authorization()
+            return new AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.SignUpRequired,
             };
         }
         var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
-        await _store.SaveAuthorizationAsync(new AuthInfo()
+        await _store.SaveAuthorizationAsync(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
@@ -334,7 +334,7 @@ public class AuthService : IAuthService
             ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
             LoggedIn = true
         });
-        return new Authorization()
+        return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
             User = new User()
@@ -343,9 +343,9 @@ public class AuthService : IAuthService
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
-                Status = UserStatus.Empty,
+                Status = UserStatusDTO.Empty,
                 Self = true,
-                Photo = new UserProfilePhoto()
+                Photo = new UserProfilePhotoDTO()
                 {
                     Empty = true
                 }
@@ -353,7 +353,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<Authorization> SignUp(long authKeyId, string phoneNumber,
+    public async Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber,
         string phoneCodeHash, string firstName, string lastName)
     {
         long userId = await _userIdCnt.IncrementAndGet();
@@ -365,7 +365,7 @@ public class AuthService : IAuthService
         var signedInAuthKeyId = await _cache.GetSignInAsync(phoneNumber, phoneCodeHash);
         if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {
-            return new Authorization()
+            return new AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
@@ -374,7 +374,7 @@ public class AuthService : IAuthService
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
         if (phoneCodeHash != hash)
         {
-            return new Authorization()
+            return new AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
@@ -386,16 +386,16 @@ public class AuthService : IAuthService
             FirstName = firstName,
             LastName = lastName,
             AccessHash = _random.NextLong(),
-            Photo = new UserProfilePhoto()
+            Photo = new UserProfilePhotoDTO()
             {
                 Empty = true
             }
         };
         await _store.SaveUserAsync(user);
-        await _search.IndexUser(new Data.Search.User(user.Id, user.Username, 
+        await _search.IndexUser(new Data.Search.UserDTO(user.Id, user.Username, 
             user.FirstName, user.LastName, user.Phone));
         var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
-        await _store.SaveAuthorizationAsync(new AuthInfo()
+        await _store.SaveAuthorizationAsync(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
@@ -403,7 +403,7 @@ public class AuthService : IAuthService
             ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
             LoggedIn = true
         });
-        return new Authorization()
+        return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
             User = new User()
@@ -412,9 +412,9 @@ public class AuthService : IAuthService
                 FirstName = user.FirstName,
                 LastName = user.LastName,
                 Phone = user.Phone,
-                Status = UserStatus.Empty,
+                Status = UserStatusDTO.Empty,
                 Self = true,
-                Photo = new UserProfilePhoto()
+                Photo = new UserProfilePhotoDTO()
                 {
                     Empty = true
                 }
@@ -422,12 +422,12 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<bool> SaveAppInfo(AppInfo info)
+    public async Task<bool> SaveAppInfo(AppInfoDTO info)
     {
         return await _store.SaveAppInfoAsync(info);
     }
 
-    public async Task<AppInfo?> GetAppInfo(long authKeyId)
+    public async Task<AppInfoDTO?> GetAppInfo(long authKeyId)
     {
         return await _store.GetAppInfoAsync(authKeyId);
     }

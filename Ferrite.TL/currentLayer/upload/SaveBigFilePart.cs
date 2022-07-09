@@ -72,7 +72,7 @@ public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _objectStore.SaveBigFilePart(_fileId, _filePart, _fileTotalParts, stream);
-        await _store.SaveBigFilePartAsync(new FilePart(_fileId, _filePart, _length));
+        await _store.SaveBigFilePartAsync(new FilePartDTO(_fileId, _filePart, _length));
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

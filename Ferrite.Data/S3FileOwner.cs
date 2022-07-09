@@ -20,12 +20,12 @@ namespace Ferrite.Data;
 
 public class S3FileOwner : IDistributedFileOwner
 {
-    private readonly UploadedFileInfo _fileInfo;
+    private readonly UploadedFileInfoDTO _fileInfo;
     private readonly IDistributedObjectStore _objectStore;
     private readonly int _offset;
     private readonly int _limit;
 
-    public S3FileOwner(UploadedFileInfo fileInfo, IDistributedObjectStore objectStore, int offset, int limit, long reqMsgId)
+    public S3FileOwner(UploadedFileInfoDTO fileInfo, IDistributedObjectStore objectStore, int offset, int limit, long reqMsgId)
     {
         _fileInfo = fileInfo;
         _objectStore = objectStore;
