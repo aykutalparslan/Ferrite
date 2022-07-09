@@ -64,6 +64,10 @@ public class MessagesService : IMessagesService
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var messageCounter = _cache.GetCounter(auth.UserId + "_in");
         int messageId = (int)await messageCounter.IncrementAndGet();
+        if (messageId == 0)
+        {
+            await messageCounter.IncrementAndGet();
+        }
         var from = new Peer(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
         var outgoingMessage = new Message()
@@ -90,6 +94,12 @@ public class MessagesService : IMessagesService
         _unitOfWork.MessageRepository.PutMessage(outgoingMessage);
         _unitOfWork.MessageRepository.PutMessage(incomingMessage);
         await _unitOfWork.SaveAsync();
+        var userPts = _cache.GetCounter(auth.UserId + "_pts");
+        var pts = await userPts.IncrementAndGet();
+        if (pts == 0)
+        {
+            await userPts.IncrementAndGet();
+        }
         return new ServiceResult<UpdateBase>(new UpdateMessageId(messageId, randomId), 
             true, ErrorMessages.None);
     }
