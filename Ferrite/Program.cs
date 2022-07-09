@@ -41,6 +41,7 @@ using Ferrite.Data.Repositories;
 using StackExchange.Redis;
 using MessagePack;
 using Ferrite.Services;
+using Ferrite.TL.ObjectMapper;
 
 namespace Ferrite;
 
@@ -116,7 +117,8 @@ public class Program
         builder.RegisterAssemblyOpenGenericTypes(core)
             .Where(t => t.Namespace == "Ferrite.Core.Methods")
             .AsSelf();
-        builder.RegisterType<DefaultApiLayer>().As<IApiLayer>();
+        builder.RegisterType<DefaultApiLayer>().As<IApiLayer>().SingleInstance();
+        builder.RegisterType<DefaultMapper>().As<IMapperContext>().SingleInstance();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();

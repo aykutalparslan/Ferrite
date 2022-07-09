@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.contacts;
@@ -31,11 +32,13 @@ public class Block : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IContactsService _contacts;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public Block(ITLObjectFactory objectFactory, IContactsService contacts)
+    public Block(ITLObjectFactory objectFactory, IContactsService contacts, IMapperContext mapper)
     {
         factory = objectFactory;
         _contacts = contacts;
+        _mapper = mapper;
     }
 
     public int Constructor => 1758204945;
@@ -68,39 +71,7 @@ public class Block : ITLObject, ITLMethod
     {
         var success =
             await _contacts.Block(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
-                new Data.InputPeerDTO()
-                    {
-                        InputPeerType = _id.Constructor switch
-                        {
-                            TLConstructor.InputPeerChat => InputPeerType.Chat,
-                            TLConstructor.InputPeerChannel => InputPeerType.Channel,
-                            TLConstructor.InputPeerUserFromMessage => InputPeerType.UserFromMessage,
-                            TLConstructor.InputPeerChannelFromMessage => InputPeerType.ChannelFromMessage,
-                            _ => InputPeerType.User
-                        },
-                        UserId = _id.Constructor switch
-                        {
-                            TLConstructor.InputPeerUser => ((InputPeerUserImpl)_id).UserId,
-                            TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)_id).UserId,
-                            _ => 0
-                        },
-                        AccessHash = _id.Constructor switch
-                        {
-                            TLConstructor.InputPeerUser => ((InputPeerUserImpl)_id).UserId,
-                            TLConstructor.InputPeerUserFromMessage =>
-                                ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)_id).Peer).AccessHash,
-                            _ => 0
-                        },
-                        ChatId = _id.Constructor == TLConstructor.InputPeerChat
-                            ? ((InputPeerChatImpl)_id).ChatId
-                            : 0,
-                        ChannelId = _id.Constructor switch
-                        {
-                            TLConstructor.InputPeerChannel => ((InputPeerChannelImpl)_id).ChannelId,
-                            TLConstructor.InputPeerChannelFromMessage => ((InputPeerChannelFromMessageImpl)_id).ChannelId,
-                            _ => 0
-                        },
-                    });
+                _mapper.MapToDTO<InputPeer, InputPeerDTO>(_id));
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = success ? new BoolTrue() : new BoolFalse();

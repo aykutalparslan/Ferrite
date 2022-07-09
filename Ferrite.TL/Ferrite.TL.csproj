@@ -30,7 +30,6 @@
     <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="currentLayer\ObjectMapper" />
     <Folder Include="mtproto\" />
   </ItemGroup>
   <ItemGroup>

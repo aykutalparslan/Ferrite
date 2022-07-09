@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.account;
@@ -31,11 +32,13 @@ public class GetNotifySettings : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAccountService _account;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetNotifySettings(ITLObjectFactory objectFactory, IAccountService account)
+    public GetNotifySettings(ITLObjectFactory objectFactory, IAccountService account, IMapperContext mapper)
     {
         factory = objectFactory;
         _account = account;
+        _mapper = mapper;
     }
 
     public int Constructor => 313765169;
@@ -68,78 +71,8 @@ public class GetNotifySettings : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        Data.InputNotifyPeerDTO? notifyPeer = null;
-        if (_peer.Constructor == TLConstructor.InputNotifyPeer)
-        {
-            var peer = (InputNotifyPeerImpl)_peer;
-            notifyPeer = new Data.InputNotifyPeerDTO()
-            {
-                NotifyPeerType = InputNotifyPeerType.Peer,
-                Peer = new Data.InputPeerDTO()
-                {
-                    InputPeerType = peer.Peer.Constructor switch
-                    {
-                        TLConstructor.InputPeerChat => InputPeerType.Chat,
-                        TLConstructor.InputPeerChannel => InputPeerType.Channel,
-                        TLConstructor.InputPeerUserFromMessage => InputPeerType.UserFromMessage,
-                        TLConstructor.InputPeerChannelFromMessage => InputPeerType.ChannelFromMessage,
-                        _ => InputPeerType.User
-                    },
-                    UserId = peer.Peer.Constructor switch
-                    {
-                        TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
-                        TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)peer.Peer).UserId,
-                        _ => 0
-                    },
-                    AccessHash = peer.Peer.Constructor switch
-                    {
-                        TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer.Peer).UserId,
-                        TLConstructor.InputPeerUserFromMessage =>
-                            ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)peer.Peer).Peer).AccessHash,
-                        _ => 0
-                    },
-                    ChatId = peer.Peer.Constructor == TLConstructor.InputPeerChat
-                        ? ((InputPeerChatImpl)peer.Peer).ChatId
-                        : 0,
-                    ChannelId = peer.Peer.Constructor switch
-                    {
-                        TLConstructor.InputPeerChannel => ((InputPeerChannelImpl)peer.Peer).ChannelId,
-                        TLConstructor.InputPeerChannelFromMessage => ((InputPeerChannelFromMessageImpl)peer.Peer).ChannelId,
-                        _ => 0
-                    },
-                }
-            };
-        } 
-        else if (_peer.Constructor == TLConstructor.InputNotifyChats)
-        {
-            notifyPeer = new Data.InputNotifyPeerDTO()
-            {
-                NotifyPeerType = InputNotifyPeerType.Chats
-            };
-        }
-        else if (_peer.Constructor == TLConstructor.InputNotifyUsers)
-        {
-            notifyPeer = new Data.InputNotifyPeerDTO()
-            {
-                NotifyPeerType = InputNotifyPeerType.Users
-            };
-        }
-        else if (_peer.Constructor == TLConstructor.InputNotifyBroadcasts)
-        {
-            notifyPeer = new Data.InputNotifyPeerDTO()
-            {
-                NotifyPeerType = InputNotifyPeerType.Broadcasts
-            };
-        }
-
-        if (notifyPeer == null)
-        {
-            var err = factory.Resolve<RpcError>();
-            err.ErrorCode = 400;
-            err.ErrorMessage = "";
-            result.Result = err;
-            return result;
-        }
+        InputNotifyPeerDTO notifyPeer = _mapper.MapToDTO<InputNotifyPeer, InputNotifyPeerDTO>(_peer);
+        
         var settings = await _account.GetNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, notifyPeer);
         var resp = factory.Resolve<PeerNotifySettingsImpl>();
         resp.ShowPreviews = settings.ShowPreviews;

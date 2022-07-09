@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -30,12 +31,14 @@ public class SendMessage : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IMessagesService _messages;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public SendMessage(ITLObjectFactory objectFactory)
+    public SendMessage(ITLObjectFactory objectFactory, IMessagesService messages, IMapperContext mapper)
     {
         factory = objectFactory;
+        _messages = messages;
+        _mapper = mapper;
     }
-
     public int Constructor => 228423076;
     public ReadOnlySequence<byte> TLBytes
     {
@@ -235,7 +238,7 @@ public class SendMessage : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        
+        var peer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
        /* var serviceResult = _messages.SendMessage(ctx.CurrentAuthKeyId,
             NoWebpage, Silent, Background, ClearDraft, Noforwards,
             MapToInputPeerDto(_peer), _message, _randomId, _flags[0] ? _replyToMsgId : null,
@@ -243,44 +246,7 @@ public class SendMessage : ITLObject, ITLMethod
             _flags[10] ? _scheduleDate : null, _flags[13] ? _sendAs : null);*/
         throw new NotImplementedException();
     }
-
-    private Data.InputPeerDTO MapToInputPeerDto(InputPeer peer)
-    {
-        return new Data.InputPeerDTO()
-        {
-            InputPeerType = peer.Constructor switch
-            {
-                TLConstructor.InputPeerChat => InputPeerType.Chat,
-                TLConstructor.InputPeerChannel => InputPeerType.Channel,
-                TLConstructor.InputPeerUserFromMessage => InputPeerType.UserFromMessage,
-                TLConstructor.InputPeerChannelFromMessage => InputPeerType.ChannelFromMessage,
-                _ => InputPeerType.User
-            },
-            UserId = peer.Constructor switch
-            {
-                TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer).UserId,
-                TLConstructor.InputPeerUserFromMessage => ((InputPeerUserFromMessageImpl)peer).UserId,
-                _ => 0
-            },
-            AccessHash = peer.Constructor switch
-            {
-                TLConstructor.InputPeerUser => ((InputPeerUserImpl)peer).UserId,
-                TLConstructor.InputPeerUserFromMessage =>
-                    ((InputPeerUserImpl)((InputPeerUserFromMessageImpl)peer).Peer).AccessHash,
-                _ => 0
-            },
-            ChatId = peer.Constructor == TLConstructor.InputPeerChat
-                ? ((InputPeerChatImpl)peer).ChatId
-                : 0,
-            ChannelId = peer.Constructor switch
-            {
-                TLConstructor.InputPeerChannel => ((InputPeerChannelImpl)peer).ChannelId,
-                TLConstructor.InputPeerChannelFromMessage => ((InputPeerChannelFromMessageImpl)peer).ChannelId,
-                _ => 0
-            },
-        };
-    }
-
+    
     public void Parse(ref SequenceReader buff)
     {
         serialized = false;

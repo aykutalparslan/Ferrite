@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.account;
@@ -31,11 +32,13 @@ public class ReportPeer : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAccountService _account;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public ReportPeer(ITLObjectFactory objectFactory, IAccountService account)
+    public ReportPeer(ITLObjectFactory objectFactory, IAccountService account, IMapperContext mapper)
     {
         factory = objectFactory;
         _account = account;
+        _mapper = mapper;
     }
 
     public int Constructor => -977650298;
@@ -90,36 +93,7 @@ public class ReportPeer : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var inputPeer = _peer.Constructor switch
-        {
-            TLConstructor.InputPeerUser => new Data.InputPeerDTO()
-            {
-                UserId = ((InputPeerUserImpl)_peer).UserId,
-                AccessHash = ((InputPeerUserImpl)_peer).UserId,
-            },
-            TLConstructor.InputPeerChat => new Data.InputPeerDTO()
-            {
-                ChatId = ((InputPeerChatImpl)_peer).ChatId,
-            },
-            TLConstructor.InputPeerUserFromMessage => new Data.InputPeerDTO()
-            {
-                UserId = ((InputPeerUserFromMessageImpl)_peer).UserId,
-                MsgId = ((InputPeerUserFromMessageImpl)_peer).MsgId,
-                ChatId = ((InputPeerChatImpl)((InputPeerUserFromMessageImpl)_peer).Peer).ChatId
-            },
-            TLConstructor.InputPeerChannel => new Data.InputPeerDTO()
-            {
-                ChannelId = ((InputPeerChannelImpl)_peer).ChannelId,
-                AccessHash = ((InputPeerChannelImpl)_peer).AccessHash,
-            },
-            TLConstructor.InputPeerSelf => new Data.InputPeerDTO(){ InputPeerType = InputPeerType.Self},
-            TLConstructor.InputPeerChannelFromMessage => new Data.InputPeerDTO()
-            {
-                ChannelId = ((InputPeerChannelFromMessageImpl)_peer).ChannelId,
-                ChatId = ((InputPeerChatImpl)((InputPeerChannelFromMessageImpl)_peer).Peer).ChatId
-            },
-            _ => new Data.InputPeerDTO(){ InputPeerType = InputPeerType.Empty},
-        };
+        var inputPeer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
         var success = await _account.ReportPeer(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, inputPeer, _reason.Constructor switch
         {
             TLConstructor.InputReportReasonCopyright => Data.ReportReason.Copyright,
