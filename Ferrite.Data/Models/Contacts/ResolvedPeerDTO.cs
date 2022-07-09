@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Contacts;
 
-public record ResolvedPeerDTO(PeerDTO Peer, ICollection<ChatDTO> Chats, ICollection<User> Users);
+public record ResolvedPeerDTO(PeerDTO Peer, ICollection<ChatDTO> Chats, ICollection<UserDTO> Users);

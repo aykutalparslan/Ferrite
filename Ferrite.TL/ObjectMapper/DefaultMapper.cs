@@ -17,6 +17,8 @@
 // 
 
 using System.Collections.Concurrent;
+using Autofac;
+using Ferrite.Data;
 using Ferrite.TL.currentLayer;
 
 namespace Ferrite.TL.ObjectMapper;
@@ -25,9 +27,19 @@ public class DefaultMapper : IMapperContext
 {
     private readonly ConcurrentDictionary<Type, object> _mappers = new();
 
-    public DefaultMapper()
+    public DefaultMapper(ITLObjectFactory factory)
     {
         _mappers.TryAdd(typeof(InputPeer), new InputPeerMapper());
+        _mappers.TryAdd(typeof(UserFull), new FullUserMapper(factory, this));
+        _mappers.TryAdd(typeof(InputNotifyPeer), new InputNotifyPeerMapper(this));
+        _mappers.TryAdd(typeof(InputUser), new InputUserMapper(factory, this));
+        _mappers.TryAdd(typeof(PeerNotifySettings), new PeerNotifySettingsMapper(factory));
+        _mappers.TryAdd(typeof(PeerSettings), new PeerSettingsMapper(factory));
+        _mappers.TryAdd(typeof(Photo), new PhotoMapper(factory));
+        _mappers.TryAdd(typeof(User), new UserMapper(factory));
+        _mappers.TryAdd(typeof(PrivacyRule), new PrivacyRuleMapper(factory, this));
+        _mappers.TryAdd(typeof(Chat), new ChatMapper(factory,this));
+        _mappers.TryAdd(typeof(InputPrivacyRule), new PrivacyRuleMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject

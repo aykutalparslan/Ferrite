@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Messages;
 
-public record PeerSettingsDTO(Data.PeerSettingsDTO Settings, IReadOnlyCollection<ChatDTO> Chats, IReadOnlyCollection<User> Users);
+public record PeerSettingsDTO(Data.PeerSettingsDTO Settings, IReadOnlyCollection<ChatDTO> Chats, IReadOnlyCollection<UserDTO> Users);

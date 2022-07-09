@@ -19,4 +19,4 @@
 namespace Ferrite.Data.Contacts;
 
 public record TopPeersDTO(TopPeersType Type, ICollection<TopPeerCategoryPeers> Categories, 
-    ICollection<ChatDTO> Chats, ICollection<User> User);
+    ICollection<ChatDTO> Chats, ICollection<UserDTO> User);

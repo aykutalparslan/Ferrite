@@ -470,7 +470,7 @@ namespace Ferrite.Data
             return result;
         }
 
-        public async Task<bool> SaveUserAsync(User user)
+        public async Task<bool> SaveUserAsync(UserDTO user)
         {
             var statement = new SimpleStatement(
                 "INSERT INTO ferrite.users(user_id, access_hash, first_name, " +
@@ -495,7 +495,7 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<bool> UpdateUserAsync(User user)
+        public async Task<bool> UpdateUserAsync(UserDTO user)
         {
             var oldUser = await GetUserAsync(user.Id);
             if ((oldUser?.Phone.Length ?? 0) > 0)
@@ -583,9 +583,9 @@ namespace Ferrite.Data
             return true;
         }
 
-        public async Task<User?> GetUserAsync(long userId)
+        public async Task<UserDTO?> GetUserAsync(long userId)
         {
-            User? user = null;
+            UserDTO? user = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.users WHERE user_id = ?;",
                 userId);
@@ -595,7 +595,7 @@ namespace Ferrite.Data
             foreach (var row in results)
             {
                 var photoId = row.GetValue<long>("profile_photo");
-                user = new User()
+                user = new UserDTO()
                 {
                     Id = row.GetValue<long>("user_id"),
                     AccessHash = row.GetValue<long>("access_hash"),
@@ -615,9 +615,9 @@ namespace Ferrite.Data
             return user;
         }
 
-        public async Task<User?> GetUserAsync(string phone)
+        public async Task<UserDTO?> GetUserAsync(string phone)
         {
-            User? user = null;
+            UserDTO? user = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.users_by_phone WHERE phone = ?;",
                 phone);
@@ -638,7 +638,7 @@ namespace Ferrite.Data
             foreach (var row in results)
             {
                 var photoId = row.GetValue<long>("profile_photo");
-                user = new User()
+                user = new UserDTO()
                 {
                     Id = row.GetValue<long>("user_id"),
                     AccessHash = row.GetValue<long>("access_hash"),
@@ -674,9 +674,9 @@ namespace Ferrite.Data
             return 0;
         }
 
-        public async Task<User?> GetUserByUsernameAsync(string username)
+        public async Task<UserDTO?> GetUserByUsernameAsync(string username)
         {
-            User? user = null;
+            UserDTO? user = null;
             var statement = new SimpleStatement(
                 "SELECT * FROM ferrite.users_by_username WHERE username = ?;",
                 username);
@@ -697,7 +697,7 @@ namespace Ferrite.Data
             foreach (var row in results)
             {
                 var photoId = row.GetValue<long>("profile_photo");
-                user = new User()
+                user = new UserDTO()
                 {
                     Id = row.GetValue<long>("user_id"),
                     AccessHash = row.GetValue<long>("access_hash"),
@@ -716,7 +716,7 @@ namespace Ferrite.Data
             return user;
         }
 
-        public async Task<bool> DeleteUserAsync(User user)
+        public async Task<bool> DeleteUserAsync(UserDTO user)
         {
             if (user.Phone.Length  > 0)
             {

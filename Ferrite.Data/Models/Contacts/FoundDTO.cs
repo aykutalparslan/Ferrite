@@ -19,4 +19,4 @@
 namespace Ferrite.Data.Contacts;
 
 public record FoundDTO(ICollection<PeerDTO> MyResults, ICollection<PeerDTO> Results, 
-    ICollection<ChatDTO> Chats, ICollection<User> Users);
+    ICollection<ChatDTO> Chats, ICollection<UserDTO> Users);

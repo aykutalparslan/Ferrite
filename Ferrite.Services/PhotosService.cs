@@ -262,6 +262,6 @@ public class PhotosService : IPhotosService
             user = user with { Self = true };
         }
         var profilePhotos = await _store.GetProfilePhotosAsync(userId);
-        return new PhotosDTO(profilePhotos, new List<User> { user });
+        return new PhotosDTO(profilePhotos, new List<UserDTO> { user });
     }
 }

@@ -22,5 +22,5 @@ public record PrivacyRulesDTO
 {
     public ICollection<PrivacyRuleDTO> Rules { get; init; }
     public ICollection<ChatDTO> Chats { get; init; } = default!;
-    public ICollection<User> Users { get; init; } = default!;
+    public ICollection<UserDTO> Users { get; init; } = default!;
 }

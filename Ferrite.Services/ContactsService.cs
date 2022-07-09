@@ -43,7 +43,7 @@ public class ContactsService : IContactsService
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var contactList = await _store.GetContactsAsync(auth.UserId);
-        List<User> userList = new List<User>();
+        List<UserDTO> userList = new List<UserDTO>();
         foreach (var c in contactList)
         {
             userList.Add(await _store.GetUserAsync(c.UserId));
@@ -56,7 +56,7 @@ public class ContactsService : IContactsService
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         List<ImportedContactDTO> importedContacts = new();
-        List<User> users = new();
+        List<UserDTO> users = new();
         foreach (var c in contacts)
         {
             var imported = await _store.SaveContactAsync(auth.UserId, c);
@@ -134,7 +134,7 @@ public class ContactsService : IContactsService
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var blockedPeers = await _store.GetBlockedPeersAsync(auth.UserId);
-        List<User> users= new();
+        List<UserDTO> users= new();
         foreach (var p in blockedPeers)
         {
             if (p.PeerId.PeerType == PeerType.User)

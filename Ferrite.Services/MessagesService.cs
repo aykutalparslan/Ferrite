@@ -40,7 +40,7 @@ public class MessagesService : IMessagesService
                 false, false, false, 
                 false, false, false, 
                 null, null, null);
-            return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), new List<User>())
+            return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), new List<UserDTO>())
                 , true, ErrorMessages.None);
         }
         else if (peer.InputPeerType == InputPeerType.User)
@@ -49,7 +49,7 @@ public class MessagesService : IMessagesService
                 false, false,  false, 
                 false, false, false, 
                 null, null, null);
-            var users = new List<User>();
+            var users = new List<UserDTO>();
             var user = await _store.GetUserAsync(peer.UserId);
             users.Add(user);
             return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), users)

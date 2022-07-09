@@ -82,7 +82,7 @@ public partial class AccountService : IAccountService
         return await _store.DeleteNotifySettingsAsync(authKeyId);
     }
 
-    public async Task<User?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
+    public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth != null && await _store.GetUserAsync(auth.UserId) is { } user )
@@ -139,7 +139,7 @@ public partial class AccountService : IAccountService
         return true;
     }
 
-    public async Task<User?> UpdateUsername(long authKeyId, string username)
+    public async Task<UserDTO?> UpdateUsername(long authKeyId, string username)
     {
         if (!UsernameRegex().IsMatch(username))
         {
@@ -172,7 +172,7 @@ public partial class AccountService : IAccountService
         await _store.SavePrivacyRulesAsync(auth.UserId, key, rules);
         var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
         List<PrivacyRuleDTO> privacyRules = new();
-        List<User> users = new();
+        List<UserDTO> users = new();
         List<ChatDTO> chats = new();
         foreach (var r in savedRules)
         {
@@ -219,7 +219,7 @@ public partial class AccountService : IAccountService
         
         var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
         List<PrivacyRuleDTO> privacyRules = new();
-        List<User> users = new();
+        List<UserDTO> users = new();
         List<ChatDTO> chats = new();
         foreach (var r in savedRules)
         {
@@ -310,7 +310,7 @@ public partial class AccountService : IAccountService
                 ErrorMessages.FreshChangePhoneForbidden);
         }
         var user = await _store.GetUserAsync(phoneNumber);
-        if (user != new User())
+        if (user != new UserDTO())
         {
             return new ServiceResult<SentCodeDTO>(null, false, 
                 ErrorMessages.PhoneNumberOccupied);
@@ -333,18 +333,18 @@ public partial class AccountService : IAccountService
         return new ServiceResult<SentCodeDTO>(result, true, ErrorMessages.None);
     }
 
-    public async Task<ServiceResult<User>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    public async Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
         var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
-            return new ServiceResult<User>(null, false, ErrorMessages.None);
+            return new ServiceResult<UserDTO>(null, false, ErrorMessages.None);
         }
 
         var user = await _store.GetUserAsync(phoneNumber);
         if (user != null)
         {
-            return new ServiceResult<User>(null, false, ErrorMessages.PhoneNumberOccupied);
+            return new ServiceResult<UserDTO>(null, false, ErrorMessages.PhoneNumberOccupied);
         }
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
@@ -354,7 +354,7 @@ public partial class AccountService : IAccountService
         }
         await _store.UpdateUserPhoneAsync(auth.UserId, phoneNumber);
         user = await _store.GetUserAsync(phoneNumber);
-        return new ServiceResult<User>(user, true, ErrorMessages.None);
+        return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);
     }
 
     public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)

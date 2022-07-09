@@ -117,7 +117,7 @@ public class AuthService : IAuthService
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth!= null && auth.LoggedIn &&
-            await _store.GetUserAsync(auth.UserId) is User user)
+            await _store.GetUserAsync(auth.UserId) is UserDTO user)
         {
             return new LoginTokenDTO()
             {
@@ -125,7 +125,7 @@ public class AuthService : IAuthService
                 Authorization = new AuthorizationDTO()
                 {
                     AuthorizationType = AuthorizationType.Authorization,
-                    User = new User()
+                    User = new UserDTO()
                     {
                         Id = user.Id,
                         FirstName = user.FirstName,
@@ -178,7 +178,7 @@ public class AuthService : IAuthService
             return new AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.Authorization,
-                User = new User()
+                User = new UserDTO()
                 {
                     Id = user.Id,
                     FirstName = user.FirstName,
@@ -337,7 +337,7 @@ public class AuthService : IAuthService
         return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
-            User = new User()
+            User = new UserDTO()
             {
                 Id = user.Id,
                 FirstName = user.FirstName,
@@ -379,7 +379,7 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
-        var user = new User()
+        var user = new UserDTO()
         {
             Id = userId,
             Phone = phoneNumber,
@@ -406,7 +406,7 @@ public class AuthService : IAuthService
         return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
-            User = new User()
+            User = new UserDTO()
             {
                 Id = user.Id,
                 FirstName = user.FirstName,

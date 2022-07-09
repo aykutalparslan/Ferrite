@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.users;
@@ -31,11 +32,13 @@ public class GetUsers : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IUsersService _users;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetUsers(ITLObjectFactory objectFactory, IUsersService users)
+    public GetUsers(ITLObjectFactory objectFactory, IUsersService users, IMapperContext mapper)
     {
         factory = objectFactory;
         _users = users;
+        _mapper = mapper;
     }
 
     public int Constructor => 227648840;
@@ -68,26 +71,10 @@ public class GetUsers : ITLObject, ITLMethod
     {
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var inputUsers = new List<Ferrite.Data.InputUserDTO>();
+        var inputUsers = new List<InputUserDTO>();
         foreach (var u in _id)
         {
-            if (u is InputUserImpl user)
-            {
-                inputUsers.Add(new Data.InputUserDTO()
-                {
-                    InputUserType = InputUserType.User,
-                    UserId = user.UserId,
-                    AccessHash = user.AccessHash
-                });
-            }
-            else if (u is InputUserFromMessageImpl userFromMessage)
-            {
-                //TODO: handle this case
-            }
-            else if (u is InputUserSelfImpl userSelf)
-            {
-                //TODO: handle this case
-            }
+            inputUsers.Add(_mapper.MapToDTO<InputUser, InputUserDTO>(u));
         }
 
         var serviceResult = await _users.GetUsers(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
@@ -97,21 +84,7 @@ public class GetUsers : ITLObject, ITLMethod
             var users = factory.Resolve<Vector<User>>();
             foreach (var u in serviceResult.Result)
             {
-                var user = factory.Resolve<UserImpl>();
-                user.Id = u.Id;
-                user.FirstName = u.FirstName;
-                user.LastName = u.LastName;
-                user.Phone = u.Phone;
-                user.Self = u.Self;
-                if(u.Status == Data.UserStatusDTO.Empty)
-                {
-                    user.Status = factory.Resolve<UserStatusEmptyImpl>();
-                }
-                if (u.Photo.Empty)
-                {
-                    user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-                }
-                users.Add(user);
+                users.Add(_mapper.MapToTLObject<User, UserDTO>(u));
             }
 
             result.Result = users;

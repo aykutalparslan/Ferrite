@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Contacts;
 
-public record ContactsDTO(ICollection<ContactDTO> ContactList, int SavedCount, ICollection<User> Users);
+public record ContactsDTO(ICollection<ContactDTO> ContactList, int SavedCount, ICollection<UserDTO> Users);

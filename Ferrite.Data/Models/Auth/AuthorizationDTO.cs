@@ -24,7 +24,7 @@ public record AuthorizationDTO
     public bool SetupPasswordRequired { get; init; }
     public int OtherwiseReloginDays { get; init; }
     public int TmpSessions { get; init; }
-    public User User { get; init; } = default!;
+    public UserDTO User { get; init; } = default!;
     public Help.TermsOfServiceDTO TermsOfService { get; init; } = default!;
 }
 

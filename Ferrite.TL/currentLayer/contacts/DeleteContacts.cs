@@ -72,25 +72,7 @@ public class DeleteContacts : ITLObject, ITLMethod
         List<Data.InputUserDTO> users = new();
         foreach (var u in _id)
         {
-            if (u is InputUserImpl inputUser)
-            {
-                users.Add(new Data.InputUserDTO()
-                {
-                    InputUserType = InputUserType.User,
-                    UserId = inputUser.UserId,
-                    AccessHash = inputUser.AccessHash
-                });
-            }
-            else if (u is InputUserFromMessageImpl inputUserFromMessage)
-            {
-                users.Add(new Data.InputUserDTO()
-                {
-                    InputUserType = InputUserType.UserFromMessage,
-                    UserId = inputUserFromMessage.UserId,
-                    MsgId = inputUserFromMessage.MsgId,
-                    Peer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(inputUserFromMessage.Peer)
-                });
-            }
+            users.Add(_mapper.MapToDTO<InputUser, InputUserDTO>(u));
         }
 
         await _contacts.DeleteContacts(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, users);

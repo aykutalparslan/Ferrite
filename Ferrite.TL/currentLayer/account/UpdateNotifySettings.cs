@@ -82,44 +82,13 @@ public class UpdateNotifySettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        InputNotifyPeerDTO notifyPeer = _mapper.MapToDTO<InputNotifyPeer, InputNotifyPeerDTO>(_peer);
-        
-        var settings = (InputPeerNotifySettingsImpl)_settings;
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        NotifySoundType soundType = NotifySoundType.Default;
-        string? title = null;
-        string? data = null;
-        long soundId = 0;
-        if (settings.Sound is NotificationSoundNoneImpl)
-        {
-            soundType = NotifySoundType.None;
-        }
-        else if(settings.Sound is NotificationSoundLocalImpl localSound)
-        {
-            soundType = NotifySoundType.Local;
-            title = localSound.Title;
-            data = localSound.Data;
-        }
-        else if(settings.Sound is NotificationSoundRingtoneImpl ringtoneSound)
-        {
-            soundType = NotifySoundType.Ringtone;
-            soundId = ringtoneSound.Id;
-        }
+        InputNotifyPeerDTO notifyPeer = _mapper.MapToDTO<InputNotifyPeer, InputNotifyPeerDTO>(_peer);
         
         var success = await _account.UpdateNotifySettings(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             notifyPeer,
-            new Data.PeerNotifySettingsDTO()
-            {
-                DeviceType = DeviceType.Android,//TODO: get device type from the db
-                Silent = settings.Silent,
-                NotifySoundType = soundType,
-                MuteUntil = settings.MuteUntil,
-                ShowPreviews = settings.ShowPreviews,
-                Title = title,
-                Data = data,
-                Id = soundId,
-            });
+            _mapper.MapToDTO<InputPeerNotifySettings, PeerNotifySettingsDTO>(_settings));
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

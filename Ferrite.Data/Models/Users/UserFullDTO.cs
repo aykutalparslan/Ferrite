@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Users;
 
-public record UserFullDTO(Ferrite.Data.UserFullDTO FullUser, ICollection<ChatDTO> Chats, ICollection<User> Users);
+public record UserFullDTO(Ferrite.Data.UserFullDTO FullUser, ICollection<ChatDTO> Chats, ICollection<UserDTO> Users);

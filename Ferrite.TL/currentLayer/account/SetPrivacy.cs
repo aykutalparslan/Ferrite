@@ -24,6 +24,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer.messages;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.account;
@@ -32,11 +33,13 @@ public class SetPrivacy : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAccountService _accountService;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public SetPrivacy(ITLObjectFactory objectFactory, IAccountService accountService)
+    public SetPrivacy(ITLObjectFactory objectFactory, IAccountService accountService, IMapperContext mapper)
     {
         factory = objectFactory;
         _accountService = accountService;
+        _mapper = mapper;
     }
 
     public int Constructor => -906486552;
@@ -85,20 +88,20 @@ public class SetPrivacy : ITLObject, ITLMethod
         var ruleList = factory.Resolve<Vector<PrivacyRule>>();
         foreach (var r in privacyRules.Rules)
         {
-            ruleList.Add(CreatePrivacyRule(r));
+            ruleList.Add(_mapper.MapToTLObject<PrivacyRule, PrivacyRuleDTO>(r));
         }
         rulesResult.Rules = ruleList;
         var userList = factory.Resolve<Vector<User>>();
         foreach (var u in privacyRules.Users)
         {
-            userList.Add(CreateUser(u));
+            userList.Add(_mapper.MapToTLObject<User, UserDTO>(u));
         }
         rulesResult.Users = userList;
         var chatList = factory.Resolve<Vector<Chat>>();
         foreach (var c in privacyRules.Chats)
         {
             
-            chatList.Add(CreateChat(c));
+            chatList.Add(_mapper.MapToTLObject<Chat, ChatDTO>(c));
         }
         rulesResult.Chats = chatList;
         var result = factory.Resolve<RpcResult>();
@@ -106,221 +109,13 @@ public class SetPrivacy : ITLObject, ITLMethod
         result.Result = rulesResult;
         return result;
     }
-
-    private Chat CreateChat(Data.ChatDTO c)
+    
+    private List<PrivacyRuleDTO> GetPrivacyRules()
     {
-        if (c.ChatType == ChatType.Chat)
-        {
-            var chat = factory.Resolve<ChatImpl>();
-            chat.Id = c.Id;
-            chat.Title = c.Title;
-            chat.Photo = factory.Resolve<ChatPhotoEmptyImpl>();
-            chat.ParticipantsCount = c.ParticipantsCount;
-            chat.Date = c.Date;
-            chat.Version = c.Version;
-            return chat;
-        }
-        else if (c.ChatType == ChatType.Channel)
-        {
-            var chat = factory.Resolve<ChannelImpl>();
-            chat.Id = c.Id;
-            chat.Title = c.Title;
-            chat.Photo = factory.Resolve<ChatPhotoEmptyImpl>();
-            chat.ParticipantsCount = c.ParticipantsCount;
-            chat.Date = c.Date;
-            return chat;
-        }
-        else if (c.ChatType == ChatType.ChatForbidden)
-        {
-            var chat = factory.Resolve<ChatForbiddenImpl>();
-            chat.Id = c.Id;
-            chat.Title = c.Title;
-            return chat;
-        }
-        else if (c.ChatType == ChatType.ChannelForbidden)
-        {
-            var chat = factory.Resolve<ChannelForbiddenImpl>();
-            chat.Id = c.Id;
-            chat.Title = c.Title;
-            chat.AccessHash = c.AccessHash;
-            return chat;
-        }
-        return factory.Resolve<ChatEmptyImpl>();
-    }
-
-    private User CreateUser(Data.User u)
-    {
-        if (u.Empty)
-        {
-            return factory.Resolve<UserEmptyImpl>();
-        }
-        else
-        {
-            var user = factory.Resolve<UserImpl>();
-            user.Id = u.Id;
-            user.FirstName = u.FirstName;
-            user.LastName = u.LastName;
-            user.Phone = u.Phone;
-            user.Self = u.Self;
-            if (u.Username?.Length > 0)
-            {
-                user.Username = u.Username;
-            }
-            if (u.Status == Data.UserStatusDTO.Empty)
-            {
-                user.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-
-            if (u.Photo.Empty)
-            {
-                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
-            else
-            {
-                var photo = factory.Resolve<UserProfilePhotoImpl>();
-                photo.DcId = u.Photo.DcId;
-                photo.PhotoId = u.Photo.PhotoId;
-                photo.HasVideo = u.Photo.HasVideo;
-                if (u.Photo.StrippedThumb is { Length: > 0 })
-                {
-                    photo.StrippedThumb = u.Photo.StrippedThumb;
-                }
-                user.Photo = photo;
-            }
-            return user;
-        }
-    }
-
-    private PrivacyRule CreatePrivacyRule(Data.PrivacyRuleDTO value)
-    {
-        if (value.PrivacyRuleType == PrivacyRuleType.AllowAll)
-        {
-            return factory.Resolve<PrivacyValueAllowAllImpl>();
-        }
-        else if (value.PrivacyRuleType == PrivacyRuleType.AllowUsers)
-        {
-            var rule = factory.Resolve<PrivacyValueAllowUsersImpl>();
-            rule.Users = factory.Resolve<VectorOfLong>();
-            foreach (var p in value.Peers)
-            {
-                rule.Users.Add(p);
-            }
-
-            return rule;
-        }
-        else if (value.PrivacyRuleType == PrivacyRuleType.DisallowContacts)
-        {
-            return factory.Resolve<PrivacyValueDisallowContactsImpl>();
-        }
-        else if (value.PrivacyRuleType == PrivacyRuleType.DisallowAll)
-        {
-            return factory.Resolve<PrivacyValueDisallowAllImpl>();
-        }
-        else if (value.PrivacyRuleType == PrivacyRuleType.DisallowUsers)
-        {
-            var rule = factory.Resolve<PrivacyValueDisallowUsersImpl>();
-            rule.Users = factory.Resolve<VectorOfLong>();
-            foreach (var p in value.Peers)
-            {
-                rule.Users.Add(p);
-            }
-
-            return rule;
-        }
-        else if (value.PrivacyRuleType == PrivacyRuleType.AllowChatParticipants)
-        {
-            var rule = factory.Resolve<PrivacyValueAllowChatParticipantsImpl>();
-            rule.Chats = factory.Resolve<VectorOfLong>();
-            foreach (var p in value.Peers)
-            {
-                rule.Chats.Add(p);
-            }
-
-            return rule;
-        }
-        else if (value.PrivacyRuleType == PrivacyRuleType.DisallowChatParticipants)
-        {
-            var rule = factory.Resolve<PrivacyValueDisallowChatParticipantsImpl>();
-            rule.Chats = factory.Resolve<VectorOfLong>();
-            foreach (var p in value.Peers)
-            {
-                rule.Chats.Add(p);
-            }
-
-            return rule;
-        }
-        return factory.Resolve<PrivacyValueAllowContactsImpl>();
-    }
-
-    private List<Data.PrivacyRuleDTO> GetPrivacyRules()
-    {
-        List<Data.PrivacyRuleDTO> rules = new();
+        List<PrivacyRuleDTO> rules = new();
         foreach (var r in _rules)
         {
-            if (r.Constructor == TLConstructor.InputPrivacyValueAllowContacts)
-            {
-                rules.Add(new Data.PrivacyRuleDTO()
-                    { PrivacyRuleType = PrivacyRuleType.AllowContacts });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueAllowAll)
-            {
-                rules.Add(new Data.PrivacyRuleDTO()
-                    { PrivacyRuleType = PrivacyRuleType.AllowAll });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueAllowUsers)
-            {
-                List<long> userIds = new();
-                foreach (var user in ((InputPrivacyValueAllowUsersImpl)r).Users)
-                {
-                    userIds.Add(user.GetUserId());
-                }
-
-                rules.Add(new Data.PrivacyRuleDTO()
-                {
-                    PrivacyRuleType = PrivacyRuleType.AllowUsers,
-                    Peers = userIds
-                });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowContacts)
-            {
-                rules.Add(new Data.PrivacyRuleDTO()
-                    { PrivacyRuleType = PrivacyRuleType.DisallowContacts });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowAll)
-            {
-                rules.Add(new Data.PrivacyRuleDTO()
-                    { PrivacyRuleType = PrivacyRuleType.DisallowAll });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowUsers)
-            {
-                List<long> userIds = new();
-                foreach (var user in ((InputPrivacyValueAllowUsersImpl)r).Users)
-                {
-                    userIds.Add(user.GetUserId());
-                }
-
-                rules.Add(new Data.PrivacyRuleDTO()
-                {
-                    PrivacyRuleType = PrivacyRuleType.DisallowUsers,
-                    Peers = userIds
-                });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueAllowChatParticipants)
-            {
-                rules.Add(new Data.PrivacyRuleDTO()
-                {
-                    PrivacyRuleType = PrivacyRuleType.AllowChatParticipants,
-                    Peers = ((InputPrivacyValueAllowChatParticipantsImpl)r).Chats
-                });
-            }
-            else if (r.Constructor == TLConstructor.InputPrivacyValueDisallowChatParticipants)
-            {
-                rules.Add(new Data.PrivacyRuleDTO()
-                {
-                    PrivacyRuleType = PrivacyRuleType.DisallowChatParticipants,
-                    Peers = ((InputPrivacyValueDisallowChatParticipantsImpl)r).Chats
-                });
-            }
+            rules.Add(_mapper.MapToDTO<InputPrivacyRule, PrivacyRuleDTO>(r));
         }
 
         return rules;

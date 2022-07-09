@@ -120,7 +120,7 @@ public class AuthTests
                 new Ferrite.Data.Auth.AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.Authorization,
-                User = new Ferrite.Data.User()
+                User = new Ferrite.Data.UserDTO()
                 {
                     Id = 123,
                     FirstName = "a",
@@ -203,7 +203,7 @@ public class AuthTests
             new Ferrite.Data.Auth.AuthorizationDTO()
             {
                 AuthorizationType = AuthorizationType.Authorization,
-                User = new Ferrite.Data.User()
+                User = new Ferrite.Data.UserDTO()
                 {
                     Id = 123,
                     FirstName = firstName,
@@ -381,7 +381,7 @@ public class AuthTests
                 new Ferrite.Data.Auth.AuthorizationDTO()
                 {
                     AuthorizationType = AuthorizationType.Authorization,
-                    User = new Ferrite.Data.User()
+                    User = new Ferrite.Data.UserDTO()
                     {
                         Id = 123,
                         FirstName = "a",

@@ -22,7 +22,7 @@ namespace Ferrite.Services;
 
 public interface IUsersService
 {
-    public Task<ServiceResult<ICollection<User>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id);
+    public Task<ServiceResult<ICollection<UserDTO>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id);
     public Task<ServiceResult<Ferrite.Data.Users.UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id);
     public Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors);
 }

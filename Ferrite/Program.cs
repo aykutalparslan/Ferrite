@@ -119,6 +119,11 @@ public class Program
             .AsSelf();
         builder.RegisterType<DefaultApiLayer>().As<IApiLayer>().SingleInstance();
         builder.RegisterType<DefaultMapper>().As<IMapperContext>().SingleInstance();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL.ObjectMapper" && t.Name != "DefaultMapper"
+                                                                 && t.Name != "ITLObjectMapper"
+                                                                && t.Name.EndsWith("Mapper"))
+            .AsSelf().SingleInstance();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();

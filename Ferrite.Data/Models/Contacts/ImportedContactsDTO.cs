@@ -20,4 +20,4 @@ namespace Ferrite.Data.Contacts;
 
 public record ImportedContactsDTO(ICollection<ImportedContactDTO> Imported, 
     ICollection<PopularContactDTO> PopularInvites, 
-    ICollection<long> RetryContact, ICollection<User> Users);
+    ICollection<long> RetryContact, ICollection<UserDTO> Users);

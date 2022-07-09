@@ -30,9 +30,9 @@ public class UserService : IUsersService
     {
         _store = store;
     }
-    public async Task<ServiceResult<ICollection<User>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)
+    public async Task<ServiceResult<ICollection<UserDTO>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)
     {
-        List<User> users = new();
+        List<UserDTO> users = new();
         foreach (var u in id)
         {
             if (u.UserId != 0)
@@ -45,7 +45,7 @@ public class UserService : IUsersService
             }
         }
 
-        return new ServiceResult<ICollection<User>>(users, true, ErrorMessages.None);
+        return new ServiceResult<ICollection<UserDTO>>(users, true, ErrorMessages.None);
     }
 
     public async Task<ServiceResult<UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id)
@@ -107,7 +107,7 @@ public class UserService : IUsersService
                 ProfilePhoto = profilePhoto,
             };
             return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
-                new List<User>(){user with{Self = self}}), true, ErrorMessages.None);
+                new List<UserDTO>(){user with{Self = self}}), true, ErrorMessages.None);
         }
 
         return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);

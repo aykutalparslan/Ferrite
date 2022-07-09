@@ -19,4 +19,4 @@
 namespace Ferrite.Data.Contacts;
 
 public record BlockedDTO(int? Count, ICollection<PeerBlocked> BlockedPeers, 
-    ICollection<ChatDTO> Chats, ICollection<User> Users);
+    ICollection<ChatDTO> Chats, ICollection<UserDTO> Users);

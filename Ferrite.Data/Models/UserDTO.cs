@@ -18,7 +18,7 @@
 using System;
 namespace Ferrite.Data;
 
-public record User
+public record UserDTO
 {
     public bool Empty { get; init; }
     public bool Self { get; init; }

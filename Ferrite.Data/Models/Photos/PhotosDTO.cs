@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Photos;
 
-public record PhotosDTO(IReadOnlyCollection<Data.PhotoDTO> PhotosInner, IReadOnlyCollection<User> Users);
+public record PhotosDTO(IReadOnlyCollection<Data.PhotoDTO> PhotosInner, IReadOnlyCollection<UserDTO> Users);
