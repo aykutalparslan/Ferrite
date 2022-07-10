@@ -60,7 +60,7 @@ public class MessagesService : IMessagesService
         return new ServiceResult<PeerSettingsDTO>(null, false, ErrorMessages.PeerIdInvalid);
     }
 
-    public async Task<ServiceResult<UpdateBase>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
+    public async Task<ServiceResult<UpdateShortSentMessageDTO>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
         InputPeerDTO peer, string message, long randomId, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
@@ -103,8 +103,27 @@ public class MessagesService : IMessagesService
         {
             await userPts.IncrementAndGet();
         }
-        return new ServiceResult<UpdateBase>(new UpdateMessageIdDTO(messageId, randomId), 
+        return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, messageId,
+                (int)pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);
+    }
+
+    public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
+    {
+        if (peer.InputPeerType == InputPeerType.Self)
+        {
+            var auth = await _store.GetAuthorizationAsync(authKeyId);
+            var counter = _cache.GetCounter(auth.UserId + "_pts");
+            return new ServiceResult<AffectedMessagesDTO>(
+                new AffectedMessagesDTO((int)await counter.Get(), 0), true, ErrorMessages.None);
+        }
+        else if(peer.InputPeerType == InputPeerType.User)
+        {
+            var counter = _cache.GetCounter(peer.UserId + "_pts");
+            return new ServiceResult<AffectedMessagesDTO>(
+                new AffectedMessagesDTO((int)await counter.Get(), 0), true, ErrorMessages.None);
+        }
+        throw new NotImplementedException();
     }
 
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)

@@ -27,6 +27,7 @@ public class CassandraMessageRepository : IMessageRepository
     public CassandraMessageRepository(CassandraContext context)
     {
         _context = context;
+        CreateSchema();
     }
 
     private void CreateSchema()
@@ -35,24 +36,22 @@ public class CassandraMessageRepository : IMessageRepository
             "CREATE TABLE IF NOT EXISTS ferrite.messages (" +
             "user_id bigint," +
             "peer_type int," +
-            "peer_id long," +
+            "peer_id bigint," +
             "outgoing boolean," +
             "message_id int," +
             "message_data blob," +
             "date bigint," +
             "PRIMARY KEY (user_id, peer_type, peer_id, outgoing, message_id));");
-        _context.Enqueue(statement);
-        _context.ExecuteQueue();
+        _context.Execute(statement);
         statement = new SimpleStatement(
             "CREATE TABLE IF NOT EXISTS ferrite.messages_by_id (" +
             "user_id bigint," +
             "message_id int," +
             "peer_type int," +
-            "peer_id long," +
+            "peer_id bigint," +
             "outgoing boolean," +
             "PRIMARY KEY (user_id, message_id));");
-        _context.Enqueue(statement);
-        _context.ExecuteQueue();
+        _context.Execute(statement);
     }
     
     public bool PutMessage(MessageDTO message)
@@ -64,12 +63,12 @@ public class CassandraMessageRepository : IMessageRepository
                 "UPDATE ferrite.messages SET message_data = ?, date = ? " +
                 "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
                 data, DateTimeOffset.Now.ToUnixTimeSeconds(),
-                message.FromId.PeerId, message.PeerId.PeerType, message.PeerId.PeerId, true, message.Id);
+                message.FromId.PeerId, (int)message.PeerId.PeerType, message.PeerId.PeerId, true, message.Id);
             _context.Enqueue(statement);
             var indexStatement = new SimpleStatement(
                 "UPDATE ferrite.messages_by_id SET peer_type = ?, peer_id = ?, outgoing = ? " +
                 "WHERE user_id = ? AND message_id = ?;",
-                message.PeerId.PeerType, message.PeerId.PeerId, true, 
+                (int)message.PeerId.PeerType, message.PeerId.PeerId, true, 
                 message.FromId.PeerId, message.Id);
             _context.Enqueue(indexStatement);
         }
@@ -79,12 +78,12 @@ public class CassandraMessageRepository : IMessageRepository
                 "UPDATE ferrite.messages SET message_data = ?, date = ? " +
                 "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
                 data, DateTimeOffset.Now.ToUnixTimeSeconds(),
-                message.PeerId.PeerId, message.FromId.PeerType, message.FromId.PeerId, true, message.Id);
+                message.PeerId.PeerId, (int)message.FromId.PeerType, message.FromId.PeerId, true, message.Id);
             _context.Enqueue(statement);
             var indexStatement = new SimpleStatement(
                 "UPDATE ferrite.messages_by_id SET peer_type = ?, peer_id = ?, outgoing = ? " +
                 "WHERE user_id = ? AND message_id = ?;",
-                message.FromId.PeerType, message.FromId.PeerId, true, 
+                (int)message.FromId.PeerType, message.FromId.PeerId, true, 
                 message.PeerId.PeerId, message.Id);
             _context.Enqueue(indexStatement);
         }
@@ -100,7 +99,7 @@ public class CassandraMessageRepository : IMessageRepository
             var statement = new SimpleStatement(
                 "SELECT message_data FROM ferrite.messages " +
                 "WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
-                userId, peerId?.PeerType, peerId?.PeerId);
+                userId, (int)peerId?.PeerType, peerId?.PeerId);
             var results = _context.Execute(statement);
             foreach (var row in results)
             {

@@ -265,8 +265,12 @@ public class SendMessage : ITLObject, ITLMethod
         }
         else
         {
-            var updates = factory.Resolve<UpdateShortImpl>();
-            updates.Update = _mapper.MapToTLObject<Update, UpdateBase>(serviceResult.Result);
+            var updates = factory.Resolve<UpdateShortSentMessageImpl>();
+            updates.Out = serviceResult.Result.Out;
+            updates.Id = serviceResult.Result.Id;
+            updates.Pts = serviceResult.Result.Pts;
+            updates.PtsCount = serviceResult.Result.PtsCount;
+            updates.Date = serviceResult.Result.Date;
             rpcResult.Result = updates;
         }
 

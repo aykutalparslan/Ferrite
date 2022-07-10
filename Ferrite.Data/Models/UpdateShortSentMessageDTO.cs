@@ -16,17 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
-using Ferrite.Data.Messages;
+namespace Ferrite.Data;
 
-namespace Ferrite.Services;
-
-public interface IMessagesService
-{
-    Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer);
-    Task<ServiceResult<UpdateShortSentMessageDTO>> SendMessage(long authKeyId, bool noWebpage, bool silent,
-        bool background, bool clearDraft, bool noForwards, InputPeerDTO peer, string message, long randomId,
-        int? replyToMsgId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO> ? entities,
-        int? scheduleDate, InputPeerDTO? sendAs);
-    Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId);
-}
+public record UpdateShortSentMessageDTO(bool Out, int Id, int Pts, int PtsCount, int Date,
+    MessageMediaDTO? Media, IReadOnlyCollection<MessageEntityDTO>? Entities, int? TtlPeriod);

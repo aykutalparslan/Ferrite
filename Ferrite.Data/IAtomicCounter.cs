@@ -21,7 +21,7 @@ namespace Ferrite.Data;
 public interface IAtomicCounter
 {
     public Task<long> Set(long value);
-    public Task<long> Get(long value);
+    public Task<long> Get();
     public Task<long> IncrementAndGet();
     public Task<long> IncrementByAndGet(long inc);
 }

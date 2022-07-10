@@ -30,7 +30,7 @@ public class RedisCounter : IAtomicCounter
         _name = name;
     }
 
-    public async Task<long> Get(long value)
+    public async Task<long> Get()
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);

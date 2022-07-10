@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -73,7 +74,13 @@ public class GetEmojiKeywordsDifference : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        var keywords = factory.Resolve<EmojiKeywordsDifferenceImpl>();
+        keywords.LangCode = _langCode;
+        keywords.Keywords = factory.Resolve<Vector<EmojiKeyword>>();
+        rpcResult.Result = keywords;
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)
