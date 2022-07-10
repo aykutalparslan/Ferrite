@@ -40,6 +40,9 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(PrivacyRule), new PrivacyRuleMapper(factory, this));
         _mappers.TryAdd(typeof(Chat), new ChatMapper(factory,this));
         _mappers.TryAdd(typeof(InputPrivacyRule), new PrivacyRuleMapper(factory, this));
+        _mappers.TryAdd(typeof(ReplyMarkup), new ReplyMarkupMapper(factory, this));
+        _mappers.TryAdd(typeof(MessageEntity), new MessageEntityMapper(factory, this));
+        _mappers.TryAdd(typeof(Update), new UpdateMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject

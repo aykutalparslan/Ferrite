@@ -28,9 +28,11 @@ public class MessagesService : IMessagesService
     private readonly IPersistentStore _store;
     private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
-    public MessagesService(IPersistentStore store)
+    public MessagesService(IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork)
     {
         _store = store;
+        _cache = cache;
+        _unitOfWork = unitOfWork;
     }
     public async Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
     {

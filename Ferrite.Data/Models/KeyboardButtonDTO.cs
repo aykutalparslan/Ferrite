@@ -22,5 +22,5 @@ namespace Ferrite.Data;
 
 [MessagePackObject(true)] public record KeyboardButtonDTO(KeyboardButtonType KeyboardButtonType,
     string Text, string? Url, bool RequiresPassword, byte[]? Data, bool SamePeer, string? Query,
-    string? FwdText, int? ButtonId, bool RequestWriteAccess, InputUserDTO Bot, bool? Quiz,
+    string? FwdText, int? ButtonId, bool RequestWriteAccess, InputUserDTO? Bot, bool? Quiz,
     InputUserDTO? User, long? UserId);

@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
@@ -239,12 +240,37 @@ public class SendMessage : ITLObject, ITLMethod
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         var peer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
-       /* var serviceResult = _messages.SendMessage(ctx.CurrentAuthKeyId,
+        var entities = new List<MessageEntityDTO>();
+        if (_entities != null)
+        {
+            foreach (var entity in _entities)
+            {
+                entities.Add(_mapper.MapToDTO<MessageEntity, MessageEntityDTO>(entity));
+            }
+        }
+        var serviceResult = await _messages.SendMessage(ctx.CurrentAuthKeyId,
             NoWebpage, Silent, Background, ClearDraft, Noforwards,
-            MapToInputPeerDto(_peer), _message, _randomId, _flags[0] ? _replyToMsgId : null,
-            _flags[2] ? _replyMarkup : null, _flags[3] ? _entities : null,
-            _flags[10] ? _scheduleDate : null, _flags[13] ? _sendAs : null);*/
-        throw new NotImplementedException();
+            peer, _message, _randomId, _flags[0] ? _replyToMsgId : null,
+            _flags[2] ? _mapper.MapToDTO<ReplyMarkup, ReplyMarkupDTO>(_replyMarkup): null, 
+            _flags[3] ? entities : null, _flags[10] ? _scheduleDate : null, 
+            _flags[13] ? _mapper.MapToDTO<InputPeer, InputPeerDTO>(_sendAs) : null);
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            rpcResult.Result = err;
+        }
+        else
+        {
+            var updates = factory.Resolve<UpdateShortImpl>();
+            updates.Update = _mapper.MapToTLObject<Update, UpdateBase>(serviceResult.Result);
+            rpcResult.Result = updates;
+        }
+
+        return rpcResult;
     }
     
     public void Parse(ref SequenceReader buff)

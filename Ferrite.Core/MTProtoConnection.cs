@@ -74,6 +74,7 @@ public class MTProtoConnection : IMTProtoConnection
     private readonly ITLObjectFactory factory;
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
+    private readonly CircularQueue<int> _lastQuickAcks = new CircularQueue<int>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private WebSocketHandler? webSocketHandler;
     private Pipe webSocketPipe;
@@ -239,10 +240,10 @@ public class MTProtoConnection : IMTProtoConnection
             {
                 var msg = await _outgoing.Reader.ReadAsync();
                 await _sendQueueSemaphore.WaitAsync();
-                _log.Debug($"=>Sending {msg.MessageType} message.");
+                _log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
                 if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    SendQuickAck((uint)msg.QuickAck);
+                    SendQuickAck(msg.QuickAck);
                 }
                 else if (_authKeyId == 0)
                 {
@@ -481,22 +482,28 @@ public class MTProtoConnection : IMTProtoConnection
         socketConnection.Transport.Output.Write(encoded);
     }
 
-    private void SendQuickAck(uint ack)
+    private void SendQuickAck(int ack)
     {
+        if (_lastQuickAcks.Contains(ack))
+        {
+            return;
+        }
+        _lastQuickAcks.Enqueue(ack);
         writer.Clear();
         if (encoder is AbridgedFrameEncoder)
         {
             ack = BinaryPrimitives.ReverseEndianness(ack);
         }
-        ack |= 0x80000000;
-        writer.WriteInt32((int)ack, true);
+        ack |= 1 << 31;
+        writer.WriteInt32(ack, true);
         var msg = writer.ToReadOnlySequence();
+        var encoded = encoder.EncodeBlock(msg);
         if (webSocketHandler != null)
         {
             webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
         }
 
-        socketConnection.Transport.Output.Write(msg);
+        socketConnection.Transport.Output.Write(encoded);
     }
     
     private void SendTransportError(int errorCode)
@@ -504,12 +511,13 @@ public class MTProtoConnection : IMTProtoConnection
         writer.Clear();
         writer.WriteInt32(-errorCode, true);
         var msg = writer.ToReadOnlySequence();
+        var encoded = encoder.EncodeBlock(msg);
         if (webSocketHandler != null)
         {
             webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
         }
 
-        socketConnection.Transport.Output.Write(msg);
+        socketConnection.Transport.Output.Write(encoded);
     }
 
     public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
@@ -847,7 +855,7 @@ public class MTProtoConnection : IMTProtoConnection
         var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         sha256.AppendData(_authKey.AsSpan().Slice(88, 32));
         sha256.AppendData(messageSpan);
-        var ack = sha256.GetHashAndReset();
+        var ack = sha256.GetCurrentHash();
         return BitConverter.ToInt32(ack, 0);
     }
 

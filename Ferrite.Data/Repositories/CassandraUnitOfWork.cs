@@ -28,6 +28,7 @@ public class CassandraUnitOfWork : IUnitOfWork
     {
         _cassandra = new CassandraContext(cassandraKeyspace, cassandraHosts);
         _log = log;
+        MessageRepository = new CassandraMessageRepository(_cassandra);
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public IAuthorizationRepository AuthorizationRepository { get; }

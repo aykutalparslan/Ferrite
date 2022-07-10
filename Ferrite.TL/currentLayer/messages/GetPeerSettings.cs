@@ -82,66 +82,18 @@ public class GetPeerSettings : ITLObject, ITLMethod
         }
         else
         {
-            var peerSettings = factory.Resolve<currentLayer.PeerSettingsImpl>();
-            peerSettings.Autoarchived = serviceResult.Result.Settings.AutoArchived;
-            peerSettings.AddContact = serviceResult.Result.Settings.AddContact;
-            peerSettings.BlockContact = serviceResult.Result.Settings.BlockContact;
-            if (serviceResult.Result.Settings.GeoDistance != null)
-            {
-                peerSettings.GeoDistance = (int)serviceResult.Result.Settings.GeoDistance;
-            }
-            peerSettings.InviteMembers = serviceResult.Result.Settings.InviteMembers;
-            peerSettings.ReportGeo = serviceResult.Result.Settings.ReportGeo;
-            peerSettings.ReportSpam = serviceResult.Result.Settings.ReportSpam;
-            peerSettings.ShareContact = serviceResult.Result.Settings.ShareContact;
-            peerSettings.NeedContactsException = serviceResult.Result.Settings.NeedContactsException;
-            peerSettings.RequestChatBroadcast = serviceResult.Result.Settings.RequestChatBroadcast;
-            if (serviceResult.Result.Settings.RequestChatDate != null)
-            {
-                peerSettings.RequestChatDate = (int)serviceResult.Result.Settings.RequestChatDate;
-            }
-            if (serviceResult.Result.Settings.RequestChatTitle != null && 
-                serviceResult.Result.Settings.RequestChatTitle.Length > 0)
-            {
-                peerSettings.RequestChatTitle = serviceResult.Result.Settings.RequestChatTitle;
-            }
+            var peerSettings =
+                _mapper.MapToTLObject<currentLayer.PeerSettings, PeerSettingsDTO>(serviceResult.Result.Settings);
             var settings = factory.Resolve<PeerSettingsImpl>();
             settings.Chats = factory.Resolve<Vector<Chat>>();
             settings.Users = factory.Resolve<Vector<User>>();
             foreach (var u in serviceResult.Result.Users)
             {
-                var userImpl = factory.Resolve<UserImpl>();
-                userImpl.Id = u.Id;
-                userImpl.FirstName = u.FirstName;
-                userImpl.LastName = u.LastName;
-                userImpl.Phone = u.Phone;
-                userImpl.Self = u.Self;
-                if (u.Username?.Length > 0)
-                {
-                    userImpl.Username = u.Username;
-                }
-                if(u.Status == Data.UserStatusDTO.Empty)
-                {
-                    userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
-                }
-                if (u.Photo.Empty)
-                {
-                    userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-                }
-                else
-                {
-                    var photo = factory.Resolve<UserProfilePhotoImpl>();
-                    photo.DcId = u.Photo.DcId;
-                    photo.PhotoId = u.Photo.PhotoId;
-                    photo.HasVideo = u.Photo.HasVideo;
-                    if (u.Photo.StrippedThumb is { Length: > 0 })
-                    {
-                        photo.StrippedThumb = u.Photo.StrippedThumb;
-                    }
-                    userImpl.Photo = photo;
-                }
+                var userImpl = _mapper.MapToTLObject<currentLayer.User, UserDTO>(u);
                 settings.Users.Add(userImpl);
             }
+
+            settings.Settings = peerSettings;
             rpcResult.Result = settings;
         }
         

@@ -20,5 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record ReplyMarkupDTO(bool Selective, bool SingleUse, 
+[MessagePackObject(true)] public record ReplyMarkupDTO(ReplyMarkupType ReplyMarkupType, bool Selective, bool SingleUse, 
     string? Placeholder, bool Resize, IReadOnlyCollection<KeyboardButtonRowDTO>? Rows);
