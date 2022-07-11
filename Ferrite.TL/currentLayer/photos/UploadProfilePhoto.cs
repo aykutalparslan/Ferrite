@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.photos;
@@ -31,11 +32,14 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IPhotosService _photos;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos, IPersistentStore store)
+    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos, IPersistentStore store,
+        IMapperContext mapper)
     {
         factory = objectFactory;
         _photos = photos;
+        _mapper = mapper;
     }
 
     public int Constructor => -1980559511;
@@ -154,69 +158,13 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
         else
         {
             var photoResult = factory.Resolve<PhotoImpl>();
-            var photoInner = factory.Resolve<currentLayer.PhotoImpl>();
-            photoInner.Date = serviceResult.Result.PhotoInner.Date;
-            photoInner.Id = serviceResult.Result.PhotoInner.Id;
-            photoInner.AccessHash = serviceResult.Result.PhotoInner.AccessHash;
-            photoInner.DcId = serviceResult.Result.PhotoInner.DcId;
-            photoInner.HasStickers = serviceResult.Result.PhotoInner.HasStickers;
-            photoInner.FileReference = serviceResult.Result.PhotoInner.FileReference;
-            photoInner.Sizes = factory.Resolve<Vector<PhotoSize>>();
-            foreach (var s in serviceResult.Result.PhotoInner.Sizes)
-            {
-                var size = factory.Resolve<PhotoSizeImpl>();
-                size.Type = s.Type;
-                size.Size = s.Size;
-                size.H = s.H;
-                size.W = s.W;
-                photoInner.Sizes.Add(size);
-            }
-
-            if (serviceResult.Result.PhotoInner.VideoSizes is { Count: > 0 })
-            {
-                photoInner.VideoSizes = factory.Resolve<Vector<VideoSize>>();
-                foreach (var s in serviceResult.Result.PhotoInner.VideoSizes)
-                {
-                    var size = factory.Resolve<VideoSizeImpl>();
-                    size.Type = s.Type;
-                    size.Size = s.Size;
-                    size.H = s.H;
-                    size.W = s.W;
-                    size.VideoStartTs = s.VideoStartTs;
-                    photoInner.VideoSizes.Add(size);
-                }
-            }
+            var photoInner = _mapper.MapToTLObject<currentLayer.Photo, PhotoDTO>(serviceResult.Result.PhotoInner);
             photoResult.Photo = photoInner;
             photoResult.Users = factory.Resolve<Vector<User>>();
             foreach (var user in serviceResult.Result.Users)
             {
-                var userImpl = factory.Resolve<UserImpl>();
-                userImpl.Id = user.Id;
-                userImpl.FirstName = user.FirstName;
-                userImpl.LastName = user.LastName;
-                userImpl.Phone = user.Phone;
-                userImpl.Self = true;
-                if(user.Status == Data.UserStatusDTO.Empty)
-                {
-                    userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
-                }
-                if (user.Photo.Empty)
-                {
-                    userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-                }
-                else
-                {
-                    var userPhoto = factory.Resolve<UserProfilePhotoImpl>();
-                    userPhoto.DcId = user.Photo.DcId;
-                    userPhoto.PhotoId = user.Photo.PhotoId;
-                    userPhoto.HasVideo = user.Photo.HasVideo;
-                    if (user.Photo.StrippedThumb is { Length: > 0 })
-                    {
-                        userPhoto.StrippedThumb = user.Photo.StrippedThumb;
-                    }
-                    userImpl.Photo = userPhoto;
-                }
-                //photoResult.Users.Add(userImpl);
+                var userImpl = _mapper.MapToTLObject<User, UserDTO>(user);
+                photoResult.Users.Add(userImpl);
             }
             result.Result = photoResult;
         }

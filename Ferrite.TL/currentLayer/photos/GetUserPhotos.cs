@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.photos;
@@ -32,12 +33,15 @@ public class GetUserPhotos : ITLObject, ITLMethod
     private readonly ITLObjectFactory factory;
     private readonly IPersistentStore _store;
     private readonly IPhotosService _photos;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetUserPhotos(ITLObjectFactory objectFactory, IPersistentStore store, IPhotosService photos)
+    public GetUserPhotos(ITLObjectFactory objectFactory, IPersistentStore store, IPhotosService photos,
+        IMapperContext mapper)
     {
         factory = objectFactory;
         _store = store;
         _photos = photos;
+        _mapper = mapper;
     }
 
     public int Constructor => -1848823128;
@@ -112,74 +116,13 @@ public class GetUserPhotos : ITLObject, ITLMethod
         photos.Users = factory.Resolve<Vector<User>>();
         foreach (var p in userPhotos.PhotosInner)
         {
-            var photo = factory.Resolve<currentLayer.PhotoImpl>();
-            photo.Id = p.Id;
-            photo.Date = p.Date;
-            photo.Sizes = factory.Resolve<Vector<PhotoSize>>();
-            foreach (var s in p.Sizes)
-            {
-                var size = factory.Resolve<PhotoSizeImpl>();
-                size.Type = s.Type;
-                size.Size = s.Size;
-                size.H = s.H;
-                size.W = s.W;
-                photo.Sizes.Add(size);
-            }
-            photo.FileReference = p.FileReference;
-            photo.Date = p.Date;
-            photo.AccessHash = p.AccessHash;
-            photo.DcId = p.DcId;
-            photo.HasStickers = p.HasStickers;
-            if (p.VideoSizes is { Count: > 0 })
-            {
-                photo.VideoSizes = factory.Resolve<Vector<VideoSize>>();
-                foreach (var s in p.VideoSizes)
-                {
-                    var size = factory.Resolve<VideoSizeImpl>();
-                    size.Type = s.Type;
-                    size.Size = s.Size;
-                    size.H = s.H;
-                    size.W = s.W;
-                    size.VideoStartTs = s.VideoStartTs;
-                    photo.VideoSizes.Add(size);
-                }
-            }
-            
+            var photo = _mapper.MapToTLObject<currentLayer.Photo, PhotoDTO>(p);
             photos.Photos.Add(photo);
         }
 
         foreach (var user in userPhotos.Users)
         {
-            var userImpl = factory.Resolve<UserImpl>();
-            userImpl.Id = user.Id;
-            userImpl.FirstName = user.FirstName;
-            userImpl.LastName = user.LastName;
-            userImpl.Phone = user.Phone;
-            userImpl.Self = user.Self;
-            if(user.Username?.Length > 0)
-            {
-                userImpl.Username = user.Username;
-            }
-            if(user.Status == Data.UserStatusDTO.Empty)
-            {
-                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-            if (user.Photo.Empty)
-            {
-                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
-            else
-            {
-                var photo = factory.Resolve<UserProfilePhotoImpl>();
-                photo.DcId = user.Photo.DcId;
-                photo.PhotoId = user.Photo.PhotoId;
-                photo.HasVideo = user.Photo.HasVideo;
-                if (user.Photo.StrippedThumb is { Length: > 0 })
-                {
-                    photo.StrippedThumb = user.Photo.StrippedThumb;
-                }
-                userImpl.Photo = photo;
-            }
+            var userImpl = _mapper.MapToTLObject<User, UserDTO>(user);
             photos.Users.Add(userImpl);
         }
 

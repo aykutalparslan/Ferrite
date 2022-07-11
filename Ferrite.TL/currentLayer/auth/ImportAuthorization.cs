@@ -20,8 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.auth;
@@ -30,11 +32,13 @@ public class ImportAuthorization : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAuthService _service;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public ImportAuthorization(ITLObjectFactory objectFactory, IAuthService service)
+    public ImportAuthorization(ITLObjectFactory objectFactory, IAuthService service, IMapperContext mapper)
     {
         factory = objectFactory;
         _service = service;
+        _mapper = mapper;
     }
 
     public int Constructor => -1518699091;
@@ -97,20 +101,7 @@ public class ImportAuthorization : ITLObject, ITLMethod
         else
         {
             var authorization = factory.Resolve<AuthorizationImpl>();
-            var user = factory.Resolve<UserImpl>();
-            user.Id = auth.User.Id;
-            user.FirstName = auth.User.FirstName;
-            user.LastName = auth.User.LastName;
-            user.Phone = auth.User.Phone;
-            user.Self = auth.User.Self;
-            if (auth.User.Status == Data.UserStatusDTO.Empty)
-            {
-                user.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-            if (auth.User.Photo.Empty)
-            {
-                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
+            var user = _mapper.MapToTLObject<User, UserDTO>(auth.User);
             authorization.User = user;
             result.Result = authorization;
         }

@@ -20,9 +20,11 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer.help;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.auth;
@@ -31,11 +33,13 @@ public class SignIn : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAuthService _auth;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public SignIn(ITLObjectFactory objectFactory, IAuthService auth)
+    public SignIn(ITLObjectFactory objectFactory, IAuthService auth, IMapperContext mapper)
     {
         factory = objectFactory;
         _auth = auth;
+        _mapper = mapper;
     }
 
     public int Constructor => -1126886015;
@@ -110,20 +114,7 @@ public class SignIn : ITLObject, ITLMethod
         else if(signInResult != null)
         {
             var authorization = factory.Resolve<AuthorizationImpl>();
-            var user = factory.Resolve<UserImpl>();
-            user.Id = signInResult.User.Id;
-            user.FirstName = signInResult.User.FirstName;
-            user.LastName = signInResult.User.LastName;
-            user.Phone = signInResult.User.Phone;
-            user.Self = signInResult.User.Self;
-            if(signInResult.User.Status == Data.UserStatusDTO.Empty)
-            {
-                user.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-            if (signInResult.User.Photo.Empty)
-            {
-                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
+            var user = _mapper.MapToTLObject<User, UserDTO>(signInResult.User);
             authorization.User = user;
             result.Result = authorization;
         }

@@ -20,8 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 using StackExchange.Redis;
 
@@ -31,11 +33,13 @@ public class UpdateProfile : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAccountService _account;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public UpdateProfile(ITLObjectFactory objectFactory, IAccountService account)
+    public UpdateProfile(ITLObjectFactory objectFactory, IAccountService account, IMapperContext mapper)
     {
         factory = objectFactory;
         _account = account;
+        _mapper = mapper;
     }
 
     public int Constructor => 2018596725;
@@ -127,33 +131,7 @@ public class UpdateProfile : ITLObject, ITLMethod
         }
         else
         {
-            var user = factory.Resolve<UserImpl>();
-            user.FirstName = userNew.FirstName;
-            user.LastName = userNew.LastName;
-            user.Phone = userNew.Phone;
-            user.Self = true;
-            //TODO: get user status
-            user.Status = factory.Resolve<UserStatusEmptyImpl>();
-            if (userNew.Username?.Length > 0)
-            {
-                user.Username = userNew.Username;
-            }
-            if (userNew.Photo.Empty)
-            {
-                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
-            else
-            {
-                var photo = factory.Resolve<UserProfilePhotoImpl>();
-                photo.DcId = userNew.Photo.DcId;
-                photo.PhotoId = userNew.Photo.PhotoId;
-                photo.HasVideo = userNew.Photo.HasVideo;
-                if (userNew.Photo.StrippedThumb is { Length: > 0 })
-                {
-                    photo.StrippedThumb = userNew.Photo.StrippedThumb;
-                }
-                user.Photo = photo;
-            }
+            var user = _mapper.MapToTLObject<User, UserDTO>(userNew);
 
             result.Result = user;
         }

@@ -23,6 +23,7 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.contacts;
@@ -31,11 +32,13 @@ public class GetBlocked : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IContactsService _contacts;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetBlocked(ITLObjectFactory objectFactory, IContactsService contacts)
+    public GetBlocked(ITLObjectFactory objectFactory, IContactsService contacts, IMapperContext mapper)
     {
         factory = objectFactory;
         _contacts = contacts;
+        _mapper = mapper;
     }
 
     public int Constructor => -176409329;
@@ -108,20 +111,7 @@ public class GetBlocked : ITLObject, ITLMethod
         }
         foreach (var u in serviceResult.Users)
         {
-            var userImpl = factory.Resolve<UserImpl>();
-            userImpl.Id = u.Id;
-            userImpl.FirstName = u.FirstName;
-            userImpl.LastName = u.LastName;
-            userImpl.Phone = u.Phone;
-            userImpl.Self = u.Self;
-            if(u.Status == Data.UserStatusDTO.Empty)
-            {
-                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-            if (u.Photo.Empty)
-            {
-                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
+            var userImpl = _mapper.MapToTLObject<User, UserDTO>(u);
             usersList.Add(userImpl);
         }
 

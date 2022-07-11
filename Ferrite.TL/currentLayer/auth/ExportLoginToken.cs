@@ -20,9 +20,11 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Data.Auth;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.auth;
@@ -31,11 +33,13 @@ public class ExportLoginToken : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAuthService _auth;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public ExportLoginToken(ITLObjectFactory objectFactory, IAuthService auth)
+    public ExportLoginToken(ITLObjectFactory objectFactory, IAuthService auth, IMapperContext mapper)
     {
         factory = objectFactory;
         _auth = auth;
+        _mapper = mapper;
     }
 
     public int Constructor => -1210022402;
@@ -97,20 +101,7 @@ public class ExportLoginToken : ITLObject, ITLMethod
         {
             var resp = factory.Resolve<LoginTokenSuccessImpl>();
             var authorization = factory.Resolve<AuthorizationImpl>();
-            var user = factory.Resolve<UserImpl>();
-            user.Id = token.Authorization.User.Id;
-            user.FirstName = token.Authorization.User.FirstName;
-            user.LastName = token.Authorization.User.LastName;
-            user.Phone = token.Authorization.User.Phone;
-            user.Self = token.Authorization.User.Self;
-            if (token.Authorization.User.Status == Data.UserStatusDTO.Empty)
-            {
-                user.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-            if (token.Authorization.User.Photo.Empty)
-            {
-                user.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
+            var user = _mapper.MapToTLObject<User, UserDTO>(token.Authorization.User);
             authorization.User = user;
             resp.Authorization = authorization;
             result.Result = resp;

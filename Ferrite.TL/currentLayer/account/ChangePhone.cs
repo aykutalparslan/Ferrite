@@ -20,8 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.account;
@@ -30,11 +32,13 @@ public class ChangePhone : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IAccountService _accountService;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public ChangePhone(ITLObjectFactory objectFactory, IAccountService accountService)
+    public ChangePhone(ITLObjectFactory objectFactory, IAccountService accountService, IMapperContext mapper)
     {
         factory = objectFactory;
         _accountService = accountService;
+        _mapper = mapper;
     }
 
     public int Constructor => 1891839707;
@@ -102,37 +106,7 @@ public class ChangePhone : ITLObject, ITLMethod
         }
         else
         {
-            var user = serviceResult.Result;
-            var userImpl = factory.Resolve<UserImpl>();
-            userImpl.Id = user.Id;
-            userImpl.FirstName = user.FirstName;
-            userImpl.LastName = user.LastName;
-            userImpl.Phone = user.Phone;
-            userImpl.Self = user.Self;
-            if (user.Username?.Length > 0)
-            {
-                userImpl.Username = user.Username;
-            }
-            if(user.Status == Data.UserStatusDTO.Empty)
-            {
-                userImpl.Status = factory.Resolve<UserStatusEmptyImpl>();
-            }
-            if (user.Photo.Empty)
-            {
-                userImpl.Photo = factory.Resolve<UserProfilePhotoEmptyImpl>();
-            }
-            else
-            {
-                var photo = factory.Resolve<UserProfilePhotoImpl>();
-                photo.DcId = user.Photo.DcId;
-                photo.PhotoId = user.Photo.PhotoId;
-                photo.HasVideo = user.Photo.HasVideo;
-                if (user.Photo.StrippedThumb is { Length: > 0 })
-                {
-                    photo.StrippedThumb = user.Photo.StrippedThumb;
-                }
-                userImpl.Photo = photo;
-            }
+            var userImpl = _mapper.MapToTLObject<User, UserDTO>(serviceResult.Result);
             result.Result = userImpl;
         }
         return result;
