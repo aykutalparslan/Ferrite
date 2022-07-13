@@ -36,4 +36,5 @@ public class ErrorMessages
     public static readonly ErrorMessage PhotoFileInvalid = new ErrorMessage(400, "PHOTO_FILE_INVALID");
     public static readonly ErrorMessage FileIdInvalid = new ErrorMessage(400, "FILE_ID_INVALID");
     public static readonly ErrorMessage PeerIdInvalid = new ErrorMessage(400, "PEER_ID_INVALID");
+    public static readonly ErrorMessage InvalidAuthKey = new ErrorMessage(400, "INVALID_AUTH_KEY");
 }

@@ -34,6 +34,32 @@ public class MessagesService : IMessagesService
         _cache = cache;
         _unitOfWork = unitOfWork;
     }
+
+    public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+            return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
+        List<MessageDTO> messages = new List<MessageDTO>();
+        List<UserDTO> users = new List<UserDTO>();
+        foreach (var input in id)
+        {
+            if (input.InputMessageType == InputMessageType.Id)
+            {
+                var message = await _unitOfWork.MessageRepository.GetMessageAsync(auth.UserId, input.Id);
+                messages.Add(message);
+                if (message.Out && message.PeerId.PeerType == PeerType.User)
+                {
+                    var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                    users.Add(user);
+                }
+            }
+        }
+
+        return new ServiceResult<MessagesDTO>(new MessagesDTO(MessagesType.Messages, messages, 
+            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
+    }
+
     public async Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
     {
         if (peer.InputPeerType == InputPeerType.Self)

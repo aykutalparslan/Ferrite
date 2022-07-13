@@ -16,40 +16,43 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)] 
 public record UserDTO
 {
-    public bool Empty { get; init; }
-    public bool Self { get; init; }
-    public bool Contact { get; init; }
-    public bool MutualContact { get; init; }
-    public bool Bot { get; init; }
-    public bool BotChatHistory { get; init; }
-    public bool BotNoChats { get; init; }
-    public bool Verified { get; init; }
-    public bool Restricted { get; init; }
-    public bool Min { get; init; }
-    public bool BotInlineGeo { get; init; }
-    public bool Support { get; init; }
-    public bool Scam { get; init; }
-    public bool ApplyMinPhoto { get; init; }
-    public bool Fake { get; init; }
-    public long Id { get; init; }
-    public long HashAccessHash { get; init; }
-    public long AccessHash { get; init; }
-    public string FirstName { get; init; } = default!;
-    public string LastName { get; init; } = default!;
-    public string Username { get; init; } = default!;
-    public string Phone { get; init; } = default!;
-    public string About { get; init; } = default!;
-    public UserProfilePhotoDTO Photo { get; init; } = default!;
-    public UserStatusDTO Status { get; init; }
-    public int Expires { get; init; }
-    public int WasOnline { get; init; }
-    public int BotInfoVersion { get; init; }
-    public RestrictionReasonDTO RestrictionReason { get; init; } = default!;
-    public string BotInlinePlaceHolder { get; init; } = default!;
-    public string LangCode { get; init; } = default!;
+    public bool Empty { get; set; }
+    public bool Self { get; set; }
+    public bool Contact { get; set; }
+    public bool MutualContact { get; set; }
+    public bool Bot { get; set; }
+    public bool BotChatHistory { get; set; }
+    public bool BotNoChats { get; set; }
+    public bool Verified { get; set; }
+    public bool Restricted { get; set; }
+    public bool Min { get; set; }
+    public bool BotInlineGeo { get; set; }
+    public bool Support { get; set; }
+    public bool Scam { get; set; }
+    public bool ApplyMinPhoto { get; set; }
+    public bool Fake { get; set; }
+    public long Id { get; set; }
+    public long HashAccessHash { get; set; }
+    public long AccessHash { get; set; }
+    public string FirstName { get; set; } = default!;
+    public string LastName { get; set; } = default!;
+    public string Username { get; set; } = default!;
+    public string Phone { get; set; } = default!;
+    public string About { get; set; } = default!;
+    public UserProfilePhotoDTO Photo { get; set; } = default!;
+    public UserStatusDTO Status { get; set; }
+    public int Expires { get; set; }
+    public int WasOnline { get; set; }
+    public int BotInfoVersion { get; set; }
+    public RestrictionReasonDTO RestrictionReason { get; set; } = default!;
+    public string BotInlinePlaceHolder { get; set; } = default!;
+    public string LangCode { get; set; } = default!;
 }
 
