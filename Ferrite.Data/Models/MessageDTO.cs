@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Data.Messages;
 using MessagePack;
 
 namespace Ferrite.Data;
@@ -23,6 +24,7 @@ namespace Ferrite.Data;
 [MessagePackObject(true)]
 public record MessageDTO
 {
+    public MessageType MessageType { get; set; } = MessageType.Message;
     public bool Out { get; set; }
     public bool Mentioned { get; set; }
     public bool MediaUnread { get; set; }
@@ -34,18 +36,18 @@ public record MessageDTO
     public bool Pinned { get; set; }
     public bool NoForwards { get; set; }
     public int Id { get; set; }
-    public PeerDTO FromId { get; set; }
+    public PeerDTO? FromId { get; set; }
     public PeerDTO PeerId { get; set; }
-    public MessageFwdHeaderDTO FwdFrom { get; set; }
-    public long ViaBotId { get; set; }
-    public MessageReplyHeaderDTO ReplyTo { get; set; }
+    public MessageFwdHeaderDTO? FwdFrom { get; set; }
+    public long? ViaBotId { get; set; }
+    public MessageReplyHeaderDTO? ReplyTo { get; set; }
     public int Date { get; set; }
     public string MessageText { get; set; }
     public MessageMediaDTO? Media { get; set; }
     public ReplyMarkupDTO? ReplyMarkup { get; set; }
     public IReadOnlyCollection<MessageEntityDTO>? Entities { get; set; }
-    public int Views { get; set; }
-    public int Forwards { get; set; }
+    public int? Views { get; set; }
+    public int? Forwards { get; set; }
     public MessageRepliesDTO? Replies { get; set; }
     public int? EditDate { get; set; }
     public string? PostAuthor { get; set; }

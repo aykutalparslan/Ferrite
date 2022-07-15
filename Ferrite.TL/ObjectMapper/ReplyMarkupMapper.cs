@@ -158,8 +158,138 @@ public class ReplyMarkupMapper : ITLObjectMapper<ReplyMarkup, ReplyMarkupDTO>
         }
     }
 
+    private void GenerateKeyboardRowsFromDTO(ReplyMarkupDTO keyboard, Vector<KeyboardButtonRow> rows)
+    {
+        if (keyboard.Rows != null)
+        {
+            foreach (var r in keyboard.Rows)
+            {
+                var row = _factory.Resolve<KeyboardButtonRowImpl>();
+                row.Buttons = _factory.Resolve<Vector<KeyboardButton>>();
+                foreach (var b in r.Buttons)
+                {
+                    if (b.KeyboardButtonType == KeyboardButtonType.Button)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonImpl>();
+                        button.Text = b.Text;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonUrl)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonUrlImpl>();
+                        button.Text = b.Text;
+                        button.Url = b.Url;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonCallback)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonCallbackImpl>();
+                        button.Text = b.Text;
+                        button.Data = b.Data;
+                        button.RequiresPassword = b.RequiresPassword;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonRequestPhone)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonRequestPhoneImpl>();
+                        button.Text = b.Text;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonRequestGeoLocation)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonRequestGeoLocationImpl>();
+                        button.Text = b.Text;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonSwitchInline)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonSwitchInlineImpl>();
+                        button.SamePeer = b.SamePeer;
+                        button.Text = b.Text;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonGame)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonGameImpl>();
+                        button.Text = b.Text;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonBuy)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonBuyImpl>();
+                        button.Text = b.Text;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonUrlAuth)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonUrlAuthImpl>();
+                        button.Text = b.Text;
+                        button.Url = b.Url;
+                        button.FwdText = b.FwdText;
+                        button.ButtonId = (int)b.ButtonId;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonRequestPoll)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonRequestPollImpl>();
+                        button.Text = b.Text;
+                        button.Quiz = (bool)b.Quiz;
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.InputButtonUserProfile)
+                    {
+                        var button = _factory.Resolve<InputKeyboardButtonUserProfileImpl>();
+                        button.Text = b.Text;
+                        button.UserId = _mapper.MapToTLObject<InputUser, InputUserDTO>(b.User);
+                        row.Buttons.Add(button);
+                    }
+                    else if (b.KeyboardButtonType == KeyboardButtonType.ButtonUserProfile)
+                    {
+                        var button = _factory.Resolve<KeyboardButtonUserProfileImpl>();
+                        button.Text = b.Text;
+                        button.UserId = (long)b.UserId;
+                        row.Buttons.Add(button);
+                    }
+                }
+            }
+        }
+    }
+
     public ReplyMarkup MapToTLObject(ReplyMarkupDTO obj)
     {
-        throw new NotImplementedException();
+        if (obj.ReplyMarkupType == ReplyMarkupType.KeyboardHide)
+        {
+            var markup = _factory.Resolve<ReplyKeyboardHideImpl>();
+            markup.Selective = obj.Selective;
+            return markup;
+        }
+        else if (obj.ReplyMarkupType == ReplyMarkupType.KeyboardForceReply)
+        {
+            var markup = _factory.Resolve<ReplyKeyboardForceReplyImpl>();
+            markup.SingleUse = obj.SingleUse;
+            markup.Selective = obj.Selective;
+            if(obj.Placeholder is { Length: > 0 })
+            {
+                markup.Placeholder = obj.Placeholder;
+            }
+            return markup;
+        }
+        else if (obj.ReplyMarkupType == ReplyMarkupType.KeyboardMarkup)
+        {
+            var markup = _factory.Resolve<ReplyKeyboardMarkupImpl>();
+            markup.Selective = obj.Selective;
+            markup.SingleUse = obj.SingleUse;
+            markup.Placeholder = obj.Placeholder;
+            markup.Resize = obj.Resize;
+            markup.Rows = _factory.Resolve<Vector<KeyboardButtonRow>>();
+            GenerateKeyboardRowsFromDTO(obj, markup.Rows);
+        }
+        else if (obj.ReplyMarkupType == ReplyMarkupType.InlineMarkup)
+        {
+            var markup = _factory.Resolve<ReplyInlineMarkupImpl>();
+            markup.Rows = _factory.Resolve<Vector<KeyboardButtonRow>>();
+            GenerateKeyboardRowsFromDTO(obj, markup.Rows);
+        }
+        throw new NotSupportedException();
     }
 }

@@ -16,10 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
-
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record MessageFwdHeaderDTO(bool Imported, PeerDTO? FromId,
-    string? FromName, int Date, int? ChannelPost, string? PostAuthor, PeerDTO? SavedFromPeer, int? SavedFromMsgId,
-    string? PsaType);
+public enum MessageType
+{
+    Empty,
+    Message,
+    Service
+}

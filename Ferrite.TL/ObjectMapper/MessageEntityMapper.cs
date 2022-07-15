@@ -223,6 +223,150 @@ public class MessageEntityMapper : ITLObjectMapper<MessageEntity, MessageEntityD
 
     public MessageEntity MapToTLObject(MessageEntityDTO obj)
     {
-        throw new NotImplementedException();
+        if(obj.MessageEntityType == MessageEntityType.Unknown)
+        {
+            var entity =  _factory.Resolve<MessageEntityUnknownImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Mention)
+        {
+            var entity = _factory.Resolve<MessageEntityMentionImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Hashtag)
+        {
+            var entity = _factory.Resolve<MessageEntityHashtagImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.BotCommand)
+        {
+            var entity = _factory.Resolve<MessageEntityBotCommandImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Url)
+        {
+            var entity = _factory.Resolve<MessageEntityUrlImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Email)
+        {
+            var entity = _factory.Resolve<MessageEntityEmailImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Bold)
+        {
+            var entity = _factory.Resolve<MessageEntityBoldImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Italic)
+        {
+            var entity = _factory.Resolve<MessageEntityItalicImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Code)
+        {
+            var entity = _factory.Resolve<MessageEntityCodeImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Pre)
+        {
+            var entity = _factory.Resolve<MessageEntityPreImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            entity.Language = obj.Language;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.TextUrl)
+        {
+            var entity = _factory.Resolve<MessageEntityTextUrlImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            entity.Url = obj.Url;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.MentionName)
+        {
+            var entity = _factory.Resolve<MessageEntityMentionNameImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            entity.UserId = obj.UserId;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.InputMentionName)
+        {
+            var entity = _factory.Resolve<InputMessageEntityMentionNameImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            entity.UserId = _mapper.MapToTLObject<InputUser, InputUserDTO>(obj.User);
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Phone)
+        {
+            var entity = _factory.Resolve<MessageEntityPhoneImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Cashtag)
+        {
+            var entity = _factory.Resolve<MessageEntityCashtagImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Underline)
+        {
+            var entity = _factory.Resolve<MessageEntityUnderlineImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Strike)
+        {
+            var entity = _factory.Resolve<MessageEntityStrikeImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Blockquote)
+        {
+            var entity = _factory.Resolve<MessageEntityBlockquoteImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.BankCard)
+        {
+            var entity = _factory.Resolve<MessageEntityBankCardImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        if(obj.MessageEntityType == MessageEntityType.Spoiler)
+        {
+            var entity = _factory.Resolve<MessageEntitySpoilerImpl>();
+            entity.Length = obj.Length;
+            entity.Offset = obj.Offset;
+            return entity;
+        }
+        throw new NotSupportedException();
     }
 }

@@ -29,7 +29,7 @@ public class DefaultMapper : IMapperContext
 
     public DefaultMapper(ITLObjectFactory factory)
     {
-        _mappers.TryAdd(typeof(InputPeer), new InputPeerMapper());
+        _mappers.TryAdd(typeof(InputPeer), new InputPeerMapper(factory, this));
         _mappers.TryAdd(typeof(UserFull), new FullUserMapper(factory, this));
         _mappers.TryAdd(typeof(InputNotifyPeer), new InputNotifyPeerMapper(this));
         _mappers.TryAdd(typeof(InputUser), new InputUserMapper(factory, this));
@@ -43,6 +43,11 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(ReplyMarkup), new ReplyMarkupMapper(factory, this));
         _mappers.TryAdd(typeof(MessageEntity), new MessageEntityMapper(factory, this));
         _mappers.TryAdd(typeof(Update), new UpdateMapper(factory, this));
+        _mappers.TryAdd(typeof(Message), new MessageMapper(factory, this));
+        _mappers.TryAdd(typeof(Peer), new PeerMapper(factory, this));
+        _mappers.TryAdd(typeof(MessageFwdHeader), new MessageFwdHeaderMapper(factory, this));
+        _mappers.TryAdd(typeof(MessageReplyHeader), new MessageReplyHeaderMapper(factory, this));
+        _mappers.TryAdd(typeof(MessageMedia), new MessageMediaMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject

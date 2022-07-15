@@ -16,10 +16,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
+using Ferrite.Data;
+using Ferrite.TL.currentLayer;
 
-namespace Ferrite.Data;
+namespace Ferrite.TL.ObjectMapper;
 
-[MessagePackObject(true)] public record MessageFwdHeaderDTO(bool Imported, PeerDTO? FromId,
-    string? FromName, int Date, int? ChannelPost, string? PostAuthor, PeerDTO? SavedFromPeer, int? SavedFromMsgId,
-    string? PsaType);
+public class MessageMediaMapper : ITLObjectMapper<MessageMedia, MessageMediaDTO>
+{
+    private readonly ITLObjectFactory _factory;
+    private readonly IMapperContext _mapper;
+    public MessageMediaMapper(ITLObjectFactory factory, IMapperContext mapper)
+    {
+        _factory = factory;
+        _mapper = mapper;
+    }
+    public MessageMediaDTO MapToDTO(MessageMedia obj)
+    {
+        throw new NotImplementedException();
+    }
+
+    public MessageMedia MapToTLObject(MessageMediaDTO obj)
+    {
+        if (obj.MessageMediaType == MessageMediaType.Empty)
+        {
+            
+        }
+        throw new NotImplementedException();
+    }
+}

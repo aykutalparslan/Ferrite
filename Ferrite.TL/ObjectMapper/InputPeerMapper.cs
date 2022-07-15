@@ -23,6 +23,13 @@ namespace Ferrite.TL.ObjectMapper;
 
 public class InputPeerMapper : ITLObjectMapper<InputPeer, InputPeerDTO>
 {
+    private readonly ITLObjectFactory _factory;
+    private readonly IMapperContext _mapper;
+    public InputPeerMapper(ITLObjectFactory factory, IMapperContext mapper)
+    {
+        _factory = factory;
+        _mapper = mapper;
+    }
     public InputPeerDTO MapToDTO(InputPeer obj)
     {
         return new InputPeerDTO()
@@ -62,6 +69,44 @@ public class InputPeerMapper : ITLObjectMapper<InputPeer, InputPeerDTO>
 
     public InputPeer MapToTLObject(InputPeerDTO obj)
     {
-        throw new NotImplementedException();
+        if (obj.InputPeerType == InputPeerType.User)
+        {
+            var peer = _factory.Resolve<InputPeerUserImpl>();
+            peer.UserId = obj.UserId;
+            return peer;
+        }
+        else if (obj.InputPeerType == InputPeerType.Chat)
+        {
+            var peer = _factory.Resolve<InputPeerChatImpl>();
+            peer.ChatId = obj.ChatId;
+            return peer;
+        }
+        else if (obj.InputPeerType == InputPeerType.Channel)
+        {
+            var peer = _factory.Resolve<InputPeerChannelImpl>();
+            peer.ChannelId = obj.ChannelId;
+            return peer;
+        }
+        else if (obj.InputPeerType == InputPeerType.UserFromMessage)
+        {
+            var peer = _factory.Resolve<InputPeerUserFromMessageImpl>();
+            peer.MsgId = obj.MsgId;
+            peer.UserId = obj.UserId;
+            peer.Peer = MapToTLObject(obj.Peer);
+            return peer;
+        }
+        else if (obj.InputPeerType == InputPeerType.ChannelFromMessage)
+        {
+            var peer = _factory.Resolve<InputPeerChannelFromMessageImpl>();
+            peer.ChannelId = obj.ChannelId;
+            peer.MsgId = obj.MsgId;
+            peer.Peer = MapToTLObject(obj.Peer);
+            return peer;
+        }
+        else
+        {
+            var peer = _factory.Resolve<InputPeerEmptyImpl>();
+            return peer;
+        }
     }
 }

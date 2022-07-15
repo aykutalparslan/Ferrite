@@ -66,6 +66,31 @@ public class InputUserMapper : ITLObjectMapper<InputUser, InputUserDTO>
 
     public InputUser MapToTLObject(InputUserDTO obj)
     {
-        throw new NotImplementedException();
+        if (obj.InputUserType == InputUserType.Empty)
+        {
+            var user = _factory.Resolve<InputUserEmptyImpl>();
+            return user;
+        }
+        else if (obj.InputUserType == InputUserType.User)
+        {
+            var user = _factory.Resolve<InputUserImpl>();
+            user.UserId = obj.UserId;
+            user.AccessHash = obj.AccessHash;
+            return user;
+        }
+        else if (obj.InputUserType == InputUserType.UserFromMessage)
+        {
+            var userFromMessage = _factory.Resolve<InputUserFromMessageImpl>();
+            userFromMessage.UserId = obj.UserId;
+            userFromMessage.MsgId = obj.MsgId;
+            userFromMessage.Peer = _mapper.MapToTLObject<InputPeer, InputPeerDTO>(obj.Peer);
+            return userFromMessage;
+        }
+        else if (obj.InputUserType == InputUserType.Self)
+        {
+            var userSelf = _factory.Resolve<InputUserSelfImpl>();
+            return userSelf;
+        }
+        throw new NotSupportedException();
     }
 }

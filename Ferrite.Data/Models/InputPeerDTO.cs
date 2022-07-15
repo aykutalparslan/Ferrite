@@ -29,5 +29,6 @@ public record InputPeerDTO
     public long ChannelId { get; set; }
     public long AccessHash { get; set; }
     public int MsgId { get; set; }
+    public InputPeerDTO? Peer { get; set; }
 }
 
