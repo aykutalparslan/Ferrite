@@ -20,6 +20,11 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Data.Repositories;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -27,10 +32,14 @@ public class GetMessages : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMessagesService _messages;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetMessages(ITLObjectFactory objectFactory)
+    public GetMessages(ITLObjectFactory objectFactory, IMessagesService messages, IMapperContext mapper)
     {
         factory = objectFactory;
+        _messages = messages;
+        _mapper = mapper;
     }
 
     public int Constructor => 1673946374;
@@ -61,7 +70,42 @@ public class GetMessages : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        List<InputMessageDTO> ids = new List<InputMessageDTO>();
+        foreach (var m in _id)
+        {
+            ids.Add(_mapper.MapToDTO<InputMessage, InputMessageDTO>(m));
+        }
+
+        var serviceResult = await _messages.GetMessagesAsync(ctx.CurrentAuthKeyId, ids);
+        var result = factory.Resolve<RpcResult>();
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        else
+        {
+            var messages = factory.Resolve<MessagesImpl>();
+            messages.Chats = factory.Resolve<Vector<Chat>>();
+            foreach (var c in serviceResult.Result.Chats)
+            {
+                messages.Chats.Add(_mapper.MapToTLObject<Chat, ChatDTO>(c));
+            }
+            messages.Messages = factory.Resolve<Vector<Message>>();
+            foreach (var m in serviceResult.Result.Messages)
+            {
+                messages.Messages.Add(_mapper.MapToTLObject<Message, MessageDTO>(m));
+            }
+            messages.Users = factory.Resolve<Vector<User>>();
+            foreach (var u in serviceResult.Result.Users)
+            {
+                messages.Users.Add(_mapper.MapToTLObject<User, UserDTO>(u));
+            }
+        }
+
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

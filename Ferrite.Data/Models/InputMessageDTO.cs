@@ -21,4 +21,4 @@ using MessagePack;
 namespace Ferrite.Data;
 
 [MessagePackObject(true)] public record InputMessageDTO(InputMessageType InputMessageType,
-    int Id, int? QueryId = null);
+    int? Id = null, long? QueryId = null);

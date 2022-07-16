@@ -46,7 +46,7 @@ public class MessagesService : IMessagesService
         {
             if (input.InputMessageType == InputMessageType.Id)
             {
-                var message = await _unitOfWork.MessageRepository.GetMessageAsync(auth.UserId, input.Id);
+                var message = await _unitOfWork.MessageRepository.GetMessageAsync(auth.UserId, (int)input.Id);
                 messages.Add(message);
                 if (message.Out && message.PeerId.PeerType == PeerType.User)
                 {
