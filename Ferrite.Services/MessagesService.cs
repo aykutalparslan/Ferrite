@@ -91,7 +91,7 @@ public class MessagesService : IMessagesService
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var messageCounter = _cache.GetCounter(auth.UserId + "_in");
+        var messageCounter = _cache.GetCounter(auth.UserId + "_message_id");
         int messageId = (int)await messageCounter.IncrementAndGet();
         if (messageId == 0)
         {
@@ -152,10 +152,90 @@ public class MessagesService : IMessagesService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<DialogsDTO>> GetDialogs(int offsetDate, int offsetId, PeerDTO offsetPeer, int limit, int hash, bool? excludePinned = null,
+    public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, PeerDTO offsetPeer, int limit, int hash, bool? excludePinned = null,
         int? folderId = null)
     {
-        throw new NotImplementedException();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId);
+        Dictionary<string, DialogDTO> dialogList = new();
+        Dictionary<string, UserDTO> userList = new();
+        foreach (var m in messages)
+        {
+            if (m.Out)
+            {
+                InputNotifyPeerDTO peer = CreateInputNotifyPeerDto(m.PeerId);
+                //TODO: investigate if we should use this PTS or a dialog specific one
+                var counter = _cache.GetCounter(auth.UserId + "_pts");
+                var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
+                dialogList.Add(m.PeerId.PeerType + "-" + m.PeerId.PeerId,
+                    new DialogDTO(DialogType.Dialog, false, false,
+                        m.PeerId, m.Id, 0, m.Id,
+                        0, 0, 0, settings.FirstOrDefault(),
+                        0, null, null, null, 0, 0,
+                        0, 0));
+                if (m.PeerId.PeerType == PeerType.User)
+                {
+                    userList.Add(m.PeerId.PeerId.ToString(), await _store.GetUserAsync(m.PeerId.PeerId));
+                }
+            }
+            else
+            {
+                InputNotifyPeerDTO peer = CreateInputNotifyPeerDto(m.FromId);
+                //TODO: investigate if we should use this PTS or a dialog specific one
+                var counter = _cache.GetCounter(auth.UserId + "_pts");
+                var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
+                dialogList.Add(m.FromId.PeerType + "-" + m.FromId.PeerId,
+                    new DialogDTO(DialogType.Dialog, false, false,
+                        m.FromId, m.Id, 0, m.Id,
+                        0, 0, 0, settings.FirstOrDefault(),
+                        0, null, null, null, 0, 0,
+                        0, 0));
+                if (m.FromId.PeerType == PeerType.User)
+                {
+                    userList.Add(m.FromId.PeerId.ToString(), await _store.GetUserAsync(m.FromId.PeerId));
+                }
+            }
+        }
+
+        var dialogs = new DialogsDTO(DialogsType.Dialogs, dialogList.Values, 
+            messages, Array.Empty<ChatDTO>(),
+            userList.Values, null);
+        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
+    }
+
+    private static InputNotifyPeerDTO CreateInputNotifyPeerDto(PeerDTO p)
+    {
+        InputPeerDTO inputPeer = null;
+        if (p.PeerType == PeerType.User)
+        {
+            inputPeer = new InputPeerDTO
+            {
+                InputPeerType = InputPeerType.User,
+                UserId = p.PeerId
+            };
+        }
+        else if (p.PeerType == PeerType.Chat)
+        {
+            inputPeer = new InputPeerDTO
+            {
+                InputPeerType = InputPeerType.Chat,
+                ChatId = p.PeerId
+            };
+        }
+        else if (p.PeerType == PeerType.Channel)
+        {
+            inputPeer = new InputPeerDTO
+            {
+                InputPeerType = InputPeerType.Channel,
+                ChannelId = p.PeerId
+            };
+        }
+        var peer = new InputNotifyPeerDTO()
+        {
+            NotifyPeerType = InputNotifyPeerType.Peer,
+            Peer = inputPeer
+        };
+        return peer;
     }
 
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)

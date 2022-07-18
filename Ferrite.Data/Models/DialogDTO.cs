@@ -21,6 +21,6 @@ namespace Ferrite.Data;
 
 public record DialogDTO(DialogType DialogType, bool Pinned, bool UnreadMark, PeerDTO Peer, int TopMessage, 
     int ReadInboxMaxId, int ReadOutboxMaxId, int UnreadCount, int UnreadMentionCount, int UnreadReactionsCount, 
-    PeerNotifySettingsDTO NotifySettings, int Pts, DraftMessageDTO? DraftMessage, int? FolderId, 
+    PeerNotifySettingsDTO? NotifySettings, int Pts, DraftMessageDTO? DraftMessage, int? FolderId, 
     FolderDTO? Folder, int UnreadMutedPeersCount, int UnreadUnmutedPeersCount, int UnreadMutedMessagesCount,
     int UnreadUnmutedMessagesCount);
