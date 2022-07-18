@@ -152,6 +152,12 @@ public class MessagesService : IMessagesService
         throw new NotImplementedException();
     }
 
+    public async Task<ServiceResult<DialogsDTO>> GetDialogs(int offsetDate, int offsetId, PeerDTO offsetPeer, int limit, int hash, bool? excludePinned = null,
+        int? folderId = null)
+    {
+        throw new NotImplementedException();
+    }
+
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)
     {
         if (peer.InputPeerType == InputPeerType.Self)
