@@ -152,7 +152,8 @@ public class MessagesService : IMessagesService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, PeerDTO offsetPeer, int limit, int hash, bool? excludePinned = null,
+    public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, 
+        InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
@@ -163,7 +164,11 @@ public class MessagesService : IMessagesService
         {
             if (m.Out)
             {
-                InputNotifyPeerDTO peer = CreateInputNotifyPeerDto(m.PeerId);
+                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
+                {
+                    NotifyPeerType = InputNotifyPeerType.Peer,
+                    Peer = offsetPeer
+                };
                 //TODO: investigate if we should use this PTS or a dialog specific one
                 var counter = _cache.GetCounter(auth.UserId + "_pts");
                 var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
@@ -180,7 +185,11 @@ public class MessagesService : IMessagesService
             }
             else
             {
-                InputNotifyPeerDTO peer = CreateInputNotifyPeerDto(m.FromId);
+                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
+                {
+                    NotifyPeerType = InputNotifyPeerType.Peer,
+                    Peer = offsetPeer
+                };
                 //TODO: investigate if we should use this PTS or a dialog specific one
                 var counter = _cache.GetCounter(auth.UserId + "_pts");
                 var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
@@ -201,41 +210,6 @@ public class MessagesService : IMessagesService
             messages, Array.Empty<ChatDTO>(),
             userList.Values, null);
         return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
-    }
-
-    private static InputNotifyPeerDTO CreateInputNotifyPeerDto(PeerDTO p)
-    {
-        InputPeerDTO inputPeer = null;
-        if (p.PeerType == PeerType.User)
-        {
-            inputPeer = new InputPeerDTO
-            {
-                InputPeerType = InputPeerType.User,
-                UserId = p.PeerId
-            };
-        }
-        else if (p.PeerType == PeerType.Chat)
-        {
-            inputPeer = new InputPeerDTO
-            {
-                InputPeerType = InputPeerType.Chat,
-                ChatId = p.PeerId
-            };
-        }
-        else if (p.PeerType == PeerType.Channel)
-        {
-            inputPeer = new InputPeerDTO
-            {
-                InputPeerType = InputPeerType.Channel,
-                ChannelId = p.PeerId
-            };
-        }
-        var peer = new InputNotifyPeerDTO()
-        {
-            NotifyPeerType = InputNotifyPeerType.Peer,
-            Peer = inputPeer
-        };
-        return peer;
     }
 
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)
