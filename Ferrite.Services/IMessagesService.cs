@@ -32,4 +32,6 @@ public interface IMessagesService
     Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId);
     Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, InputPeerDTO offsetPeer,
         int limit, long hash, bool? excludePinned = null, int? folderId = null);
+    Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, int offsetDate,
+        int addOffset, int limit, long maxId, long minId, long hash);
 }

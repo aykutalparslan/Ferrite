@@ -212,6 +212,34 @@ public class MessagesService : IMessagesService
         return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
     }
 
+    public async Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, 
+        int offsetDate, int addOffset, int limit, long maxId,
+        long minId, long hash)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, 
+            PeerFromInputPeer(peer));
+        List<MessageDTO> messagesList = new();
+        Dictionary<string, UserDTO> userList = new();
+        foreach (var m in messages)
+        {
+            if (m.Id > offsetId && m.Date < offsetDate &&
+                --addOffset < 0 && messagesList.Count < limit &&
+                (maxId > 0 && m.Id <= maxId) && (minId > 0 || m.Id >= minId))
+            {
+                messagesList.Add(m);
+                if (!m.Out && m.FromId.PeerType == PeerType.User)
+                {
+                    userList.Add(m.FromId.PeerId.ToString(), await _store.GetUserAsync(m.FromId.PeerId));
+                }
+            }
+        }
+
+        var messagesResult = new MessagesDTO(MessagesType.Messages,
+            messagesList, Array.Empty<ChatDTO>(), userList.Values);
+        return new ServiceResult<MessagesDTO>(messagesResult, true, ErrorMessages.None);
+    }
+
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)
     {
         if (peer.InputPeerType == InputPeerType.Self)
