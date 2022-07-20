@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Search;
 
-public record MessageSearchModel(long UserId, int Id, string Message);
+public record MessageSearchModel(string Id, int PeerType, long PeerId, int MessageId, string Message);

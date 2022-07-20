@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Data.Search;
+
 namespace Ferrite.Data;
 
 public interface ISearchEngine
@@ -23,4 +25,7 @@ public interface ISearchEngine
     public Task<bool> IndexUser(Search.UserSearchModel user);
     public Task<bool> DeleteUser(long userId);
     public Task<IReadOnlyCollection<Search.UserSearchModel>> SearchByUsername(string q);
+    public Task<bool> IndexMessage(MessageSearchModel message);
+    public Task<bool> DeleteMessage(string id);
+    public Task<IReadOnlyCollection<MessageSearchModel>> SearchMessages(string q);
 }

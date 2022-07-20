@@ -17,6 +17,7 @@
 // 
 
 using Elasticsearch.Net;
+using Ferrite.Data.Search;
 using Nest;
 
 namespace Ferrite.Data;
@@ -56,6 +57,30 @@ public class ElasticSearchEngine : ISearchEngine
                 //.Name("search_by_username")
                 .Boost(1.1)
                 .Field(p => p.Username)
+                .Value(q)
+                .Rewrite(MultiTermQueryRewrite.TopTerms(10))
+            )));
+        return result.Documents;
+    }
+
+    public async Task<bool> IndexMessage(MessageSearchModel message)
+    {
+        var result = await _client.IndexAsync(message, _ => _.Index("messages").Id(message.Id));
+        return result.Result is Result.Created or Result.Updated;
+    }
+
+    public async Task<bool> DeleteMessage(string id)
+    {
+        var result = await _client.DeleteAsync(new DeleteRequest("messages", id));
+        return result.Result is Result.Deleted or Result.NotFound;
+    }
+
+    public async Task<IReadOnlyCollection<MessageSearchModel>> SearchMessages(string q)
+    {
+        var result = await _client.SearchAsync<MessageSearchModel>(s =>
+            s.Query(q => q.Prefix(c => c
+                .Boost(1.1)
+                .Field(p => p.Message)
                 .Value(q)
                 .Rewrite(MultiTermQueryRewrite.TopTerms(10))
             )));

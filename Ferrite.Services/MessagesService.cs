@@ -19,6 +19,7 @@
 using Ferrite.Data;
 using Ferrite.Data.Messages;
 using Ferrite.Data.Repositories;
+using Ferrite.Data.Search;
 using PeerSettingsDTO = Ferrite.Data.Messages.PeerSettingsDTO;
 
 namespace Ferrite.Services;
@@ -28,11 +29,13 @@ public class MessagesService : IMessagesService
     private readonly IPersistentStore _store;
     private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
-    public MessagesService(IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork)
+    private readonly ISearchEngine _search;
+    public MessagesService(IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork, ISearchEngine search)
     {
         _store = store;
         _cache = cache;
         _unitOfWork = unitOfWork;
+        _search = search;
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
@@ -114,14 +117,29 @@ public class MessagesService : IMessagesService
         {
             outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
         }
+        messageCounter = _cache.GetCounter(to.PeerId + "_message_id");
+        messageId = (int)await messageCounter.IncrementAndGet();
         var incomingMessage = outgoingMessage with
         {
+            Id = messageId,
             Out = false,
             FromId = to,
             PeerId = from,
         };
         _unitOfWork.MessageRepository.PutMessage(outgoingMessage);
         _unitOfWork.MessageRepository.PutMessage(incomingMessage);
+        _search.IndexMessage(new MessageSearchModel(
+                (int)from.PeerType +"-"+
+                from.PeerId + "-" + outgoingMessage.Id, 
+                (int)outgoingMessage.FromId.PeerType,
+                from.PeerId, outgoingMessage.Id, 
+                outgoingMessage.MessageText));
+        _search.IndexMessage(new MessageSearchModel(
+            (int)to.PeerType +"-"+
+            to.PeerId + "-" + incomingMessage.Id, 
+            (int)incomingMessage.FromId.PeerType,
+            to.PeerId, incomingMessage.Id, 
+            incomingMessage.MessageText));
         await _unitOfWork.SaveAsync();
         var userPts = _cache.GetCounter(auth.UserId + "_pts");
         var pts = await userPts.IncrementAndGet();
