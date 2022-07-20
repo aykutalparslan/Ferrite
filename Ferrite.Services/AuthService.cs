@@ -392,7 +392,7 @@ public class AuthService : IAuthService
             }
         };
         await _store.SaveUserAsync(user);
-        await _search.IndexUser(new Data.Search.UserDTO(user.Id, user.Username, 
+        await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
             user.FirstName, user.LastName, user.Phone));
         var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
         await _store.SaveAuthorizationAsync(new AuthInfoDTO()

@@ -94,7 +94,7 @@ public partial class AccountService : IAccountService
                 About = about ?? user.About,
             };
             await _store.SaveUserAsync(userNew);
-            await _search.IndexUser(new Data.Search.UserDTO(userNew.Id, userNew.Username, 
+            await _search.IndexUser(new Data.Search.UserSearchModel(userNew.Id, userNew.Username, 
                 userNew.FirstName, userNew.LastName, userNew.Phone));
             return userNew;
         }
@@ -156,7 +156,7 @@ public partial class AccountService : IAccountService
             await _store.UpdateUsernameAsync(auth.UserId, username);
         }
         user = await _store.GetUserAsync(auth.UserId);
-        await _search.IndexUser(new Data.Search.UserDTO(user.Id, user.Username, 
+        await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
                 user.FirstName, user.LastName, user.Phone));
         return user;
     }

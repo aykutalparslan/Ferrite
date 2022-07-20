@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data.Search;
 
-public record UserDTO(long Id, string? Username, string? FirstName, string? LastName, string Phone);
+public record UserSearchModel(long Id, string? Username, string? FirstName, string? LastName, string Phone);

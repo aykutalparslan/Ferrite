@@ -37,7 +37,7 @@ public class ElasticSearchEngine : ISearchEngine
         _client = new ElasticClient(connectionSettings);
     }
 
-    public async Task<bool> IndexUser(Search.UserDTO user)
+    public async Task<bool> IndexUser(Search.UserSearchModel user)
     {
         var result = await _client.IndexAsync(user, _ => _.Index("users").Id(user.Id));
         return result.Result is Result.Created or Result.Updated;
@@ -49,9 +49,9 @@ public class ElasticSearchEngine : ISearchEngine
         return result.Result is Result.Deleted or Result.NotFound;
     }
 
-    public async Task<IReadOnlyCollection<Search.UserDTO>> SearchByUsername(string q)
+    public async Task<IReadOnlyCollection<Search.UserSearchModel>> SearchByUsername(string q)
     {
-        var result = await _client.SearchAsync<Search.UserDTO>(s =>
+        var result = await _client.SearchAsync<Search.UserSearchModel>(s =>
             s.Query(q => q.Prefix(c => c
                 //.Name("search_by_username")
                 .Boost(1.1)
