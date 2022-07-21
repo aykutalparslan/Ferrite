@@ -103,6 +103,8 @@ public class GetMessages : ITLObject, ITLMethod
             {
                 messages.Users.Add(_mapper.MapToTLObject<User, UserDTO>(u));
             }
+
+            result.Result = messages;
         }
 
         return result;

@@ -261,7 +261,7 @@ public class MessagesService : IMessagesService
     }
 
     public async Task<ServiceResult<MessagesDTO>> Search(long authKeyId, InputPeerDTO peer, string q, 
-        InputPeerDTO? fromId, int? topMessageId, MessagesFilter filter, int minDate, int maxDate, 
+        InputPeerDTO? fromId, int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, 
         int offsetId, int addOffset, int limit, long maxId, long minId, long hash)
     {
         var searchResults = await _search.SearchMessages(q);

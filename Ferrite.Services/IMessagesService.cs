@@ -35,6 +35,6 @@ public interface IMessagesService
     Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, int offsetDate,
         int addOffset, int limit, long maxId, long minId, long hash);
     Task<ServiceResult<MessagesDTO>> Search(long authKeyId, InputPeerDTO peer, string q, InputPeerDTO? fromId,
-        int? topMessageId, MessagesFilter filter, int minDate, int maxDate, int offsetId, int addOffset, 
+        int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, int offsetId, int addOffset, 
         int limit, long maxId, long minId, long hash);
 }

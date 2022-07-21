@@ -18,7 +18,7 @@
 
 namespace Ferrite.Data;
 
-public enum MessagesFilter
+public enum MessagesFilterType
 {
     Empty,
     Photos,

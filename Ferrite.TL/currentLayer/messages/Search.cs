@@ -20,7 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -28,10 +31,14 @@ public class Search : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMessagesService _messages;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public Search(ITLObjectFactory objectFactory)
+    public Search(ITLObjectFactory objectFactory, IMessagesService messages, IMapperContext mapper)
     {
         factory = objectFactory;
+        _messages = messages;
+        _mapper = mapper;
     }
 
     public int Constructor => -1593989278;
@@ -228,14 +235,123 @@ public class Search : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
+        InputPeerDTO? fromId = null;
+        if (_flags[0])
+        {
+            fromId = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_fromId);
+        }
+        
+        var serviceResult = await _messages.Search(ctx.CurrentAuthKeyId,
+            _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer),
+            _q, fromId, _flags[1] ? _topMsgId : null, GetFilterType(),
+            _minDate, _maxDate, _offsetId, _addOffset,
+            _limit, _maxId, _minId, _hash);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var messages = factory.Resolve<MessagesImpl>();
-        messages.Chats = factory.Resolve<Vector<Chat>>();
-        messages.Users = factory.Resolve<Vector<User>>();
-        messages.Messages = factory.Resolve<Vector<Message>>();
-        result.Result = messages;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        else
+        {
+            var messages = factory.Resolve<MessagesImpl>();
+            messages.Chats = factory.Resolve<Vector<Chat>>();
+            foreach (var c in serviceResult.Result.Chats)
+            {
+                messages.Chats.Add(_mapper.MapToTLObject<Chat, ChatDTO>(c));
+            }
+            messages.Messages = factory.Resolve<Vector<Message>>();
+            foreach (var m in serviceResult.Result.Messages)
+            {
+                messages.Messages.Add(_mapper.MapToTLObject<Message, MessageDTO>(m));
+            }
+            messages.Users = factory.Resolve<Vector<User>>();
+            foreach (var u in serviceResult.Result.Users)
+            {
+                messages.Users.Add(_mapper.MapToTLObject<User, UserDTO>(u));
+            }
+            result.Result = messages;
+        }
         return result;
+    }
+
+    private MessagesFilterType GetFilterType()
+    {
+        if (_filter is InputMessagesFilterPhotosImpl)
+        {
+            return MessagesFilterType.Photos;
+        }
+        if (_filter is InputMessagesFilterVideoImpl)
+        {
+            return MessagesFilterType.Video;
+        }
+        if (_filter is InputMessagesFilterPhotoVideoImpl)
+        {
+            return MessagesFilterType.PhotoVideo;
+        }
+        if (_filter is InputMessagesFilterDocumentImpl)
+        {
+            return MessagesFilterType.Document;
+        }
+        if (_filter is InputMessagesFilterUrlImpl)
+        {
+            return MessagesFilterType.Url;
+        }
+        if (_filter is InputMessagesFilterGifImpl)
+        {
+            return MessagesFilterType.Gif;
+        }
+        if (_filter is InputMessagesFilterVoiceImpl)
+        {
+            return MessagesFilterType.Voice;
+        }
+        if (_filter is InputMessagesFilterMusicImpl)
+        {
+            return MessagesFilterType.Music;
+        }
+        if (_filter is InputMessagesFilterChatPhotosImpl)
+        {
+            return MessagesFilterType.ChatPhotos;
+        }
+        if (_filter is InputMessagesFilterPhoneCallsImpl c)
+        {
+            if (c.Missed)
+            {
+                return MessagesFilterType.PhoneCallsMissed;
+            }
+            else
+            {
+                return MessagesFilterType.PhoneCalls;
+            }
+        }
+        if (_filter is InputMessagesFilterRoundVoiceImpl)
+        {
+            return MessagesFilterType.RoundVoice;
+        }
+        if (_filter is InputMessagesFilterRoundVideoImpl)
+        {
+            return MessagesFilterType.RoundVideo;
+        }
+        if (_filter is InputMessagesFilterMyMentionsImpl)
+        {
+            return MessagesFilterType.MyMentions;
+        }
+        if (_filter is InputMessagesFilterGeoImpl)
+        {
+            return MessagesFilterType.Geo;
+        }
+        if (_filter is InputMessagesFilterContactsImpl)
+        {
+            return MessagesFilterType.Contacts;
+        }
+        if (_filter is InputMessagesFilterPinnedImpl)
+        {
+            return MessagesFilterType.Pinned;
+        }
+        return MessagesFilterType.Empty;
     }
 
     public void Parse(ref SequenceReader buff)
