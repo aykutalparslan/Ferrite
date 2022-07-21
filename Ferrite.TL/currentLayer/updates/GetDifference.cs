@@ -20,6 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.updates;
@@ -27,10 +31,14 @@ public class GetDifference : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IUpdatesService _updates;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetDifference(ITLObjectFactory objectFactory)
+    public GetDifference(ITLObjectFactory objectFactory, IUpdatesService updates, IMapperContext mapper)
     {
         factory = objectFactory;
+        _updates = updates;
+        _mapper = mapper;
     }
 
     public int Constructor => 630429265;
@@ -114,7 +122,46 @@ public class GetDifference : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _updates.GetDifference(ctx.CurrentAuthKeyId,
+            _pts, _date, _qts, _flags[0] ? _ptsTotalLimit : null);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            result.Result = err;
+        }
+        else
+        {
+            var diff = factory.Resolve<DifferenceImpl>();
+            diff.NewMessages = factory.Resolve<Vector<Message>>();
+            diff.NewEncryptedMessages = factory.Resolve<Vector<EncryptedMessage>>();
+            diff.OtherUpdates = factory.Resolve<Vector<Update>>();
+            diff.Chats = factory.Resolve<Vector<Chat>>();
+            diff.Users = factory.Resolve<Vector<User>>();
+            foreach (var c in serviceResult.Result.Chats)
+            {
+                diff.Chats.Add(_mapper.MapToTLObject<Chat, ChatDTO>(c));
+            }
+            foreach (var m in serviceResult.Result.NewMessages)
+            {
+                diff.NewMessages.Add(_mapper.MapToTLObject<Message, MessageDTO>(m));
+            }
+            foreach (var u in serviceResult.Result.Users)
+            {
+                diff.Users.Add(_mapper.MapToTLObject<User, UserDTO>(u));
+            }
+            var state = factory.Resolve<StateImpl>();
+            state.Date = state.Date;
+            state.Pts = state.Pts;
+            state.Qts = state.Qts;
+            state.Seq = state.Seq;
+            diff.State = state;
+            result.Result = diff;
+        }
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)
