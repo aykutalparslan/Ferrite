@@ -23,5 +23,7 @@ namespace Ferrite.Services;
 public interface IUpdatesService
 {
     public Task<StateDTO> GetState(long authKeyId);
+    public Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date,
+        int qts, int? ptsTotalLimit = null);
 }
 

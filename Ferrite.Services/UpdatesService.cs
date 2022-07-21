@@ -16,7 +16,9 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Collections.ObjectModel;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using Ferrite.Data.Updates;
 using Ferrite.Utils;
 
@@ -29,14 +31,16 @@ public class UpdatesService : IUpdatesService
     private readonly IDistributedPipe _pipe;
     private readonly IPersistentStore _store;
     private readonly IDistributedCache _cache;
+    private readonly IUnitOfWork _unitOfWork;
     public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe,
-        IPersistentStore store, IDistributedCache cache)
+        IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork)
     {
         _time = time;
         _sessions = sessions;
         _pipe = pipe;
         _store = store;
         _cache = cache;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<StateDTO> GetState(long authKeyId)
@@ -50,6 +54,36 @@ public class UpdatesService : IUpdatesService
             Pts = pts,
             Seq = pts//TODO: fix seq
         };
+    }
+
+    public async Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date, 
+        int qts, int? ptsTotalLimit = null)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var counter = _cache.GetCounter(auth.UserId + "_pts");
+        int currentPts = (int)await counter.Get();
+        var state = new StateDTO()
+        {
+            Date = (int)_time.GetUnixTimeInSeconds(),
+            Pts = currentPts,
+            Seq = currentPts//TODO: fix seq
+        };
+        var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId,
+            pts, currentPts, DateTimeOffset.FromUnixTimeSeconds(date));
+        List<UserDTO> users = new List<UserDTO>();
+        foreach (var message in messages)
+        {
+            if (message.Out && message.PeerId.PeerType == PeerType.User)
+            {
+                var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                users.Add(user);
+            }
+        }
+
+        var difference = new DifferenceDTO(messages, Array.Empty<EncryptedMessageDTO>(),
+            Array.Empty<UpdateBase>(), Array.Empty<ChatDTO>(),
+            users, state);
+        return new ServiceResult<DifferenceDTO>(difference, true, ErrorMessages.None);
     }
 }
 

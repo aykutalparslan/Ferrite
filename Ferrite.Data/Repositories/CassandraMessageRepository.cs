@@ -163,13 +163,13 @@ public class CassandraMessageRepository : IMessageRepository
         return messages;
     }
 
-    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts, DateTimeOffset date)
+    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts, int maxPts,  DateTimeOffset date)
     {
         List<MessageDTO> messages = new List<MessageDTO>();
         var statement = new SimpleStatement(
             "SELECT message_data FROM ferrite.messages " +
-            "WHERE user_id = ? AND pts > ? AND date >=? ALLOW FILTERING;",
-            userId, pts, date.ToUnixTimeMilliseconds());
+            "WHERE user_id = ? AND pts > ? AND pts <= ? AND date >=? ALLOW FILTERING;",
+            userId, pts, maxPts, date.ToUnixTimeMilliseconds());
         var results = _context.Execute(statement);
         foreach (var row in results)
         {
@@ -179,13 +179,13 @@ public class CassandraMessageRepository : IMessageRepository
         return messages;
     }
 
-    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts, DateTimeOffset date)
+    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts, int maxPts, DateTimeOffset date)
     {
         List<MessageDTO> messages = new List<MessageDTO>();
         var statement = new SimpleStatement(
             "SELECT message_data FROM ferrite.messages " +
-            "WHERE user_id = ? AND pts > ? AND date >= ? ALLOW FILTERING;",
-            userId, pts, date.ToUnixTimeMilliseconds());
+            "WHERE user_id = ? AND pts > ? AND pts <= ? AND date >= ? ALLOW FILTERING;",
+            userId, pts, maxPts, date.ToUnixTimeMilliseconds());
         var results = await _context.ExecuteAsync(statement);
         foreach (var row in results)
         {
