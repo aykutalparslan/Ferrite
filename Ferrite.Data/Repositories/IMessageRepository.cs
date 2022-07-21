@@ -23,6 +23,8 @@ public interface IMessageRepository
     public bool PutMessage(MessageDTO message, int pts);
     public IReadOnlyCollection<MessageDTO> GetMessages(long userId, PeerDTO? peerId = null);
     public ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, PeerDTO? peerId = null);
+    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts);
+    public ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts);
     public MessageDTO? GetMessage(long userId, int messageId);
     public ValueTask<MessageDTO> GetMessageAsync(long userId, int messageId);
     public bool DeleteMessage(long userId, int id);

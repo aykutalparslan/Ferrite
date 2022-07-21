@@ -128,7 +128,7 @@ public class CassandraMessageRepository : IMessageRepository
     public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, PeerDTO? peerId = null)
     {
         List<MessageDTO> messages = new List<MessageDTO>();
-if (peerId != null)
+        if (peerId != null)
         {
             var statement = new SimpleStatement(
                 "SELECT message_data FROM ferrite.messages " +
@@ -153,6 +153,38 @@ if (peerId != null)
                 var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
                 messages.Add(message);
             }
+        }
+        return messages;
+    }
+
+    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts)
+    {
+        List<MessageDTO> messages = new List<MessageDTO>();
+        var statement = new SimpleStatement(
+            "SELECT message_data FROM ferrite.messages " +
+            "WHERE user_id = ? AND pts > ? ALLOW FILTERING;",
+            userId, pts);
+        var results = _context.Execute(statement);
+        foreach (var row in results)
+        {
+            var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
+            messages.Add(message);
+        }
+        return messages;
+    }
+
+    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts)
+    {
+        List<MessageDTO> messages = new List<MessageDTO>();
+        var statement = new SimpleStatement(
+            "SELECT message_data FROM ferrite.messages " +
+            "WHERE user_id = ? AND pts > ? ALLOW FILTERING;",
+            userId, pts);
+        var results = await _context.ExecuteAsync(statement);
+        foreach (var row in results)
+        {
+            var message = MessagePackSerializer.Deserialize<MessageDTO>(row.GetValue<byte[]>("message_data"));
+            messages.Add(message);
         }
         return messages;
     }
