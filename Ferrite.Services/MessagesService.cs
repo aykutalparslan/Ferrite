@@ -128,18 +128,20 @@ public class MessagesService : IMessagesService
         };
         _unitOfWork.MessageRepository.PutMessage(outgoingMessage);
         _unitOfWork.MessageRepository.PutMessage(incomingMessage);
-        _search.IndexMessage(new MessageSearchModel(
-                (int)from.PeerType +"-"+
-                from.PeerId + "-" + outgoingMessage.Id, 
-                (int)outgoingMessage.FromId.PeerType,
-                from.PeerId, outgoingMessage.Id, 
-                outgoingMessage.MessageText));
-        _search.IndexMessage(new MessageSearchModel(
-            (int)to.PeerType +"-"+
-            to.PeerId + "-" + incomingMessage.Id, 
-            (int)incomingMessage.FromId.PeerType,
-            to.PeerId, incomingMessage.Id, 
-            incomingMessage.MessageText));
+        var searchModelOutgoing = new MessageSearchModel(
+            from.PeerId + "_" + outgoingMessage.Id,
+            from.PeerId, (int)from.PeerType, from.PeerId,
+            (int)to.PeerType, to.PeerId,outgoingMessage.Id,
+            null, outgoingMessage.MessageText, 
+            outgoingMessage.Date);
+        await _search.IndexMessage(searchModelOutgoing);
+        var searchModelIncoming = new MessageSearchModel(
+            to.PeerId + "_" + incomingMessage.Id,
+            to.PeerId, (int)to.PeerType, to.PeerId,
+            (int)from.PeerType, from.PeerId,incomingMessage.Id,
+            null, incomingMessage.MessageText, 
+            incomingMessage.Date);
+        await _search.IndexMessage(searchModelIncoming);
         await _unitOfWork.SaveAsync();
         var userPts = _cache.GetCounter(auth.UserId + "_pts");
         var pts = await userPts.IncrementAndGet();
