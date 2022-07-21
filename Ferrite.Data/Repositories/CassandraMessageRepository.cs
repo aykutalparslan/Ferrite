@@ -39,9 +39,10 @@ public class CassandraMessageRepository : IMessageRepository
             "peer_id bigint," +
             "outgoing boolean," +
             "message_id int," +
+            "pts int," +
             "message_data blob," +
             "date bigint," +
-            "PRIMARY KEY (user_id, peer_type, peer_id, outgoing, message_id));");
+            "PRIMARY KEY (user_id, peer_type, peer_id, outgoing, message_id, pts));");
         _context.Execute(statement);
         statement = new SimpleStatement(
             "CREATE TABLE IF NOT EXISTS ferrite.messages_by_id (" +
@@ -54,16 +55,16 @@ public class CassandraMessageRepository : IMessageRepository
         _context.Execute(statement);
     }
     
-    public bool PutMessage(MessageDTO message)
+    public bool PutMessage(MessageDTO message, int pts)
     {
         var data = MessagePackSerializer.Serialize(message);
         if (message.Out)
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.messages SET message_data = ?, date = ? " +
-                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
+                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ?;",
                 data, DateTimeOffset.Now.ToUnixTimeSeconds(),
-                message.FromId.PeerId, (int)message.PeerId.PeerType, message.PeerId.PeerId, true, message.Id);
+                message.FromId.PeerId, (int)message.PeerId.PeerType, message.PeerId.PeerId, true, message.Id, pts);
             _context.Enqueue(statement);
             var indexStatement = new SimpleStatement(
                 "UPDATE ferrite.messages_by_id SET peer_type = ?, peer_id = ?, outgoing = ? " +
@@ -76,9 +77,9 @@ public class CassandraMessageRepository : IMessageRepository
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.messages SET message_data = ?, date = ? " +
-                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ?;",
+                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ?;",
                 data, DateTimeOffset.Now.ToUnixTimeSeconds(),
-                message.PeerId.PeerId, (int)message.FromId.PeerType, message.FromId.PeerId, true, message.Id);
+                message.PeerId.PeerId, (int)message.FromId.PeerType, message.FromId.PeerId, true, message.Id, pts);
             _context.Enqueue(statement);
             var indexStatement = new SimpleStatement(
                 "UPDATE ferrite.messages_by_id SET peer_type = ?, peer_id = ?, outgoing = ? " +

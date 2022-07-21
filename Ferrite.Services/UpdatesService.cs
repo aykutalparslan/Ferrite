@@ -27,18 +27,28 @@ public class UpdatesService : IUpdatesService
     private readonly IMTProtoTime _time;
     private readonly ISessionService _sessions;
     private readonly IDistributedPipe _pipe;
-    public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe)
+    private readonly IPersistentStore _store;
+    private readonly IDistributedCache _cache;
+    public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe,
+        IPersistentStore store, IDistributedCache cache)
     {
         _time = time;
         _sessions = sessions;
         _pipe = pipe;
+        _store = store;
+        _cache = cache;
     }
 
-    public async Task<StateDTO> GetState()
+    public async Task<StateDTO> GetState(long authKeyId)
     {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var counter = _cache.GetCounter(auth.UserId + "_pts");
+        int pts = (int)await counter.Get();
         return new StateDTO()
         {
-            Date = (int)_time.GetUnixTimeInSeconds()
+            Date = (int)_time.GetUnixTimeInSeconds(),
+            Pts = pts,
+            Seq = pts//TODO: fix seq
         };
     }
 }

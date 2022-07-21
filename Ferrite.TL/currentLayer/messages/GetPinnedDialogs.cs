@@ -73,7 +73,7 @@ public class GetPinnedDialogs : ITLObject, ITLMethod
         resp.Dialogs = new Vector<Dialog>(factory);
         resp.Messages = new Vector<Message>(factory);
         resp.Users = new Vector<User>(factory);
-        var state = await _updates.GetState();
+        var state = await _updates.GetState(ctx.CurrentAuthKeyId);
         var currentState = factory.Resolve<StateImpl>();
         currentState.Date = state.Date;
         currentState.Pts = state.Pts;

@@ -126,8 +126,20 @@ public class MessagesService : IMessagesService
             FromId = to,
             PeerId = from,
         };
-        _unitOfWork.MessageRepository.PutMessage(outgoingMessage);
-        _unitOfWork.MessageRepository.PutMessage(incomingMessage);
+        var userPts = _cache.GetCounter(auth.UserId + "_pts");
+        int pts = (int)await userPts.IncrementAndGet();
+        if (pts == 0)
+        {
+            await userPts.IncrementAndGet();
+        }
+        _unitOfWork.MessageRepository.PutMessage(outgoingMessage, pts);
+        var peerPts = _cache.GetCounter(to.PeerId + "_pts");
+        int ptsPeer = (int)await userPts.IncrementAndGet();
+        if (ptsPeer == 0)
+        {
+            await peerPts.IncrementAndGet();
+        }
+        _unitOfWork.MessageRepository.PutMessage(incomingMessage, ptsPeer);
         var searchModelOutgoing = new MessageSearchModel(
             from.PeerId + "_" + outgoingMessage.Id,
             from.PeerId, (int)from.PeerType, from.PeerId,
@@ -143,12 +155,7 @@ public class MessagesService : IMessagesService
             incomingMessage.Date);
         await _search.IndexMessage(searchModelIncoming);
         await _unitOfWork.SaveAsync();
-        var userPts = _cache.GetCounter(auth.UserId + "_pts");
-        var pts = await userPts.IncrementAndGet();
-        if (pts == 0)
-        {
-            await userPts.IncrementAndGet();
-        }
+        
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, messageId,
                 (int)pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);

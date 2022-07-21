@@ -22,6 +22,6 @@ namespace Ferrite.Services;
 
 public interface IUpdatesService
 {
-    public Task<StateDTO> GetState();
+    public Task<StateDTO> GetState(long authKeyId);
 }
 

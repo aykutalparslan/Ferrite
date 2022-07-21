@@ -55,7 +55,7 @@ public class GetState : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var state = await _updates.GetState();
+        var state = await _updates.GetState(ctx.CurrentAuthKeyId);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var resp = factory.Resolve<StateImpl>();

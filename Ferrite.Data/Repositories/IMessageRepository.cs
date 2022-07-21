@@ -20,7 +20,7 @@ namespace Ferrite.Data.Repositories;
 
 public interface IMessageRepository
 {
-    public bool PutMessage(MessageDTO message);
+    public bool PutMessage(MessageDTO message, int pts);
     public IReadOnlyCollection<MessageDTO> GetMessages(long userId, PeerDTO? peerId = null);
     public ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, PeerDTO? peerId = null);
     public MessageDTO? GetMessage(long userId, int messageId);
