@@ -40,9 +40,9 @@ public class CassandraMessageRepository : IMessageRepository
             "outgoing boolean," +
             "message_id int," +
             "pts int," +
-            "message_data blob," +
             "date bigint," +
-            "PRIMARY KEY (user_id, peer_type, peer_id, outgoing, message_id, pts));");
+            "message_data blob," +
+            "PRIMARY KEY (user_id, peer_type, peer_id, outgoing, message_id, pts, date));");
         _context.Execute(statement);
         statement = new SimpleStatement(
             "CREATE TABLE IF NOT EXISTS ferrite.messages_by_id (" +
@@ -61,10 +61,13 @@ public class CassandraMessageRepository : IMessageRepository
         if (message.Out)
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.messages SET message_data = ?, date = ? " +
-                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ?;",
-                data, DateTimeOffset.Now.ToUnixTimeSeconds(),
-                message.FromId.PeerId, (int)message.PeerId.PeerType, message.PeerId.PeerId, true, message.Id, pts);
+                "UPDATE ferrite.messages SET message_data = ?" +
+                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? " +
+                "AND outgoing = ? AND message_id = ? AND pts = ? " +
+                "AND date = ?;",
+                data,
+                message.FromId.PeerId, (int)message.PeerId.PeerType, message.PeerId.PeerId, 
+                true, message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
             _context.Enqueue(statement);
             var indexStatement = new SimpleStatement(
                 "UPDATE ferrite.messages_by_id SET peer_type = ?, peer_id = ?, outgoing = ? " +
@@ -77,9 +80,12 @@ public class CassandraMessageRepository : IMessageRepository
         {
             var statement = new SimpleStatement(
                 "UPDATE ferrite.messages SET message_data = ?, date = ? " +
-                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ?;",
-                data, DateTimeOffset.Now.ToUnixTimeSeconds(),
-                message.PeerId.PeerId, (int)message.FromId.PeerType, message.FromId.PeerId, true, message.Id, pts);
+                "WHERE user_id = ? AND peer_type = ? AND peer_id = ? " +
+                "AND outgoing = ? AND message_id = ? AND pts = ? " +
+                "AND date = ?;",
+                data,
+                message.PeerId.PeerId, (int)message.FromId.PeerType, message.FromId.PeerId, true, 
+                message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
             _context.Enqueue(statement);
             var indexStatement = new SimpleStatement(
                 "UPDATE ferrite.messages_by_id SET peer_type = ?, peer_id = ?, outgoing = ? " +
@@ -157,13 +163,13 @@ public class CassandraMessageRepository : IMessageRepository
         return messages;
     }
 
-    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts)
+    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts, DateTimeOffset date)
     {
         List<MessageDTO> messages = new List<MessageDTO>();
         var statement = new SimpleStatement(
             "SELECT message_data FROM ferrite.messages " +
-            "WHERE user_id = ? AND pts > ? ALLOW FILTERING;",
-            userId, pts);
+            "WHERE user_id = ? AND pts > ? AND date >=? ALLOW FILTERING;",
+            userId, pts, date.ToUnixTimeMilliseconds());
         var results = _context.Execute(statement);
         foreach (var row in results)
         {
@@ -173,13 +179,13 @@ public class CassandraMessageRepository : IMessageRepository
         return messages;
     }
 
-    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts)
+    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts, DateTimeOffset date)
     {
         List<MessageDTO> messages = new List<MessageDTO>();
         var statement = new SimpleStatement(
             "SELECT message_data FROM ferrite.messages " +
-            "WHERE user_id = ? AND pts > ? ALLOW FILTERING;",
-            userId, pts);
+            "WHERE user_id = ? AND pts > ? AND date >= ? ALLOW FILTERING;",
+            userId, pts, date.ToUnixTimeMilliseconds());
         var results = await _context.ExecuteAsync(statement);
         foreach (var row in results)
         {
