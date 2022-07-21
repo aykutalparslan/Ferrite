@@ -260,6 +260,32 @@ public class MessagesService : IMessagesService
         return new ServiceResult<MessagesDTO>(messagesResult, true, ErrorMessages.None);
     }
 
+    public async Task<ServiceResult<MessagesDTO>> Search(long authKeyId, InputPeerDTO peer, string q, 
+        InputPeerDTO? fromId, int? topMessageId, MessagesFilter filter, int minDate, int maxDate, 
+        int offsetId, int addOffset, int limit, long maxId, long minId, long hash)
+    {
+        var searchResults = await _search.SearchMessages(q);
+        //TODO: implement a proper search with pagination
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+            return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
+        List<MessageDTO> messages = new List<MessageDTO>();
+        List<UserDTO> users = new List<UserDTO>();
+        foreach (var r in searchResults)
+        {
+            var message = await _unitOfWork.MessageRepository.GetMessageAsync(r.UserId, r.MessageId);
+            messages.Add(message);
+            if (message.Out && message.PeerId.PeerType == PeerType.User)
+            {
+                var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                users.Add(user);
+            }
+        }
+
+        return new ServiceResult<MessagesDTO>(new MessagesDTO(MessagesType.Messages, messages, 
+            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
+    }
+
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)
     {
         if (peer.InputPeerType == InputPeerType.Self)
