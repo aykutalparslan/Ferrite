@@ -25,7 +25,7 @@ namespace Ferrite.Transport
         private static ReadOnlySpan<byte> EncodedWebSocketKey => "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"u8;
 
         private static ReadOnlySpan<byte> CRLF => "\r\n"u8;
-        private static ReadOnlySpan<byte> Seperator => ": "u8;
+        private static ReadOnlySpan<byte> Separator => ": "u8;
         private static ReadOnlySpan<byte> Http11 => "HTTP/1.1 "u8;
         private static ReadOnlySpan<byte> Http2 => "HTTP/2 "u8;
         private static ReadOnlySpan<byte> Http3 => "HTTP/3 "u8;
@@ -103,7 +103,7 @@ namespace Ferrite.Transport
                     output.Write(ConnectionUpgrade);
                     output.Write(UpgradeWebsocket);
                     output.Write(WebSocketAccept);
-                    output.Write(Seperator);
+                    output.Write(Separator);
                     Span<byte> responseKey = stackalloc byte[28];
                     WriteResponseKeyTo(websocketKey, responseKey);
                     output.Write(responseKey);
@@ -111,7 +111,7 @@ namespace Ferrite.Transport
                     if (!string.IsNullOrWhiteSpace(protocol))
                     {
                         output.Write(WebSocketProtocol);
-                        output.Write(Seperator);
+                        output.Write(Separator);
                         output.Write(Encoding.UTF8.GetBytes(protocol));
                         output.Write(CRLF);
                     }
