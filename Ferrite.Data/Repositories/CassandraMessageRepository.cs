@@ -168,7 +168,7 @@ public class CassandraMessageRepository : IMessageRepository
         List<MessageDTO> messages = new List<MessageDTO>();
         var statement = new SimpleStatement(
             "SELECT message_data FROM ferrite.messages " +
-            "WHERE user_id = ? AND pts > ? AND pts <= ? AND date >=? ALLOW FILTERING;",
+            "WHERE user_id = ? AND pts > ? AND pts <= ? AND date >= ? ALLOW FILTERING;",
             userId, pts, maxPts, date.ToUnixTimeMilliseconds());
         var results = _context.Execute(statement);
         foreach (var row in results)
