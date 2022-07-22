@@ -18,4 +18,4 @@
 
 namespace Ferrite.Services;
 
-public readonly record struct ErrorMessage(int Code, byte[] Message);
+public readonly record struct ErrorMessage(int Code, string Message);

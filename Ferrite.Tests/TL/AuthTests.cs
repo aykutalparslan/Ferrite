@@ -448,7 +448,7 @@ public class AuthTests
         Assert.IsType<RpcError>(rslt.Result);
         var err = (RpcError)rslt.Result;
         Assert.Equal(400, err.ErrorCode);
-        Assert.Equal(Encoding.UTF8.GetBytes("AUTH_BYTES_INVALID"), err.ErrorMessage);
+        Assert.Equal("AUTH_BYTES_INVALID", err.ErrorMessage);
     }
     /* these will not be implemented yet
     [Fact]
@@ -1268,7 +1268,7 @@ public class AuthTests
             It.IsAny<MTProtoSession>())).ReturnsAsync(() => true);
         sessionManager.Setup(x => x.GetAuthSessionStateAsync(It.IsAny<byte[]>())).ReturnsAsync((byte[] nonce) =>
         {
-            var rawSession = _authKeySessionStates[(Int128)nonce];
+            var rawSession = _authKeySessionStates[(Ferrite.TL.Int128)nonce];
             if (rawSession != null)
             {
                 var state = MessagePackSerializer.Deserialize<AuthSessionState>(rawSession);
@@ -1286,8 +1286,8 @@ public class AuthTests
             .ReturnsAsync(
                 (byte[] nonce, AuthSessionState state) =>
                 {
-                    _authKeySessionStates.Remove((Int128)nonce);
-                    _authKeySessionStates.Add((Int128)nonce, MessagePackSerializer.Serialize(state));
+                    _authKeySessionStates.Remove((Ferrite.TL.Int128)nonce);
+                    _authKeySessionStates.Add((Ferrite.TL.Int128)nonce, MessagePackSerializer.Serialize(state));
                     return true;
                 });
         
@@ -1308,7 +1308,7 @@ public class AuthTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.currentLayer"))
             .AsSelf();
-        builder.Register(_ => new Int128());
+        builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();

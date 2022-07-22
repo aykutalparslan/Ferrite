@@ -30,20 +30,20 @@ public class RedisCache: IDistributedCache
     private readonly ConnectionMultiplexer redis;
     private readonly IMTProtoTime _time;
     private const int ExpiryMaxSeconds = 3600;
-    private readonly byte[] AuthKeyPrefix = "auth-";
-    private readonly byte[] TempAuthKeyPrefix = "tauth-";
-    private readonly byte[] BoundAuthKeyPrefix = "bauth-";
-    private readonly byte[] BoundTempAuthKeyPrefix = "btauth-";
-    private readonly byte[] BoundTempKeysPrefix = "bkeys-";
-    private readonly byte[] SessionPrefix = "ses-s";
-    private readonly byte[] SessionByAuthKeyPrefix = "sbauth-";
-    private readonly byte[] PhoneCodePrefix = "pcode-";
-    private readonly byte[] SignInPrefix = "sign-";
-    private readonly byte[] AuthSessionPrefix = "asess-";
-    private readonly byte[] ServerSaltPrefix = "salt-";
-    private readonly byte[] LoginTokenPrefix = "ltoken-";
-    private readonly byte[] UserStatusPrefix = "ustat-";
-    private readonly byte[] DeviceLockedPrefix = "dlock-";
+    private readonly string AuthKeyPrefix = "auth-";
+    private readonly string TempAuthKeyPrefix = "tauth-";
+    private readonly string BoundAuthKeyPrefix = "bauth-";
+    private readonly string BoundTempAuthKeyPrefix = "btauth-";
+    private readonly string BoundTempKeysPrefix = "bkeys-";
+    private readonly string SessionPrefix = "ses-s";
+    private readonly string SessionByAuthKeyPrefix = "sbauth-";
+    private readonly string PhoneCodePrefix = "pcode-";
+    private readonly string SignInPrefix = "sign-";
+    private readonly string AuthSessionPrefix = "asess-";
+    private readonly string ServerSaltPrefix = "salt-";
+    private readonly string LoginTokenPrefix = "ltoken-";
+    private readonly string UserStatusPrefix = "ustat-";
+    private readonly string DeviceLockedPrefix = "dlock-";
 
     public RedisCache(string config, IMTProtoTime time)
     {

@@ -43,7 +43,7 @@ public class RpcError : ITLObject
             writer.Clear();
             writer.WriteInt32(Constructor, true);
             writer.WriteInt32(errorCode, true);
-            writer.WriteTLBytes(errorMessage);
+            writer.WriteTLString(errorMessage);
             serialized = true;
             return writer.ToReadOnlySequence();
         }
@@ -60,8 +60,8 @@ public class RpcError : ITLObject
         }
     }
 
-    private byte[] errorMessage;
-    public byte[] ErrorMessage
+    private string errorMessage;
+    public string ErrorMessage
     {
         get => errorMessage;
         set
@@ -75,7 +75,7 @@ public class RpcError : ITLObject
     {
         serialized = false;
         errorCode = buff.ReadInt32(true);
-        errorMessage = buff.ReadTLBytes().ToArray();
+        errorMessage = buff.ReadTLString();
     }
 
     public void WriteTo(Span<byte> buff)

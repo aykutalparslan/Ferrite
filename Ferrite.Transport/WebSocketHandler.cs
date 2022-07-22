@@ -22,19 +22,19 @@ namespace Ferrite.Transport
         // The .NET Foundation licenses this file to you under the MIT license.
         // "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
         // This uses C# compiler's ability to refer to static data directly. For more information see https://vcsjones.dev/2019/02/01/csharp-readonly-span-bytes-static
-        private static ReadOnlySpan<byte> EncodedWebSocketKey => "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        private static ReadOnlySpan<byte> EncodedWebSocketKey => "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"u8;
 
-        private static ReadOnlySpan<byte> CRLF => "\r\n";
-        private static ReadOnlySpan<byte> Seperator => ": ";
-        private static ReadOnlySpan<byte> Http11 => "HTTP/1.1 ";
-        private static ReadOnlySpan<byte> Http2 => "HTTP/2 ";
-        private static ReadOnlySpan<byte> Http3 => "HTTP/3 ";
-        private static ReadOnlySpan<byte> Resp101 => "101 Switching Protocols\r\n";
-        private static ReadOnlySpan<byte> ConnectionUpgrade => "Connection: upgrade\r\n";
-        private static ReadOnlySpan<byte> UpgradeWebsocket => "Upgrade: websocket\r\n";
-        private static ReadOnlySpan<byte> WebSocketAccept => "Sec-WebSocket-Accept";
+        private static ReadOnlySpan<byte> CRLF => "\r\n"u8;
+        private static ReadOnlySpan<byte> Seperator => ": "u8;
+        private static ReadOnlySpan<byte> Http11 => "HTTP/1.1 "u8;
+        private static ReadOnlySpan<byte> Http2 => "HTTP/2 "u8;
+        private static ReadOnlySpan<byte> Http3 => "HTTP/3 "u8;
+        private static ReadOnlySpan<byte> Resp101 => "101 Switching Protocols\r\n"u8;
+        private static ReadOnlySpan<byte> ConnectionUpgrade => "Connection: upgrade\r\n"u8;
+        private static ReadOnlySpan<byte> UpgradeWebsocket => "Upgrade: websocket\r\n"u8;
+        private static ReadOnlySpan<byte> WebSocketAccept => "Sec-WebSocket-Accept"u8;
 
-        private static ReadOnlySpan<byte> WebSocketProtocol => "Sec-WebSocket-Protocol";
+        private static ReadOnlySpan<byte> WebSocketProtocol => "Sec-WebSocket-Protocol"u8;
 
         /// <summary>
         /// Validates the Sec-WebSocket-Key request header

@@ -45,8 +45,8 @@ public class AllocationFreeSerializationTests
     {
         var container = BuildContainer();
         var tmp = container.Resolve<ReqDhParams>();
-        tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
-        tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.Nonce = (Ferrite.TL.Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.ServerNonce = (Ferrite.TL.Int128)RandomNumberGenerator.GetBytes(16);
         tmp.P = RandomNumberGenerator.GetBytes(4);
         tmp.Q = RandomNumberGenerator.GetBytes(4);
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(278);
@@ -62,8 +62,8 @@ public class AllocationFreeSerializationTests
     {
         var container = BuildContainer();
         var tmp = container.Resolve<ResPQ>();
-        tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
-        tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.Nonce = (Ferrite.TL.Int128)RandomNumberGenerator.GetBytes(16);
+        tmp.ServerNonce = (Ferrite.TL.Int128)RandomNumberGenerator.GetBytes(16);
         tmp.Pq = RandomNumberGenerator.GetBytes(8);
         var fingerprints = new VectorOfLong(3);
         fingerprints.Add(123416662344445L);
@@ -85,8 +85,8 @@ public class AllocationFreeSerializationTests
         for (int i = 0; i < 10; i++)
         {
             var tmp = container.Resolve<ReqDhParams>();
-            tmp.Nonce = (Int128)RandomNumberGenerator.GetBytes(16);
-            tmp.ServerNonce = (Int128)RandomNumberGenerator.GetBytes(16);
+            tmp.Nonce = (Ferrite.TL.Int128)RandomNumberGenerator.GetBytes(16);
+            tmp.ServerNonce = (Ferrite.TL.Int128)RandomNumberGenerator.GetBytes(16);
             tmp.P = RandomNumberGenerator.GetBytes(4);
             tmp.Q = RandomNumberGenerator.GetBytes(4);
             tmp.EncryptedData = RandomNumberGenerator.GetBytes(33);
@@ -269,7 +269,7 @@ public class AllocationFreeSerializationTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.Register(_ => new Int128());
+        builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(cassandra);

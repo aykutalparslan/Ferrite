@@ -54,7 +54,7 @@ public class BufferUtils
     /// <param name="offset">Offset in the source buffer.</param>
     /// <param name="length">Length of the source buffer.</param>
     /// <returns></returns>
-    public static unsafe int GetTLBytesLength(byte* buffer, in int offset, in int length)
+    public static unsafe int GetTLBytesLength(byte* buffer, int offset, int length)
     {
         if (offset > length)
         {
@@ -78,7 +78,7 @@ public class BufferUtils
     /// <param name="offset">Offset in the source buffer.</param>
     /// <param name="length">Length of the source buffer.</param>
     /// <returns></returns>
-    public static unsafe Span<byte> GetTLBytes(byte* buffer, in int offset, in int length)
+    public static unsafe Span<byte> GetTLBytes(byte* buffer, int offset, int length)
     {
         if (offset >= length) return new Span<byte>();
         var b = buffer + offset;

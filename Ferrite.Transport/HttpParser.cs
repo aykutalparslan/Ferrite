@@ -307,7 +307,8 @@ public class HttpParser<TRequestHandler> : IHttpParser<TRequestHandler> where TR
 
             // Advance 1 to include CR/LF in lineEnd
             lineEnd = currentSlice.GetPosition(1, lineEndPosition.Value);
-            headerSpan = currentSlice.Slice(reader.Position, lineEnd).ToSpan();
+            var slice = currentSlice.Slice(reader.Position, lineEnd);
+            headerSpan = slice.IsSingleSegment ? slice.FirstSpan : slice.ToArray();
             if (headerSpan[^1] != ByteCR)
             {
                 RejectRequestHeader(headerSpan);
@@ -317,7 +318,8 @@ public class HttpParser<TRequestHandler> : IHttpParser<TRequestHandler> where TR
 
         // Advance 2 to include CR{LF?} in lineEnd
         lineEnd = currentSlice.GetPosition(2, lineEndPosition.Value);
-        headerSpan = currentSlice.Slice(reader.Position, lineEnd).ToSpan();
+        var slice2 = currentSlice.Slice(reader.Position, lineEnd);
+        headerSpan = slice2.IsSingleSegment ? slice2.FirstSpan : slice2.ToArray();
 
         if (headerSpan.Length < 5)
         {

@@ -50,14 +50,14 @@ public class ReqDhParamsHandler : IQueryHandler<req_DH_params>
         var rsaKey = keyProvider.GetKey(query.public_key_fingerprint);
         if (rsaKey == null)
         {
-            var rpcError = rpc_error.Create(-404, "");
+            var rpcError = rpc_error.Create(-404, ""u8);
             log.Debug("Could not obtain the RSA Key.");
             return rpcError;
         }
         if(!ctx.SessionData.ContainsKey("nonce") || 
                 !ctx.SessionData.ContainsKey("server_nonce"))
         {
-            var rpcError = rpc_error.Create(-404, "");
+            var rpcError = rpc_error.Create(-404, ""u8);
             log.Debug("Session is empty.");
             return rpcError;
         }
@@ -68,7 +68,7 @@ public class ReqDhParamsHandler : IQueryHandler<req_DH_params>
         if (!sha256.AsSpan().SequenceEqual(data.Span.Slice(224)))
         {
             log.Debug("SHA256 did not match.");
-            var rpcError = rpc_error.Create(-404, "");
+            var rpcError = rpc_error.Create(-404, ""u8);
             return rpcError;
         }
 
@@ -84,7 +84,7 @@ public class ReqDhParamsHandler : IQueryHandler<req_DH_params>
                 !query.server_nonce.SequenceEqual(pQInnerData.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match.");
+                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8);
                 return rpcError;
             }
             var inner_new_nonce = pQInnerData.new_nonce.ToArray();
@@ -113,7 +113,7 @@ public class ReqDhParamsHandler : IQueryHandler<req_DH_params>
                 !query.server_nonce.SequenceEqual(pQInnerDataDc.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match.");
+                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8);
                 return rpcError;
             }
             var inner_new_nonce = pQInnerDataDc.new_nonce.ToArray();
@@ -144,7 +144,7 @@ public class ReqDhParamsHandler : IQueryHandler<req_DH_params>
                 !query.server_nonce.SequenceEqual(pQInnerDataTempDc.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match.");
+                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8);
                 return rpcError;
             }
             var inner_new_nonce = pQInnerDataTempDc.new_nonce.ToArray();
@@ -176,7 +176,7 @@ public class ReqDhParamsHandler : IQueryHandler<req_DH_params>
                 !query.server_nonce.SequenceEqual(pQInnerDataTemp.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match.");
+                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8);
                 return rpcError;
             }
             var inner_new_nonce = pQInnerDataTemp.new_nonce.ToArray();

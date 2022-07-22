@@ -67,7 +67,7 @@ public class PqTests
             mock.Mock<ILogger>();
 
             var reqpq = mock.Create<ReqPqMulti>();
-            reqpq.Nonce = (Int128)(new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
+            reqpq.Nonce = (Ferrite.TL.Int128)(new byte[] { 0x3E, 0x05, 0x49, 0x82, 0x8C, 0xCA, 0x27, 0xE9,
             0x66, 0xB3, 0x01, 0xA4, 0x8F, 0xEC, 0xE2, 0xFC });
 
             TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
@@ -115,7 +115,7 @@ public class PqTests
             mock.Mock<ILogger>();
 
             var reqpq = mock.Create<ReqPqMulti>();
-            reqpq.Nonce = (Int128)nonce;
+            reqpq.Nonce = (Ferrite.TL.Int128)nonce;
 
             TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
             var respq = await reqpq.ExecuteAsync(context);
@@ -150,7 +150,7 @@ public class PqTests
             mock.Mock<ILogger>();
 
             var reqpq = mock.Create<ReqPqMulti>();
-            reqpq.Nonce = (Int128)nonce;
+            reqpq.Nonce = (Ferrite.TL.Int128)nonce;
 
             TLExecutionContext context = new TLExecutionContext(new Dictionary<string, object>());
             var respq = await reqpq.ExecuteAsync(context);
@@ -162,7 +162,7 @@ public class PqTests
             Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
 
             var reqpqNew = mock.Create<ReqPqMulti>();
-            reqpqNew.Nonce = (Int128)nonce;
+            reqpqNew.Nonce = (Ferrite.TL.Int128)nonce;
             var respqNew = reqpqNew.ExecuteAsync(context);
             Assert.Equal(server_nonce, context.SessionData["server_nonce"]);
         }
@@ -227,7 +227,7 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.Register(_ => new Int128());
+        builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(cassandra);
@@ -285,7 +285,7 @@ public class PqTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
-        builder.Register(_ => new Int128());
+        builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(cassandra);
@@ -351,8 +351,8 @@ public class PqTests
         context.SessionData.Add("q", 0x53911073);
 
         var reqDhParams = container.Resolve<ReqDhParams>();
-        reqDhParams.Nonce = (Int128)n;
-        reqDhParams.ServerNonce = (Int128)sn;
+        reqDhParams.Nonce = (Ferrite.TL.Int128)n;
+        reqDhParams.ServerNonce = (Ferrite.TL.Int128)sn;
         var pBytes = BitConverter.GetBytes(0x494C553B);
         if (!BitConverter.IsLittleEndian)
         {
@@ -371,8 +371,8 @@ public class PqTests
         pQInnerDataDc.Pq = pq;
         pQInnerDataDc.P = pBytes;
         pQInnerDataDc.Q = qBytes;
-        pQInnerDataDc.Nonce = (Int128)n;
-        pQInnerDataDc.ServerNonce = (Int128)sn;
+        pQInnerDataDc.Nonce = (Ferrite.TL.Int128)n;
+        pQInnerDataDc.ServerNonce = (Ferrite.TL.Int128)sn;
         var newNonceBytes = RandomNumberGenerator.GetBytes(32);
         pQInnerDataDc.NewNonce = (Int256)nn;
         pQInnerDataDc.Dc = 1;
@@ -492,8 +492,8 @@ public class PqTests
         context.SessionData.Add("q", 0x53911073);
 
         var reqDhParams = container.Resolve<ReqDhParams>();
-        reqDhParams.Nonce = (Int128)nonce;
-        reqDhParams.ServerNonce = (Int128)server_nonce;
+        reqDhParams.Nonce = (Ferrite.TL.Int128)nonce;
+        reqDhParams.ServerNonce = (Ferrite.TL.Int128)server_nonce;
         var pBytes = BitConverter.GetBytes(0x494C553B);
         if (!BitConverter.IsLittleEndian)
         {
@@ -512,8 +512,8 @@ public class PqTests
         pQInnerDataDc.Pq = pq;
         pQInnerDataDc.P = pBytes;
         pQInnerDataDc.Q = qBytes;
-        pQInnerDataDc.Nonce = (Int128)nonce;
-        pQInnerDataDc.ServerNonce = (Int128)server_nonce;
+        pQInnerDataDc.Nonce = (Ferrite.TL.Int128)nonce;
+        pQInnerDataDc.ServerNonce = (Ferrite.TL.Int128)server_nonce;
         var newNonceBytes = RandomNumberGenerator.GetBytes(32);
         pQInnerDataDc.NewNonce = (Int256)newNonceBytes;
         pQInnerDataDc.Dc = 1;
@@ -668,8 +668,8 @@ public class PqTests
 
         var clientDhInnerData = container.Resolve<ClientDhInnerData>();
         clientDhInnerData.GB = g_b.ToByteArray(true, true);
-        clientDhInnerData.Nonce = (Int128)n;
-        clientDhInnerData.ServerNonce = (Int128)sn;
+        clientDhInnerData.Nonce = (Ferrite.TL.Int128)n;
+        clientDhInnerData.ServerNonce = (Ferrite.TL.Int128)sn;
         clientDhInnerData.RetryId = 0;
 
         var buff = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
@@ -700,8 +700,8 @@ public class PqTests
         ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
 
         var setClientDhParams = factory.Resolve<SetClientDhParams>();
-        setClientDhParams.Nonce = (Int128)n;
-        setClientDhParams.ServerNonce = (Int128)sn;
+        setClientDhParams.Nonce = (Ferrite.TL.Int128)n;
+        setClientDhParams.ServerNonce = (Ferrite.TL.Int128)sn;
         setClientDhParams.EncryptedData = encrypted;
         var result = (DhGenRetry) await setClientDhParams.ExecuteAsync(context);
 
@@ -768,8 +768,8 @@ public class PqTests
 
         var clientDhInnerData = container.Resolve<ClientDhInnerData>();
         clientDhInnerData.GB = g_b.ToByteArray(true, true);
-        clientDhInnerData.Nonce = (Int128)n;
-        clientDhInnerData.ServerNonce = (Int128)sn;
+        clientDhInnerData.Nonce = (Ferrite.TL.Int128)n;
+        clientDhInnerData.ServerNonce = (Ferrite.TL.Int128)sn;
         clientDhInnerData.RetryId = 0;
 
         var buff = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
@@ -800,8 +800,8 @@ public class PqTests
         ITLObjectFactory factory = container.Resolve<ITLObjectFactory>();
 
         var setClientDhParams = factory.Resolve<SetClientDhParams>();
-        setClientDhParams.Nonce = (Int128)n;
-        setClientDhParams.ServerNonce = (Int128)sn;
+        setClientDhParams.Nonce = (Ferrite.TL.Int128)n;
+        setClientDhParams.ServerNonce = (Ferrite.TL.Int128)sn;
         setClientDhParams.EncryptedData = encrypted;
         var result = (DhGenOk) await setClientDhParams.ExecuteAsync(context);
         

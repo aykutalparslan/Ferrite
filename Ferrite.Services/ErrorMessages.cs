@@ -22,7 +22,7 @@ namespace Ferrite.Services;
 
 public class ErrorMessages
 {
-    public static readonly ErrorMessage None = new ErrorMessage(0, Array.Empty<byte>());
+    public static readonly ErrorMessage None = new ErrorMessage(0, string.Empty);
     public static readonly ErrorMessage PhoneNumberOccupied = new ErrorMessage(400, "PHONE_NUMBER_OCCUPIED");
     public static readonly ErrorMessage FreshChangePhoneForbidden = new ErrorMessage(406, "FRESH_CHANGE_PHONE_FORBIDDEN");
     public static readonly ErrorMessage PhoneNumberBanned = new ErrorMessage(400, "PHONE_NUMBER_BANNED");
