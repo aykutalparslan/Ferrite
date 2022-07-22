@@ -23,7 +23,7 @@ public interface IMessageBox
     /// <summary>
     /// Returns the current event sequence number.
     /// </summary>
-    public int Pts { get; }
+    public Task<int> Pts();
     /// <summary>
     /// Increments the current event sequence number and
     /// adds an unread message to the message box for the peer.
@@ -31,17 +31,17 @@ public interface IMessageBox
     /// <param name="peer">The message destination.</param>
     /// <param name="messageId">the message Id.</param>
     /// <returns>Event sequence number after increment.</returns>
-    public int IncrementPtsForMessage(PeerDTO peer, int messageId);
+    public Task<int> IncrementPtsForMessage(PeerDTO peer, int messageId);
     /// <summary>
     /// Marks the messages with lower Id's than the <paramref name="maxId"/> as read.
     /// </summary>
     /// <param name="peer">The message destination.</param>
     /// <param name="maxId">The maximum Id for the messages to be read.</param>
     /// <returns>The number of unread messages remaining.</returns>
-    public int ReadMessages(PeerDTO peer, int maxId);
+    public Task<int> ReadMessages(PeerDTO peer, int maxId);
     /// <summary>
     ///  Increments the current event sequence number.
     /// </summary>
     /// <returns>Event sequence number after increment.</returns>
-    public int IncrementPts();
+    public Task<int> IncrementPts();
 }
