@@ -20,63 +20,64 @@ using StackExchange.Redis;
 
 namespace Ferrite.Data;
 
-public class RedisMessageBox : IMessageBox
+public class RedisUpdatesContext : IUpdatesContext
 {
     private readonly ConnectionMultiplexer _redis;
-    private readonly IAtomicCounter _counter;
+    private readonly long _authKeyId;
     private readonly long _userId;
-    private readonly SortedSet<RedisKey> _dialogs = new SortedSet<RedisKey>();
-    public RedisMessageBox(ConnectionMultiplexer redis, long userId)
+    private readonly IAtomicCounter _counter;
+    private readonly IMessageBox _commonMessageBox;
+    private readonly ISecretMessageBox _secondaryMessageBox;
+    public RedisUpdatesContext(ConnectionMultiplexer redis, long authKeyId, long userId)
     {
         _redis = redis;
+        _authKeyId = authKeyId;
         _userId = userId;
-        _counter = new RedisCounter(redis, $"seq:pts:{userId}");
+        _counter = new RedisCounter(redis, $"seq:updates:{userId}");
+        _commonMessageBox = new RedisMessageBox(redis, userId);
+        _secondaryMessageBox = new RedisSecretMessageBox(redis, authKeyId);
     }
-
     public async Task<int> Pts()
     {
-        return (int)await _counter.Get();
+        return await _commonMessageBox.Pts();
     }
 
     public async Task<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
     {
-        IDatabase db = _redis.GetDatabase();
-        RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
-        if (!_dialogs.Contains(key))
-        {
-            _dialogs.Add(key);
-        }
-        db.SortedSetAdd(key, messageId, messageId);
-        return (int)await _counter.IncrementAndGet();
+        return await _commonMessageBox.IncrementPtsForMessage(peer, messageId);
     }
 
     public async Task<int> ReadMessages(PeerDTO peer, int maxId)
     {
-        IDatabase db = _redis.GetDatabase();
-        RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
-        await db.SortedSetRemoveRangeByScoreAsync(key, 0, maxId);
-        int unread = 0;
-        foreach (var k in _dialogs)
-        {
-            unread += (int)await db.SortedSetLengthAsync(k);
-        }
-
-        return unread;
+        return await _commonMessageBox.ReadMessages(peer, maxId);
     }
 
     public async Task<int> UnreadMessages()
     {
-        IDatabase db = _redis.GetDatabase();
-        int unread = 0;
-        foreach (var k in _dialogs)
-        {
-            unread += (int)await db.SortedSetLengthAsync(k);
-        }
-
-        return unread;
+        return await _commonMessageBox.UnreadMessages();
     }
 
     public async Task<int> IncrementPts()
+    {
+        return await _commonMessageBox.IncrementPts();
+    }
+
+    public async Task<int> Qts()
+    {
+        return await _secondaryMessageBox.Qts();
+    }
+
+    public async Task<int> IncrementQts()
+    {
+        return await _secondaryMessageBox.IncrementQts();
+    }
+
+    public async Task<int> Seq()
+    {
+        return (int)await _counter.Get();
+    }
+
+    public async Task<int> IncrementSeq()
     {
         return (int)await _counter.IncrementAndGet();
     }

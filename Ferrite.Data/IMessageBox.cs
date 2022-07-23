@@ -21,8 +21,9 @@ namespace Ferrite.Data;
 public interface IMessageBox
 {
     /// <summary>
-    /// Returns the current event sequence number.
+    /// 
     /// </summary>
+    /// <returns>Current event sequence number.</returns>
     public Task<int> Pts();
     /// <summary>
     /// Increments the current event sequence number and
@@ -39,6 +40,11 @@ public interface IMessageBox
     /// <param name="maxId">The maximum Id for the messages to be read.</param>
     /// <returns>The number of unread messages remaining.</returns>
     public Task<int> ReadMessages(PeerDTO peer, int maxId);
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns>Number of unread messages.</returns>
+    public Task<int> UnreadMessages();
     /// <summary>
     ///  Increments the current event sequence number.
     /// </summary>

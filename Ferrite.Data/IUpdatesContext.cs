@@ -23,14 +23,10 @@ public interface IUpdatesContext: IMessageBox, ISecretMessageBox
     /// <summary>
     /// Returns the number of sent updates.
     /// </summary>
-    public int Seq { get; }
-    /// <summary>
-    /// Returns the number of unread messages.
-    /// </summary>
-    public int UnreadCount { get; }
+    public Task<int> Seq();
     /// <summary>
     ///  Increments the current event sequence number.
     /// </summary>
     /// <returns>Event sequence number after increment.</returns>
-    public int IncrementSeq();
+    public Task<int> IncrementSeq();
 }
