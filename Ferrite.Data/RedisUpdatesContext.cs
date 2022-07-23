@@ -23,19 +23,19 @@ namespace Ferrite.Data;
 public class RedisUpdatesContext : IUpdatesContext
 {
     private readonly ConnectionMultiplexer _redis;
-    private readonly long _authKeyId;
+    private readonly long? _authKeyId;
     private readonly long _userId;
     private readonly IAtomicCounter _counter;
     private readonly IMessageBox _commonMessageBox;
-    private readonly ISecretMessageBox _secondaryMessageBox;
-    public RedisUpdatesContext(ConnectionMultiplexer redis, long authKeyId, long userId)
+    private readonly ISecretMessageBox? _secondaryMessageBox;
+    public RedisUpdatesContext(ConnectionMultiplexer redis, long? authKeyId, long userId)
     {
         _redis = redis;
         _authKeyId = authKeyId;
         _userId = userId;
         _counter = new RedisCounter(redis, $"seq:updates:{userId}");
         _commonMessageBox = new RedisMessageBox(redis, userId);
-        _secondaryMessageBox = new RedisSecretMessageBox(redis, authKeyId);
+        _secondaryMessageBox = authKeyId != null ? new RedisSecretMessageBox(redis, (long)authKeyId) : null;
     }
     public async Task<int> Pts()
     {
@@ -47,14 +47,29 @@ public class RedisUpdatesContext : IUpdatesContext
         return await _commonMessageBox.IncrementPtsForMessage(peer, messageId);
     }
 
+    public async Task<int> NextMessageId()
+    {
+        return await _commonMessageBox.NextMessageId();
+    }
+
     public async Task<int> ReadMessages(PeerDTO peer, int maxId)
     {
         return await _commonMessageBox.ReadMessages(peer, maxId);
     }
 
+    public async Task<int> ReadMessagesMaxId(PeerDTO peer)
+    {
+        return await _commonMessageBox.ReadMessagesMaxId(peer);
+    }
+
     public async Task<int> UnreadMessages()
     {
         return await _commonMessageBox.UnreadMessages();
+    }
+
+    public async Task<int> UnreadMessages(PeerDTO peer)
+    {
+        return await _commonMessageBox.UnreadMessages(peer);
     }
 
     public async Task<int> IncrementPts()
@@ -64,12 +79,12 @@ public class RedisUpdatesContext : IUpdatesContext
 
     public async Task<int> Qts()
     {
-        return await _secondaryMessageBox.Qts();
+        return _secondaryMessageBox != null ? await _secondaryMessageBox.Qts() : 0;
     }
 
     public async Task<int> IncrementQts()
     {
-        return await _secondaryMessageBox.IncrementQts();
+        return _secondaryMessageBox != null ? await _secondaryMessageBox.IncrementQts() : 0;
     }
 
     public async Task<int> Seq()
@@ -79,6 +94,11 @@ public class RedisUpdatesContext : IUpdatesContext
 
     public async Task<int> IncrementSeq()
     {
-        return (int)await _counter.IncrementAndGet();
+        int seq = (int)await _counter.IncrementAndGet();
+        if (seq == 0)
+        {
+            seq = (int)await _counter.IncrementAndGet();
+        }
+        return seq;
     }
 }

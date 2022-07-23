@@ -94,17 +94,14 @@ public class MessagesService : IMessagesService
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var messageCounter = _cache.GetCounter(auth.UserId + "_message_id");
-        int messageId = (int)await messageCounter.IncrementAndGet();
-        if (messageId == 0)
-        {
-            await messageCounter.IncrementAndGet();
-        }
+        var senderCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
+        var receiverCtx = _cache.GetUpdatesContext(null, auth.UserId);
         var outgoingMessage = new MessageDTO()
         {
-            Id = messageId,
+            Id = senderMessageId,
             Out = true,
             Silent = silent,
             FromId = from,
@@ -117,28 +114,18 @@ public class MessagesService : IMessagesService
         {
             outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
         }
-        messageCounter = _cache.GetCounter(to.PeerId + "_message_id");
-        messageId = (int)await messageCounter.IncrementAndGet();
+
+        int receiverMessageId = await receiverCtx.NextMessageId();
         var incomingMessage = outgoingMessage with
         {
-            Id = messageId,
+            Id = receiverMessageId,
             Out = false,
             FromId = to,
             PeerId = from,
         };
-        var userPts = _cache.GetCounter(auth.UserId + "_pts");
-        int pts = (int)await userPts.IncrementAndGet();
-        if (pts == 0)
-        {
-            await userPts.IncrementAndGet();
-        }
+        int pts = await senderCtx.IncrementPts();
         _unitOfWork.MessageRepository.PutMessage(outgoingMessage, pts);
-        var peerPts = _cache.GetCounter(to.PeerId + "_pts");
-        int ptsPeer = (int)await userPts.IncrementAndGet();
-        if (ptsPeer == 0)
-        {
-            await peerPts.IncrementAndGet();
-        }
+        int ptsPeer = await receiverCtx.IncrementPts();
         _unitOfWork.MessageRepository.PutMessage(incomingMessage, ptsPeer);
         var searchModelOutgoing = new MessageSearchModel(
             from.PeerId + "_" + outgoingMessage.Id,
@@ -156,27 +143,27 @@ public class MessagesService : IMessagesService
         await _search.IndexMessage(searchModelIncoming);
         await _unitOfWork.SaveAsync();
         
-        return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, messageId,
+        return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 (int)pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);
     }
 
     public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
     {
-        if (peer.InputPeerType == InputPeerType.Self)
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var peerDto = PeerFromInputPeer(peer);
+        if (peerDto.PeerType == PeerType.User)
         {
-            var auth = await _store.GetAuthorizationAsync(authKeyId);
-            var counter = _cache.GetCounter(auth.UserId + "_pts");
+            var unread = await userCtx.ReadMessages(peerDto, maxId);
+            int userPts = await userCtx.IncrementPts();
+            var updateInbox = new UpdateReadHistoryInboxDTO(peerDto, maxId, unread, userPts, 1);
             return new ServiceResult<AffectedMessagesDTO>(
-                new AffectedMessagesDTO((int)await counter.Get(), 0), true, ErrorMessages.None);
+                new AffectedMessagesDTO((int)await userCtx.Pts()
+                    , 0), true, ErrorMessages.None);
         }
-        else if(peer.InputPeerType == InputPeerType.User)
-        {
-            var counter = _cache.GetCounter(peer.UserId + "_pts");
-            return new ServiceResult<AffectedMessagesDTO>(
-                new AffectedMessagesDTO((int)await counter.Get(), 0), true, ErrorMessages.None);
-        }
-        throw new NotImplementedException();
+
+        throw new NotSupportedException();
     }
 
     public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, 
@@ -184,59 +171,91 @@ public class MessagesService : IMessagesService
         int? folderId = null)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId);
-        Dictionary<string, DialogDTO> dialogList = new();
-        Dictionary<string, UserDTO> userList = new();
+        List<DialogDTO> userDialogs = new();
+        Dictionary<long, UserDTO> userList = new();
+        Dictionary<long, PeerDTO> peerList = new();
+        Dictionary<long, int> topMessages = new();
+        //TODO: investigate if we should use this PTS or a dialog specific one
+        int pts = await userCtx.Pts();
+        int unread = await userCtx.UnreadMessages();
         foreach (var m in messages)
         {
             if (m.Out)
             {
-                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
-                {
-                    NotifyPeerType = InputNotifyPeerType.Peer,
-                    Peer = offsetPeer
-                };
-                //TODO: investigate if we should use this PTS or a dialog specific one
-                var counter = _cache.GetCounter(auth.UserId + "_pts");
-                var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
-                dialogList.Add(m.PeerId.PeerType + "-" + m.PeerId.PeerId,
-                    new DialogDTO(DialogType.Dialog, false, false,
-                        m.PeerId, m.Id, 0, m.Id,
-                        0, 0, 0, settings.FirstOrDefault(),
-                        0, null, null, null, 0, 0,
-                        0, 0));
                 if (m.PeerId.PeerType == PeerType.User)
                 {
-                    userList.Add(m.PeerId.PeerId.ToString(), await _store.GetUserAsync(m.PeerId.PeerId));
+                    long userId = m.PeerId.PeerId;
+                    await PopulateLists(userList, userId, m, peerList, topMessages);
                 }
             }
             else
             {
-                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
-                {
-                    NotifyPeerType = InputNotifyPeerType.Peer,
-                    Peer = offsetPeer
-                };
-                //TODO: investigate if we should use this PTS or a dialog specific one
-                var counter = _cache.GetCounter(auth.UserId + "_pts");
-                var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
-                dialogList.Add(m.FromId.PeerType + "-" + m.FromId.PeerId,
-                    new DialogDTO(DialogType.Dialog, false, false,
-                        m.FromId, m.Id, 0, m.Id,
-                        0, 0, 0, settings.FirstOrDefault(),
-                        0, null, null, null, 0, 0,
-                        0, 0));
                 if (m.FromId.PeerType == PeerType.User)
                 {
-                    userList.Add(m.FromId.PeerId.ToString(), await _store.GetUserAsync(m.FromId.PeerId));
+                    long userId = m.FromId.PeerId;
+                    await PopulateLists(userList, userId, m, peerList, topMessages);
                 }
             }
         }
-
-        var dialogs = new DialogsDTO(DialogsType.Dialogs, dialogList.Values, 
+        
+        foreach (var p in peerList.Values)
+        {
+            if (p.PeerType == PeerType.User)
+            {
+                var peerContext = _cache.GetUpdatesContext(null, p.PeerId);
+                int unreadFromPeer = await peerContext.UnreadMessages(p);
+                int incomingReadMax = await userCtx.ReadMessagesMaxId(p);
+                int outgoingReadMax = await peerContext.ReadMessagesMaxId(new PeerDTO(PeerType.User, auth.UserId));
+                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
+                {
+                    NotifyPeerType = InputNotifyPeerType.Peer,
+                    Peer = new InputPeerDTO{InputPeerType = InputPeerType.User, UserId = p.PeerId}
+                };
+                var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
+                var dialog = new DialogDTO
+                {
+                    DialogType = DialogType.Dialog,
+                    Peer = p,
+                    Pts = pts,
+                    TopMessage = topMessages[p.PeerId],
+                    UnreadCount = unreadFromPeer,
+                    ReadInboxMaxId = incomingReadMax,
+                    ReadOutboxMaxId = outgoingReadMax,
+                    NotifySettings = settings.FirstOrDefault()
+                };
+                userDialogs.Add(dialog);
+            }
+            
+        }
+        var dialogs = new DialogsDTO(DialogsType.Dialogs, userDialogs, 
             messages, Array.Empty<ChatDTO>(),
             userList.Values, null);
         return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
+    }
+
+    private async Task PopulateLists(Dictionary<long, UserDTO> userList, long userId, MessageDTO m, Dictionary<long, PeerDTO> peerList,
+        Dictionary<long, int> topMessages)
+    {
+        if (!userList.ContainsKey(userId))
+        {
+            userList.Add(userId, await _store.GetUserAsync(m.PeerId.PeerId));
+        }
+
+        if (!peerList.ContainsKey(userId))
+        {
+            peerList.Add(userId, m.PeerId);
+        }
+
+        if (!topMessages.ContainsKey(userId))
+        {
+            topMessages.Add(userId, m.Id);
+        }
+        else if (topMessages[userId] < m.Id)
+        {
+            topMessages[userId] = m.Id;
+        }
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, 

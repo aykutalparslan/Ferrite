@@ -118,6 +118,11 @@ public class RedisCache: IDistributedCache
         return true;
     }
 
+    public IUpdatesContext GetUpdatesContext(long? authKeyId, long userId)
+    {
+        return new RedisUpdatesContext(redis, authKeyId, userId);
+    }
+
     public async Task<byte[]> GetAuthKeyAsync(long authKeyId)
     {
         object _asyncState = new object();

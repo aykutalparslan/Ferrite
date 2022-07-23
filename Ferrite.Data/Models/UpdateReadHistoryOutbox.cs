@@ -16,33 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using StackExchange.Redis;
-
 namespace Ferrite.Data;
 
-public class RedisSecretMessageBox : ISecretMessageBox
-{
-    private readonly ConnectionMultiplexer _redis;
-    private readonly IAtomicCounter _counter;
-    private readonly long _authKeyId;
-    public RedisSecretMessageBox(ConnectionMultiplexer redis, long authKeyId)
-    {
-        _redis = redis;
-        _authKeyId = authKeyId;
-        _counter = new RedisCounter(redis, $"seq:qts:{authKeyId}");
-    }
-    public async Task<int> Qts()
-    {
-        return (int)await _counter.Get();
-    }
-
-    public async Task<int> IncrementQts()
-    {
-        int qts = (int)await _counter.IncrementAndGet();
-        if (qts == 0)
-        {
-            qts = (int)await _counter.IncrementAndGet();
-        }
-        return qts;
-    }
-}
+public record UpdateReadHistoryOutbox(PeerDTO Peer, int MaxId, int Pts, int PtsCount) : UpdateBase;

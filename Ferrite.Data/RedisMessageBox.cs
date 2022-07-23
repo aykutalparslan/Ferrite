@@ -23,19 +23,21 @@ namespace Ferrite.Data;
 public class RedisMessageBox : IMessageBox
 {
     private readonly ConnectionMultiplexer _redis;
-    private readonly IAtomicCounter _counter;
+    private readonly IAtomicCounter _ptsCounter;
+    private readonly IAtomicCounter _messageIdCounter;
     private readonly long _userId;
     private readonly SortedSet<RedisKey> _dialogs = new SortedSet<RedisKey>();
     public RedisMessageBox(ConnectionMultiplexer redis, long userId)
     {
         _redis = redis;
         _userId = userId;
-        _counter = new RedisCounter(redis, $"seq:pts:{userId}");
+        _ptsCounter = new RedisCounter(redis, $"seq:pts:{userId}");
+        _messageIdCounter = new RedisCounter(redis, $"seq:message:id:{userId}");
     }
 
     public async Task<int> Pts()
     {
-        return (int)await _counter.Get();
+        return (int)await _ptsCounter.Get();
     }
 
     public async Task<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
@@ -47,7 +49,17 @@ public class RedisMessageBox : IMessageBox
             _dialogs.Add(key);
         }
         db.SortedSetAdd(key, messageId, messageId);
-        return (int)await _counter.IncrementAndGet();
+        return (int)await _ptsCounter.IncrementAndGet();
+    }
+
+    public async Task<int> NextMessageId()
+    {
+        int messageId = (int)await _messageIdCounter.IncrementAndGet();
+        if (messageId == 0)
+        {
+            messageId = (int)await _messageIdCounter.IncrementAndGet();
+        }
+        return messageId;
     }
 
     public async Task<int> ReadMessages(PeerDTO peer, int maxId)
@@ -60,8 +72,30 @@ public class RedisMessageBox : IMessageBox
         {
             unread += (int)await db.SortedSetLengthAsync(k);
         }
-
+        RedisKey keyRead = $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        //TODO: Use a LUA script for this
+        bool success = false;
+        while (!success)
+        {
+            var oldValue = (int)await db.StringGetAsync(keyRead);
+            if (oldValue > maxId)
+            {
+                break;
+            }
+            var tran = db.CreateTransaction();
+            tran.AddCondition(Condition.StringEqual(keyRead, oldValue));
+            await tran.StringSetAsync(keyRead, maxId);
+            success = await tran.ExecuteAsync();
+        }
+        
         return unread;
+    }
+
+    public async Task<int> ReadMessagesMaxId(PeerDTO peer)
+    {
+        IDatabase db = _redis.GetDatabase();
+        RedisKey keyRead = $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        return (int)await db.StringGetAsync(keyRead);
     }
 
     public async Task<int> UnreadMessages()
@@ -76,8 +110,20 @@ public class RedisMessageBox : IMessageBox
         return unread;
     }
 
+    public async Task<int> UnreadMessages(PeerDTO peer)
+    {
+        IDatabase db = _redis.GetDatabase();
+        RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        return (int)await db.SortedSetLengthAsync(key);
+    }
+
     public async Task<int> IncrementPts()
     {
-        return (int)await _counter.IncrementAndGet();
+        int pts = (int)await _ptsCounter.IncrementAndGet();
+        if (pts == 0)
+        {
+            pts = (int)await _ptsCounter.IncrementAndGet();
+        }
+        return pts;
     }
 }
