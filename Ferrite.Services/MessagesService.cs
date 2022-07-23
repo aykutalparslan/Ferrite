@@ -30,12 +30,15 @@ public class MessagesService : IMessagesService
     private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISearchEngine _search;
-    public MessagesService(IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork, ISearchEngine search)
+    private readonly IUpdatesService _updates;
+    public MessagesService(IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork, 
+        ISearchEngine search, IUpdatesService updates)
     {
         _store = store;
         _cache = cache;
         _unitOfWork = unitOfWork;
         _search = search;
+        _updates = updates;
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
@@ -155,12 +158,17 @@ public class MessagesService : IMessagesService
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
         {
+            var peerCtx = _cache.GetUpdatesContext(null, peer.UserId);
             var unread = await userCtx.ReadMessages(peerDto, maxId);
             int userPts = await userCtx.IncrementPts();
             var updateInbox = new UpdateReadHistoryInboxDTO(peerDto, maxId, unread, userPts, 1);
+            var updateOutbox = new UpdateReadHistoryOutbox(new PeerDTO(PeerType.User, auth.UserId), maxId,
+                await peerCtx.Pts(), 1);
+            _updates.EnqueueUpdate(auth.UserId, updateInbox);
+            _updates.EnqueueUpdate(peerDto.PeerId, updateOutbox);
             return new ServiceResult<AffectedMessagesDTO>(
-                new AffectedMessagesDTO((int)await userCtx.Pts()
-                    , 0), true, ErrorMessages.None);
+                new AffectedMessagesDTO(userPts
+                    , 1), true, ErrorMessages.None);
         }
 
         throw new NotSupportedException();

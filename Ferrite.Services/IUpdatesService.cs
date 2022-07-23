@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using Ferrite.Data;
 using Ferrite.Data.Updates;
 
 namespace Ferrite.Services;
@@ -25,5 +26,6 @@ public interface IUpdatesService
     public Task<StateDTO> GetState(long authKeyId);
     public Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date,
         int qts, int? ptsTotalLimit = null);
+    public Task<bool> EnqueueUpdate(long userId, UpdateBase update);
 }
 
