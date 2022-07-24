@@ -20,5 +20,6 @@ namespace Ferrite.Data;
 
 public enum UpdatesType
 {
-    Updates
+    Updates,
+    UpdateShortSentMessage
 }

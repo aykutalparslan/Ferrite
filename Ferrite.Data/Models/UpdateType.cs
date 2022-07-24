@@ -23,5 +23,4 @@ public enum UpdateType
     UpdateMessageId,
     UpdateReadHistoryInbox,
     UpdateReadHistoryOutbox,
-    UpdateShortSentMessage,
 }

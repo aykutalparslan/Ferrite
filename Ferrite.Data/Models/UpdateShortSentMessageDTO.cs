@@ -22,7 +22,7 @@ namespace Ferrite.Data;
 
 [MessagePackObject(true)]
 public record UpdateShortSentMessageDTO(bool Out, int Id, int Pts, int PtsCount, int Date,
-    MessageMediaDTO? Media, IReadOnlyCollection<MessageEntityDTO>? Entities, int? TtlPeriod) : UpdateBase
+    MessageMediaDTO? Media, IReadOnlyCollection<MessageEntityDTO>? Entities, int? TtlPeriod) : UpdatesBase
 {
-    public override UpdateType UpdateType => UpdateType.UpdateShortSentMessage;
+    public override UpdatesType UpdatesType => UpdatesType.UpdateShortSentMessage;
 }

@@ -35,8 +35,11 @@ using DotNext;
 using DotNext.Collections.Generic;
 using DotNext.IO.Pipelines;
 using Ferrite.Services;
+using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.storage;
 using Ferrite.TL.currentLayer.upload;
+using Ferrite.TL.ObjectMapper;
+using MessagePack;
 using Org.BouncyCastle.Cms;
 using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
 
@@ -53,6 +56,7 @@ public class MTProtoConnection : IMTProtoConnection
     private readonly IRandomGenerator _random;
     private readonly ISessionService _sessionManager;
     private readonly IMTProtoTime _time;
+    private readonly IMapperContext _mapper;
     private IFrameDecoder decoder;
     private IFrameEncoder encoder;
     private IProcessorManager _processorManager;
@@ -88,7 +92,8 @@ public class MTProtoConnection : IMTProtoConnection
         ITLObjectFactory objectFactory, ITransportDetector detector,
         IDistributedCache cache, IPersistentStore persistentStore,
         ILogger logger, IRandomGenerator random, ISessionService sessionManager,
-        IMTProtoTime protoTime, IProcessorManager processorManager)
+        IMTProtoTime protoTime, IProcessorManager processorManager,
+        IMapperContext mapper)
     {
         socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -101,6 +106,7 @@ public class MTProtoConnection : IMTProtoConnection
         _sessionManager = sessionManager;
         _time = protoTime;
         _processorManager = processorManager;
+        _mapper = mapper;
     }
 
     public async ValueTask SendAsync(IDistributedFileOwner message)
@@ -241,9 +247,14 @@ public class MTProtoConnection : IMTProtoConnection
                 var msg = await _outgoing.Reader.ReadAsync();
                 await _sendQueueSemaphore.WaitAsync();
                 _log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
-                if (msg.MessageType == MTProtoMessageType.Updates)
+                if (msg.MessageType == MTProtoMessageType.Updates &&
+                    await _sessionManager.GetSessionStateAsync(_sessionId)
+                    is { } sess)
                 {
-                    //TODO: send updates
+                    var updates = MessagePackSerializer.Deserialize<UpdatesBase>(msg.Data);
+                    var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
+                    msg.Data = tlObj.TLBytes.ToArray();
+                    SendEncrypted(msg, sess);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {

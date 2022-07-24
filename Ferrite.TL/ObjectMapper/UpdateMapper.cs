@@ -44,6 +44,29 @@ public class UpdateMapper : ITLObjectMapper<Update, UpdateBase>
             update.RandomId = updateMessageId.RandomId;
             return update;
         }
-        throw new NotSupportedException("Update type is not supported");
+        else if (obj is UpdateReadHistoryInboxDTO readInbox)
+        {
+            var update = _factory.Resolve<UpdateReadHistoryInboxImpl>();
+            update.Peer = _mapper.MapToTLObject<Peer, PeerDTO>(readInbox.Peer);
+            update.Pts = readInbox.Pts;
+            update.PtsCount = readInbox.PtsCount;
+            update.MaxId = readInbox.MaxId;
+            update.StillUnreadCount = readInbox.StillUnreadCount;
+            if (readInbox.FolderId != null)
+            {
+                update.FolderId = (int)readInbox.FolderId;
+            }
+            return update;
+        }
+        else if (obj is UpdateReadHistoryOutboxDTO readOutbox)
+        {
+            var update = _factory.Resolve<UpdateReadHistoryOutboxImpl>();
+            update.Peer = _mapper.MapToTLObject<Peer, PeerDTO>(readOutbox.Peer);
+            update.Pts = readOutbox.Pts;
+            update.PtsCount = readOutbox.PtsCount;
+            update.MaxId = readOutbox.MaxId;
+            return update;
+        }
+        throw new NotSupportedException("Update type is not supported.");
     }
 }
