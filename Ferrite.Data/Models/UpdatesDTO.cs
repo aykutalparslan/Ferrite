@@ -18,4 +18,10 @@
 
 namespace Ferrite.Data;
 
-public record UpdateReadHistoryOutbox(PeerDTO Peer, int MaxId, int Pts, int PtsCount) : UpdateBase;
+public record UpdatesDTO(IReadOnlyCollection<UpdateBase> Updates,
+    IReadOnlyCollection<UserDTO> Users,
+    IReadOnlyCollection<ChatDTO> Chats,
+    int Date, int Seq) : UpdatesBase
+{
+    public override UpdatesType UpdatesType => UpdatesType.Updates;
+}

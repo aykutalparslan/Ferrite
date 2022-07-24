@@ -241,7 +241,11 @@ public class MTProtoConnection : IMTProtoConnection
                 var msg = await _outgoing.Reader.ReadAsync();
                 await _sendQueueSemaphore.WaitAsync();
                 _log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
-                if (msg.MessageType == MTProtoMessageType.QuickAck)
+                if (msg.MessageType == MTProtoMessageType.Updates)
+                {
+                    //TODO: send updates
+                }
+                else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
                     SendQuickAck(msg.QuickAck);
                 }

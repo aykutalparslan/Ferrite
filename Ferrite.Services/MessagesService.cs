@@ -162,7 +162,7 @@ public class MessagesService : IMessagesService
             var unread = await userCtx.ReadMessages(peerDto, maxId);
             int userPts = await userCtx.IncrementPts();
             var updateInbox = new UpdateReadHistoryInboxDTO(peerDto, maxId, unread, userPts, 1);
-            var updateOutbox = new UpdateReadHistoryOutbox(new PeerDTO(PeerType.User, auth.UserId), maxId,
+            var updateOutbox = new UpdateReadHistoryOutboxDTO(new PeerDTO(PeerType.User, auth.UserId), maxId,
                 await peerCtx.Pts(), 1);
             _updates.EnqueueUpdate(auth.UserId, updateInbox);
             _updates.EnqueueUpdate(peerDto.PeerId, updateOutbox);

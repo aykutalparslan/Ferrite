@@ -16,7 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record UpdateReadHistoryInboxDTO(PeerDTO Peer, int MaxId, int StillUnreadCount,
-    int Pts, int PtsCount, int? FolderId = null) : UpdateBase;
+    int Pts, int PtsCount, int? FolderId = null) : UpdateBase
+{
+    public override UpdateType UpdateType => UpdateType.UpdateReadHistoryInbox;
+}

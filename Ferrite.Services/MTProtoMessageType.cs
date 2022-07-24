@@ -25,5 +25,6 @@ public enum MTProtoMessageType
     Pong,
     NewSession,
     QuickAck,
+    Updates,
 }
 

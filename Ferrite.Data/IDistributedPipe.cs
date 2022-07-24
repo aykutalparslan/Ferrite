@@ -9,7 +9,7 @@ public interface IDistributedPipe
     /// </summary>
     /// <returns></returns>
     public Task<bool> UnSubscribeAsync();
-    public ValueTask<byte[]> ReadAsync(CancellationToken cancellationToken = default);
-    public Task<bool> WriteAsync(string channel, byte[] message);
+    public ValueTask<byte[]> ReadMessageAsync(CancellationToken cancellationToken = default);
+    public Task<bool> WriteMessageAsync(string channel, byte[] message);
 }
 

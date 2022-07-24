@@ -13,7 +13,7 @@ public class RedisPipe: IDistributedPipe
         redis = ConnectionMultiplexer.Connect(config);
     }
 
-    public async ValueTask<byte[]> ReadAsync(CancellationToken cancellationToken=default)
+    public async ValueTask<byte[]> ReadMessageAsync(CancellationToken cancellationToken=default)
     {
         if(messageQueue == null)
         {
@@ -41,7 +41,7 @@ public class RedisPipe: IDistributedPipe
         return true;
     }
 
-    public async Task<bool> WriteAsync(string channel, byte[] message)
+    public async Task<bool> WriteMessageAsync(string channel, byte[] message)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);

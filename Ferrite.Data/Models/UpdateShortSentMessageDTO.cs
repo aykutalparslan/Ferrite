@@ -16,7 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record UpdateShortSentMessageDTO(bool Out, int Id, int Pts, int PtsCount, int Date,
-    MessageMediaDTO? Media, IReadOnlyCollection<MessageEntityDTO>? Entities, int? TtlPeriod);
+    MessageMediaDTO? Media, IReadOnlyCollection<MessageEntityDTO>? Entities, int? TtlPeriod) : UpdateBase
+{
+    public override UpdateType UpdateType => UpdateType.UpdateShortSentMessage;
+}

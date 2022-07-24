@@ -68,7 +68,7 @@ public class MsgContainerProcessor : IProcessor
                     is { } session)
             {
                 var bytes = MessagePackSerializer.Serialize(message);
-                _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                _ = _pipe.WriteMessageAsync(session.NodeId.ToString(), bytes);
             }
         }
         else

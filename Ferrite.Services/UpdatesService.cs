@@ -21,6 +21,7 @@ using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Updates;
 using Ferrite.Utils;
+using MessagePack;
 
 namespace Ferrite.Services;
 
@@ -46,13 +47,12 @@ public class UpdatesService : IUpdatesService
     public async Task<StateDTO> GetState(long authKeyId)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var counter = _cache.GetCounter(auth.UserId + "_pts");
-        int pts = (int)await counter.Get();
+        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
         return new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds(),
-            Pts = pts,
-            Seq = pts//TODO: fix seq
+            Pts = await updatesCtx.Pts(),
+            Seq = await updatesCtx.Seq(),
         };
     }
 
@@ -60,13 +60,13 @@ public class UpdatesService : IUpdatesService
         int qts, int? ptsTotalLimit = null)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var counter = _cache.GetCounter(auth.UserId + "_pts");
-        int currentPts = (int)await counter.Get();
+        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        int currentPts = await updatesCtx.Pts();
         var state = new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds(),
             Pts = currentPts,
-            Seq = currentPts//TODO: fix seq
+            Seq = await updatesCtx.Seq(),
         };
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId,
             pts, currentPts, DateTimeOffset.FromUnixTimeSeconds(date));
@@ -84,6 +84,51 @@ public class UpdatesService : IUpdatesService
             Array.Empty<UpdateBase>(), Array.Empty<ChatDTO>(),
             users, state);
         return new ServiceResult<DifferenceDTO>(difference, true, ErrorMessages.None);
+    }
+
+    public async Task<bool> EnqueueUpdate(long userId, UpdateBase update)
+    {
+        var user = await _store.GetUserAsync(userId);
+        var authorizations = await _store.GetAuthorizationsAsync(user.Phone);
+        //TODO: we should be able to get the active sessions by the userId
+        foreach (var a in authorizations)
+        {
+            var updatesCtx = _cache.GetUpdatesContext(a.AuthKeyId, a.UserId);
+            var updateList = new List<UpdateBase>() { update };
+            List<UserDTO> userList = new();
+            List<ChatDTO> chatList = new();
+            if (update is UpdateReadHistoryInboxDTO readHistoryInbox)
+            {
+                var peerUser = await _store.GetUserAsync(readHistoryInbox.Peer.PeerId);
+                if (peerUser != null) userList.Add(peerUser);
+            }
+            else if (update is UpdateReadHistoryOutboxDTO readHistoryOutbox)
+            {
+                var peerUser = await _store.GetUserAsync(readHistoryOutbox.Peer.PeerId);
+                if (peerUser != null) userList.Add(peerUser);
+            }
+
+            int seq = await updatesCtx.IncrementSeq();
+            var updates = new UpdatesDTO(updateList, userList, chatList, 
+                (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
+            var sessions = await _sessions.GetSessionsAsync(a.AuthKeyId);
+            foreach (var s in sessions)
+            {
+                byte[] data = MessagePackSerializer.Serialize(updates);
+                MTProtoMessage message = new MTProtoMessage
+                {
+                    Data = data,
+                    SessionId = s.SessionId,
+                    IsContentRelated = true,
+                    IsResponse = false,
+                    MessageType = MTProtoMessageType.Updates,
+                };
+                var bytes = MessagePackSerializer.Serialize(message);
+                _ = _pipe.WriteMessageAsync(s.NodeId.ToString(), bytes);
+            }
+        }
+
+        return true;
     }
 }
 

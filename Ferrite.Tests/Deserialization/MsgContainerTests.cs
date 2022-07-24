@@ -78,12 +78,12 @@ public class MsgContainerTests
     {
         ConcurrentQueue<byte[]> _channel = new();
         var pipe = new Mock<IDistributedPipe>();
-        pipe.Setup(x => x.WriteAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync((string a, byte[] b) =>
+        pipe.Setup(x => x.WriteMessageAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync((string a, byte[] b) =>
         {
             _channel.Enqueue(b);
             return true;
         });
-        pipe.Setup(x => x.ReadAsync(default)).Returns(() =>
+        pipe.Setup(x => x.ReadMessageAsync(default)).Returns(() =>
         {
             _channel.TryDequeue(out var result);
             return ValueTask.FromResult(result!);

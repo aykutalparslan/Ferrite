@@ -16,6 +16,12 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public abstract record UpdateBase();
+[MessagePackObject(true)]
+public abstract record UpdateBase
+{
+    public abstract UpdateType UpdateType { get; }
+};

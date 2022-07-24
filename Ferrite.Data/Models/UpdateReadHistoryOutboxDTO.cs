@@ -17,12 +17,11 @@
 // 
 
 using MessagePack;
-using Nest;
 
 namespace Ferrite.Data;
 
 [MessagePackObject(true)]
-public record UpdateMessageIdDTO(int Id, long RandomId) : UpdateBase
+public record UpdateReadHistoryOutboxDTO(PeerDTO Peer, int MaxId, int Pts, int PtsCount) : UpdateBase
 {
-    public override UpdateType UpdateType => UpdateType.UpdateMessageId;
+    public override UpdateType UpdateType => UpdateType.UpdateReadHistoryOutbox;
 }

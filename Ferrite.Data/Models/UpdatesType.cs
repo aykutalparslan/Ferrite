@@ -16,13 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
-using Nest;
-
 namespace Ferrite.Data;
 
-[MessagePackObject(true)]
-public record UpdateMessageIdDTO(int Id, long RandomId) : UpdateBase
+public enum UpdatesType
 {
-    public override UpdateType UpdateType => UpdateType.UpdateMessageId;
+    Updates
 }

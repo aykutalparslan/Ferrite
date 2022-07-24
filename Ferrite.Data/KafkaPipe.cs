@@ -51,7 +51,7 @@ public class KafkaPipe : IDistributedPipe
         _adminClient = new AdminClientBuilder(new AdminClientConfig { BootstrapServers = config }).Build();
     }
 
-    public async ValueTask<byte[]> ReadAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<byte[]> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
         return await _consumed.Reader.ReadAsync(cancellationToken);
     }
@@ -105,7 +105,7 @@ public class KafkaPipe : IDistributedPipe
         return true;
     }
 
-    public async Task<bool> WriteAsync(string channel, byte[] message)
+    public async Task<bool> WriteMessageAsync(string channel, byte[] message)
     {
         await _producer.ProduceAsync(channel, new Message<Null, byte[]> { Value = message });
         return true;

@@ -77,7 +77,7 @@ public class FerriteServer : IFerriteServer
     {
         while (true)
         {
-            var result = await _pipe.ReadAsync();
+            var result = await _pipe.ReadMessageAsync();
             try
             {
                 var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);

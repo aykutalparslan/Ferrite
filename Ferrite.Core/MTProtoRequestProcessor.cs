@@ -80,7 +80,7 @@ public class MTProtoRequestProcessor : IProcessor
                              is SessionState session)
                     {
                         var bytes = MessagePackSerializer.Serialize(message);
-                        _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                        _ = _pipe.WriteMessageAsync(session.NodeId.ToString(), bytes);
                     }
 
                     Console.WriteLine("-->" + result.ToString());
@@ -126,7 +126,7 @@ public class MTProtoRequestProcessor : IProcessor
                              is SessionState session)
                     {
                         var bytes = MessagePackSerializer.Serialize(message);
-                        _ = _pipe.WriteAsync(session.NodeId.ToString(), bytes);
+                        _ = _pipe.WriteMessageAsync(session.NodeId.ToString(), bytes);
                     }
                 }
                 else
