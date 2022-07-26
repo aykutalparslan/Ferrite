@@ -320,6 +320,11 @@ public class MessagesService : IMessagesService
             Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
     }
 
+    public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
+    {
+        throw new NotImplementedException();
+    }
+
     private PeerDTO PeerFromInputPeer(InputPeerDTO peer, long userId = 0)
     {
         if (peer.InputPeerType == InputPeerType.Self)
