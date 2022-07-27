@@ -139,7 +139,7 @@ public class CassandraMessageRepository : IMessageRepository
             var statement = new SimpleStatement(
                 "SELECT message_data FROM ferrite.messages " +
                 "WHERE user_id = ? AND peer_type = ? AND peer_id = ?;",
-                userId, peerId?.PeerType, peerId?.PeerId);
+                userId, (int)peerId?.PeerType, peerId?.PeerId);
             var results = await _context.ExecuteAsync(statement);
             foreach (var row in results)
             {
