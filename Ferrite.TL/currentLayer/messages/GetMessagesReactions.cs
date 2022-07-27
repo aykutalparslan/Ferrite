@@ -73,7 +73,7 @@ public class GetMessagesReactions : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        return null;
     }
 
     public void Parse(ref SequenceReader buff)

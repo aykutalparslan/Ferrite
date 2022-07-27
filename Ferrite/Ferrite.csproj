@@ -17,6 +17,12 @@
     <None Remove="Microsoft.AspNetCore.Server.Kestrel" />
     <None Remove="MessagePack" />
     <None Remove="LanguagePacks\" />
+    <None Update="default-private.key">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="default-public.key">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DotNext" Version="4.6.1" />

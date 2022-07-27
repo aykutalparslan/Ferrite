@@ -34,10 +34,12 @@ public class GetDialogs : ITLObject, ITLMethod
     private readonly IMessagesService _messages;
     private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetDialogs(ITLObjectFactory objectFactory, IMessagesService messages)
+    public GetDialogs(ITLObjectFactory objectFactory, IMessagesService messages,
+        IMapperContext mapper)
     {
         factory = objectFactory;
         _messages = messages;
+        _mapper = mapper;
     }
 
     public int Constructor => -1594569905;

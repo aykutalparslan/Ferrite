@@ -59,7 +59,7 @@ public class ElasticSearchEngine : ISearchEngine
                 .Field(p => p.Username)
                 .Value(q)
                 .Rewrite(MultiTermQueryRewrite.TopTerms(10))
-            )));
+            )).Index("users"));
         return result.Documents;
     }
 
@@ -83,7 +83,11 @@ public class ElasticSearchEngine : ISearchEngine
                 .Field(p => p.Message)
                 .Value(q)
                 .Rewrite(MultiTermQueryRewrite.TopTerms(10))
-            )));
+            )).Index("messages"));
+        if (result == null)
+        {
+            return new List<MessageSearchModel>();
+        }
         return result.Documents;
     }
 }

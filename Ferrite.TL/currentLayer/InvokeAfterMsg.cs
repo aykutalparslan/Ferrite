@@ -82,10 +82,8 @@ public class InvokeAfterMsg : ITLObject, ITLMethod
             //TODO: Investigate if we actually can invoke after the msg?
             return await medhod.ExecuteAsync(ctx);
         }
-        var inner = new InvalidTLMethodException("'query' could not be cast to ITLMethod");
-        var ex = new TLExecutionException("Invocation failed for invokeAfterMsgs", inner);
-        _log.Error(ex, ex.Message);
-        throw ex;
+        _log.Error($"Invocation failed for invokeAfterMsg received {_query.GetType()}");
+        return null;
     }
 
     public void Parse(ref SequenceReader buff)

@@ -273,7 +273,6 @@ public class SendMessage : ITLObject, ITLMethod
             updates.Date = serviceResult.Result.Date;
             rpcResult.Result = updates;
         }
-
         return rpcResult;
     }
     

@@ -298,7 +298,8 @@ public class MessagesService : IMessagesService
         InputPeerDTO? fromId, int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, 
         int offsetId, int addOffset, int limit, long maxId, long minId, long hash)
     {
-        var searchResults = await _search.SearchMessages(q);
+        //TODO: debug and fix this
+        var searchResults =  new List<MessageSearchModel>();//await _search.SearchMessages(q);
         //TODO: implement a proper search with pagination
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth == null)
