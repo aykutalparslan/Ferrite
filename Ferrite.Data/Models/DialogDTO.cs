@@ -29,10 +29,10 @@ public record DialogDTO()
     public int ReadInboxMaxId { get; set; }
     public int ReadOutboxMaxId { get; set; }
     public int UnreadCount { get; set; }
-    public int UnreadMentionCount { get; set; }
+    public int UnreadMentionsCount { get; set; }
     public int UnreadReactionsCount { get; set; }
     public PeerNotifySettingsDTO? NotifySettings { get; set; }
-    public int Pts { get; set; }
+    public int? Pts { get; set; }
     public DraftMessageDTO? DraftMessage { get; set; }
     public int? FolderId { get; set; }
     public FolderDTO? Folder { get; set; }

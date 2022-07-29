@@ -26,6 +26,6 @@ public record ChatPhotoDTO
     public bool Empty { get; set; }
     public bool HasVideo { get; set; }
     public long PhotoId { get; set; }
-    public byte[] StrippedThumb { get; set; } = default!;
+    public byte[]? StrippedThumb { get; set; } = default!;
     public int DcId { get; set; }
 }

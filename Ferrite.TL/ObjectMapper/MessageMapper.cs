@@ -119,6 +119,8 @@ public class MessageMapper : ITLObjectMapper<Message, MessageDTO>
             {
                 message.TtlPeriod = (int)obj.TtlPeriod;
             }
+
+            return message;
         }
         throw new NotSupportedException();
     }

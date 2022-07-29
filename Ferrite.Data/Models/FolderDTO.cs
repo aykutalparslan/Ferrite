@@ -19,4 +19,4 @@
 namespace Ferrite.Data;
 
 public record FolderDTO(bool AutofillNewBroadcasts, bool AutofillPublicGroups, bool AutofillNewCorrespondents,
-    int Id, string Title, ChatPhotoDTO Photo);
+    int Id, string Title, ChatPhotoDTO? Photo);
