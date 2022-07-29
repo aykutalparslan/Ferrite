@@ -29,7 +29,7 @@ namespace Ferrite.TL
         public long SessionId { get; set; }
         public long MessageId { get; set; }
         public int SequenceNo { get; set; }
-        public int QuickAck { get; set; }
+        public int? QuickAck { get; set; }
         public string IP { get; set; }
         public TLExecutionContext(Dictionary<string, object> sessionData)
         {

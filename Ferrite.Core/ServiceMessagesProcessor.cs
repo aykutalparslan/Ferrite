@@ -43,11 +43,11 @@ public class ServiceMessagesProcessor : IProcessor
     {
         if(sender is MTProtoConnection connection)
         {
-            if (ctx.QuickAck != 0)
+            if (ctx.QuickAck != null)
             {
                 MTProtoMessage message = new MTProtoMessage()
                 {
-                    QuickAck = ctx.QuickAck,
+                    QuickAck = (int)ctx.QuickAck,
                     MessageType = MTProtoMessageType.QuickAck,
                     SessionId = ctx.SessionId,
                     MessageId = ctx.MessageId

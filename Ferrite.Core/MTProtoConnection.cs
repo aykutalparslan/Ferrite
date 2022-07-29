@@ -70,7 +70,7 @@ public class MTProtoConnection : IMTProtoConnection
     private Task? receiveTask;
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
     private Channel<IDistributedFileOwner> _outgoingStreams = Channel.CreateUnbounded<IDistributedFileOwner>();
-    private SemaphoreSlim _sendQueueSemaphore = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private Task? sendTask;
     private Task? sendStreamTask;
     private Timer? disconnectTimer;
@@ -78,7 +78,6 @@ public class MTProtoConnection : IMTProtoConnection
     private readonly ITLObjectFactory factory;
     private long _lastMessageId;
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
-    private readonly CircularQueue<int> _lastQuickAcks = new CircularQueue<int>(10);
     private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private WebSocketHandler? webSocketHandler;
     private Pipe webSocketPipe;
@@ -245,8 +244,8 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-                await _sendQueueSemaphore.WaitAsync();
-                _log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
+                await _sendSemaphore.WaitAsync();
+                //_log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
                 if (msg.MessageType == MTProtoMessageType.Updates &&
                     await _sessionManager.GetSessionStateAsync(_sessionId)
                     is { } sess)
@@ -270,7 +269,7 @@ public class MTProtoConnection : IMTProtoConnection
                     SendEncrypted(msg, state);
                 }
                 var result = await socketConnection.Transport.Output.FlushAsync();
-                _sendQueueSemaphore.Release();
+                _sendSemaphore.Release();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -284,9 +283,9 @@ public class MTProtoConnection : IMTProtoConnection
         }
         finally
         {
-            if (_sendQueueSemaphore.CurrentCount != 0)
+            if (_sendSemaphore.CurrentCount != 0)
             {
-                _sendQueueSemaphore.Release();
+                _sendSemaphore.Release();
             }
         }
     }
@@ -297,11 +296,11 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoingStreams.Reader.ReadAsync();
-                await _sendQueueSemaphore.WaitAsync();
+                await _sendSemaphore.WaitAsync();
                 _log.Debug($"=>Sending stream.");
                 if (_authKeyId == 0)
                 {
-                    _sendQueueSemaphore.Release();
+                    _sendSemaphore.Release();
                     continue;
                 }
                 else if (await _sessionManager.GetSessionStateAsync(_sessionId)
@@ -311,7 +310,7 @@ public class MTProtoConnection : IMTProtoConnection
                 }
 
                 var result = await socketConnection.Transport.Output.FlushAsync();
-                _sendQueueSemaphore.Release();
+                _sendSemaphore.Release();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -325,9 +324,9 @@ public class MTProtoConnection : IMTProtoConnection
         }
         finally
         {
-            if (_sendQueueSemaphore.CurrentCount != 0)
+            if (_sendSemaphore.CurrentCount != 0)
             {
-                _sendQueueSemaphore.Release();
+                _sendSemaphore.Release();
             }
         }
     }
@@ -499,11 +498,6 @@ public class MTProtoConnection : IMTProtoConnection
 
     private void SendQuickAck(int ack)
     {
-        if (_lastQuickAcks.Contains(ack))
-        {
-            return;
-        }
-        _lastQuickAcks.Enqueue(ack);
         writer.Clear();
         if (encoder is AbridgedFrameEncoder)
         {
@@ -773,7 +767,7 @@ public class MTProtoConnection : IMTProtoConnection
 
         if (_authKey == null)
         {
-            _sendQueueSemaphore.Wait();
+            _sendSemaphore.Wait();
             SendTransportError(404);
             Abort(new Exception("Auth key not found"));
         }
