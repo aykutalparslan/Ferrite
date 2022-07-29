@@ -221,7 +221,7 @@ public class MessagesService : IMessagesService
                     NotifyPeerType = InputNotifyPeerType.Peer,
                     Peer = new InputPeerDTO{InputPeerType = InputPeerType.User, UserId = p.PeerId}
                 };
-                var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
+                var settings = (await _store.GetNotifySettingsAsync(authKeyId, peer)).FirstOrDefault();
                 var dialog = new DialogDTO
                 {
                     DialogType = DialogType.Dialog,
@@ -231,7 +231,7 @@ public class MessagesService : IMessagesService
                     UnreadCount = unreadFromPeer,
                     ReadInboxMaxId = incomingReadMax,
                     ReadOutboxMaxId = outgoingReadMax,
-                    NotifySettings = settings.FirstOrDefault()
+                    NotifySettings = settings ?? new PeerNotifySettingsDTO()
                 };
                 userDialogs.Add(dialog);
             }

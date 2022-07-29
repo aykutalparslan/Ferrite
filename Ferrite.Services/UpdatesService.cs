@@ -130,5 +130,12 @@ public class UpdatesService : IUpdatesService
 
         return true;
     }
+
+    public async Task<int> IncrementUpdatesSequence(long authKeyId)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        return await updatesCtx.IncrementSeq();
+    }
 }
 

@@ -27,5 +27,6 @@ public interface IUpdatesService
     public Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date,
         int qts, int? ptsTotalLimit = null);
     public Task<bool> EnqueueUpdate(long userId, UpdateBase update);
+    public Task<int> IncrementUpdatesSequence(long authKeyId);
 }
 
