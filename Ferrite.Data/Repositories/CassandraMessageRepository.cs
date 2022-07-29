@@ -79,7 +79,7 @@ public class CassandraMessageRepository : IMessageRepository
         else
         {
             var statement = new SimpleStatement(
-                "UPDATE ferrite.messages SET message_data = ?, date = ? " +
+                "UPDATE ferrite.messages SET message_data = ?" +
                 "WHERE user_id = ? AND peer_type = ? AND peer_id = ? " +
                 "AND outgoing = ? AND message_id = ? AND pts = ? " +
                 "AND date = ?;",
