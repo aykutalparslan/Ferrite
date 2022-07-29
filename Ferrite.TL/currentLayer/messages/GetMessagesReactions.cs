@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -27,10 +29,12 @@ public class GetMessagesReactions : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IUpdatesService _updates;
     private bool serialized = false;
-    public GetMessagesReactions(ITLObjectFactory objectFactory)
+    public GetMessagesReactions(ITLObjectFactory objectFactory, IUpdatesService updates)
     {
         factory = objectFactory;
+        _updates = updates;
     }
 
     public int Constructor => -1950707482;
@@ -73,7 +77,31 @@ public class GetMessagesReactions : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        return null;
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        var updatesResult = factory.Resolve<UpdatesImpl>();
+        updatesResult.Chats = factory.Resolve<Vector<Chat>>();
+        updatesResult.Users = factory.Resolve<Vector<User>>();
+        updatesResult.Updates = factory.Resolve<Vector<Update>>();
+        foreach (var id in _id)
+        {
+            var update = factory.Resolve<UpdateMessageReactionsImpl>();
+            var reactions = factory.Resolve<MessageReactionsImpl>();
+            reactions.Results = factory.Resolve<Vector<ReactionCount>>();
+            update.Reactions = reactions;
+            if (_peer is InputPeerUserImpl inputPeer)
+            {
+                var peerUser = factory.Resolve<PeerUserImpl>();
+                peerUser.UserId = inputPeer.UserId;
+                update.Peer = peerUser;
+                update.MsgId = id;
+            }
+            updatesResult.Updates.Add(update);
+        }
+        updatesResult.Seq = await _updates.IncrementUpdatesSequence(ctx.CurrentAuthKeyId);
+        updatesResult.Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        rpcResult.Result = updatesResult;
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)

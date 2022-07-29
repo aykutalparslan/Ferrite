@@ -20,6 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -27,10 +29,12 @@ public class ReadReactions : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IUpdatesService _updates;
     private bool serialized = false;
-    public ReadReactions(ITLObjectFactory objectFactory)
+    public ReadReactions(ITLObjectFactory objectFactory, IUpdatesService updates)
     {
         factory = objectFactory;
+        _updates = updates;
     }
 
     public int Constructor => -2099097129;
@@ -61,7 +65,15 @@ public class ReadReactions : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        var state = await _updates.GetState(ctx.CurrentAuthKeyId);
+        var affected = factory.Resolve<AffectedHistoryImpl>();
+        affected.Pts = state.Pts;
+        affected.PtsCount = 0;
+        affected.Offset = -1;
+        rpcResult.Result = affected;
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)
