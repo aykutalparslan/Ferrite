@@ -95,7 +95,7 @@ public class Program
             .SingleInstance();
         builder.RegisterType<MessagesService>().As<IMessagesService>()
             .SingleInstance();
-        builder.RegisterType<CassandraMessageRepository>().As<IMessageRepository>()
+        builder.RegisterType<MessageRepository>().As<IMessageRepository>()
             .SingleInstance();
         builder.RegisterType<CassandraUnitOfWork>().As<IUnitOfWork>()
             .SingleInstance();

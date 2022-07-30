@@ -176,7 +176,11 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), data, keys);
+
+        List<object> p = new List<object>();
+        p.Add(data);
+        p.AddRange(keys);
+        var statement = new SimpleStatement(sb.ToString(), p.ToArray());
         _context.Enqueue(statement);
         
         foreach (var sc in _table.SecondaryIndices)
@@ -209,7 +213,10 @@ public class CassandraKVStore : IKVStore
                 first = false;
                 sb.Append($"{col.Name} = ?");
             }
-            var indexStatement = new SimpleStatement(sb.ToString(), keys, secondaryParams);
+            List<object> p2 = new List<object>();
+            p2.AddRange(keys);
+            p2.AddRange(secondaryParams);
+            var indexStatement = new SimpleStatement(sb.ToString(), p2.ToArray());
             _context.Enqueue(indexStatement);
         }
 
@@ -235,7 +242,7 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), keys);
+        var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
         _context.Enqueue(statement);
         return true;
     }
@@ -259,7 +266,7 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), keys);
+        var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
         _context.Enqueue(statement);
         return new ValueTask<bool>(true);
     }
@@ -286,7 +293,7 @@ public class CassandraKVStore : IKVStore
                 first = false;
                 sb.Append($"{col.Name} = ?");
             }
-            var statement = new SimpleStatement(sb.ToString(), keys);
+            var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
             var results = _context.Execute(statement);
             if (results == null)
             {
@@ -316,7 +323,7 @@ public class CassandraKVStore : IKVStore
                     first = false;
                     sb.Append($"{col.Name} = ?");
                 }
-                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters);
+                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
                 _context.Enqueue(statementInner);
             }
         }
@@ -345,7 +352,7 @@ public class CassandraKVStore : IKVStore
                 first = false;
                 sb.Append($"{col.Name} = ?");
             }
-            var statement = new SimpleStatement(sb.ToString(), keys);
+            var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
             var results = await _context.ExecuteAsync(statement);
             if (results == null)
             {
@@ -375,7 +382,7 @@ public class CassandraKVStore : IKVStore
                     first = false;
                     sb.Append($"{col.Name} = ?");
                 }
-                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters);
+                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
                 _context.Enqueue(statementInner);
             }
         }
@@ -407,7 +414,7 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), keys);
+        var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
         var results = _context.Execute(statement);
         if (results == null)
         {
@@ -436,7 +443,7 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), keys);
+        var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
         var results = await _context.ExecuteAsync(statement);
         if (results == null)
         {
@@ -468,7 +475,7 @@ public class CassandraKVStore : IKVStore
                 first = false;
                 sb.Append($"{col.Name} = ?");
             }
-            var statement = new SimpleStatement(sb.ToString(), keys);
+            var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
             var results = _context.Execute(statement);
             if (results == null)
             {
@@ -494,7 +501,7 @@ public class CassandraKVStore : IKVStore
                     first = false;
                     sb.Append($"{col.Name} = ?");
                 }
-                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters);
+                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
                 var resultsInner = _context.Execute(statementInner);
                 var rowInner = resultsInner.FirstOrDefault();
                 return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
@@ -525,7 +532,7 @@ public class CassandraKVStore : IKVStore
                 first = false;
                 sb.Append($"{col.Name} = ?");
             }
-            var statement = new SimpleStatement(sb.ToString(), keys);
+            var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
             var results = await _context.ExecuteAsync(statement);
             if (results == null)
             {
@@ -551,7 +558,7 @@ public class CassandraKVStore : IKVStore
                     first = false;
                     sb.Append($"{col.Name} = ?");
                 }
-                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters);
+                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
                 var resultsInner = await _context.ExecuteAsync(statementInner);
                 var rowInner = resultsInner.FirstOrDefault();
                 return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
@@ -579,7 +586,7 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), keys);
+        var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
         var results = _context.Execute(statement);
         if (results == null)
         {
@@ -610,7 +617,7 @@ public class CassandraKVStore : IKVStore
             first = false;
             sb.Append($"{col.Name} = ?");
         }
-        var statement = new SimpleStatement(sb.ToString(), keys);
+        var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
         var results = await _context.ExecuteAsync(statement);
         if (results == null)
         {
