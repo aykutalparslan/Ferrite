@@ -390,13 +390,34 @@ public class CassandraKVStore : IKVStore
         return null;
     }
 
-    public IAsyncEnumerable<byte[]> Iterate(params object[] keys)
+    public async IAsyncEnumerable<byte[]> Iterate(params object[] keys)
     {
-        throw new NotImplementedException();
-    }
-
-    public IAsyncEnumerable<byte[]> Iterate(string indexName, params object[] keys)
-    {
-        throw new NotImplementedException();
+        StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
+        bool first = true;
+        for (int i = 0; i < keys.Length; i++)
+        {
+            var col = _table.PrimaryKey.Columns[i];
+            if (keys[i].GetType() != GetManagedType(col.Type))
+            {
+                throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                    $"the parameter was of type {keys[i].GetType()}");
+            }
+            if (!first)
+            {
+                sb.Append($" AND ");
+            }
+            first = false;
+            sb.Append($"{col.Name} = ?");
+        }
+        var statement = new SimpleStatement(sb.ToString(), keys);
+        var results = await _context.ExecuteAsync(statement);
+        if (results == null)
+        {
+            yield break;
+        }
+        foreach (var row in results)
+        {
+            yield return row.GetValue<byte[]>($"{_table.Name}_data");
+        }
     }
 }
