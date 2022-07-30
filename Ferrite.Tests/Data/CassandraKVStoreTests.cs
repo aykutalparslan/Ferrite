@@ -99,4 +99,37 @@ public class CassandraKVStoreTests
                      "pk_outgoing = ?, pk_message_id = ?, pk_pts = ?, pk_date = ? WHERE user_id = ? AND message_id = ?",
             queriesGenerated[1]);
     }
+
+    [Fact]
+    public void Delete_Should_Generate_Query()
+    {
+        List<string> queriesGenerated = new List<string>();
+        var ctx = new Mock<ICassandraContext>();
+        ctx.Setup(x => x.Enqueue(It.IsAny<Statement>())).Callback((Statement s) =>
+        {
+            if (s is SimpleStatement simpleStatement)
+            {
+                queriesGenerated.Add(simpleStatement.QueryString);
+            }
+        });
+
+        CassandraKVStore store = new CassandraKVStore(ctx.Object,
+            new TableDefinition("ferrite", "messages",
+                new KeyDefinition("pk",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "peer_type", Type = DataType.Int },
+                    new DataColumn { Name = "peer_id", Type = DataType.Long },
+                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                    new DataColumn { Name = "message_id", Type = DataType.Int },
+                    new DataColumn { Name = "pts", Type = DataType.Int },
+                    new DataColumn { Name = "date", Type = DataType.Long }),
+                new KeyDefinition("id",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "message_id", Type = DataType.Int })));
+        store.Delete(123L, 1, 222L, true, 55, 112, 0L);
+        Assert.Equal(1, queriesGenerated.Count);
+        Assert.Equal("DELETE FROM ferrite.messages WHERE user_id = ? AND peer_type = ? AND peer_id = ? " +
+                     "AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
+            queriesGenerated[0]);
+    }
 }

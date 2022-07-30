@@ -28,20 +28,20 @@ public interface IKVStore
     /// <param name="data">The data to be written.</param>
     /// <param name="keys">Fields of the primary key with the right order.</param>
     /// <returns>True if the operation is successful.</returns>
-    public Task<bool> Put(byte[] data, params object[] keys);
+    public bool Put(byte[] data, params object[] keys);
     /// <summary>
     /// Enqueues a delete operation.
     /// </summary>
     /// <param name="keys">Fields of the primary key with the right order.</param>
     /// <returns></returns>
-    public Task<bool> Delete(params object[] keys);
+    public bool Delete(params object[] keys);
     /// <summary>
     /// Enqueues a delete operation.
     /// </summary>
     /// <param name="indexName">Name of the secondary index to be used with the operation.</param>
     /// <param name="keys">Fields of the secondary key with the right order.</param>
     /// <returns></returns>
-    public Task<bool> Delete(string indexName, params object[] keys);
+    public bool Delete(string indexName, params object[] keys);
     /// <summary>
     /// Executes the internal queue as a transaction.
     /// </summary>

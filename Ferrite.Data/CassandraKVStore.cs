@@ -152,7 +152,7 @@ public class CassandraKVStore : IKVStore
         }
     }
 
-    public async Task<bool> Put(byte[] data, params object[] keys)
+    public bool Put(byte[] data, params object[] keys)
     {
         if (keys.Length != _table.PrimaryKey.Columns.Count)
         {
@@ -212,16 +212,34 @@ public class CassandraKVStore : IKVStore
             var indexStatement = new SimpleStatement(sb.ToString(), keys, secondaryParams);
             _context.Enqueue(indexStatement);
         }
-        await _context.ExecuteQueueAsync();
         return true;
     }
 
-    public async Task<bool> Delete(params object[] keys)
+    public bool Delete(params object[] keys)
     {
-        throw new NotImplementedException();
+        StringBuilder sb = new StringBuilder($"DELETE FROM {_table.Keyspace}.{_table.Name} WHERE ");
+        bool first = true;
+        for (int i = 0; i < keys.Length; i++)
+        {
+            var col = _table.PrimaryKey.Columns[i];
+            if (keys[i].GetType() != GetManagedType(col.Type))
+            {
+                throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                    $"the parameter was of type {keys[i].GetType()}");
+            }
+            if (!first)
+            {
+                sb.Append($" AND ");
+            }
+            first = false;
+            sb.Append($"{col.Name} = ?");
+        }
+        var statement = new SimpleStatement(sb.ToString(), keys);
+        _context.Enqueue(statement);
+        return true;
     }
 
-    public async Task<bool> Delete(string indexName, params object[] keys)
+    public bool Delete(string indexName, params object[] keys)
     {
         throw new NotImplementedException();
     }
