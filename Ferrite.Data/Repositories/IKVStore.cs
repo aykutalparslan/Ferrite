@@ -18,7 +18,7 @@
 
 using DotNext;
 
-namespace Ferrite.Data;
+namespace Ferrite.Data.Repositories;
 
 public interface IKVStore
 {

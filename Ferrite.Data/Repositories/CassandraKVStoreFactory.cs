@@ -16,22 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Immutable;
+namespace Ferrite.Data.Repositories;
 
-namespace Ferrite.Data;
-
-public class TableDefinition
+public class CassandraKVStoreFactory : IKVStoreFactory
 {
-    public readonly string Keyspace;
-    public readonly string Name;
-    public readonly KeyDefinition PrimaryKey;
-    public readonly ImmutableList<KeyDefinition> SecondaryIndices;
-
-    public TableDefinition(string keyspace, string name, KeyDefinition primaryKey, params KeyDefinition[] secondaryIndices)
+    public IKVStore Get(TableDefinition table)
     {
-        Keyspace = keyspace;
-        Name = name;
-        PrimaryKey = primaryKey;
-        SecondaryIndices = ImmutableList.Create(secondaryIndices);
+        throw new NotImplementedException();
     }
 }

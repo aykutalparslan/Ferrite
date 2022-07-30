@@ -16,7 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+namespace Ferrite.Data.Repositories;
 
 public struct DataColumn
 {

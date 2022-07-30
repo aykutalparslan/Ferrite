@@ -16,16 +16,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+using System.Collections.Immutable;
+using Nest;
 
-public enum DataType
+namespace Ferrite.Data.Repositories;
+
+public class KeyDefinition
 {
-    Bool,
-    Int,
-    Long,
-    Float,
-    Double,
-    DateTime,
-    Bytes,
-    String,
+    public readonly string Name;
+    public readonly ImmutableList<DataColumn> Columns;
+    private readonly ImmutableDictionary<string, int> _colsIndex;
+
+    public DataColumn this[int index] => Columns[index];
+    public DataColumn this[string name] => Columns[_colsIndex[name]];
+    public int GetOrdinal(string name) => _colsIndex[name];
+
+    public KeyDefinition(string name, params DataColumn[] args)
+    {
+        Name = name;
+        Columns = ImmutableList.Create(args);
+        var bld = ImmutableDictionary.CreateBuilder<string, int>();
+        for (int i = 0; i < args.Length; i++)
+        {
+            bld.Add(args[i].Name, i);
+        }
+
+        _colsIndex = bld.ToImmutable();
+    }
 }

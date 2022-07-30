@@ -17,30 +17,21 @@
 // 
 
 using System.Collections.Immutable;
-using Nest;
 
-namespace Ferrite.Data;
+namespace Ferrite.Data.Repositories;
 
-public class KeyDefinition
+public class TableDefinition
 {
+    public readonly string Keyspace;
     public readonly string Name;
-    public readonly ImmutableList<DataColumn> Columns;
-    private readonly ImmutableDictionary<string, int> _colsIndex;
+    public readonly KeyDefinition PrimaryKey;
+    public readonly ImmutableList<KeyDefinition> SecondaryIndices;
 
-    public DataColumn this[int index] => Columns[index];
-    public DataColumn this[string name] => Columns[_colsIndex[name]];
-    public int GetOrdinal(string name) => _colsIndex[name];
-
-    public KeyDefinition(string name, params DataColumn[] args)
+    public TableDefinition(string keyspace, string name, KeyDefinition primaryKey, params KeyDefinition[] secondaryIndices)
     {
+        Keyspace = keyspace;
         Name = name;
-        Columns = ImmutableList.Create(args);
-        var bld = ImmutableDictionary.CreateBuilder<string, int>();
-        for (int i = 0; i < args.Length; i++)
-        {
-            bld.Add(args[i].Name, i);
-        }
-
-        _colsIndex = bld.ToImmutable();
+        PrimaryKey = primaryKey;
+        SecondaryIndices = ImmutableList.Create(secondaryIndices);
     }
 }

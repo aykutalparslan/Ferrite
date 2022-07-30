@@ -16,12 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+namespace Ferrite.Data.Repositories;
 
-public class CassandraKVStoreFactory : IKVStoreFactory
+public enum DataType
 {
-    public IKVStore Get(TableDefinition table)
-    {
-        throw new NotImplementedException();
-    }
+    Bool,
+    Int,
+    Long,
+    Float,
+    Double,
+    DateTime,
+    Bytes,
+    String,
 }

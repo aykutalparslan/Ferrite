@@ -20,7 +20,7 @@ using System.Text;
 using Cassandra;
 using Ferrite.Data.Repositories;
 
-namespace Ferrite.Data;
+namespace Ferrite.Data.Repositories;
 
 public class CassandraKVStore : IKVStore
 {
