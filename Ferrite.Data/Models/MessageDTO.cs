@@ -55,4 +55,5 @@ public record MessageDTO
     public MessageReactionsDTO? Reactions { get; set; }
     public IReadOnlyCollection<RestrictionReasonDTO>? RestrictionReason { get; set; }
     public int? TtlPeriod { get; set; }
+    public int Pts { get; set; }
 }

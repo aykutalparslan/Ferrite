@@ -41,19 +41,19 @@ public class CassandraKVStoreTests
             }
         });
 
-        CassandraKVStore store = new CassandraKVStore(ctx.Object,
-            new TableDefinition("ferrite","messages",
-            new KeyDefinition("pk", 
-                new DataColumn{Name = "user_id", Type = DataType.Long},
-                new DataColumn{Name = "peer_type", Type = DataType.Int},
-                new DataColumn{Name = "peer_id", Type = DataType.Long},
-                new DataColumn{Name = "outgoing", Type = DataType.Bool},
-                new DataColumn{Name = "message_id", Type = DataType.Int},
-                new DataColumn{Name = "pts", Type = DataType.Int},
-                new DataColumn{Name = "date", Type = DataType.Long}),
-            new KeyDefinition("id", 
-                new DataColumn{Name = "user_id", Type = DataType.Long},
-                new DataColumn{Name = "message_id", Type = DataType.Int})));
+        CassandraKVStore store = new CassandraKVStore(ctx.Object);
+        store.SetSchema(new TableDefinition("ferrite", "messages",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_type", Type = DataType.Int },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
+                new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                new DataColumn { Name = "message_id", Type = DataType.Int },
+                new DataColumn { Name = "pts", Type = DataType.Int },
+                new DataColumn { Name = "date", Type = DataType.Long }),
+            new KeyDefinition("id",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "message_id", Type = DataType.Int })));
         Assert.Equal(2, queriesGenerated.Count);
         Assert.Equal("CREATE TABLE IF NOT EXISTS ferrite.messages (user_id bigint, peer_type int, " +
                      "peer_id bigint, outgoing boolean, message_id int, pts int, date bigint, messages_data blob, " +
@@ -65,7 +65,7 @@ public class CassandraKVStoreTests
             queriesGenerated[1]);
     }
     [Fact]
-    public async Task Put_Should_Generate_UpdateQuery()
+    public void Put_Should_Generate_UpdateQuery()
     {
         List<string> queriesGenerated = new List<string>();
         var ctx = new Mock<ICassandraContext>();
@@ -77,20 +77,20 @@ public class CassandraKVStoreTests
             }
         });
 
-        CassandraKVStore store = new CassandraKVStore(ctx.Object,
-            new TableDefinition("ferrite","messages",
-            new KeyDefinition("pk", 
-                new DataColumn{Name = "user_id", Type = DataType.Long},
-                new DataColumn{Name = "peer_type", Type = DataType.Int},
-                new DataColumn{Name = "peer_id", Type = DataType.Long},
-                new DataColumn{Name = "outgoing", Type = DataType.Bool},
-                new DataColumn{Name = "message_id", Type = DataType.Int},
-                new DataColumn{Name = "pts", Type = DataType.Int},
-                new DataColumn{Name = "date", Type = DataType.Long}),
-            new KeyDefinition("id", 
-                new DataColumn{Name = "user_id", Type = DataType.Long},
-                new DataColumn{Name = "message_id", Type = DataType.Int})));
-        await store.Put(RandomNumberGenerator.GetBytes(16), 123L, 1, 222L, true, 55, 112, 0L);
+        CassandraKVStore store = new CassandraKVStore(ctx.Object);
+        store.SetSchema(new TableDefinition("ferrite", "messages",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_type", Type = DataType.Int },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
+                new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                new DataColumn { Name = "message_id", Type = DataType.Int },
+                new DataColumn { Name = "pts", Type = DataType.Int },
+                new DataColumn { Name = "date", Type = DataType.Long }),
+            new KeyDefinition("id",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "message_id", Type = DataType.Int })));
+        store.Put(RandomNumberGenerator.GetBytes(16), 123L, 1, 222L, true, 55, 112, 0L);
         Assert.Equal(2, queriesGenerated.Count);
         Assert.Equal("UPDATE ferrite.messages SET messages_data = ? WHERE user_id = ? AND peer_type = ? " +
                      "AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
@@ -113,20 +113,20 @@ public class CassandraKVStoreTests
             }
         });
 
-        CassandraKVStore store = new CassandraKVStore(ctx.Object,
-            new TableDefinition("ferrite", "messages",
-                new KeyDefinition("pk",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "peer_type", Type = DataType.Int },
-                    new DataColumn { Name = "peer_id", Type = DataType.Long },
-                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
-                    new DataColumn { Name = "message_id", Type = DataType.Int },
-                    new DataColumn { Name = "pts", Type = DataType.Int },
-                    new DataColumn { Name = "date", Type = DataType.Long }),
-                new KeyDefinition("id",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "message_id", Type = DataType.Int })));
-        await store.Delete(123L, 1, 222L, true, 55, 112, 0L);
+        CassandraKVStore store = new CassandraKVStore(ctx.Object);
+        store.SetSchema(new TableDefinition("ferrite", "messages",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_type", Type = DataType.Int },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
+                new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                new DataColumn { Name = "message_id", Type = DataType.Int },
+                new DataColumn { Name = "pts", Type = DataType.Int },
+                new DataColumn { Name = "date", Type = DataType.Long }),
+            new KeyDefinition("id",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.DeleteAsync(123L, 1, 222L, true, 55, 112, 0L);
         Assert.Equal(1, queriesGenerated.Count);
         Assert.Equal("DELETE FROM ferrite.messages WHERE user_id = ? AND peer_type = ? AND peer_id = ? " +
                      "AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
@@ -145,20 +145,20 @@ public class CassandraKVStoreTests
             }
         });
 
-        CassandraKVStore store = new CassandraKVStore(ctx.Object,
-            new TableDefinition("ferrite", "messages",
-                new KeyDefinition("pk",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "peer_type", Type = DataType.Int },
-                    new DataColumn { Name = "peer_id", Type = DataType.Long },
-                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
-                    new DataColumn { Name = "message_id", Type = DataType.Int },
-                    new DataColumn { Name = "pts", Type = DataType.Int },
-                    new DataColumn { Name = "date", Type = DataType.Long }),
-                new KeyDefinition("id",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "message_id", Type = DataType.Int })));
-        await store.DeleteBySecondaryIndex("id",123L, 1);
+        CassandraKVStore store = new CassandraKVStore(ctx.Object);
+        store.SetSchema(new TableDefinition("ferrite", "messages",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_type", Type = DataType.Int },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
+                new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                new DataColumn { Name = "message_id", Type = DataType.Int },
+                new DataColumn { Name = "pts", Type = DataType.Int },
+                new DataColumn { Name = "date", Type = DataType.Long }),
+            new KeyDefinition("id",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.DeleteBySecondaryIndexAsync("id",123L, 1);
         Assert.Equal(1, queriesGenerated.Count);
         Assert.Equal("SELECT * FROM ferrite.messages_id WHERE user_id = ? AND message_id = ?",
             queriesGenerated[0]);
@@ -176,20 +176,20 @@ public class CassandraKVStoreTests
             }
         });
 
-        CassandraKVStore store = new CassandraKVStore(ctx.Object,
-            new TableDefinition("ferrite", "messages",
-                new KeyDefinition("pk",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "peer_type", Type = DataType.Int },
-                    new DataColumn { Name = "peer_id", Type = DataType.Long },
-                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
-                    new DataColumn { Name = "message_id", Type = DataType.Int },
-                    new DataColumn { Name = "pts", Type = DataType.Int },
-                    new DataColumn { Name = "date", Type = DataType.Long }),
-                new KeyDefinition("id",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "message_id", Type = DataType.Int })));
-        await store.Get(123L, 1, 222L, true, 55, 112, 0L);
+        CassandraKVStore store = new CassandraKVStore(ctx.Object);
+        store.SetSchema(new TableDefinition("ferrite", "messages",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_type", Type = DataType.Int },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
+                new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                new DataColumn { Name = "message_id", Type = DataType.Int },
+                new DataColumn { Name = "pts", Type = DataType.Int },
+                new DataColumn { Name = "date", Type = DataType.Long }),
+            new KeyDefinition("id",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.GetAsync(123L, 1, 222L, true, 55, 112, 0L);
         Assert.Equal(1, queriesGenerated.Count);
         Assert.Equal("SELECT * FROM ferrite.messages WHERE user_id = ? AND peer_type = ? " +
                      "AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
@@ -208,20 +208,20 @@ public class CassandraKVStoreTests
             }
         });
 
-        CassandraKVStore store = new CassandraKVStore(ctx.Object,
-            new TableDefinition("ferrite", "messages",
-                new KeyDefinition("pk",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "peer_type", Type = DataType.Int },
-                    new DataColumn { Name = "peer_id", Type = DataType.Long },
-                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
-                    new DataColumn { Name = "message_id", Type = DataType.Int },
-                    new DataColumn { Name = "pts", Type = DataType.Int },
-                    new DataColumn { Name = "date", Type = DataType.Long }),
-                new KeyDefinition("id",
-                    new DataColumn { Name = "user_id", Type = DataType.Long },
-                    new DataColumn { Name = "message_id", Type = DataType.Int })));
-        await store.GetBySecondaryIndex("id",123L, 1);
+        CassandraKVStore store = new CassandraKVStore(ctx.Object);
+        store.SetSchema(new TableDefinition("ferrite", "messages",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_type", Type = DataType.Int },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
+                new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                new DataColumn { Name = "message_id", Type = DataType.Int },
+                new DataColumn { Name = "pts", Type = DataType.Int },
+                new DataColumn { Name = "date", Type = DataType.Long }),
+            new KeyDefinition("id",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.GetBySecondaryIndexAsync("id",123L, 1);
         Assert.Equal(1, queriesGenerated.Count);
         Assert.Equal("SELECT * FROM ferrite.messages_id WHERE user_id = ? AND message_id = ?",
             queriesGenerated[0]);
