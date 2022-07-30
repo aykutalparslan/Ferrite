@@ -154,7 +154,7 @@ public class CassandraKVStore : IKVStore
 
     public async Task<bool> Put(byte[] data, params object[] keys)
     {
-        if (keys.Length != 0)
+        if (keys.Length != _table.PrimaryKey.Columns.Count)
         {
             throw new Exception("Parameter count mismatch.");
         }
@@ -174,7 +174,7 @@ public class CassandraKVStore : IKVStore
                 sb.Append($" AND ");
             }
             first = false;
-            sb.Append($"{col.Name} = ? ");
+            sb.Append($"{col.Name} = ?");
         }
         var statement = new SimpleStatement(sb.ToString(), data, keys);
         _context.Enqueue(statement);
@@ -197,7 +197,7 @@ public class CassandraKVStore : IKVStore
                 first = false;
                 sb.Append($"pk_{c.Name} = ?");
             }
-            sb.Append($"WHERE ");
+            sb.Append($" WHERE ");
             first = true;
             for (int i = 0; i < secondaryParams.Count; i++)
             {
@@ -207,7 +207,7 @@ public class CassandraKVStore : IKVStore
                     sb.Append($" AND ");
                 }
                 first = false;
-                sb.Append($"{col.Name} = ? ");
+                sb.Append($"{col.Name} = ?");
             }
             var indexStatement = new SimpleStatement(sb.ToString(), keys, secondaryParams);
             _context.Enqueue(indexStatement);

@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Security.Cryptography;
 using Autofac.Extras.Moq;
 using Cassandra;
 using Ferrite.Data;
@@ -28,7 +29,7 @@ namespace Ferrite.Tests.Data;
 public class CassandraKVStoreTests
 {
     [Fact]
-    public void CassandraKVStore_Should_Generate_CreateSchemaQuery()
+    public void Constructor_Should_Generate_CreateSchemaQuery()
     {
         List<string> queriesGenerated = new List<string>();
         var ctx = new Mock<ICassandraContext>();
@@ -61,6 +62,41 @@ public class CassandraKVStoreTests
         Assert.Equal("CREATE TABLE IF NOT EXISTS ferrite.messages_id (user_id bigint, message_id int, " +
                      "pk_user_id bigint, pk_peer_type int, pk_peer_id bigint, pk_outgoing boolean, pk_message_id int, " +
                      "pk_pts int, pk_date bigint, PRIMARY KEY (user_id, message_id));",
+            queriesGenerated[1]);
+    }
+    [Fact]
+    public void Put_Should_Generate_UpdateQuery()
+    {
+        List<string> queriesGenerated = new List<string>();
+        var ctx = new Mock<ICassandraContext>();
+        ctx.Setup(x => x.Enqueue(It.IsAny<Statement>())).Callback((Statement s) =>
+        {
+            if (s is SimpleStatement simpleStatement)
+            {
+                queriesGenerated.Add(simpleStatement.QueryString);
+            }
+        });
+
+        CassandraKVStore store = new CassandraKVStore(ctx.Object,
+            new TableDefinition("ferrite","messages",
+            new KeyDefinition("pk", 
+                new DataColumn{Name = "user_id", Type = DataType.Long},
+                new DataColumn{Name = "peer_type", Type = DataType.Int},
+                new DataColumn{Name = "peer_id", Type = DataType.Long},
+                new DataColumn{Name = "outgoing", Type = DataType.Bool},
+                new DataColumn{Name = "message_id", Type = DataType.Int},
+                new DataColumn{Name = "pts", Type = DataType.Int},
+                new DataColumn{Name = "date", Type = DataType.Long}),
+            new KeyDefinition("id", 
+                new DataColumn{Name = "user_id", Type = DataType.Long},
+                new DataColumn{Name = "message_id", Type = DataType.Int})));
+        store.Put(RandomNumberGenerator.GetBytes(16), 123L, 1, 222L, true, 55, 112, 0L);
+        Assert.Equal(2, queriesGenerated.Count);
+        Assert.Equal("UPDATE ferrite.messages SET messages_data = ? WHERE user_id = ? AND peer_type = ? " +
+                     "AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
+            queriesGenerated[0]);
+        Assert.Equal("UPDATE ferrite.messages_id SET pk_user_id = ?, pk_peer_type = ?, pk_peer_id = ?, " +
+                     "pk_outgoing = ?, pk_message_id = ?, pk_pts = ?, pk_date = ? WHERE user_id = ? AND message_id = ?",
             queriesGenerated[1]);
     }
 }
