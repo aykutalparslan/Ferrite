@@ -65,7 +65,7 @@ public class CassandraKVStoreTests
             queriesGenerated[1]);
     }
     [Fact]
-    public void Put_Should_Generate_UpdateQuery()
+    public async Task Put_Should_Generate_UpdateQuery()
     {
         List<string> queriesGenerated = new List<string>();
         var ctx = new Mock<ICassandraContext>();
@@ -90,7 +90,7 @@ public class CassandraKVStoreTests
             new KeyDefinition("id", 
                 new DataColumn{Name = "user_id", Type = DataType.Long},
                 new DataColumn{Name = "message_id", Type = DataType.Int})));
-        store.Put(RandomNumberGenerator.GetBytes(16), 123L, 1, 222L, true, 55, 112, 0L);
+        await store.Put(RandomNumberGenerator.GetBytes(16), 123L, 1, 222L, true, 55, 112, 0L);
         Assert.Equal(2, queriesGenerated.Count);
         Assert.Equal("UPDATE ferrite.messages SET messages_data = ? WHERE user_id = ? AND peer_type = ? " +
                      "AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
@@ -101,7 +101,7 @@ public class CassandraKVStoreTests
     }
 
     [Fact]
-    public void Delete_Should_Generate_Query()
+    public async Task Delete_Should_Generate_Query()
     {
         List<string> queriesGenerated = new List<string>();
         var ctx = new Mock<ICassandraContext>();
@@ -126,10 +126,104 @@ public class CassandraKVStoreTests
                 new KeyDefinition("id",
                     new DataColumn { Name = "user_id", Type = DataType.Long },
                     new DataColumn { Name = "message_id", Type = DataType.Int })));
-        store.Delete(123L, 1, 222L, true, 55, 112, 0L);
+        await store.Delete(123L, 1, 222L, true, 55, 112, 0L);
         Assert.Equal(1, queriesGenerated.Count);
         Assert.Equal("DELETE FROM ferrite.messages WHERE user_id = ? AND peer_type = ? AND peer_id = ? " +
                      "AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
+            queriesGenerated[0]);
+    }
+    [Fact]
+    public async Task DeleteBySecondaryIndex_Should_Generate_Queries()
+    {
+        List<string> queriesGenerated = new List<string>();
+        var ctx = new Mock<ICassandraContext>();
+        ctx.Setup(x => x.ExecuteAsync(It.IsAny<Statement>())).Callback((Statement s) =>
+        {
+            if (s is SimpleStatement simpleStatement)
+            {
+                queriesGenerated.Add(simpleStatement.QueryString);
+            }
+        });
+
+        CassandraKVStore store = new CassandraKVStore(ctx.Object,
+            new TableDefinition("ferrite", "messages",
+                new KeyDefinition("pk",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "peer_type", Type = DataType.Int },
+                    new DataColumn { Name = "peer_id", Type = DataType.Long },
+                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                    new DataColumn { Name = "message_id", Type = DataType.Int },
+                    new DataColumn { Name = "pts", Type = DataType.Int },
+                    new DataColumn { Name = "date", Type = DataType.Long }),
+                new KeyDefinition("id",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.DeleteBySecondaryIndex("id",123L, 1);
+        Assert.Equal(1, queriesGenerated.Count);
+        Assert.Equal("SELECT * FROM ferrite.messages_id WHERE user_id = ? AND message_id = ?",
+            queriesGenerated[0]);
+    }
+    [Fact]
+    public async Task Get_Should_Generate_Query()
+    {
+        List<string> queriesGenerated = new List<string>();
+        var ctx = new Mock<ICassandraContext>();
+        ctx.Setup(x => x.ExecuteAsync(It.IsAny<Statement>())).Callback((Statement s) =>
+        {
+            if (s is SimpleStatement simpleStatement)
+            {
+                queriesGenerated.Add(simpleStatement.QueryString);
+            }
+        });
+
+        CassandraKVStore store = new CassandraKVStore(ctx.Object,
+            new TableDefinition("ferrite", "messages",
+                new KeyDefinition("pk",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "peer_type", Type = DataType.Int },
+                    new DataColumn { Name = "peer_id", Type = DataType.Long },
+                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                    new DataColumn { Name = "message_id", Type = DataType.Int },
+                    new DataColumn { Name = "pts", Type = DataType.Int },
+                    new DataColumn { Name = "date", Type = DataType.Long }),
+                new KeyDefinition("id",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.Get(123L, 1, 222L, true, 55, 112, 0L);
+        Assert.Equal(1, queriesGenerated.Count);
+        Assert.Equal("SELECT * FROM ferrite.messages WHERE user_id = ? AND peer_type = ? " +
+                     "AND peer_id = ? AND outgoing = ? AND message_id = ? AND pts = ? AND date = ?",
+            queriesGenerated[0]);
+    }
+    [Fact]
+    public async Task GetBySecondaryIndex_Should_Generate_Queries()
+    {
+        List<string> queriesGenerated = new List<string>();
+        var ctx = new Mock<ICassandraContext>();
+        ctx.Setup(x => x.ExecuteAsync(It.IsAny<Statement>())).Callback((Statement s) =>
+        {
+            if (s is SimpleStatement simpleStatement)
+            {
+                queriesGenerated.Add(simpleStatement.QueryString);
+            }
+        });
+
+        CassandraKVStore store = new CassandraKVStore(ctx.Object,
+            new TableDefinition("ferrite", "messages",
+                new KeyDefinition("pk",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "peer_type", Type = DataType.Int },
+                    new DataColumn { Name = "peer_id", Type = DataType.Long },
+                    new DataColumn { Name = "outgoing", Type = DataType.Bool },
+                    new DataColumn { Name = "message_id", Type = DataType.Int },
+                    new DataColumn { Name = "pts", Type = DataType.Int },
+                    new DataColumn { Name = "date", Type = DataType.Long }),
+                new KeyDefinition("id",
+                    new DataColumn { Name = "user_id", Type = DataType.Long },
+                    new DataColumn { Name = "message_id", Type = DataType.Int })));
+        await store.GetBySecondaryIndex("id",123L, 1);
+        Assert.Equal(1, queriesGenerated.Count);
+        Assert.Equal("SELECT * FROM ferrite.messages_id WHERE user_id = ? AND message_id = ?",
             queriesGenerated[0]);
     }
 }

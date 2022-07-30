@@ -152,7 +152,7 @@ public class CassandraKVStore : IKVStore
         }
     }
 
-    public bool Put(byte[] data, params object[] keys)
+    public ValueTask<bool> Put(byte[] data, params object[] keys)
     {
         if (keys.Length != _table.PrimaryKey.Columns.Count)
         {
@@ -212,10 +212,10 @@ public class CassandraKVStore : IKVStore
             var indexStatement = new SimpleStatement(sb.ToString(), keys, secondaryParams);
             _context.Enqueue(indexStatement);
         }
-        return true;
+        return new ValueTask<bool>(true);
     }
 
-    public bool Delete(params object[] keys)
+    public ValueTask<bool> Delete(params object[] keys)
     {
         StringBuilder sb = new StringBuilder($"DELETE FROM {_table.Keyspace}.{_table.Name} WHERE ");
         bool first = true;
@@ -236,27 +236,158 @@ public class CassandraKVStore : IKVStore
         }
         var statement = new SimpleStatement(sb.ToString(), keys);
         _context.Enqueue(statement);
+        return new ValueTask<bool>(true);
+    }
+
+    public async ValueTask<bool> DeleteBySecondaryIndex(string indexName, params object[] keys)
+    {
+        var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
+        if (sc != null)
+        {
+            StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name}_{sc.Name} WHERE ");
+            bool first = true;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                var col = sc.Columns[i];
+                if (keys[i].GetType() != GetManagedType(col.Type))
+                {
+                    throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                        $"the parameter was of type {keys[i].GetType()}");
+                }
+                if (!first)
+                {
+                    sb.Append($" AND ");
+                }
+                first = false;
+                sb.Append($"{col.Name} = ?");
+            }
+            var statement = new SimpleStatement(sb.ToString(), keys);
+            var results = await _context.ExecuteAsync(statement);
+            if (results == null)
+            {
+                return false;
+            }
+            var row = results.FirstOrDefault();
+            if (row != null)
+            {
+                List<object> primaryParameters = new();
+                foreach (var c in _table.PrimaryKey.Columns)
+                {
+                    primaryParameters.Add(row.GetValue(GetManagedType(c.Type), c.Name));
+                }
+                sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
+                for (int i = 0; i < primaryParameters.Count; i++)
+                {
+                    var col = _table.PrimaryKey.Columns[i];
+                    if (primaryParameters[i].GetType() != GetManagedType(col.Type))
+                    {
+                        throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                            $"the parameter was of type {primaryParameters[i].GetType()}");
+                    }
+                    if (!first)
+                    {
+                        sb.Append($" AND ");
+                    }
+                    first = false;
+                    sb.Append($"{col.Name} = ?");
+                }
+                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters);
+                _context.Enqueue(statementInner);
+            }
+        }
+        return false;
+    }
+
+    public async ValueTask<bool> Commit()
+    {
+        await _context.ExecuteQueueAsync();
         return true;
     }
 
-    public bool Delete(string indexName, params object[] keys)
+    public async ValueTask<byte[]?> Get(params object[] keys)
     {
-        throw new NotImplementedException();
+        StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
+        bool first = true;
+        for (int i = 0; i < keys.Length; i++)
+        {
+            var col = _table.PrimaryKey.Columns[i];
+            if (keys[i].GetType() != GetManagedType(col.Type))
+            {
+                throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                    $"the parameter was of type {keys[i].GetType()}");
+            }
+            if (!first)
+            {
+                sb.Append($" AND ");
+            }
+            first = false;
+            sb.Append($"{col.Name} = ?");
+        }
+        var statement = new SimpleStatement(sb.ToString(), keys);
+        var results = await _context.ExecuteAsync(statement);
+        if (results == null)
+        {
+            return null;
+        }
+        var row = results.FirstOrDefault();
+        return row?.GetValue<byte[]>($"{_table.Name}_data");
     }
 
-    public async Task<bool> Commit()
+    public async ValueTask<byte[]?> GetBySecondaryIndex(string indexName, params object[] keys)
     {
-        throw new NotImplementedException();
-    }
-
-    public async Task<byte[]> Get(params object[] keys)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<byte[]> Get(string indexName, params object[] keys)
-    {
-        throw new NotImplementedException();
+        var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
+        if (sc != null)
+        {
+            StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name}_{sc.Name} WHERE ");
+            bool first = true;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                var col = sc.Columns[i];
+                if (keys[i].GetType() != GetManagedType(col.Type))
+                {
+                    throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                        $"the parameter was of type {keys[i].GetType()}");
+                }
+                if (!first)
+                {
+                    sb.Append($" AND ");
+                }
+                first = false;
+                sb.Append($"{col.Name} = ?");
+            }
+            var statement = new SimpleStatement(sb.ToString(), keys);
+            var results = await _context.ExecuteAsync(statement);
+            if (results == null)
+            {
+                return null;
+            }
+            var row = results.FirstOrDefault();
+            if (row != null)
+            {
+                List<object> primaryParameters = new();
+                foreach (var c in _table.PrimaryKey.Columns)
+                {
+                    primaryParameters.Add(row.GetValue(GetManagedType(c.Type), c.Name));
+                }
+                sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
+                first = true;
+                for (int i = 0; i < primaryParameters.Count; i++)
+                {
+                    var col = _table.PrimaryKey.Columns[i];
+                    if (!first)
+                    {
+                        sb.Append($" AND ");
+                    }
+                    first = false;
+                    sb.Append($"{col.Name} = ?");
+                }
+                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters);
+                var resultsInner = await _context.ExecuteAsync(statementInner);
+                var rowInner = resultsInner.FirstOrDefault();
+                return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
+            }
+        }
+        return null;
     }
 
     public IAsyncEnumerable<byte[]> Iterate(params object[] keys)
