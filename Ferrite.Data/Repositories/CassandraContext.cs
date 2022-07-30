@@ -20,7 +20,7 @@ using Cassandra;
 
 namespace Ferrite.Data.Repositories;
 
-public class CassandraContext 
+public class CassandraContext : ICassandraContext
 {
     private readonly Cluster _cluster;
     private readonly ISession _session;

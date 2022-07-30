@@ -54,6 +54,16 @@ public readonly struct RocksDbKey
             _key[4] |= 0x80;
         }
     }
+    public RocksDbKey(string tableName, bool value)
+    {
+        var chars = tableName.AsSpan();
+        var bytes = MemoryMarshal.Cast<char, byte>(chars);
+        var hash = bytes.GetXxHash64();
+        byte byteValue = (byte)(value ? 1 : 0);
+        _key = new byte[5];
+        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
+        _key[4] |= byteValue;
+    }
     public RocksDbKey(string tableName, long value)
     {
         var chars = tableName.AsSpan();
@@ -196,6 +206,15 @@ public readonly struct RocksDbKey
             value.Slice(i * 8, Math.Min(significantBytes, 8))
                 .CopyTo(newKey.AsSpan().Slice(_key.Length + i * 9));
         }
+
+        return new RocksDbKey(newKey);
+    }
+    public RocksDbKey Append(bool value)
+    {
+        byte[] newKey = new byte[_key.Length + 1];
+        _key.CopyTo(newKey.AsSpan());
+        byte byteValue = (byte)(value ? 1 : 0);
+        newKey[_key.Length] = byteValue;
 
         return new RocksDbKey(newKey);
     }
