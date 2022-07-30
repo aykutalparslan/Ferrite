@@ -26,7 +26,7 @@ public class CassandraContext : ICassandraContext
     private readonly ISession _session;
     private readonly string _keySpace;
     private readonly Queue<Statement> _executionQueue = new Queue<Statement>();
-    private readonly SemaphoreSlim _executionSemaphore = new SemaphoreSlim(1, 1);
+    //private readonly SemaphoreSlim _executionSemaphore = new SemaphoreSlim(1, 1);
 
     public CassandraContext(string keyspace, params string[] hosts)
     {
@@ -44,9 +44,9 @@ public class CassandraContext : ICassandraContext
     
     public void Enqueue(Statement statement)
     {
-        _executionSemaphore.Wait();
+        //_executionSemaphore.Wait();
         _executionQueue.Enqueue(statement);
-        _executionSemaphore.Release();
+        //_executionSemaphore.Release();
     }
     public RowSet Execute(Statement statement)
     {
@@ -58,12 +58,12 @@ public class CassandraContext : ICassandraContext
     }
     public RowSet ExecuteQueue()
     {
-        _executionSemaphore.Wait();
+        //_executionSemaphore.Wait();
         if (_executionQueue.Count == 1)
         {
             var statement = _executionQueue.Dequeue();
             var result = _session.Execute(statement);
-            _executionSemaphore.Release();
+            //_executionSemaphore.Release();
             return result;
         }
         else
@@ -75,18 +75,18 @@ public class CassandraContext : ICassandraContext
                 batch = batch.Add(statement);
             }
             var result = _session.Execute(batch.SetKeyspace(_keySpace));
-            _executionSemaphore.Release();
+            //_executionSemaphore.Release();
             return result;
         }
     }
     public async Task<RowSet> ExecuteQueueAsync()
     {
-        await _executionSemaphore.WaitAsync();
+        //await _executionSemaphore.WaitAsync();
         if (_executionQueue.Count == 1)
         {
             var statement = _executionQueue.Dequeue();
             var result = await _session.ExecuteAsync(statement);
-            _executionSemaphore.Release();
+            //_executionSemaphore.Release();
             return result;
         }
         else
@@ -98,7 +98,7 @@ public class CassandraContext : ICassandraContext
                 batch = batch.Add(statement);
             }
             var result = await _session.ExecuteAsync(batch.SetKeyspace(_keySpace));
-            _executionSemaphore.Release();
+            //_executionSemaphore.Release();
             return result;
         }
     }
