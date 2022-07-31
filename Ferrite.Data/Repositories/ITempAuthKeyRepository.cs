@@ -23,5 +23,4 @@ public interface ITempAuthKeyRepository
     public bool PutTempAuthKey(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
     public byte[]? GetTempAuthKey(long tempAuthKeyId);
     public ValueTask<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
-    public bool DeleteTempAuthKeys(long authKeyId, IReadOnlyCollection<long> exceptIds);
 }

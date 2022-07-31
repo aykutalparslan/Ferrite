@@ -18,33 +18,28 @@
 
 namespace Ferrite.Data.Repositories;
 
-public class AuthKeyRepository : IAuthKeyRepository
+public class TempAuthKeyRepository : ITempAuthKeyRepository
 {
     private readonly IKVStore _store;
-    public AuthKeyRepository(IKVStore store)
+    public TempAuthKeyRepository(IKVStore store)
     {
         _store = store;
-        store.SetSchema(new TableDefinition("ferrite", "auth_keys",
+        store.SetSchema(new TableDefinition("ferrite", "temp_auth_keys",
             new KeyDefinition("pk",
                 new DataColumn { Name = "auth_key_id", Type = DataType.Long })));
     }
-    public bool PutAuthKey(long authKeyId, byte[] authKey)
+    public bool PutTempAuthKey(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn)
     {
-        return _store.Put(authKey, authKeyId);
+        return _store.Put(tempAuthKey, tempAuthKeyId);
     }
 
-    public byte[]? GetAuthKey(long authKeyId)
+    public byte[]? GetTempAuthKey(long tempAuthKeyId)
     {
-        return _store.Get(authKeyId);
+        return _store.Get(tempAuthKeyId);
     }
 
-    public async ValueTask<byte[]?> GetAuthKeyAsync(long authKeyId)
+    public async ValueTask<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
     {
-        return await _store.GetAsync(authKeyId);
-    }
-
-    public bool DeleteAuthKey(long authKeyId)
-    {
-        return _store.Delete(authKeyId);
+        return await _store.GetAsync(tempAuthKeyId);
     }
 }

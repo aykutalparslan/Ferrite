@@ -23,4 +23,5 @@ public interface IBoundAuthKeyRepository
     public bool PutBoundAuthKey(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
     public long? GetBoundAuthKey(long tempAuthKeyId);
     public ValueTask<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
+    public bool DeleteTempAuthKeys(long authKeyId, IReadOnlyCollection<long> exceptIds);
 }
