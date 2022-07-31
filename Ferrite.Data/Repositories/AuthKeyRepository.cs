@@ -18,10 +18,34 @@
 
 namespace Ferrite.Data.Repositories;
 
-public interface IAuthKeyRepository
+public class AuthKeyRepository : IAuthKeyRepository
 {
-    public bool PutAuthKey(long authKeyId, byte[] authKey);
-    public byte[]? GetAuthKey(long authKeyId);
-    public ValueTask<byte[]?> GetAuthKeyAsync(long authKeyId);
-    public bool DeleteAuthKey(long authKeyId);
+    private readonly IKVStore _store;
+
+    public AuthKeyRepository(IKVStore store)
+    {
+        _store = store;
+        store.SetSchema(new TableDefinition("ferrite", "auth_keys",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "auth_key_id", Type = DataType.Long })));
+    }
+    public bool PutAuthKey(long authKeyId, byte[] authKey)
+    {
+        return _store.Put(authKey, authKeyId);
+    }
+
+    public byte[]? GetAuthKey(long authKeyId)
+    {
+        return _store.Get(authKeyId);
+    }
+
+    public async ValueTask<byte[]?> GetAuthKeyAsync(long authKeyId)
+    {
+        return await _store.GetAsync(authKeyId);
+    }
+
+    public bool DeleteAuthKey(long authKeyId)
+    {
+        return _store.Delete(authKeyId);
+    }
 }

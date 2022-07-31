@@ -22,7 +22,6 @@ namespace Ferrite.Data.Repositories;
 
 public interface IKVStore
 {
-    bool PreferSyncMethods { get; }
     /// <summary>
     /// Sets the schema.
     /// </summary>

@@ -18,10 +18,9 @@
 
 namespace Ferrite.Data.Repositories;
 
-public interface IAuthKeyRepository
+public interface IBoundAuthKeyRepository
 {
-    public bool PutAuthKey(long authKeyId, byte[] authKey);
-    public byte[]? GetAuthKey(long authKeyId);
-    public ValueTask<byte[]?> GetAuthKeyAsync(long authKeyId);
-    public bool DeleteAuthKey(long authKeyId);
+    public bool PutBoundAuthKey(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
+    public long? GetBoundAuthKey(long tempAuthKeyId);
+    public ValueTask<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
 }

@@ -63,8 +63,6 @@ public class CassandraKVStore : IKVStore
         _context = context;
     }
 
-    public bool PreferSyncMethods => false;
-
     public void SetSchema(TableDefinition table)
     {
         _table = table;

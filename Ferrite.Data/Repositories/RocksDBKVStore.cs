@@ -39,8 +39,6 @@ public class RocksDBKVStore : IKVStore
         _context = context;
     }
 
-    public bool PreferSyncMethods => true;
-
     public void SetSchema(TableDefinition table)
     {
         _table = table;
