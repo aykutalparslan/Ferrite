@@ -26,6 +26,18 @@ public class KeyDefinition
     public readonly string Name;
     public readonly ImmutableList<DataColumn> Columns;
     private readonly ImmutableDictionary<string, int> _colsIndex;
+    public string FullName { get; private set; }
+
+    private TableDefinition _parent;
+    public TableDefinition Parent
+    {
+        get => _parent;
+        set
+        {
+            _parent = value;
+            FullName = _parent.FullName + "_" + Name;
+        }
+    }
 
     public DataColumn this[int index] => Columns[index];
     public DataColumn this[string name] => Columns[_colsIndex[name]];

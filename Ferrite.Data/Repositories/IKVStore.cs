@@ -22,6 +22,7 @@ namespace Ferrite.Data.Repositories;
 
 public interface IKVStore
 {
+    bool PreferSyncMethods { get; }
     /// <summary>
     /// Sets the schema.
     /// </summary>
@@ -60,11 +61,6 @@ public interface IKVStore
     /// <param name="keys">Fields of the secondary key with the right order.</param>
     /// <returns></returns>
     public ValueTask<bool> DeleteBySecondaryIndexAsync(string indexName, params object[] keys);
-    /// <summary>
-    /// Executes the internal queue as a transaction.
-    /// </summary>
-    /// <returns>True if the operation is successful.</returns>
-    public ValueTask<bool> CommitAsync();
     /// <summary>
     /// Gets a single value for the given key.
     /// </summary>

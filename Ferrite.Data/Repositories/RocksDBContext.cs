@@ -16,28 +16,42 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Immutable;
+using RocksDbSharp;
 
 namespace Ferrite.Data.Repositories;
 
-public class TableDefinition
+//TODO: add transaction support
+public class RocksDBContext
 {
-    public readonly string Keyspace;
-    public readonly string Name;
-    public readonly KeyDefinition PrimaryKey;
-    public readonly ImmutableList<KeyDefinition> SecondaryIndices;
-    public string FullName { get; }
-
-    public TableDefinition(string keyspace, string name, KeyDefinition primaryKey, params KeyDefinition[] secondaryIndices)
+    private readonly RocksDb _db;
+    public RocksDBContext()
     {
-        Keyspace = keyspace;
-        Name = name;
-        FullName = keyspace + "." + name;
-        PrimaryKey = primaryKey;
-        SecondaryIndices = ImmutableList.Create(secondaryIndices);
-        foreach (var index in SecondaryIndices)
+        _db = RocksDb.Open( new DbOptions().SetCreateIfMissing(true), "test" );
+    }
+    public void Put(ReadOnlySpan<byte> key, ReadOnlySpan<byte> value)
+    {
+        _db.Put(key, value);
+    }
+    public byte[] Get(ReadOnlySpan<byte> key)
+    {
+        return _db.Get(key);
+    }
+    public void Delete(ReadOnlySpan<byte> key)
+    {
+        _db.Remove(key);
+    }
+    public IEnumerable<byte[]> Iterate(byte[] key)
+    {
+        var iter = _db.NewIterator();
+        iter.Seek(key);
+        while(iter.Valid())
         {
-            index.Parent = this;
+            if (key[^1] != iter.Key()[key.Length-1])
+            {
+                yield break;
+            }
+            yield return iter.Value();
+            iter.Next();
         }
     }
 }

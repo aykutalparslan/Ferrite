@@ -26,7 +26,6 @@ public class CassandraKVStore : IKVStore
 {
     private readonly ICassandraContext _context;
     private TableDefinition _table;
-    private IKVStore _ikvStoreImplementation;
     private const string IntStr = "int";
     private const string BoolStr = "boolean";
     private const string LongStr = "bigint";
@@ -63,6 +62,9 @@ public class CassandraKVStore : IKVStore
     {
         _context = context;
     }
+
+    public bool PreferSyncMethods => false;
+
     public void SetSchema(TableDefinition table)
     {
         _table = table;
@@ -387,12 +389,6 @@ public class CassandraKVStore : IKVStore
             }
         }
         return false;
-    }
-
-    public async ValueTask<bool> CommitAsync()
-    {
-        await _context.ExecuteQueueAsync();
-        return true;
     }
 
     public byte[]? Get(params object[] keys)

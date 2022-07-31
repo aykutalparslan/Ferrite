@@ -30,9 +30,18 @@ public readonly struct RocksDbKey
 {
     private readonly byte[] _key;
     public ReadOnlySpan<byte> Value => _key;
+    public byte[] ArrayValue => _key;
     private RocksDbKey(byte[] value)
     {
         _key = value;
+    }
+    public RocksDbKey(string tableName)
+    {
+        var chars = tableName.AsSpan();
+        var bytes = MemoryMarshal.Cast<char, byte>(chars);
+        var hash = bytes.GetXxHash64();
+        _key = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
     }
     public RocksDbKey(string tableName, int value)
     {
@@ -303,5 +312,50 @@ public readonly struct RocksDbKey
     public RocksDbKey Append(DateTimeOffset value)
     {
         return Append(value.Ticks);
+    }
+    public static RocksDbKey Create(string tableName, IReadOnlyCollection<object> values)
+    {
+        RocksDbKey key = new RocksDbKey(tableName);
+        foreach (var v in values)
+        {
+            if (v is int intValue)
+            {
+                key = key.Append(intValue);
+            }
+            else if (v is bool boolValue)
+            {
+                key = key.Append(boolValue);
+            }
+            else if (v is long longValue)
+            {
+                key = key.Append(longValue);
+            }
+            else if (v is float floatValue)
+            {
+                key = key.Append(floatValue);
+            }
+            else if (v is double doubleValue)
+            {
+                key = key.Append(doubleValue);
+            }
+            else if (v is string stringValue)
+            {
+                key = key.Append(stringValue);
+            }
+            else if (v is DateTime dateTimeValue)
+            {
+                key = key.Append(dateTimeValue);
+            }
+            else if (v is DateTimeOffset dateTimeOffsetValue)
+            {
+                key = key.Append(dateTimeOffsetValue);
+            }
+            else if (v is byte[] bytesValue)
+            {
+                key = key.Append(bytesValue);
+            }
+        }
+
+        return key;
     }
 }
