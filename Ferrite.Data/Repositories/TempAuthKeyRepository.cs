@@ -33,6 +33,11 @@ public class TempAuthKeyRepository : ITempAuthKeyRepository
         return _store.Put(tempAuthKey, tempAuthKeyId);
     }
 
+    public bool DeleteTempAuthKey(long tempAuthKeyId)
+    {
+        return _store.Delete(tempAuthKeyId);
+    }
+
     public byte[]? GetTempAuthKey(long tempAuthKeyId)
     {
         return _store.Get(tempAuthKeyId);

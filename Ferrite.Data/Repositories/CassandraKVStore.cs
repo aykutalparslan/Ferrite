@@ -591,7 +591,6 @@ public class CassandraKVStore : IKVStore
             yield return row.GetValue<byte[]>($"{_table.Name}_data");
         }
     }
-
     public async IAsyncEnumerable<byte[]> IterateAsync(params object[] keys)
     {
         StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
