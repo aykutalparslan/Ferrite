@@ -70,12 +70,18 @@ public class InMemoryStore : IVolatileKVStore
         _table = table;
     }
 
-    public void Put(byte[] value, int Ttl, params object[] keys)
+    public void Put(byte[] value, int ttl, params object[] keys)
     {
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
-        primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + Ttl * 1000;
+        if (ttl > 0)
+        {
+            primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + ttl * 1000;
+        }
         _dictionary.TryAdd(primaryKey.ArrayValue, (value, primaryKey.ExpiresAt));
-        _ttlChannel.Writer.WriteAsync(primaryKey);
+        if (ttl > 0)
+        {
+            _ttlChannel.Writer.WriteAsync(primaryKey);
+        }
     }
 
     public void Delete(params object[] keys)
@@ -95,7 +101,7 @@ public class InMemoryStore : IVolatileKVStore
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
         _dictionary.TryGetValue(primaryKey.ArrayValue, out var value);
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-        if (value.Item2 <= now)
+        if (value.Item2 > 0 && value.Item2 <= now)
         {
             _dictionary.TryRemove(primaryKey.ArrayValue, out var removed);
         }
