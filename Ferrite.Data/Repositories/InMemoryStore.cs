@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Threading.Channels;
 using NonBlocking;
 
 namespace Ferrite.Data.Repositories;
@@ -26,15 +27,17 @@ public class InMemoryStore : IVolatileKVStore
     // in which case this will just do fine however we should still
     // optimize this in the future
     // TODO: Benchmark and optimize this
-    private readonly ConcurrentDictionary<byte[], byte[]> _dictionary = new(new ArrayEqualityComparer());
-    private readonly PriorityQueue<byte[], long> _expirationQueue = new PriorityQueue<byte[], long>();
-    private readonly object _syncRoot = new object();
-    private readonly Task? _keyExpiration;
+    private readonly ConcurrentDictionary<byte[], (byte[], long)> _dictionary = new(new ArrayEqualityComparer());
+    private readonly PriorityQueue<EncodedKey, long> _ttlQueue = new PriorityQueue<EncodedKey, long>();
+    private readonly Channel<EncodedKey> _ttlChannel = Channel.CreateUnbounded<EncodedKey>();
+    private readonly Task? _expire;
+    private readonly Task? _addTtl;
     private TableDefinition? _table;
 
     public InMemoryStore()
     {
-        _keyExpiration = DoExpire();
+        _expire = DoExpire();
+        _addTtl = DoAddTtl();
     }
 
     private async Task DoExpire()
@@ -42,17 +45,23 @@ public class InMemoryStore : IVolatileKVStore
         while (true)
         {
             long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            _expirationQueue.TryPeek(out var key, out long expiration);
+            _ttlQueue.TryPeek(out var key, out long expiration);
             while (expiration <= now)
             {
-                lock (_syncRoot)
-                {
-                    _expirationQueue.TryDequeue(out var discardKey, out var discardPriority);
-                }
-                _dictionary.TryRemove(key, out var removed);
-                key = _expirationQueue.Peek();
+                _ttlQueue.TryDequeue(out var discardKey, out var discardPriority);
+                _dictionary.TryRemove(key.ArrayValue, out var removed);
+                key = _ttlQueue.Peek();
             }
             await Task.Delay(50);
+        }
+    }
+    
+    private async Task DoAddTtl()
+    {
+        while (true)
+        {
+            var key = await _ttlChannel.Reader.ReadAsync();
+            _ttlQueue.Enqueue(key, key.ExpiresAt);
         }
     }
 
@@ -64,12 +73,9 @@ public class InMemoryStore : IVolatileKVStore
     public void Put(byte[] value, int Ttl, params object[] keys)
     {
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
-        _dictionary.TryAdd(primaryKey.ArrayValue, value);
-        long expiration = DateTimeOffset.Now.ToUnixTimeMilliseconds() + Ttl * 1000;
-        lock (_syncRoot)
-        {
-            _expirationQueue.Enqueue(primaryKey.ArrayValue, expiration);
-        }
+        primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + Ttl * 1000;
+        _dictionary.TryAdd(primaryKey.ArrayValue, (value, primaryKey.ExpiresAt));
+        _ttlChannel.Writer.WriteAsync(primaryKey);
     }
 
     public void Delete(params object[] keys)
@@ -88,6 +94,11 @@ public class InMemoryStore : IVolatileKVStore
     {
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
         _dictionary.TryGetValue(primaryKey.ArrayValue, out var value);
-        return value;
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (value.Item2 <= now)
+        {
+            _dictionary.TryRemove(primaryKey.ArrayValue, out var removed);
+        }
+        return value.Item1;
     }
 }

@@ -26,12 +26,13 @@ namespace Ferrite.Data;
 //encodes multi column keys to a single key using the memcomparable format
 //here: https://github.com/facebook/mysql-5.6/wiki/MyRocks-record-format#memcomparable-format
 //documentation license: Creative Commons Attribution 4.0 International Public License
-public readonly struct EncodedKey
+public class EncodedKey
 {
     private readonly byte[] _key;
     public ReadOnlySpan<byte> Value => _key;
     public Span<byte> Span => _key;
     public byte[] ArrayValue => _key;
+    public long ExpiresAt { get; set; }
     private EncodedKey(byte[] value)
     {
         _key = value;
