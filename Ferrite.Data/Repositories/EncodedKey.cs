@@ -26,16 +26,17 @@ namespace Ferrite.Data;
 //encodes multi column keys to a single key using the memcomparable format
 //here: https://github.com/facebook/mysql-5.6/wiki/MyRocks-record-format#memcomparable-format
 //documentation license: Creative Commons Attribution 4.0 International Public License
-public readonly struct RocksDbKey
+public readonly struct EncodedKey
 {
     private readonly byte[] _key;
     public ReadOnlySpan<byte> Value => _key;
+    public Span<byte> Span => _key;
     public byte[] ArrayValue => _key;
-    private RocksDbKey(byte[] value)
+    private EncodedKey(byte[] value)
     {
         _key = value;
     }
-    public RocksDbKey(string tableName)
+    public EncodedKey(string tableName)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
@@ -43,7 +44,7 @@ public readonly struct RocksDbKey
         _key = new byte[4];
         BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
     }
-    public RocksDbKey(string tableName, int value)
+    public EncodedKey(string tableName, int value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
@@ -63,7 +64,7 @@ public readonly struct RocksDbKey
             _key[4] |= 0x80;
         }
     }
-    public RocksDbKey(string tableName, bool value)
+    public EncodedKey(string tableName, bool value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
@@ -73,7 +74,23 @@ public readonly struct RocksDbKey
         BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
         _key[4] |= byteValue;
     }
-    public RocksDbKey(string tableName, long value)
+    public EncodedKey(long value)
+    {
+        _key = new byte[8];
+        BinaryPrimitives.WriteUInt64BigEndian(_key.AsSpan(), (ulong)value);
+        if (value < 0)
+        {
+            for (int i = 4; i < _key.Length; i++)
+            {
+                _key[i] = (byte)(~_key[i]);
+            }
+        }
+        else
+        {
+            _key[4] |= 0x80;
+        }
+    }
+    public EncodedKey(string tableName, long value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
@@ -93,7 +110,7 @@ public readonly struct RocksDbKey
             _key[4] |= 0x80;
         }
     }
-    public RocksDbKey(string tableName, DateTime value)
+    public EncodedKey(string tableName, DateTime value)
     {
         long val = value.Ticks;
         var chars = tableName.AsSpan();
@@ -114,7 +131,7 @@ public readonly struct RocksDbKey
             _key[4] |= 0x80;
         }
     }
-    public RocksDbKey(string tableName, DateTimeOffset value)
+    public EncodedKey(string tableName, DateTimeOffset value)
     {
         long val = value.Ticks;
         var chars = tableName.AsSpan();
@@ -135,7 +152,7 @@ public readonly struct RocksDbKey
             _key[4] |= 0x80;
         }
     }
-    public RocksDbKey(string tableName, float value)
+    public EncodedKey(string tableName, float value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
@@ -156,7 +173,7 @@ public readonly struct RocksDbKey
             _key[7]++;
         }
     }
-    public RocksDbKey(string tableName, double value)
+    public EncodedKey(string tableName, double value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
@@ -177,7 +194,7 @@ public readonly struct RocksDbKey
             _key[11]++;
         }
     }
-    public RocksDbKey(string tableName, Span<byte> value)
+    public EncodedKey(string tableName, Span<byte> value)
     {
         int blocks = value.Length / 8 + 
             value.Length % 8 == 0 ? 0 : 1;
@@ -198,7 +215,7 @@ public readonly struct RocksDbKey
                 .CopyTo(_key.AsSpan().Slice(4 + i * 9));
         }
     }
-    public RocksDbKey Append(Span<byte> value)
+    public EncodedKey Append(Span<byte> value)
     {
         int blocks = value.Length / 8 + 
             value.Length % 8 == 0 ? 0 : 1;
@@ -216,18 +233,18 @@ public readonly struct RocksDbKey
                 .CopyTo(newKey.AsSpan().Slice(_key.Length + i * 9));
         }
 
-        return new RocksDbKey(newKey);
+        return new EncodedKey(newKey);
     }
-    public RocksDbKey Append(bool value)
+    public EncodedKey Append(bool value)
     {
         byte[] newKey = new byte[_key.Length + 1];
         _key.CopyTo(newKey.AsSpan());
         byte byteValue = (byte)(value ? 1 : 0);
         newKey[_key.Length] = byteValue;
 
-        return new RocksDbKey(newKey);
+        return new EncodedKey(newKey);
     }
-    public RocksDbKey Append(int value)
+    public EncodedKey Append(int value)
     {
         byte[] newKey = new byte[_key.Length + 4];
         _key.CopyTo(newKey.AsSpan());
@@ -243,9 +260,9 @@ public readonly struct RocksDbKey
         {
             newKey[_key.Length] |= 0x80;
         }
-        return new RocksDbKey(newKey);
+        return new EncodedKey(newKey);
     }
-    public RocksDbKey Append(long value)
+    public EncodedKey Append(long value)
     {
         byte[] newKey = new byte[_key.Length + 8];
         _key.CopyTo(newKey.AsSpan());
@@ -261,9 +278,9 @@ public readonly struct RocksDbKey
         {
             newKey[_key.Length] |= 0x80;
         }
-        return new RocksDbKey(newKey);
+        return new EncodedKey(newKey);
     }
-    public RocksDbKey Append(float value)
+    public EncodedKey Append(float value)
     {
         byte[] newKey = new byte[_key.Length + 4];
         _key.CopyTo(newKey.AsSpan());
@@ -280,9 +297,9 @@ public readonly struct RocksDbKey
             newKey[_key.Length] |= 0x80;
             newKey[_key.Length + 3]++;
         }
-        return new RocksDbKey(newKey);
+        return new EncodedKey(newKey);
     }
-    public RocksDbKey Append(double value)
+    public EncodedKey Append(double value)
     {
         byte[] newKey = new byte[_key.Length + 4];
         _key.CopyTo(newKey.AsSpan());
@@ -299,23 +316,23 @@ public readonly struct RocksDbKey
             newKey[_key.Length] |= 0x80;
             newKey[_key.Length + 7]++;
         }
-        return new RocksDbKey(newKey);
+        return new EncodedKey(newKey);
     }
-    public RocksDbKey Append(string value)
+    public EncodedKey Append(string value)
     {
         return Append(Encoding.UTF8.GetBytes(value));
     }
-    public RocksDbKey Append(DateTime value)
+    public EncodedKey Append(DateTime value)
     {
         return Append(value.Ticks);
     }
-    public RocksDbKey Append(DateTimeOffset value)
+    public EncodedKey Append(DateTimeOffset value)
     {
         return Append(value.Ticks);
     }
-    public static RocksDbKey Create(string tableName, IReadOnlyCollection<object> values)
+    public static EncodedKey Create(string tableName, IReadOnlyCollection<object> values)
     {
-        RocksDbKey key = new RocksDbKey(tableName);
+        EncodedKey key = new EncodedKey(tableName);
         foreach (var v in values)
         {
             if (v is int intValue)

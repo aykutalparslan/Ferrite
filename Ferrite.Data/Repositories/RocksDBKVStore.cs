@@ -59,7 +59,7 @@ public class RocksDBKVStore : IKVStore
                                     $"the parameter was of type {keys[i].GetType()}");
             }
         }
-        var primaryKey = RocksDbKey.Create(_table.FullName, keys);
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
         _context.Put(primaryKey.Value, data);
         foreach (var sc in _table.SecondaryIndices)
         {
@@ -68,7 +68,7 @@ public class RocksDBKVStore : IKVStore
             {
                 secondaryParams.Add(keys[_table.PrimaryKey.GetOrdinal(c.Name)]);
             }
-            var secondaryKey = RocksDbKey.Create(sc.FullName, secondaryParams);
+            var secondaryKey = EncodedKey.Create(sc.FullName, secondaryParams);
             _context.Put(secondaryKey.Value, primaryKey.Value);
         }
         return true;
@@ -76,14 +76,14 @@ public class RocksDBKVStore : IKVStore
 
     public bool Delete(params object[] keys)
     {
-        var key = RocksDbKey.Create(_table.FullName, keys);
+        var key = EncodedKey.Create(_table.FullName, keys);
         _context.Delete(key.Value);
         return true;
     }
 
     public ValueTask<bool> DeleteAsync(params object[] keys)
     {
-        var key = RocksDbKey.Create(_table.FullName, keys);
+        var key = EncodedKey.Create(_table.FullName, keys);
         _context.Delete(key.Value);
         return ValueTask.FromResult(true);
     }
@@ -91,7 +91,7 @@ public class RocksDBKVStore : IKVStore
     public bool DeleteBySecondaryIndex(string indexName, params object[] keys)
     {
         var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
-        var secondaryKey = RocksDbKey.Create(sc.FullName, keys);
+        var secondaryKey = EncodedKey.Create(sc.FullName, keys);
         var primaryKey = _context.Get(secondaryKey.Value);
         _context.Delete(primaryKey);
         _context.Delete(secondaryKey.Value);
@@ -101,7 +101,7 @@ public class RocksDBKVStore : IKVStore
     public ValueTask<bool> DeleteBySecondaryIndexAsync(string indexName, params object[] keys)
     {
         var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
-        var secondaryKey = RocksDbKey.Create(sc.FullName, keys);
+        var secondaryKey = EncodedKey.Create(sc.FullName, keys);
         var primaryKey = _context.Get(secondaryKey.Value);
         _context.Delete(primaryKey);
         _context.Delete(secondaryKey.Value);
@@ -110,20 +110,20 @@ public class RocksDBKVStore : IKVStore
 
     public byte[]? Get(params object[] keys)
     {
-        var key = RocksDbKey.Create(_table.FullName, keys);
+        var key = EncodedKey.Create(_table.FullName, keys);
         return _context.Get(key.Value);
     }
 
     public ValueTask<byte[]?> GetAsync(params object[] keys)
     {
-        var key = RocksDbKey.Create(_table.FullName, keys);
+        var key = EncodedKey.Create(_table.FullName, keys);
         return new ValueTask<byte[]?>(_context.Get(key.Value));
     }
 
     public byte[]? GetBySecondaryIndex(string indexName, params object[] keys)
     {
         var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
-        var secondaryKey = RocksDbKey.Create(sc.FullName, keys);
+        var secondaryKey = EncodedKey.Create(sc.FullName, keys);
         var primaryKey = _context.Get(secondaryKey.Value);
         return _context.Get(primaryKey);
     }
@@ -131,20 +131,20 @@ public class RocksDBKVStore : IKVStore
     public ValueTask<byte[]?> GetBySecondaryIndexAsync(string indexName, params object[] keys)
     {
         var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
-        var secondaryKey = RocksDbKey.Create(sc.FullName, keys);
+        var secondaryKey = EncodedKey.Create(sc.FullName, keys);
         var primaryKey = _context.Get(secondaryKey.Value);
         return new ValueTask<byte[]?>(_context.Get(primaryKey));
     }
 
     public IEnumerable<byte[]> Iterate(params object[] keys)
     {
-        var key = RocksDbKey.Create(_table.FullName, keys);
+        var key = EncodedKey.Create(_table.FullName, keys);
         return _context.Iterate(key.ArrayValue);
     }
     
     public async IAsyncEnumerable<byte[]> IterateAsync(params object[] keys)
     {
-        var key = RocksDbKey.Create(_table.FullName, keys);
+        var key = EncodedKey.Create(_table.FullName, keys);
         var iterator = _context.Iterate(key.ArrayValue);
         foreach (var val in iterator)
         {
