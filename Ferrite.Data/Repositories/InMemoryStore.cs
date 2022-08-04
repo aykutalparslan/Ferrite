@@ -90,7 +90,7 @@ public class InMemoryStore : IVolatileKVStore
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
         if (ttl > 0)
         {
-            primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + ttl * 1000;
+            primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + ttl;
         }
         _dictionary.TryAdd(primaryKey.ArrayValue, (value, primaryKey.ExpiresAt));
         if (ttl > 0)
@@ -108,7 +108,19 @@ public class InMemoryStore : IVolatileKVStore
     public bool Exists(params object[] keys)
     {
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
-        return _dictionary.ContainsKey(primaryKey.ArrayValue);
+        
+        if (!_dictionary.TryGetValue(primaryKey.ArrayValue, out var value))
+        {
+            return false;
+        }
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (value.Item2 > 0 && value.Item2 <= now)
+        {
+            _dictionary.TryRemove(primaryKey.ArrayValue, out var removed);
+            return false;
+        }
+
+        return true;
     }
 
     public byte[]? Get(params object[] keys)

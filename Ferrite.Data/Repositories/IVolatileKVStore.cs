@@ -32,7 +32,7 @@ public interface IVolatileKVStore
     /// 
     /// </summary>
     /// <param name="value"></param>
-    /// <param name="Ttl">Time-to-live in seconds. Zero and negative values are treated as infinity.</param>
+    /// <param name="Ttl">Time-to-live in milliseconds. Zero and negative values are treated as infinity.</param>
     /// <param name="keys"></param>
     public void Put(byte[] value, int Ttl, params object[] keys);
     public void Delete(params object[] keys);
