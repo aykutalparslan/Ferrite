@@ -104,6 +104,7 @@ public class InMemoryStore : IVolatileKVStore
         if (value.Item2 > 0 && value.Item2 <= now)
         {
             _dictionary.TryRemove(primaryKey.ArrayValue, out var removed);
+            return null;
         }
         return value.Item1;
     }
