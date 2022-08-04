@@ -44,15 +44,30 @@ public class InMemoryStore : IVolatileKVStore
     {
         while (true)
         {
+            await Task.Delay(100);
             long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            _ttlQueue.TryPeek(out var key, out long expiration);
+            if (!_ttlQueue.TryPeek(out var currentKey, out var expiration) ||
+                expiration > now)
+            {
+                continue;
+            }
+            
             while (expiration <= now)
             {
-                _ttlQueue.TryDequeue(out var discardKey, out var discardPriority);
-                _dictionary.TryRemove(key.ArrayValue, out var removed);
-                key = _ttlQueue.Peek();
+                _ttlQueue.TryDequeue(out currentKey, out var currentPriority);
+                if (currentPriority <= now)
+                {
+                    _dictionary.TryRemove(currentKey.ArrayValue, out var removed);
+                }
+                else
+                {
+                    _ttlQueue.Enqueue(currentKey, currentPriority);
+                }
+                if (!_ttlQueue.TryPeek(out currentKey, out expiration))
+                {
+                    expiration = long.MaxValue;
+                }
             }
-            await Task.Delay(50);
         }
     }
     
