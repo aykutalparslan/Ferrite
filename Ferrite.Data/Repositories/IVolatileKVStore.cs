@@ -34,8 +34,9 @@ public interface IVolatileKVStore
     /// <param name="value"></param>
     /// <param name="Ttl">Time-to-live in milliseconds. Zero and negative values are treated as infinity.</param>
     /// <param name="keys"></param>
-    public void Put(byte[] value, int ttl, params object[] keys);
+    public void Put(byte[] value, TimeSpan? ttl = null, params object[] keys);
     public void Delete(params object[] keys);
     public bool Exists(params object[] keys);
     public byte[]? Get(params object[] keys);
+    public ValueTask<byte[]?> GetAsync(params object[] keys);
 }

@@ -34,17 +34,12 @@ public class RedisDataStore : IVolatileKVStore
         _table = table;
     }
 
-    public void Put(byte[] value, int ttl, params object[] keys)
+    public void Put(byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
-        TimeSpan? expiry = null;
-        if (ttl > 0)
-        {
-            expiry = new TimeSpan(0, 0, 0, 0, ttl);
-        }
-        db.StringSet(key, (RedisValue)value);
+        db.StringSet(key, (RedisValue)value, ttl);
     }
 
     public void Delete(params object[] keys)
@@ -69,5 +64,14 @@ public class RedisDataStore : IVolatileKVStore
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         return db.StringGet(key);
+    }
+
+    public async ValueTask<byte[]?> GetAsync(params object[] keys)
+    {
+        object _asyncState = new object();
+        IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        return await db.StringGetAsync(key);
     }
 }

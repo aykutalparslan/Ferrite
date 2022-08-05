@@ -20,7 +20,7 @@ namespace Ferrite.Data.Repositories;
 
 public interface ITempAuthKeyRepository
 {
-    public bool PutTempAuthKey(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
+    public bool PutTempAuthKey(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan? expiresIn = null);
     public bool DeleteTempAuthKey(long tempAuthKeyId);
     public byte[]? GetTempAuthKey(long tempAuthKeyId);
     public ValueTask<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
