@@ -35,6 +35,9 @@ public interface IVolatileKVStore
     /// <param name="Ttl">Time-to-live in milliseconds. Zero and negative values are treated as infinity.</param>
     /// <param name="keys"></param>
     public void Put(byte[] value, TimeSpan? ttl = null, params object[] keys);
+    public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys);
+    public bool ListDeleteRange(long score, params object[] keys);
+    public IList<byte[]> ListGet(params object[] keys);
     public void Delete(params object[] keys);
     public bool Exists(params object[] keys);
     public byte[]? Get(params object[] keys);

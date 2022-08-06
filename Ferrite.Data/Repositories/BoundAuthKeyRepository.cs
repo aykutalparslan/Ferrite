@@ -20,9 +20,9 @@ namespace Ferrite.Data.Repositories;
 
 public class BoundAuthKeyRepository : IBoundAuthKeyRepository
 {
-    private readonly IKVStore _storeTemp;
-    private readonly IKVStore _storeAuth;
-    public BoundAuthKeyRepository(IKVStore storeTemp, IKVStore storeAuth)
+    private readonly IVolatileKVStore _storeTemp;
+    private readonly IVolatileKVStore _storeAuth;
+    public BoundAuthKeyRepository(IVolatileKVStore storeTemp, IVolatileKVStore storeAuth)
     {
         _storeTemp = storeTemp;
         _storeAuth = storeAuth;
@@ -36,17 +36,52 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
     
     public bool PutBoundAuthKey(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
     {
-        throw new NotImplementedException();
+        _storeTemp.Put(BitConverter.GetBytes(authKeyId), expiresIn, tempAuthKeyId);
+        // each auth key can be bound to a single temp auth key at any given time
+        _storeAuth.Put(BitConverter.GetBytes(tempAuthKeyId), expiresIn, authKeyId);
+        return true;
     }
 
     public long? GetBoundAuthKey(long tempAuthKeyId)
     {
-        throw new NotImplementedException();
+        var authBytes = _storeTemp.Get(tempAuthKeyId);
+        if (authBytes == null)
+        {
+            return null;
+        }
+        var authKeyId = BitConverter.ToInt64(authBytes);
+        var tempBytes = _storeAuth.Get(authKeyId);
+        if (tempBytes == null)
+        {
+            return null;
+        }
+        var boundKey = BitConverter.ToInt64(tempBytes);
+        if (boundKey == tempAuthKeyId)
+        {
+            return authKeyId;
+        }
+        return null;
     }
 
     public async ValueTask<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
     {
-        throw new NotImplementedException();
+        var authBytes = await _storeTemp.GetAsync(tempAuthKeyId);
+        if (authBytes == null)
+        {
+            return null;
+        }
+        var authKeyId = BitConverter.ToInt64(authBytes);
+        var tempBytes = await _storeAuth.GetAsync(authKeyId);
+        if (tempBytes == null)
+        {
+            return null;
+        }
+        var boundKey = BitConverter.ToInt64(tempBytes);
+        if (boundKey == tempAuthKeyId)
+        {
+            return authKeyId;
+        }
+        return null;
     }
 
     public IReadOnlyCollection<long> GetTempAuthKeys(long authKeyId)

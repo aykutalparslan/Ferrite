@@ -42,6 +42,39 @@ public class RedisDataStore : IVolatileKVStore
         db.StringSet(key, (RedisValue)value, ttl);
     }
 
+    public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        db.SortedSetAdd(key, (RedisValue)value, score);
+        if (ttl != null)
+        {
+            db.KeyExpire(key, ttl);
+        }
+
+        return true;
+    }
+
+    public bool ListDeleteRange(long score, params object[] keys)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        db.SortedSetRemoveRangeByScore(key, 0, score);
+        return true;
+    }
+
+    public IList<byte[]> ListGet(params object[] keys)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        var result = db.SortedSetRangeByScore(key);
+        var list = Array.ConvertAll<RedisValue, byte[]>(result, item => (byte[])item);
+        return list;
+    }
+
     public void Delete(params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();

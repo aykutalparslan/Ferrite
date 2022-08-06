@@ -17,6 +17,8 @@
 // 
 
 using System.Threading.Channels;
+using Cassandra.DataStax.Graph;
+using MessagePack;
 using NonBlocking;
 
 namespace Ferrite.Data.Repositories;
@@ -96,6 +98,113 @@ public class InMemoryStore : IVolatileKVStore
         {
             _ttlChannel.Writer.WriteAsync(primaryKey);
         }
+    }
+    public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys)
+    {
+        SortedList<long, byte[]>? list;
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        (byte[] data, long expiry) = existing;
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (rem && data != null &&
+            (expiry <= 0 || expiry <= now))
+        {
+            try
+            {
+                list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+            }
+            catch (MessagePackSerializationException e)
+            {
+                // we will overwrite the value of the key with a new list in the case of an error
+                list = new SortedList<long, byte[]>();
+            }
+        }
+        else
+        {
+            list = new SortedList<long, byte[]>();
+        }
+        // keys must be unique in a SortedList
+        // and we will be using high resolution timestamps
+        // so this ugly hack is okay
+        // we are trying to emulate a Redis SortedSet here
+        while (list.ContainsKey(score))
+        {
+            score++;
+        }
+        list.Add(score, value);
+        try
+        {
+            var serialized = MessagePackSerializer.Serialize(list);
+            _dictionary.TryAdd(primaryKey.ArrayValue, (serialized, primaryKey.ExpiresAt));
+            if (ttl.HasValue)
+            {
+                _ttlChannel.Writer.WriteAsync(primaryKey);
+            }
+        }
+        catch (MessagePackSerializationException e)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool ListDeleteRange(long score, params object[] keys)
+    {
+        SortedList<long, byte[]>? list;
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        (byte[] data, long expiry) = existing;
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (rem && data != null &&
+            (expiry <= 0 || expiry <= now))
+        {
+            try
+            {
+                list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                foreach (var k in list.Keys)
+                {
+                    if (k < score)
+                    {
+                        list.Remove(k);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (MessagePackSerializationException e)
+            {
+                // nothing to do since this is not a list
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public IList<byte[]> ListGet(params object[] keys)
+    {
+        SortedList<long, byte[]>? list;
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        (byte[] data, long expiry) = existing;
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (rem && data != null &&
+            (expiry <= 0 || expiry <= now))
+        {
+            try
+            {
+                list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                return list.Values;
+            }
+            catch (MessagePackSerializationException e)
+            {
+                return Array.Empty<byte[]>();
+            }
+        }
+        return Array.Empty<byte[]>();
     }
 
     public void Delete(params object[] keys)

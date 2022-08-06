@@ -30,8 +30,9 @@ public class InMemoryStoreTests
     [InlineData(50)]
     [InlineData(100)]
     [InlineData(200)]
-    async Task InMemoryStore_Exist_ConformsToExpirationRules(int ttl)
+    async Task InMemoryStore_Exist_ConformsToExpirationRules(int ms)
     {
+        var ttl = new TimeSpan(0, 0, 0, 0, ms);
         InMemoryStore store = new InMemoryStore();
         store.SetSchema(new TableDefinition("test", "keys",
             new KeyDefinition("pk",
@@ -45,8 +46,9 @@ public class InMemoryStoreTests
     [InlineData(50)]
     [InlineData(100)]
     [InlineData(200)]
-    async Task InMemoryStore_Get_ConformsToExpirationRules(int ttl)
+    async Task InMemoryStore_Get_ConformsToExpirationRules(int ms)
     {
+        var ttl = new TimeSpan(0, 0, 0, 0, ms);
         InMemoryStore store = new InMemoryStore();
         store.SetSchema(new TableDefinition("test", "keys",
             new KeyDefinition("pk",
@@ -63,7 +65,7 @@ public class InMemoryStoreTests
             new KeyDefinition("pk",
                 new DataColumn { Name = "id", Type = DataType.String })));
         var value = RandomNumberGenerator.GetBytes(8);
-        store.Put(value, 50, "test123");
+        store.Put(value, new TimeSpan(0, 0, 0, 0, 50), "test123");
         Assert.Equal(value, store.Get("test123"));
     }
 }
