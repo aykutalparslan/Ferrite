@@ -56,7 +56,7 @@ public class RedisDataStore : IVolatileKVStore
         return true;
     }
 
-    public bool ListDeleteRange(long score, params object[] keys)
+    public bool ListDeleteByScore(long score, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
         var primaryKey = EncodedKey.Create(_table.FullName, keys);

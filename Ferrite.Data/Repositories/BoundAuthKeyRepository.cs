@@ -22,14 +22,20 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
 {
     private readonly IVolatileKVStore _storeTemp;
     private readonly IVolatileKVStore _storeAuth;
-    public BoundAuthKeyRepository(IVolatileKVStore storeTemp, IVolatileKVStore storeAuth)
+    private readonly IVolatileKVStore _storeBound;
+    public BoundAuthKeyRepository(IVolatileKVStore storeTemp, IVolatileKVStore storeAuth,
+         IVolatileKVStore storeBound)
     {
         _storeTemp = storeTemp;
         _storeAuth = storeAuth;
+        _storeBound = storeBound;
         _storeTemp.SetSchema(new TableDefinition("ferrite", "bound_auth_keys_temp",
             new KeyDefinition("pk",
                 new DataColumn { Name = "temp_auth_key_id", Type = DataType.Long })));
         _storeAuth.SetSchema(new TableDefinition("ferrite", "bound_auth_keys_auth",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "auth_key_id", Type = DataType.Long })));
+        _storeBound.SetSchema(new TableDefinition("ferrite", "bound_auth_keys_auth",
             new KeyDefinition("pk",
                 new DataColumn { Name = "auth_key_id", Type = DataType.Long })));
     }
@@ -39,6 +45,9 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
         _storeTemp.Put(BitConverter.GetBytes(authKeyId), expiresIn, tempAuthKeyId);
         // each auth key can be bound to a single temp auth key at any given time
         _storeAuth.Put(BitConverter.GetBytes(tempAuthKeyId), expiresIn, authKeyId);
+        // we need to retrieve a list of keys bound to an auth key in the given timeframe
+        _storeBound.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+            BitConverter.GetBytes(tempAuthKeyId), expiresIn, authKeyId);
         return true;
     }
 
@@ -86,6 +95,13 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
 
     public IReadOnlyCollection<long> GetTempAuthKeys(long authKeyId)
     {
-        throw new NotImplementedException();
+        _storeBound.ListDeleteByScore(DateTimeOffset.Now.ToUnixTimeMilliseconds(), authKeyId);
+        var queryResult = _storeBound.ListGet(authKeyId);
+        List<long> result = new List<long>();
+        foreach (var v in queryResult)
+        {
+            result.Add(BitConverter.ToInt64(v));
+        }
+        return result;
     }
 }

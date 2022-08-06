@@ -149,7 +149,7 @@ public class InMemoryStore : IVolatileKVStore
         return true;
     }
 
-    public bool ListDeleteRange(long score, params object[] keys)
+    public bool ListDeleteByScore(long score, params object[] keys)
     {
         SortedList<long, byte[]>? list;
         var primaryKey = EncodedKey.Create(_table.FullName, keys);
