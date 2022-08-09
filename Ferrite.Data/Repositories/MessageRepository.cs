@@ -39,14 +39,12 @@ public class MessageRepository : IMessageRepository
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "message_id", Type = DataType.Int })));
     }
-    public bool PutMessage(MessageDTO message, int pts)
+    public bool PutMessage(long userId, MessageDTO message, int pts)
     {
         message.Pts = pts;
         var data = MessagePackSerializer.Serialize(message);
-        _store.Put(data, message.FromId.PeerId, (int)message.PeerId.PeerType, message.PeerId.PeerId,
+        _store.Put(data, userId, (int)message.PeerId.PeerType, message.PeerId.PeerId,
             true, message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
-        _store.Put(data, message.PeerId.PeerId, (int)message.FromId.PeerType, message.FromId.PeerId, true, 
-            message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
         return true;
     }
 
@@ -55,7 +53,14 @@ public class MessageRepository : IMessageRepository
         List<MessageDTO> messages = new List<MessageDTO>();
         if (peerId != null)
         {
-            var results = _store.Iterate(userId, (int)peerId?.PeerType, peerId?.PeerId);
+            List<object> parameters = new List<object>();
+            parameters.Add(userId);
+            if (peerId != null)
+            {
+                parameters.Add((int)peerId.PeerType);
+                parameters.Add(peerId.PeerId);
+            }
+            var results = _store.Iterate(parameters.ToArray());
             foreach (var val in results)
             {
                 var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
@@ -80,7 +85,14 @@ public class MessageRepository : IMessageRepository
         List<MessageDTO> messages = new List<MessageDTO>();
         if (peerId != null)
         {
-            var results = _store.IterateAsync(userId, (int)peerId?.PeerType, peerId?.PeerId);
+            List<object> parameters = new List<object>();
+            parameters.Add(userId);
+            if (peerId != null)
+            {
+                parameters.Add((int)peerId.PeerType);
+                parameters.Add(peerId.PeerId);
+            }
+            var results = _store.IterateAsync(parameters.ToArray());
             await foreach (var val in results)
             {
                 var message = MessagePackSerializer.Deserialize<MessageDTO>(val);

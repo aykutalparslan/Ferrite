@@ -78,6 +78,11 @@ public class UpdatesService : IUpdatesService
                 var user = await _store.GetUserAsync(message.PeerId.PeerId);
                 users.Add(user);
             }
+            else if (!message.Out && message.FromId.PeerType == PeerType.User)
+            {
+                var user = await _store.GetUserAsync(message.FromId.PeerId);
+                users.Add(user);
+            }
         }
 
         var difference = new DifferenceDTO(messages, Array.Empty<EncryptedMessageDTO>(),

@@ -24,10 +24,10 @@ namespace Ferrite.Data;
 
 public class ElasticSearchEngine : ISearchEngine
 {
-    private readonly ElasticClient _client;
+    //private readonly ElasticClient _client;
     public ElasticSearchEngine(string url,string username, string password, string fingerprint)
     {
-        var uri = new Uri(url);
+        /*var uri = new Uri(url);
         var pool = new SingleNodeConnectionPool(uri);
         var connectionSettings = new ConnectionSettings(pool)
             .BasicAuthentication(username, password)
@@ -35,24 +35,26 @@ public class ElasticSearchEngine : ISearchEngine
             .PrettyJson()
             .CertificateFingerprint(fingerprint)
             .RequestTimeout(TimeSpan.FromSeconds(5));
-        _client = new ElasticClient(connectionSettings);
+        _client = new ElasticClient(connectionSettings);*/
     }
 
     public async Task<bool> IndexUser(Search.UserSearchModel user)
     {
-        var result = await _client.IndexAsync(user, _ => _.Index("users").Id(user.Id));
-        return result.Result is Result.Created or Result.Updated;
+        /*var result = await _client.IndexAsync(user, _ => _.Index("users").Id(user.Id));
+        return result.Result is Result.Created or Result.Updated;*/
+        return true;
     }
 
     public async Task<bool> DeleteUser(long userId)
     {
-        var result = await _client.DeleteAsync(new DeleteRequest("users", userId));
-        return result.Result is Result.Deleted or Result.NotFound;
+        /*var result = await _client.DeleteAsync(new DeleteRequest("users", userId));
+        return result.Result is Result.Deleted or Result.NotFound;*/
+        return true;
     }
 
     public async Task<IReadOnlyCollection<Search.UserSearchModel>> SearchByUsername(string q)
     {
-        var result = await _client.SearchAsync<Search.UserSearchModel>(s =>
+        /*var result = await _client.SearchAsync<Search.UserSearchModel>(s =>
             s.Query(q => q.Prefix(c => c
                 //.Name("search_by_username")
                 .Boost(1.1)
@@ -60,24 +62,27 @@ public class ElasticSearchEngine : ISearchEngine
                 .Value(q)
                 .Rewrite(MultiTermQueryRewrite.TopTerms(10))
             )).Index("users"));
-        return result.Documents;
+        return result.Documents;*/
+        return new List<UserSearchModel>();
     }
 
     public async Task<bool> IndexMessage(MessageSearchModel message)
     {
-        var result = await _client.IndexAsync(message, _ => _.Index("messages").Id(message.Id));
-        return result.Result is Result.Created or Result.Updated;
+        /*var result = await _client.IndexAsync(message, _ => _.Index("messages").Id(message.Id));
+        return result.Result is Result.Created or Result.Updated;*/
+        return true;
     }
 
     public async Task<bool> DeleteMessage(string id)
     {
-        var result = await _client.DeleteAsync(new DeleteRequest("messages", id));
-        return result.Result is Result.Deleted or Result.NotFound;
+        /*var result = await _client.DeleteAsync(new DeleteRequest("messages", id));
+        return result.Result is Result.Deleted or Result.NotFound;*/
+        return true;
     }
 
     public async Task<IReadOnlyCollection<MessageSearchModel>> SearchMessages(string q)
     {
-        var result = await _client.SearchAsync<MessageSearchModel>(s =>
+        /*var result = await _client.SearchAsync<MessageSearchModel>(s =>
             s.Query(q => q.Prefix(c => c
                 .Boost(1.1)
                 .Field(p => p.Message)
@@ -88,6 +93,7 @@ public class ElasticSearchEngine : ISearchEngine
         {
             return new List<MessageSearchModel>();
         }
-        return result.Documents;
+        return result.Documents;*/
+        return new List<MessageSearchModel>();
     }
 }

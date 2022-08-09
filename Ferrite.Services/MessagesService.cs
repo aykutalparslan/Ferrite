@@ -59,6 +59,11 @@ public class MessagesService : IMessagesService
                     var user = await _store.GetUserAsync(message.PeerId.PeerId);
                     users.Add(user);
                 }
+                else if (!message.Out && message.FromId.PeerType == PeerType.User)
+                {
+                    var user = await _store.GetUserAsync(message.FromId.PeerId);
+                    users.Add(user);
+                }
             }
         }
 
@@ -101,7 +106,7 @@ public class MessagesService : IMessagesService
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
-        var receiverCtx = _cache.GetUpdatesContext(null, auth.UserId);
+        var receiverCtx = _cache.GetUpdatesContext(null, to.PeerId);
         var outgoingMessage = new MessageDTO()
         {
             Id = senderMessageId,
@@ -123,14 +128,13 @@ public class MessagesService : IMessagesService
         {
             Id = receiverMessageId,
             Out = false,
-            FromId = to,
-            PeerId = from,
         };
         int pts = await senderCtx.IncrementPts();
-        _unitOfWork.MessageRepository.PutMessage(outgoingMessage, pts);
         int ptsPeer = await receiverCtx.IncrementPts();
-        _unitOfWork.MessageRepository.PutMessage(incomingMessage, ptsPeer);
-        var searchModelOutgoing = new MessageSearchModel(
+        _unitOfWork.MessageRepository.PutMessage(auth.UserId,
+             outgoingMessage, pts);
+        _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
+        /*var searchModelOutgoing = new MessageSearchModel(
             from.PeerId + "_" + outgoingMessage.Id,
             from.PeerId, (int)from.PeerType, from.PeerId,
             (int)to.PeerType, to.PeerId,outgoingMessage.Id,
@@ -143,7 +147,7 @@ public class MessagesService : IMessagesService
             (int)from.PeerType, from.PeerId,incomingMessage.Id,
             null, incomingMessage.MessageText, 
             incomingMessage.Date);
-        await _search.IndexMessage(searchModelIncoming);
+        await _search.IndexMessage(searchModelIncoming);*/
         await _unitOfWork.SaveAsync();
         
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
