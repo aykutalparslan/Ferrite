@@ -67,6 +67,14 @@ public class UpdateMapper : ITLObjectMapper<Update, UpdateBase>
             update.MaxId = readOutbox.MaxId;
             return update;
         }
+        else if (obj is UpdateNewMessageDTO newMessage)
+        {
+            var update = _factory.Resolve<UpdateNewMessageImpl>();
+            update.Message = _mapper.MapToTLObject<Message, MessageDTO>(newMessage.Message);
+            update.Pts = newMessage.Pts;
+            update.PtsCount = newMessage.PtsCount;
+            return update;
+        }
         throw new NotSupportedException("Update type is not supported.");
     }
 }

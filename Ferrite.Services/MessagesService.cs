@@ -71,7 +71,7 @@ public class MessagesService : IMessagesService
             Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
     }
 
-    public async Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
+    public async Task<ServiceResult<PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
     {
         if (peer.InputPeerType == InputPeerType.Self)
         {
@@ -149,7 +149,9 @@ public class MessagesService : IMessagesService
             incomingMessage.Date);
         await _search.IndexMessage(searchModelIncoming);*/
         await _unitOfWork.SaveAsync();
-        
+
+        UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
+        await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 (int)pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);

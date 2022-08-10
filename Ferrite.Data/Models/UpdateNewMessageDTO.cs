@@ -21,10 +21,7 @@ using MessagePack;
 namespace Ferrite.Data;
 
 [MessagePackObject(true)]
-public record UpdatesDTO(IReadOnlyCollection<UpdateBase> Updates,
-    IReadOnlyCollection<UserDTO> Users,
-    IReadOnlyCollection<ChatDTO> Chats,
-    int Date, int Seq) : UpdatesBase
+public record UpdateNewMessageDTO(MessageDTO Message, int Pts, int PtsCount) : UpdateBase
 {
-    public override UpdatesType UpdatesType => UpdatesType.Updates;
+    public override UpdateType UpdateType => UpdateType.UpdateMessageId;
 }

@@ -250,7 +250,7 @@ public class MTProtoConnection : IMTProtoConnection
                     await _sessionManager.GetSessionStateAsync(_sessionId)
                     is { } sess)
                 {
-                    var updates = MessagePackSerializer.Deserialize<UpdatesBase>(msg.Data);
+                    var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
                     var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
                     msg.Data = tlObj.TLBytes.ToArray();
                     SendEncrypted(msg, sess);

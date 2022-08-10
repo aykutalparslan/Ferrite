@@ -99,6 +99,7 @@ public class UpdatesService : IUpdatesService
         foreach (var a in authorizations)
         {
             var updatesCtx = _cache.GetUpdatesContext(a.AuthKeyId, a.UserId);
+            int seq = await updatesCtx.IncrementSeq();
             var updateList = new List<UpdateBase>() { update };
             List<UserDTO> userList = new();
             List<ChatDTO> chatList = new();
@@ -112,14 +113,20 @@ public class UpdatesService : IUpdatesService
                 var peerUser = await _store.GetUserAsync(readHistoryOutbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
             }
+            else if (update is UpdateNewMessageDTO messageNotification &&
+                     messageNotification.Message.FromId is { PeerType: PeerType.User })
+            {
+                var peerUser = await _store.GetUserAsync(messageNotification.Message.FromId.PeerId);
+                if (peerUser != null) userList.Add(peerUser);
+            }
 
-            int seq = await updatesCtx.IncrementSeq();
+            
             var updates = new UpdatesDTO(updateList, userList, chatList, 
                 (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
             var sessions = await _sessions.GetSessionsAsync(a.AuthKeyId);
             foreach (var s in sessions)
             {
-                byte[] data = MessagePackSerializer.Serialize(updates);
+                byte[] data = MessagePackSerializer.Typeless.Serialize(updates);
                 MTProtoMessage message = new MTProtoMessage
                 {
                     Data = data,
