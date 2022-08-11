@@ -241,10 +241,10 @@ public class MTProtoConnection : IMTProtoConnection
     {
         try
         {
+            await _sendSemaphore.WaitAsync();
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-                await _sendSemaphore.WaitAsync();
                 //_log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
                 if (msg.MessageType == MTProtoMessageType.Updates &&
                     await _sessionManager.GetSessionStateAsync(_sessionId)
@@ -257,7 +257,7 @@ public class MTProtoConnection : IMTProtoConnection
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    SendQuickAck(msg.QuickAck);
+                    //SendQuickAck(msg.QuickAck);
                 }
                 else if (_authKeyId == 0)
                 {
@@ -269,7 +269,6 @@ public class MTProtoConnection : IMTProtoConnection
                     SendEncrypted(msg, state);
                 }
                 var result = await socketConnection.Transport.Output.FlushAsync();
-                _sendSemaphore.Release();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -293,10 +292,10 @@ public class MTProtoConnection : IMTProtoConnection
     {
         try
         {
+            await _sendSemaphore.WaitAsync();
             while (true)
             {
                 var msg = await _outgoingStreams.Reader.ReadAsync();
-                await _sendSemaphore.WaitAsync();
                 _log.Debug($"=>Sending stream.");
                 if (_authKeyId == 0)
                 {
@@ -310,7 +309,6 @@ public class MTProtoConnection : IMTProtoConnection
                 }
 
                 var result = await socketConnection.Transport.Output.FlushAsync();
-                _sendSemaphore.Release();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
