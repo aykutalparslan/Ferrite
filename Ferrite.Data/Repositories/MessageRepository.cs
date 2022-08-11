@@ -42,9 +42,11 @@ public class MessageRepository : IMessageRepository
     public bool PutMessage(long userId, MessageDTO message, int pts)
     {
         message.Pts = pts;
+        int peerType = message.Out ? (int)message.PeerId.PeerType : (int)message.FromId.PeerType;
+        long peerId = message.Out ? message.PeerId.PeerId : message.FromId.PeerId;
         var data = MessagePackSerializer.Serialize(message);
-        _store.Put(data, userId, (int)message.PeerId.PeerType, message.PeerId.PeerId,
-            true, message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
+        _store.Put(data, userId, peerType, peerId,
+            message.Out, message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
         return true;
     }
 

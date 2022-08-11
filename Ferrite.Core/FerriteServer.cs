@@ -98,7 +98,8 @@ public class FerriteServer : IFerriteServer
                     if (sessionExists &&
                         protoSession.TryGetConnection(out var connection))
                     {
-                        _ = connection.SendAsync(message);
+                        _log.Debug($"==> Session was found ==<");
+                        await connection.SendAsync(message);
                     }
                 }
             }

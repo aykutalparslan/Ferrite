@@ -116,6 +116,7 @@ public class MessagesService : IMessagesService
             MessageText = message,
             ReplyMarkup = replyMarkup,
             Entities = entities,
+            Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds()
         };
         if (replyToMsgId != null)
         {

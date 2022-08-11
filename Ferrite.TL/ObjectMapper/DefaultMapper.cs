@@ -43,6 +43,7 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(ReplyMarkup), new ReplyMarkupMapper(factory, this));
         _mappers.TryAdd(typeof(MessageEntity), new MessageEntityMapper(factory, this));
         _mappers.TryAdd(typeof(Update), new UpdateMapper(factory, this));
+        _mappers.TryAdd(typeof(Updates), new UpdatesMapper(factory, this));
         _mappers.TryAdd(typeof(Message), new MessageMapper(factory, this));
         _mappers.TryAdd(typeof(Peer), new PeerMapper(factory, this));
         _mappers.TryAdd(typeof(MessageFwdHeader), new MessageFwdHeaderMapper(factory, this));

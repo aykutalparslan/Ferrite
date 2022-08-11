@@ -71,7 +71,9 @@ public class SessionService : ISessionService
         {
             _localSessions.Remove(state.SessionId, out var value);
         }
-        return remoteAdd && authKeyAdd && _localSessions.TryAdd(state.SessionId, session);
+
+        var localAdd = _localSessions.TryAdd(state.SessionId, session);
+        return remoteAdd && authKeyAdd && localAdd;
     }
 
     public async Task<SessionState?> GetSessionStateAsync(long sessionId)

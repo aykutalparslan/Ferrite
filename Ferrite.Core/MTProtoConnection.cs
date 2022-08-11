@@ -253,6 +253,7 @@ public class MTProtoConnection : IMTProtoConnection
                     var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
                     var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
                     msg.Data = tlObj.TLBytes.ToArray();
+                    _log.Debug($"==> Sending Updates ==<");
                     SendEncrypted(msg, sess);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
@@ -832,6 +833,18 @@ public class MTProtoConnection : IMTProtoConnection
             newSessionMessage.SessionId = _sessionId;
             newSessionMessage.MessageType = MTProtoMessageType.NewSession;
             _ = SendAsync(newSessionMessage);
+        }
+        if (!_sessionManager.LocalSessionExists(_sessionId))
+        {
+            SessionState state = new SessionState();
+            var salt = new ServerSaltDTO();
+            state.SessionId = _sessionId;
+            state.ServerSalt = salt;
+            state.AuthKeyId = _authKeyId;
+            state.AuthKey = _authKey;
+            state.NodeId = _sessionManager.NodeId;
+            _sessionManager.AddSession(state,
+                new MTProtoSession(this));
         }
 
         if (_context.MessageId < _time.ThirtySecondsLater &&

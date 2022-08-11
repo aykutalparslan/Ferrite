@@ -40,6 +40,8 @@ public class MessageMapper : ITLObjectMapper<Message, MessageDTO>
         if (obj.MessageType == MessageType.Message)
         {
             var message = _factory.Resolve<MessageImpl>();
+            message.Out = obj.Out;
+            message.Silent = obj.Silent;
             message.Id = obj.Id;
             if(obj.FromId != null)
             {
