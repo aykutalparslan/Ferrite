@@ -123,17 +123,25 @@ public class MessagesService : IMessagesService
             outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
         }
 
-        int receiverMessageId = await receiverCtx.NextMessageId();
-        var incomingMessage = outgoingMessage with
+        if (to.PeerId != from.PeerId)
         {
-            Id = receiverMessageId,
-            Out = false,
-        };
+            int receiverMessageId = await receiverCtx.NextMessageId();
+            var incomingMessage = outgoingMessage with
+            {
+                Id = receiverMessageId,
+                Out = false,
+            };
+            int ptsPeer = await receiverCtx.IncrementPts();
+            _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
+            UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
+            await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
+        }
+        
         int pts = await senderCtx.IncrementPts();
-        int ptsPeer = await receiverCtx.IncrementPts();
+       
         _unitOfWork.MessageRepository.PutMessage(auth.UserId,
              outgoingMessage, pts);
-        _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
+       
         /*var searchModelOutgoing = new MessageSearchModel(
             from.PeerId + "_" + outgoingMessage.Id,
             from.PeerId, (int)from.PeerType, from.PeerId,
@@ -150,8 +158,6 @@ public class MessagesService : IMessagesService
         await _search.IndexMessage(searchModelIncoming);*/
         await _unitOfWork.SaveAsync();
 
-        UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
-        await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 (int)pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);
