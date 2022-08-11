@@ -73,12 +73,14 @@ public class UpdatesService : IUpdatesService
         List<UserDTO> users = new List<UserDTO>();
         foreach (var message in messages)
         {
-            if (message.Out && message.PeerId.PeerType == PeerType.User)
+            if (message.Out && message.PeerId.PeerType == PeerType.User 
+                            && message.PeerId.PeerId != auth.UserId)
             {
                 var user = await _store.GetUserAsync(message.PeerId.PeerId);
                 users.Add(user);
             }
-            else if (!message.Out && message.FromId.PeerType == PeerType.User)
+            else if (!message.Out && message.FromId.PeerType == PeerType.User
+                                  && message.PeerId.PeerId != auth.UserId)
             {
                 var user = await _store.GetUserAsync(message.FromId.PeerId);
                 users.Add(user);
