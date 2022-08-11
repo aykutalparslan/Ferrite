@@ -134,7 +134,7 @@ public class MessageRepository : IMessageRepository
         await foreach (var val in results)
         {
             var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-            if (message.Pts >= pts && message.Pts <= pts && message.Date <= date.ToUnixTimeSeconds())
+            if (message.Pts >= pts && message.Pts <= maxPts && message.Date <= date.ToUnixTimeSeconds())
             {
                 messages.Add(message);
             }

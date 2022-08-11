@@ -106,7 +106,6 @@ public class MessagesService : IMessagesService
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
-        var receiverCtx = _cache.GetUpdatesContext(null, to.PeerId);
         var outgoingMessage = new MessageDTO()
         {
             Id = senderMessageId,
@@ -125,6 +124,7 @@ public class MessagesService : IMessagesService
 
         if (to.PeerId != from.PeerId)
         {
+            var receiverCtx = _cache.GetUpdatesContext(null, to.PeerId);
             int receiverMessageId = await receiverCtx.NextMessageId();
             var incomingMessage = outgoingMessage with
             {
@@ -284,7 +284,7 @@ public class MessagesService : IMessagesService
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, 
-            PeerFromInputPeer(peer));
+            PeerFromInputPeer(peer, peer.InputPeerType == InputPeerType.Self ? auth.UserId : 0));
         List<MessageDTO> messagesList = new();
         Dictionary<string, UserDTO> userList = new();
         foreach (var m in messages)
