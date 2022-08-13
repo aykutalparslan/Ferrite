@@ -11,6 +11,7 @@ The project is currently in a very early stage of development. The following are
 - MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
 - TL Serialization/Deserialization
 - auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
+- Saved Messages and Sending messages works with text messages to some extent.
 
 ## Roadmap
 
