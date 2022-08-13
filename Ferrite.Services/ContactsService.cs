@@ -18,15 +18,21 @@
 
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
+using Ferrite.Data.Repositories;
 
 namespace Ferrite.Services;
 
 public class ContactsService : IContactsService
 {
     private readonly IPersistentStore _store;
-    public ContactsService(IPersistentStore store)
+    private readonly IDistributedCache _cache;
+    private readonly IUnitOfWork _unitOfWork;
+    public ContactsService(IPersistentStore store, IDistributedCache cache,
+        IUnitOfWork unitOfWork)
     {
         _store = store;
+        _cache = cache;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ICollection<long>> GetContactIds(long authKeyId, long hash)
@@ -36,7 +42,16 @@ public class ContactsService : IContactsService
 
     public async Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId)
     {
-        return new List<ContactStatusDTO>();
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var contactList = await _store.GetContactsAsync(auth.UserId);
+        var result =  new List<ContactStatusDTO>();
+        foreach (var c in contactList)
+        {
+            var status = _unitOfWork.UserStatusRepository.GetUserStatus(c.UserId);
+            var contactStatus = new ContactStatusDTO(c.UserId, status);
+            result.Add(contactStatus);
+        }
+        return result;
     }
 
     public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)

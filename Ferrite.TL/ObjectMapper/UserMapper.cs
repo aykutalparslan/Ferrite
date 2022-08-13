@@ -44,9 +44,32 @@ public class UserMapper : ITLObjectMapper<User, UserDTO>
         {
             userImpl.Username = obj.Username;
         }
-        if(obj.Status == UserStatusDTO.Empty)
+        if(obj.Status == null || obj.Status.Status == UserStatusType.Empty)
         {
             userImpl.Status = _factory.Resolve<UserStatusEmptyImpl>();
+        }
+        else if(obj.Status.Status == UserStatusType.Offline)
+        {
+            var status = _factory.Resolve<UserStatusOfflineImpl>();
+            status.WasOnline = obj.Status.WasOnline ?? 0;
+            userImpl.Status = status;
+
+        }
+        else if(obj.Status.Status == UserStatusType.Online)
+        {
+            userImpl.Status = _factory.Resolve<UserStatusOnlineImpl>();
+        }
+        else if(obj.Status.Status == UserStatusType.Recently)
+        {
+            userImpl.Status = _factory.Resolve<UserStatusRecentlyImpl>();
+        }
+        else if(obj.Status.Status == UserStatusType.LastWeek)
+        {
+            userImpl.Status = _factory.Resolve<UserStatusLastWeekImpl>();
+        }
+        else if(obj.Status.Status == UserStatusType.LastMonth)
+        {
+            userImpl.Status = _factory.Resolve<UserStatusLastMonthImpl>();
         }
         if (obj.Photo.Empty)
         {

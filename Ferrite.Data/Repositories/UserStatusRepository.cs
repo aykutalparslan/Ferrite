@@ -34,7 +34,7 @@ public class UserStatusRepository : IUserStatusRepository
     {
         UserStatusDTO userStatus = new UserStatusDTO()
         {
-            Status = UserStatusType.Online,
+            Status = status ? UserStatusType.Online : UserStatusType.Offline,
             WasOnline = (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
             Expires = 10,
         };
@@ -42,15 +42,18 @@ public class UserStatusRepository : IUserStatusRepository
         return _store.Put(serialized, userId);
     }
 
-    public UserStatusDTO GetUserStatusAsync(long userId)
+    public UserStatusDTO GetUserStatus(long userId)
     {
-        
-        var serialized = MessagePackSerializer.Serialize(_store.Get(userId));
+        var serialized = _store.Get(userId);
         if (serialized == null)
         {
             return UserStatusDTO.Empty;
         }
         var userStatus = MessagePackSerializer.Deserialize<UserStatusDTO>(serialized);
+        if (userStatus.Status == UserStatusType.Offline)
+        {
+            return userStatus;
+        }
         if (userStatus.WasOnline + userStatus.Expires < DateTimeOffset.Now.ToUnixTimeSeconds())
         {
             return userStatus;

@@ -21,6 +21,7 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
+using Ferrite.Data.Repositories;
 using xxHash;
 
 namespace Ferrite.Services;
@@ -31,16 +32,18 @@ public partial class AccountService : IAccountService
     private readonly IPersistentStore _store;
     private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
+    private readonly IUnitOfWork _unitOfWork;
     [RegexGenerator("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled)]
     private static partial Regex UsernameRegex();
     private const int PhoneCodeTimeout = 60;//seconds
     public AccountService(IDistributedCache cache, IPersistentStore store, 
-        ISearchEngine search, IRandomGenerator random)
+        ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork)
     {
         _cache = cache;
         _store = store;
         _search = search;
         _random = random;
+        _unitOfWork = unitOfWork;
     }
     public async Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo)
     {
@@ -107,7 +110,7 @@ public partial class AccountService : IAccountService
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth != null)
         {
-            return await _cache.PutUserStatusAsync(auth.UserId, status);
+            return _unitOfWork.UserStatusRepository.PutUserStatus(auth.UserId, status);
         }
 
         return false;

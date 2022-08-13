@@ -21,5 +21,5 @@ namespace Ferrite.Data.Repositories;
 public interface IUserStatusRepository
 {
     public bool PutUserStatus(long userId, bool status);
-    public UserStatusDTO GetUserStatusAsync(long userId);
+    public UserStatusDTO GetUserStatus(long userId);
 }

@@ -24,6 +24,7 @@ public interface IUnitOfWork
     IAuthorizationRepository AuthorizationRepository { get; }
     IServerSaltRepository ServerSaltRepository { get; }
     IMessageRepository MessageRepository { get; }
+    IUserStatusRepository UserStatusRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

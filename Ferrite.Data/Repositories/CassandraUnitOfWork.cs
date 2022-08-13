@@ -29,11 +29,14 @@ public class CassandraUnitOfWork : IUnitOfWork
         _cassandra = new CassandraContext(cassandraKeyspace, cassandraHosts);
         _log = log;
         MessageRepository = new MessageRepository(new CassandraKVStore(_cassandra));
+        UserStatusRepository = new UserStatusRepository(new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public IAuthorizationRepository AuthorizationRepository { get; }
     public IServerSaltRepository ServerSaltRepository { get; }
     public IMessageRepository MessageRepository { get; }
+    public IUserStatusRepository UserStatusRepository { get; }
+
     public bool Save()
     {
         try

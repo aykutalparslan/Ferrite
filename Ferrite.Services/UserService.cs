@@ -17,6 +17,7 @@
 // 
 
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using Ferrite.Data.Users;
 using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
 
@@ -25,10 +26,11 @@ namespace Ferrite.Services;
 public class UserService : IUsersService
 {
     private readonly IPersistentStore _store;
-
-    public UserService(IPersistentStore store)
+    private readonly IUnitOfWork _unitOfWork;
+    public UserService(IPersistentStore store, IUnitOfWork unitOfWork)
     {
         _store = store;
+        _unitOfWork = unitOfWork;
     }
     public async Task<ServiceResult<ICollection<UserDTO>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)
     {
@@ -40,6 +42,7 @@ public class UserService : IUsersService
                 var user = await _store.GetUserAsync(u.UserId);
                 if (user != null)
                 {
+                    user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
                     users.Add(user);
                 }
             }
@@ -59,6 +62,7 @@ public class UserService : IUsersService
             self = true;
         }
         var user = await _store.GetUserAsync(userId);
+        user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
         var info = await _store.GetAppInfoAsync(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info.LangPack.ToLower().Contains("android"))
