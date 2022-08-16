@@ -131,6 +131,7 @@ public class MessagesService : IMessagesService
             {
                 Id = receiverMessageId,
                 Out = false,
+                PeerId = from
             };
             int ptsPeer = await receiverCtx.IncrementPts();
             _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
