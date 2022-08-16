@@ -16,13 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public enum UpdateType
+[MessagePackObject(true)]
+public record UpdateDeleteMessagesDTO(IReadOnlyCollection<int> Messages, int Pts, int PtsCount) : UpdateBase
 {
-    UpdateMessageId,
-    UpdateReadHistoryInbox,
-    UpdateReadHistoryOutbox,
-    UpdateNewMessage,
-    UpdateDeleteMessages
+    public override UpdateType UpdateType => UpdateType.UpdateDeleteMessages;
 }

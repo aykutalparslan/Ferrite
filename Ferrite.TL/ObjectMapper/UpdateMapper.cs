@@ -75,6 +75,18 @@ public class UpdateMapper : ITLObjectMapper<Update, UpdateBase>
             update.PtsCount = newMessage.PtsCount;
             return update;
         }
+        else if (obj is UpdateDeleteMessagesDTO deleteMessages)
+        {
+            var update = _factory.Resolve<UpdateDeleteMessagesImpl>();
+            update.Messages = _factory.Resolve<VectorOfInt>();
+            foreach (var m in deleteMessages.Messages)
+            {
+                update.Messages.Add(m);
+            }
+            update.Pts = deleteMessages.Pts;
+            update.PtsCount = deleteMessages.PtsCount;
+            return update;
+        }
         throw new NotSupportedException("Update type is not supported.");
     }
 }

@@ -188,6 +188,59 @@ public class MessagesService : IMessagesService
         throw new NotSupportedException();
     }
 
+    public async Task<ServiceResult<AffectedHistoryDTO>> DeleteHistory(long authKeyId, InputPeerDTO peer, 
+        int maxId, int minDate = -1, int maxDate = -1,
+        bool justClear = false, bool revoke = false)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var peerDto = PeerFromInputPeer(peer);
+        if (peerDto.PeerType == PeerType.User)
+        {
+            var messages = _unitOfWork.MessageRepository.GetMessages(auth.UserId, peerDto);
+            List<int> deletedIds = new();
+            foreach (var m in messages)
+            {
+                if (m.Id < maxId && (minDate > 0 && m.Date > minDate) &&
+                    (maxDate > 0 && m.Date < maxDate))
+                {
+                    deletedIds.Add(m.Id);
+                    _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
+                }
+            }
+
+            int pts = await userCtx.IncrementPts();
+            var deleteMessages = new UpdateDeleteMessagesDTO(deletedIds, pts, 1);
+            _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+            
+            if (!justClear)
+            {
+                var peerCtx = _cache.GetUpdatesContext(null, peerDto.PeerId);
+                var peerMessages =
+                    _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
+                List<int> peerDeletedIds = new();
+                foreach (var m in peerMessages)
+                {
+                    if (m.Id < maxId && (minDate > 0 && m.Date > minDate) &&
+                        (maxDate > 0 && m.Date < maxDate))
+                    {
+                        peerDeletedIds.Add(m.Id);
+                        _unitOfWork.MessageRepository.DeleteMessage(peerDto.PeerId, m.Id);
+                    }
+                }
+                int peerPts = await userCtx.IncrementPts();
+                var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
+                _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
+            }
+
+            return new ServiceResult<AffectedHistoryDTO>(new AffectedHistoryDTO(pts, 
+                    1, 0), true,
+                ErrorMessages.None);
+        }
+
+        throw new NotSupportedException();
+    }
+
     public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, 
         InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)

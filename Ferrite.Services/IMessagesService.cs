@@ -30,6 +30,8 @@ public interface IMessagesService
         int? replyToMsgId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO> ? entities,
         int? scheduleDate, InputPeerDTO? sendAs);
     Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId);
+    Task<ServiceResult<AffectedHistoryDTO>> DeleteHistory(long authKeyId, InputPeerDTO peer, int maxId,
+        int minDate = -1, int maxDate = -1, bool justClear = false, bool revoke = false);
     Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, InputPeerDTO offsetPeer,
         int limit, long hash, bool? excludePinned = null, int? folderId = null);
     Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, int offsetDate,
