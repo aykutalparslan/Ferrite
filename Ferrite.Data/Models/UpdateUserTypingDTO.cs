@@ -17,9 +17,12 @@
 // 
 
 using MessagePack;
+using Nest;
 
 namespace Ferrite.Data;
 
 [MessagePackObject(true)]
-public record SendMessageActionDTO(SendMessageActionType SendMessageActionType, int? Progress = null,
-    int? MessageId = null, string? Interaction = null, string? Emoticon = null);
+public record UpdateUserTypingDTO(long UserId, SendMessageActionDTO Action) : UpdateBase
+{
+    public override UpdateType UpdateType => UpdateType.UpdateUserTyping;
+}

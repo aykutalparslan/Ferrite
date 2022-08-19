@@ -189,7 +189,7 @@ public class MessagesService : IMessagesService
     }
 
     public async Task<ServiceResult<AffectedHistoryDTO>> DeleteHistory(long authKeyId, InputPeerDTO peer, 
-        int maxId, int minDate = -1, int maxDate = -1,
+        int maxId, int? minDate = null, int? maxDate = null,
         bool justClear = false, bool revoke = false)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
@@ -201,8 +201,8 @@ public class MessagesService : IMessagesService
             List<int> deletedIds = new();
             foreach (var m in messages)
             {
-                if (m.Id < maxId && (minDate > 0 && m.Date > minDate) &&
-                    (maxDate > 0 && m.Date < maxDate))
+                if (m.Id < maxId && (minDate != null && m.Date > minDate) &&
+                    (maxDate != null && m.Date < maxDate))
                 {
                     deletedIds.Add(m.Id);
                     _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
@@ -390,6 +390,13 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
     {
+        var peerDTO = PeerFromInputPeer(peer);
+        if (peerDTO.PeerType == PeerType.User)
+        {
+            var update = new UpdateUserTypingDTO(peerDTO.PeerId, action);
+            _updates.EnqueueUpdate(peerDTO.PeerId, update);
+            return new ServiceResult<bool>(true, true, ErrorMessages.None);
+        }
         throw new NotImplementedException();
     }
 

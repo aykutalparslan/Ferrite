@@ -24,5 +24,6 @@ public enum UpdateType
     UpdateReadHistoryInbox,
     UpdateReadHistoryOutbox,
     UpdateNewMessage,
-    UpdateDeleteMessages
+    UpdateDeleteMessages,
+    UpdateUserTyping
 }

@@ -51,6 +51,7 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(MessageMedia), new MessageMediaMapper(factory, this));
         _mappers.TryAdd(typeof(InputMessage), new InputMessageMapper());
         _mappers.TryAdd(typeof(Dialog), new DialogMapper(factory, this));
+        _mappers.TryAdd(typeof(SendMessageAction), new SendMessageActionMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject
