@@ -16,11 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public enum UpdatesType
+[MessagePackObject(true)]
+public record UpdateShortDTO(UpdateBase Update,
+    int Date) : UpdatesBase
 {
-    Updates,
-    UpdateShortSentMessage,
-    UpdateShort
+    public override UpdatesType UpdatesType => UpdatesType.UpdateShort;
 }

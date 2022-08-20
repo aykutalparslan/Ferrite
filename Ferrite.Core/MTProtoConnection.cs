@@ -253,7 +253,10 @@ public class MTProtoConnection : IMTProtoConnection
                     var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
                     var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
                     msg.Data = tlObj.TLBytes.ToArray();
-                    _log.Debug($"==> Sending Updates ==<");
+                    if (tlObj is UpdatesImpl updt)
+                    {
+                        _log.Debug($"==> Sending Updates with Seq: {updt.Seq} ==<");
+                    }
                     SendEncrypted(msg, sess);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)

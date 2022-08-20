@@ -87,6 +87,13 @@ public class UpdateMapper : ITLObjectMapper<Update, UpdateBase>
             update.PtsCount = deleteMessages.PtsCount;
             return update;
         }
+        else if (obj is UpdateUserTypingDTO userTyping)
+        {
+            var update = _factory.Resolve<UpdateUserTypingImpl>();
+            update.UserId = userTyping.UserId;
+            update.Action = _mapper.MapToTLObject<SendMessageAction, SendMessageActionDTO>(userTyping.Action);
+            return update;
+        }
         throw new NotSupportedException("Update type is not supported.");
     }
 }

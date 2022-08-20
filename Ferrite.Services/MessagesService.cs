@@ -391,9 +391,10 @@ public class MessagesService : IMessagesService
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
     {
         var peerDTO = PeerFromInputPeer(peer);
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (peerDTO.PeerType == PeerType.User)
         {
-            var update = new UpdateUserTypingDTO(peerDTO.PeerId, action);
+            var update = new UpdateUserTypingDTO(auth.UserId, action);
             _updates.EnqueueUpdate(peerDTO.PeerId, update);
             return new ServiceResult<bool>(true, true, ErrorMessages.None);
         }
