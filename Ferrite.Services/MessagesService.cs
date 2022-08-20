@@ -241,6 +241,22 @@ public class MessagesService : IMessagesService
         throw new NotSupportedException();
     }
 
+    public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        foreach (var m in id)
+        {
+            _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m);
+        }
+        int pts = await userCtx.IncrementPts();
+        var deleteMessages = new UpdateDeleteMessagesDTO(id.ToList(), pts, 1);
+        _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+        
+        return new ServiceResult<AffectedMessagesDTO>(new AffectedMessagesDTO(pts, 1), true,
+            ErrorMessages.None);
+    }
+
     public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, 
         InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)
