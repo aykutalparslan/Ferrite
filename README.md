@@ -13,6 +13,22 @@ The project is currently in a very early stage of development. The following are
 - auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
 - Saved Messages and Sending messages works with text messages to some extent.
 
+## Debugging the server
+- Clone the repository.
+```console
+git clone https://github.com/aykutalparslan/Ferrite
+cd Ferrite/Ferrite
+```
+- Start an instance of Redis.
+- Start an instance of Cassandra.
+- Start an instance of MinIO and update username/password in the Program.cs.
+- Start an instance of ElasticSearch and update username/password/fingerprint in the Program.cs.
+- Debug the Ferrite Console Application with your favourite IDE or
+```console
+dotnet run
+```
+Note: Docker support is planned in the future
+
 ## Roadmap
 
 Development is currently focused on getting the Android application to run in a stable state and the planned order of steps to achive that are:
