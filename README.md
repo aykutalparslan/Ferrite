@@ -27,6 +27,8 @@ git clone https://github.com/aykutalparslan/Ferrite
 ```console
 dotnet run
 ```
+- Use the [modified Android client](https://github.com/aykutalparslan/Telegram) to test with.
+
 Note: Docker support is planned in the future
 
 ## Roadmap
