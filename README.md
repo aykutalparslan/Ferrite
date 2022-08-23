@@ -17,16 +17,19 @@ The project is currently in a very early stage of development. The following are
 - Clone the repository.
 ```console
 git clone https://github.com/aykutalparslan/Ferrite
-cd Ferrite/Ferrite
 ```
 - Start an instance of Redis.
 - Start an instance of Cassandra.
 - Start an instance of MinIO and update username/password in the Program.cs.
 - Start an instance of ElasticSearch and update username/password/fingerprint in the Program.cs.
+- Install the latest preview of .NET 7 
 - Debug the Ferrite Console Application with your favourite IDE or
 ```console
 dotnet run
 ```
+- Make sure default-private.key and default-public-key are copied to the output directory as those are the keys embedded into the modified client
+- Use the [modified Android client](https://github.com/aykutalparslan/Telegram) to test with.
+
 Note: Docker support is planned in the future
 
 ## Roadmap
