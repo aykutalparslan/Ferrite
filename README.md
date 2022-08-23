@@ -27,6 +27,7 @@ git clone https://github.com/aykutalparslan/Ferrite
 ```console
 dotnet run
 ```
+- Make sure default-private.key and default-public-key are copied to the output directory as those are the keys embedded into the modified client
 - Use the [modified Android client](https://github.com/aykutalparslan/Telegram) to test with.
 
 Note: Docker support is planned in the future
