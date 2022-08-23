@@ -58,6 +58,7 @@ public readonly unsafe struct set_client_DH_params : ITLObjectReader, ITLSeriali
     {
         var length = GetRequiredBufferSize(encrypted_data.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new set_client_DH_params(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xf5045f1f));
         obj.Set_nonce(nonce);

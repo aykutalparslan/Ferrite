@@ -24,6 +24,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.Exceptions;
 using Ferrite.TL.mtproto;
@@ -33,16 +34,14 @@ using Ferrite.TL.slim.mtproto;
 namespace Ferrite.Core.Methods;
 
 public class SetClientDhParamsHandler :IQueryHandler<set_client_DH_params>
-{    
-    private readonly IPersistentStore _dataStore;
-    private readonly IDistributedCache _distributedStore;
+{
+    private readonly IMTProtoService _mtproto;
     private bool serialized = false;
     //TODO: Maybe change the DH_PRIME
     private const string dhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
-    public SetClientDhParamsHandler(IPersistentStore store, IDistributedCache cache)
+    public SetClientDhParamsHandler(IMTProtoService mtproto)
     {
-        _dataStore = store;
-        _distributedStore = cache;
+        _mtproto = mtproto;
     }
     public async Task<ITLSerializable?> Process(set_client_DH_params query, TLExecutionContext ctx)
     {
@@ -98,20 +97,19 @@ public class SetClientDhParamsHandler :IQueryHandler<set_client_DH_params>
             bool temp_auth_key = ctx.SessionData.ContainsKey("temp_auth_key") &&
                 (bool)ctx.SessionData["temp_auth_key"];
             var existingKey = temp_auth_key ?
-                await _distributedStore.GetTempAuthKeyAsync(authKeyHash) :
-                await _dataStore.GetAuthKeyAsync(authKeyHash);
+                await _mtproto.GetTempAuthKeyAsync(authKeyHash) :
+                await _mtproto.GetAuthKeyAsync(authKeyHash);
             if (existingKey == null || existingKey.Length == 0)
             {
                 var authKeyTrimmed = authKey.AsSpan().Slice(0, 192).ToArray();
                 if (temp_auth_key)
                 {
                     int expiresIn = (int)ctx.SessionData["temp_auth_key_expires_in"];
-                    _ = _distributedStore.PutTempAuthKeyAsync(authKeyHash, authKeyTrimmed, new TimeSpan(0, 0, expiresIn));
+                    await _mtproto.PutTempAuthKeyAsync(authKeyHash, authKeyTrimmed, new TimeSpan(0, 0, expiresIn));
                 }
                 else
                 {
-                    await _dataStore.SaveAuthKeyAsync(authKeyHash, authKeyTrimmed);
-                    _ = _distributedStore.PutAuthKeyAsync(authKeyHash, authKeyTrimmed);
+                    await _mtproto.PutAuthKeyAsync(authKeyHash, authKeyTrimmed);;
                 }
 
                 var dhGenOk = dh_gen_ok.Create(sessionNonce, sessionServerNonce, newNonceHash1);

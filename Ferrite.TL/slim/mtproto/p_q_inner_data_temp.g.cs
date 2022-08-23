@@ -62,6 +62,7 @@ public readonly unsafe struct p_q_inner_data_temp : ITLObjectReader, ITLSerializ
     {
         var length = GetRequiredBufferSize(pq.Length, p.Length, q.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new p_q_inner_data_temp(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x3c6a84d4));
         obj.Set_pq(pq);

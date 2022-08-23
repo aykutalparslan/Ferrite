@@ -62,6 +62,7 @@ public readonly unsafe struct error : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(text.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new error(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xc4b9f9bb));
         obj.Set_code(code);

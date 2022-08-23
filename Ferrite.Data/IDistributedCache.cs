@@ -24,10 +24,10 @@ public interface IDistributedCache
 {
     public IAtomicCounter GetCounter(string name);
     public IUpdatesContext GetUpdatesContext(long? authKeyId, long userId);
-    public Task<byte[]> GetAuthKeyAsync(long authKeyId);
-    public byte[]? GetAuthKey(long authKeyId);
-    public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
-    public Task<bool> DeleteAuthKeyAsync(long authKeyId);
+    //public Task<byte[]> GetAuthKeyAsync(long authKeyId);
+    //public byte[]? GetAuthKey(long authKeyId);
+    //public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
+    //public Task<bool> DeleteAuthKeyAsync(long authKeyId);
     public Task<byte[]> GetSessionAsync(long sessionId);
     public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
     public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);

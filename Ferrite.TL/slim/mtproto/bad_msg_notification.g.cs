@@ -62,6 +62,7 @@ public readonly unsafe struct bad_msg_notification : ITLObjectReader, ITLSeriali
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new bad_msg_notification(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xa7eff811));
         obj.Set_bad_msg_id(bad_msg_id);

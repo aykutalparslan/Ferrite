@@ -58,6 +58,7 @@ public readonly unsafe struct ping : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new ping(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x7abe77ec));
         obj.Set_ping_id(ping_id);

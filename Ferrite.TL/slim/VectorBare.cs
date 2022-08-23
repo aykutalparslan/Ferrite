@@ -111,6 +111,7 @@ public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable, IDisposab
             length += item.Length;
         }
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new VectorBare<T>(memory.Memory.Span[..length], memory);
         obj.SetCount(items.Count);
         int offset = 4;

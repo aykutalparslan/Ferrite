@@ -62,6 +62,7 @@ public readonly unsafe struct client_DH_inner_data : ITLObjectReader, ITLSeriali
     {
         var length = GetRequiredBufferSize(g_b.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new client_DH_inner_data(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x6643b654));
         obj.Set_nonce(nonce);

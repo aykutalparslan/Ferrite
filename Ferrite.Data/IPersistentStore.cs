@@ -22,16 +22,16 @@ using Ferrite.Data.Account;
 namespace Ferrite.Data;
 public interface IPersistentStore
 {
-    public Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey);
-    public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
-    public byte[]? GetAuthKey(long authKeyId);
+    //public Task<bool> SaveAuthKeyAsync(long authKeyId, byte[] authKey);
+    //public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
+    //public byte[]? GetAuthKey(long authKeyId);
     public Task<bool> SaveExportedAuthorizationAsync(AuthInfoDTO info, int previousDc, int nextDc, byte[] data);
     public Task<ExportedAuthInfoDTO?> GetExportedAuthorizationAsync(long user_id, byte[] data);
     public Task<bool> SaveAuthorizationAsync(AuthInfoDTO info);
     public Task<AuthInfoDTO?> GetAuthorizationAsync(long authKeyId);
     public Task<ICollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone);
     public Task<bool> DeleteAuthorizationAsync(long authKeyId);
-    public Task<bool> DeleteAuthKeyAsync(long authKeyId);
+    //public Task<bool> DeleteAuthKeyAsync(long authKeyId);
     public Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL);
     public Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
     public Task<bool> SaveUserAsync(UserDTO user);

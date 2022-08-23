@@ -62,6 +62,7 @@ public readonly unsafe struct msg_container : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(messages.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new msg_container(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x73f1f8dc));
         obj.Set_messages(messages.ToReadOnlySpan());

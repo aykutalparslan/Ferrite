@@ -51,6 +51,7 @@ public readonly unsafe struct Message : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(body.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new Message(memory.Memory.Span[..length], memory);
         obj.Set_msg_id(msg_id);
         obj.Set_seqno(seqno);

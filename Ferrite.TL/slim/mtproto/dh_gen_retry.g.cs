@@ -62,6 +62,7 @@ public readonly unsafe struct dh_gen_retry : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new dh_gen_retry(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x46dc1fb9));
         obj.Set_nonce(nonce);

@@ -62,6 +62,7 @@ public readonly unsafe struct rpc_error : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(error_message.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new rpc_error(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x2144ca19));
         obj.Set_error_code(error_code);

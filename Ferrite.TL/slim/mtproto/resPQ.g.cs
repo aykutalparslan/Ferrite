@@ -62,6 +62,7 @@ public readonly unsafe struct resPQ : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(pq.Length, server_public_key_fingerprints.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new resPQ(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x05162463));
         obj.Set_nonce(nonce);

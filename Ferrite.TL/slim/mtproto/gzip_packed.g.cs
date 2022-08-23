@@ -62,6 +62,7 @@ public readonly unsafe struct gzip_packed : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(packed_data.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new gzip_packed(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x3072cfa1));
         obj.Set_packed_data(packed_data);

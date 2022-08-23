@@ -120,6 +120,7 @@ public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable, IDisposable w
             length += item.Length;
         }
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new Vector<T>(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);

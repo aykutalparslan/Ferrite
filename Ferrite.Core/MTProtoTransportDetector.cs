@@ -54,7 +54,7 @@ public class MTProtoTransportDetector : ITransportDetector
             {
                 transport = MTProtoTransport.Abridged;
                 reader.Advance(1);
-                decoder = new AbridgedFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                decoder = new AbridgedFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new AbridgedFrameEncoder();
                 return transport;
             }
@@ -66,14 +66,14 @@ public class MTProtoTransportDetector : ITransportDetector
             if (firstint == Intermediate)
             {
                 transport = MTProtoTransport.Intermediate;
-                decoder = new IntermediateFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                decoder = new IntermediateFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new IntermediateFrameEncoder();
                 return transport;
             }
             else if (firstint == PaddedIntermediate)
             {
                 transport = MTProtoTransport.PaddedIntermediate;
-                decoder = new PaddedIntermediateFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                decoder = new PaddedIntermediateFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new PaddedIntermediateFrameEncoder();
                 return transport;
             }
@@ -86,7 +86,7 @@ public class MTProtoTransportDetector : ITransportDetector
             {
                 transport = MTProtoTransport.Full;
                 reader.Rewind(8);
-                decoder = new FullFrameDecoder(_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                decoder = new FullFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new FullFrameEncoder();
                 return transport;
             }
@@ -117,25 +117,25 @@ public class MTProtoTransportDetector : ITransportDetector
                 if (identifier == AbridgedInt)
                 {
                     transport = MTProtoTransport.Abridged;
-                    decoder = new AbridgedFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                    decoder = new AbridgedFrameDecoder(decryptor, _scope.Resolve<IMTProtoService>());
                     encoder = new AbridgedFrameEncoder(encryptor);
                 }
                 else if (identifier == Intermediate)
                 {
                     transport = MTProtoTransport.Intermediate;
-                    decoder = new IntermediateFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                    decoder = new IntermediateFrameDecoder(decryptor, _scope.Resolve<IMTProtoService>());
                     encoder = new IntermediateFrameEncoder(encryptor);
                 }
                 else if (identifier == PaddedIntermediate)
                 {
                     transport = MTProtoTransport.PaddedIntermediate;
-                    decoder = new PaddedIntermediateFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                    decoder = new PaddedIntermediateFrameDecoder(decryptor, _scope.Resolve<IMTProtoService>());
                     encoder = new PaddedIntermediateFrameEncoder(encryptor);
                 }
                 else
                 {
                     transport = MTProtoTransport.Full;
-                    decoder = new FullFrameDecoder(decryptor,_scope.Resolve<IDistributedCache>(), _scope.Resolve<IPersistentStore>());
+                    decoder = new FullFrameDecoder(decryptor, _scope.Resolve<IMTProtoService>());
                     encoder = new FullFrameEncoder(encryptor);
                 }
             }

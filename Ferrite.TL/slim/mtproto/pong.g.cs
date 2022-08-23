@@ -62,6 +62,7 @@ public readonly unsafe struct pong : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new pong(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x347773c5));
         obj.Set_msg_id(msg_id);

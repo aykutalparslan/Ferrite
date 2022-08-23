@@ -62,6 +62,7 @@ public readonly unsafe struct destroy_session_none : ITLObjectReader, ITLSeriali
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new destroy_session_none(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x62d350c9));
         obj.Set_session_id(session_id);

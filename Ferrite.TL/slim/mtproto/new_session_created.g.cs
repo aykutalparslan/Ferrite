@@ -62,6 +62,7 @@ public readonly unsafe struct new_session_created : ITLObjectReader, ITLSerializ
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new new_session_created(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x9ec20908));
         obj.Set_first_msg_id(first_msg_id);

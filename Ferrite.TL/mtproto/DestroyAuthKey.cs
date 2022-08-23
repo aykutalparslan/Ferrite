@@ -20,7 +20,7 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
-using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
@@ -28,14 +28,12 @@ public class DestroyAuthKey : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IDistributedCache _store;
-    private readonly IPersistentStore _cache;
+    private readonly IMTProtoService _mtproto;
     private bool serialized = false;
-    public DestroyAuthKey(ITLObjectFactory objectFactory, IDistributedCache store, IPersistentStore cache)
+    public DestroyAuthKey(ITLObjectFactory objectFactory, IMTProtoService mtproto)
     {
         factory = objectFactory;
-        _store = store;
-        _cache = cache;
+        _mtproto = mtproto;
     }
 
     public int Constructor => -784117408;
@@ -54,9 +52,8 @@ public class DestroyAuthKey : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        bool deleteCache = await _cache.DeleteAuthKeyAsync(ctx.AuthKeyId);
-        bool deleteDatabase = await _store.DeleteAuthKeyAsync(ctx.AuthKeyId);
-        if(deleteCache && deleteDatabase)
+        bool success = await _mtproto.DestroyAuthKeyAsync(ctx.PermAuthKeyId);
+        if(success)
         {
             var resp = factory.Resolve<DestroyAuthKeyOk>();
             return resp;

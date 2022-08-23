@@ -58,6 +58,7 @@ public readonly unsafe struct rpc_drop_answer : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new rpc_drop_answer(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x58e4a740));
         obj.Set_req_msg_id(req_msg_id);

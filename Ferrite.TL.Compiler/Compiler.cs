@@ -819,6 +819,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
 
         sb.Append(@");
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new " + typeName + @"(memory.Memory.Span[..length], memory);");
         if (combinator.Name != null)
         {

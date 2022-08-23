@@ -62,6 +62,7 @@ public readonly unsafe struct p_q_inner_data_dc : ITLObjectReader, ITLSerializab
     {
         var length = GetRequiredBufferSize(pq.Length, p.Length, q.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new p_q_inner_data_dc(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xa9f55f95));
         obj.Set_pq(pq);

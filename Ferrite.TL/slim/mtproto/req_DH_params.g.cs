@@ -58,6 +58,7 @@ public readonly unsafe struct req_DH_params : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize(p.Length, q.Length, encrypted_data.Length);
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new req_DH_params(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xd712e4be));
         obj.Set_nonce(nonce);

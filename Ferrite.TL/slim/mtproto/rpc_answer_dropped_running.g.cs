@@ -62,6 +62,7 @@ public readonly unsafe struct rpc_answer_dropped_running : ITLObjectReader, ITLS
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new rpc_answer_dropped_running(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xcd78e586));
         return obj;

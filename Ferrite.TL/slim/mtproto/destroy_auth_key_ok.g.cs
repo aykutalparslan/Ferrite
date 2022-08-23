@@ -62,6 +62,7 @@ public readonly unsafe struct destroy_auth_key_ok : ITLObjectReader, ITLSerializ
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new destroy_auth_key_ok(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xf660e1d4));
         return obj;

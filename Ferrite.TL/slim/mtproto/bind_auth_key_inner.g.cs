@@ -62,6 +62,7 @@ public readonly unsafe struct bind_auth_key_inner : ITLObjectReader, ITLSerializ
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new bind_auth_key_inner(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x75a3f765));
         obj.Set_nonce(nonce);

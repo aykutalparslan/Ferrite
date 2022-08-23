@@ -27,6 +27,7 @@ using Autofac.Core.Lifetime;
 using Autofac.Extras.Moq;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
@@ -202,18 +203,13 @@ public class AllocationFreeDeserializationTests
         var logger = new Mock<ILogger>();
         Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
         Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
-        var redis = new Mock<IDistributedCache>();
-        redis.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        var proto = new Mock<IMTProtoService>();
+        proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
         {
             authKeys.Add(a, b);
             return true;
         });
-        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
-        {
-            sessions.Add(a, b);
-            return true;
-        });
-        redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!authKeys.ContainsKey(a))
             {
@@ -221,6 +217,14 @@ public class AllocationFreeDeserializationTests
             }
             return authKeys[a];
         });
+        var redis = new Mock<IDistributedCache>();
+        
+        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
+        {
+            sessions.Add(a, b);
+            return true;
+        });
+        
         redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!sessions.ContainsKey(a))
@@ -236,19 +240,7 @@ public class AllocationFreeDeserializationTests
         });
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
-        cassandra.Setup(x => x.SaveAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
-        {
-            authKeys2.Add(a, b);
-            return true;
-        });
-        cassandra.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!authKeys2.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return authKeys[a];
-        });
+        
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -262,6 +254,7 @@ public class AllocationFreeDeserializationTests
         builder.RegisterMock(cassandra);
         builder.RegisterMock(redis);
         builder.RegisterMock(logger);
+        builder.RegisterMock(proto);
         var container = builder.Build();
         return container;
     }

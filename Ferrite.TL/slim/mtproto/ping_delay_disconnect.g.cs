@@ -58,6 +58,7 @@ public readonly unsafe struct ping_delay_disconnect : ITLObjectReader, ITLSerial
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new ping_delay_disconnect(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xf3427b8c));
         obj.Set_ping_id(ping_id);

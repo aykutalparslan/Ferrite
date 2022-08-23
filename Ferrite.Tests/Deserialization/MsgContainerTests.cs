@@ -95,24 +95,25 @@ public class MsgContainerTests
         authKeys.Add(1508830554984586608, key);
         key = File.ReadAllBytes("testdata/authKey_-12783902225236342");
         authKeys.Add(-12783902225236342, key);
-        var redis = new Mock<IDistributedCache>();
-        redis.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        var proto = new Mock<IMTProtoService>();
+        proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
         {
             authKeys.Add(a, b);
             return true;
         });
-        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
-        {
-            sessions.Add(a, b);
-            return true;
-        });
-        redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!authKeys.ContainsKey(a))
             {
                 return new byte[0];
             }
             return authKeys[a];
+        });
+        var redis = new Mock<IDistributedCache>();
+        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
+        {
+            sessions.Add(a, b);
+            return true;
         });
         redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
@@ -129,19 +130,6 @@ public class MsgContainerTests
         });
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
-        cassandra.Setup(x => x.SaveAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
-        {
-            authKeys2.Add(a, b);
-            return true;
-        });
-        cassandra.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!authKeys2.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return authKeys[a];
-        });
         Queue<long> unixTimes = new Queue<long>();
         var time = new Mock<IMTProtoTime>();
         unixTimes.Enqueue(1649323587);
@@ -240,6 +228,7 @@ public class MsgContainerTests
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
+        builder.RegisterMock(proto);
         builder.RegisterMock(cassandra);
         builder.RegisterMock(redis);
         builder.RegisterMock(logger);

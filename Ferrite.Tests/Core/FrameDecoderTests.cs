@@ -31,6 +31,7 @@ using Ferrite.Utils;
 using DotNext.IO;
 using Xunit;
 using Autofac.Extras.Moq;
+using Ferrite.Services;
 using Moq;
 
 namespace Ferrite.Tests.Core
@@ -42,10 +43,10 @@ namespace Ferrite.Tests.Core
         {
             using (var mock = AutoMock.GetLoose())
             {
-                var cache = mock.Mock<IDistributedCache>();
-                cache.Setup(x => x.GetAuthKey(It.IsAny<long>()))
+                var proto = mock.Mock<IMTProtoService>();
+                proto.Setup(x => x.GetAuthKey(It.IsAny<long>()))
                     .Returns(RandomNumberGenerator.GetBytes(192));
-                cache.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
+                proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
                     It.IsAny<byte[]>())).ReturnsAsync(true);
                 var detector = mock.Create<MTProtoTransportDetector>();
                 byte[] data = File.ReadAllBytes("testdata/obfuscatedAbridgedSession.bin");
@@ -101,17 +102,17 @@ namespace Ferrite.Tests.Core
         {
             using (var mock = AutoMock.GetLoose())
             {
-                var cache = mock.Mock<IDistributedCache>();
-                cache.Setup(x => x.GetAuthKey(It.IsAny<long>()))
+                var proto = mock.Mock<IMTProtoService>();
+                proto.Setup(x => x.GetAuthKey(It.IsAny<long>()))
                     .Returns(RandomNumberGenerator.GetBytes(192));
-                cache.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
+                proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), 
                     It.IsAny<byte[]>())).ReturnsAsync(true);
                 var detector = mock.Create<MTProtoTransportDetector>();
 
                 byte[] data = File.ReadAllBytes("testdata/obfuscatedIntermediateSession.bin");
                 var seq = new ReadOnlySequence<byte>(data);
                 var reader = new SequenceReader<byte>(seq);
-                _ = detector.DetectTransport(ref reader, out var decoder, out var encoder);
+                detector.DetectTransport(ref reader, out var decoder, out var encoder);
                 List<byte[]> frames = new();
                 bool hasMore = false;
                 do

@@ -62,6 +62,7 @@ public readonly unsafe struct bad_server_salt : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new bad_server_salt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xedab447b));
         obj.Set_bad_msg_id(bad_msg_id);

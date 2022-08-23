@@ -62,6 +62,7 @@ public readonly unsafe struct boolFalse : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new boolFalse(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xbc799737));
         return obj;

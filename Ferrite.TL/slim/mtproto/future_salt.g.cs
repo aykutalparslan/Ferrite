@@ -62,6 +62,7 @@ public readonly unsafe struct future_salt : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new future_salt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x0949d9dc));
         obj.Set_valid_since(valid_since);

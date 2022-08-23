@@ -62,6 +62,7 @@ public readonly unsafe struct msg_new_detailed_info : ITLObjectReader, ITLSerial
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new msg_new_detailed_info(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x809db6df));
         obj.Set_answer_msg_id(answer_msg_id);

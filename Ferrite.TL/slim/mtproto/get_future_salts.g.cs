@@ -58,6 +58,7 @@ public readonly unsafe struct get_future_salts : ITLObjectReader, ITLSerializabl
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new get_future_salts(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xb921bd04));
         obj.Set_num(num);

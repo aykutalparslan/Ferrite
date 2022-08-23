@@ -58,6 +58,7 @@ public readonly unsafe struct req_pq_multi : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new req_pq_multi(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0xbe7e8ef1));
         obj.Set_nonce(nonce);

@@ -94,6 +94,7 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable, ID
     {
         var length = 8 + items.Count * 4;
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new VectorOfInt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Count);
@@ -111,6 +112,7 @@ public readonly unsafe struct VectorOfInt : ITLObjectReader, ITLSerializable, ID
     {
         var length = 8 + items.Length * 4;
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new VectorOfInt(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x1cb5c415));
         obj.SetCount(items.Length);

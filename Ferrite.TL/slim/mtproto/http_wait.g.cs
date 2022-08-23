@@ -58,6 +58,7 @@ public readonly unsafe struct http_wait : ITLObjectReader, ITLSerializable
     {
         var length = GetRequiredBufferSize();
         var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
         var obj = new http_wait(memory.Memory.Span[..length], memory);
         obj.SetConstructor(unchecked((int)0x9299359f));
         obj.Set_max_delay(max_delay);
