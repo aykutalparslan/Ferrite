@@ -259,7 +259,7 @@ public class MTProtoConnection : IMTProtoConnection
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    //SendQuickAck(msg.QuickAck);
+                    SendQuickAck(msg.QuickAck);
                 }
                 else if (_authKeyId == 0)
                 {
@@ -499,11 +499,11 @@ public class MTProtoConnection : IMTProtoConnection
     private void SendQuickAck(int ack)
     {
         writer.Clear();
+        ack |= 1 << 31;
         if (encoder is AbridgedFrameEncoder)
         {
             ack = BinaryPrimitives.ReverseEndianness(ack);
         }
-        ack |= 1 << 31;
         writer.WriteInt32(ack, true);
         var msg = writer.ToReadOnlySequence();
         var encoded = encoder.EncodeBlock(msg);
