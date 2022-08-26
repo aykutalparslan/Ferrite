@@ -24,12 +24,12 @@ namespace Ferrite.Tests.TL;
 public class TypeTermSyntaxTests
 {
     [Theory]
-    [InlineData("test#aabbccdd arg:Vector<TestType> arg2:flags.0?Vector<InputTestType> = Test;\n",0,"Vector<TestType>")]
-    [InlineData("test#aabbccdd arg:Vector<TestType> = Test;\n",0,"Vector<TestType>")]
-    [InlineData("test#aabbccdd arg:flags.0?Vector<InputTestType> = Test;\n",0,"Vector<InputTestType>")]
-    [InlineData("test#aabbccdd arg:Vector<testns.TestType> = Test;\n",0,"Vector<testns.TestType>")]
-    [InlineData("testns.test#aabbccdd arg:Vector<testns.TestType> = testns.Test;\n",0,"Vector<testns.TestType>")]
-    [InlineData("test#aabbccdd arg:Vector<bytes> = Test;\n",0,"Vector<TLString>")]
+    [InlineData("test#aabbccdd arg:Vector<TestType> arg2:flags.0?Vector<InputTestType> = Test;\n",0,"Vector")]
+    [InlineData("test#aabbccdd arg:Vector<int> = Test;\n",0,"VectorOfInt")]
+    [InlineData("test#aabbccdd arg:flags.0?Vector<InputTestType> = Test;\n",0,"Vector")]
+    [InlineData("test#aabbccdd arg:vector<testns.TestType> = Test;\n",0,"VectorBare")]
+    [InlineData("testns.test#aabbccdd arg:Vector<testns.TestType> = testns.Test;\n",0,"Vector")]
+    [InlineData("test#aabbccdd arg:Vector<bytes> = Test;\n",0,"Vector")]
     public void TypeTermSyntax_Should_ReturnFullyQualifiedName(string tl, int argOffset, string name)
     {
         Lexer lexer = new Lexer(tl);

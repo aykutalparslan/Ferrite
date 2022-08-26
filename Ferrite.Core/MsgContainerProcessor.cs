@@ -22,8 +22,10 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using Ferrite.Utils;
 using MessagePack;
+using VectorOfLong = Ferrite.TL.VectorOfLong;
 
 namespace Ferrite.Core;
 
@@ -77,7 +79,7 @@ public class MsgContainerProcessor : IProcessor
         }
     }
 
-    public async Task Process(object? sender, IMemoryOwner<byte> input, Queue<IMemoryOwner<byte>> output, TLExecutionContext ctx)
+    public async Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

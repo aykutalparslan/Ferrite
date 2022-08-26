@@ -6,107 +6,78 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct rpc_answer_dropped : ITLObjectReader, ITLSerializable
+public readonly ref struct rpc_answer_dropped
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private rpc_answer_dropped(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public rpc_answer_dropped(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private rpc_answer_dropped(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public RpcDropAnswer GetAsRpcDropAnswer()
-    {
-        return new RpcDropAnswer(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(4, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new rpc_answer_dropped(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(4, buffer + offset, length);
-        var obj = new rpc_answer_dropped(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(4, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 4 + 4;
     }
-    public static rpc_answer_dropped Create(long msg_id, int seq_no, int bytes, MemoryPool<byte>? pool = null)
+    public static rpc_answer_dropped Create(long msg_id, int seq_no, int bytes, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize();
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
         memory.Memory.Span.Clear();
-        var obj = new rpc_answer_dropped(memory.Memory.Span[..length], memory);
+        var obj = new rpc_answer_dropped(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0xa43ad8b7));
         obj.Set_msg_id(msg_id);
         obj.Set_seq_no(seq_no);
         obj.Set_bytes(bytes);
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(4, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(4, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    public readonly long msg_id => MemoryMarshal.Read<long>(_buff[GetOffset(1, _buff)..]);
+    private void Set_msg_id(long value)
     {
-        return GetOffset(4, buffer + offset, length);
+        MemoryMarshal.Write(_buff[GetOffset(1, _buff)..], ref value);
     }
-    public ref readonly long msg_id => ref *(long*)(_buff + GetOffset(1, _buff, Length));
-    private void Set_msg_id(in long value)
+    public readonly int seq_no => MemoryMarshal.Read<int>(_buff[GetOffset(2, _buff)..]);
+    private void Set_seq_no(int value)
     {
-        var p = (long*)(_buff + GetOffset(1, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(2, _buff)..], ref value);
     }
-    public ref readonly int seq_no => ref *(int*)(_buff + GetOffset(2, _buff, Length));
-    private void Set_seq_no(in int value)
+    public readonly int bytes => MemoryMarshal.Read<int>(_buff[GetOffset(3, _buff)..]);
+    private void Set_bytes(int value)
     {
-        var p = (int*)(_buff + GetOffset(2, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(3, _buff)..], ref value);
     }
-    public ref readonly int bytes => ref *(int*)(_buff + GetOffset(3, _buff, Length));
-    private void Set_bytes(in int value)
-    {
-        var p = (int*)(_buff + GetOffset(3, _buff, Length));
-        *p = value;
-    }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
         if(index >= 2) offset += 8;
         if(index >= 3) offset += 4;
         if(index >= 4) offset += 4;
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

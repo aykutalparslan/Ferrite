@@ -26,8 +26,10 @@ public interface IMTProtoService
     public Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
     public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
     public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
+    public bool PutAuthKey(long authKeyId, byte[] authKey);
     public byte[]? GetAuthKey(long authKeyId);
     public Task<byte[]?> GetAuthKeyAsync(long authKeyId);
+    public bool PutTempAuthKey(long authKeyId, byte[] authKey, TimeSpan expiresIn);
     public Task<bool> PutTempAuthKeyAsync(long authKeyId, byte[] authKey, TimeSpan expiresIn);
     public byte[]? GetTempAuthKey(long authKeyId);
     public Task<byte[]?> GetTempAuthKeyAsync(long authKeyId);

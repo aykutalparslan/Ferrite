@@ -16,11 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.TL.slim;
+namespace Ferrite.TL.slim;
 
-namespace Ferrite.Core.Methods;
-
-public interface IApiLayer
-{
-    public IQueryHandler? GetHandler(int constructor);
-}
+public delegate int ObjectSizeReaderDelegate(Span<byte> buffer, int offset);

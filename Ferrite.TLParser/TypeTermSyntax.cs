@@ -78,10 +78,10 @@ public class TypeTermSyntax
         {
             sb.Append(Identifier);
         }
-        if (OptionalType == null) return sb.ToString();
-        sb.Append("<");
-        sb.Append(OptionalType.GetFullyQualifiedIdentifier());
-        sb.Append(">");
+        //if (OptionalType == null) return sb.ToString();
+        //sb.Append("<");
+        //sb.Append(OptionalType.GetFullyQualifiedIdentifier());
+        //sb.Append(">");
         return sb.ToString();
     }
 }

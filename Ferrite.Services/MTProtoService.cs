@@ -83,6 +83,12 @@ public class MTProtoService : IMTProtoService
         return result && await _unitOfWork.SaveAsync();
     }
 
+    public bool PutAuthKey(long authKeyId, byte[] authKey)
+    {
+        var result = _unitOfWork.AuthKeyRepository.PutAuthKey(authKeyId, authKey);
+        return result && _unitOfWork.Save();
+    }
+
     public byte[]? GetAuthKey(long authKeyId)
     {
         return _unitOfWork.AuthKeyRepository.GetAuthKey(authKeyId);
@@ -91,6 +97,12 @@ public class MTProtoService : IMTProtoService
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
         return await _unitOfWork.AuthKeyRepository.GetAuthKeyAsync(authKeyId);
+    }
+
+    public bool PutTempAuthKey(long authKeyId, byte[] authKey, TimeSpan expiresIn)
+    {
+        var result = _unitOfWork.TempAuthKeyRepository.PutTempAuthKey(authKeyId, authKey, expiresIn);
+        return result && _unitOfWork.Save();
     }
 
     public async Task<bool> PutTempAuthKeyAsync(long authKeyId, byte[] authKey, TimeSpan expiresIn)

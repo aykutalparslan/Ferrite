@@ -35,8 +35,8 @@ public class DefaultApiLayer : IApiLayer
             { unchecked((int)0xf5045f1f), context.Resolve<SetClientDhParamsHandler>() }
         };
     }
-    public IQueryHandler<T>? GetHandler<T>(int constructor) where T:ITLSerializable
+    public IQueryHandler? GetHandler(int constructor)
     {
-        return (IQueryHandler<T>?)_handlers[constructor];
+        return (IQueryHandler?)_handlers[constructor];
     }
 }

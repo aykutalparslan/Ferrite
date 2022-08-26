@@ -39,6 +39,7 @@ using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.storage;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.ObjectMapper;
+using Ferrite.TL.slim;
 using MessagePack;
 using Org.BouncyCastle.Cms;
 using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
@@ -894,7 +895,8 @@ public class MTProtoConnection : IMTProtoConnection
         _context.MessageId = msgId;
         _context.AuthKeyId = _authKeyId;
         _context.PermAuthKeyId = _permAuthKeyId;
-        _processorManager.Process(this, messageData, _context);
+        _processorManager.Process(this, new EncodedObject(
+            messageData.Memory.Pin(), 0, messageDataLength), _context);
         //_processorManager.Process(this, msg, _context);
         //OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }

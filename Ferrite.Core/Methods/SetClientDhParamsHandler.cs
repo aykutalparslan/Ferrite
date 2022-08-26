@@ -33,7 +33,7 @@ using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Core.Methods;
 
-public class SetClientDhParamsHandler :IQueryHandler<set_client_DH_params>
+public class SetClientDhParamsHandler : IQueryHandler
 {
     private readonly IMTProtoService _mtproto;
     private bool serialized = false;
@@ -43,91 +43,95 @@ public class SetClientDhParamsHandler :IQueryHandler<set_client_DH_params>
     {
         _mtproto = mtproto;
     }
-    public async Task<ITLSerializable?> Process(set_client_DH_params query, TLExecutionContext ctx)
+    public async Task<EncodedObject?> Process(EncodedObject q, TLExecutionContext ctx)
+    {
+        return ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx);
+    }
+
+    private EncodedObject? ProcessInternal(set_client_DH_params query, TLExecutionContext ctx)
     {
         bool failed = false;
         var sessionNonce = (byte[])ctx.SessionData["nonce"];
         var sessionServerNonce = (byte[])ctx.SessionData["server_nonce"];
-        if (!query.nonce.SequenceEqual(sessionNonce) || 
+        if (!query.nonce.SequenceEqual(sessionNonce) ||
             !query.server_nonce.SequenceEqual(sessionServerNonce))
         {
             failed = true;
         }
+
         Aes aes = Aes.Create();
         aes.Key = (byte[])ctx.SessionData["temp_aes_key"];
         var encryptedData = UnmanagedMemoryAllocator.Allocate<byte>(query.encrypted_data.Length);
-        aes.DecryptIge(query.encrypted_data, ((byte[])ctx.SessionData["temp_aes_iv"]).ToArray(), 
+        aes.DecryptIge(query.encrypted_data, ((byte[])ctx.SessionData["temp_aes_iv"]).ToArray(),
             encryptedData.Span);
         var sha1Received = encryptedData.Span[..20].ToArray();
         var dataWithPadding = encryptedData.Memory[20..];
-        var inner = Client_DH_Inner_Data.Read(dataWithPadding.Span, 0, out var bytesRead);
-        if(inner is client_DH_inner_data clientDhInnerData)
+        var len = client_DH_inner_data.ReadSize(dataWithPadding.Span, 0);
+        var clientDhInnerData = new client_DH_inner_data(dataWithPadding.Span[..len]);
+        var sha1Actual = SHA1.HashData(clientDhInnerData.ToReadOnlySpan());
+        if (!sha1Actual.SequenceEqual(sha1Received) ||
+            !query.nonce.SequenceEqual(sessionNonce) ||
+            !query.server_nonce.SequenceEqual(sessionServerNonce) ||
+            !clientDhInnerData.nonce.SequenceEqual(sessionNonce) ||
+            !clientDhInnerData.server_nonce.SequenceEqual(sessionServerNonce))
         {
-            var sha1Actual = SHA1.HashData(clientDhInnerData.ToReadOnlySpan());
-            if (!sha1Actual.SequenceEqual(sha1Received) ||
-                !query.nonce.SequenceEqual(sessionNonce) || 
-                !query.server_nonce.SequenceEqual(sessionServerNonce)||
-                !clientDhInnerData.nonce.SequenceEqual(sessionNonce) || 
-                !clientDhInnerData.server_nonce.SequenceEqual(sessionServerNonce))
-            {
-                failed = true;
-            }
-            BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
-            BigInteger g_b = new BigInteger(clientDhInnerData.g_b, true, true);
-            BigInteger g = new BigInteger((int)ctx.SessionData["g"]);
-            BigInteger a = new BigInteger((byte[])ctx.SessionData["a"],true,true);
-            var authKey = BigInteger.ModPow(g_b, a, prime).ToByteArray(true, true);
-            ctx.SessionData.Add("auth_key", authKey);
-            var authKeySHA1 = SHA1.HashData(authKey);
-            var authKeyHash = MemoryMarshal.Cast<byte,long>(authKeySHA1.AsSpan().Slice(12))[0];
-            var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
-            var newNonceHash1 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"]).Concat(new byte[1] { 1 })
-                .Concat(authKeyAuxHash).ToArray()).Skip(4).ToArray();
-            var newNonceHash3 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
-                    .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
-                    .Skip(4).ToArray();
-            BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
-            BigInteger max = prime - min;
-            if(g_b <=min || g_b >= max || failed)
-            {
-                var dhGenFail = dh_gen_fail.Create(sessionNonce, sessionServerNonce, newNonceHash3);
-                encryptedData.Dispose();
-                return dhGenFail;
-            }
-            bool temp_auth_key = ctx.SessionData.ContainsKey("temp_auth_key") &&
-                (bool)ctx.SessionData["temp_auth_key"];
-            var existingKey = temp_auth_key ?
-                await _mtproto.GetTempAuthKeyAsync(authKeyHash) :
-                await _mtproto.GetAuthKeyAsync(authKeyHash);
-            if (existingKey == null || existingKey.Length == 0)
-            {
-                var authKeyTrimmed = authKey.AsSpan().Slice(0, 192).ToArray();
-                if (temp_auth_key)
-                {
-                    int expiresIn = (int)ctx.SessionData["temp_auth_key_expires_in"];
-                    await _mtproto.PutTempAuthKeyAsync(authKeyHash, authKeyTrimmed, new TimeSpan(0, 0, expiresIn));
-                }
-                else
-                {
-                    await _mtproto.PutAuthKeyAsync(authKeyHash, authKeyTrimmed);;
-                }
+            failed = true;
+        }
 
-                var dhGenOk = dh_gen_ok.Create(sessionNonce, sessionServerNonce, newNonceHash1);
-                ctx.SessionData.Clear();
-                encryptedData.Dispose();
-                return dhGenOk;
+        BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
+        BigInteger g_b = new BigInteger(clientDhInnerData.g_b, true, true);
+        BigInteger g = new BigInteger((int)ctx.SessionData["g"]);
+        BigInteger a = new BigInteger((byte[])ctx.SessionData["a"], true, true);
+        var authKey = BigInteger.ModPow(g_b, a, prime).ToByteArray(true, true);
+        ctx.SessionData.Add("auth_key", authKey);
+        var authKeySHA1 = SHA1.HashData(authKey);
+        var authKeyHash = MemoryMarshal.Cast<byte, long>(authKeySHA1.AsSpan().Slice(12))[0];
+        var authKeyAuxHash = authKeySHA1.Take(8).ToArray();
+        var newNonceHash1 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"]).Concat(new byte[1] { 1 })
+            .Concat(authKeyAuxHash).ToArray()).Skip(4).ToArray();
+        var newNonceHash3 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
+                .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
+            .Skip(4).ToArray();
+        BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
+        BigInteger max = prime - min;
+        if (g_b <= min || g_b >= max || failed)
+        {
+            var dhGenFail = dh_gen_fail.Create(sessionNonce, sessionServerNonce, newNonceHash3, out var memory);
+            encryptedData.Dispose();
+            return new EncodedObject(memory.Memory.Pin(), 0, dhGenFail.Length);
+        }
+
+        bool temp_auth_key = ctx.SessionData.ContainsKey("temp_auth_key") &&
+                             (bool)ctx.SessionData["temp_auth_key"];
+        var existingKey = temp_auth_key
+            ? _mtproto.GetTempAuthKey(authKeyHash)
+            : _mtproto.GetAuthKey(authKeyHash);
+        if (existingKey == null || existingKey.Length == 0)
+        {
+            var authKeyTrimmed = authKey.AsSpan().Slice(0, 192).ToArray();
+            if (temp_auth_key)
+            {
+                int expiresIn = (int)ctx.SessionData["temp_auth_key_expires_in"]; 
+                _mtproto.PutTempAuthKey(authKeyHash, authKeyTrimmed, new TimeSpan(0, 0, expiresIn));
             }
             else
             {
-                var newNonceHash2 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
-                    .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
-                    .Skip(4).ToArray();
-                var dhGenRetry = dh_gen_retry.Create(sessionNonce, sessionServerNonce, newNonceHash2);
-                encryptedData.Dispose();
-                return dhGenRetry;
+                _mtproto.PutAuthKey(authKeyHash, authKeyTrimmed);
             }
+
+            var dhGenOk = dh_gen_ok.Create(sessionNonce, sessionServerNonce, newNonceHash1, out var memory);
+            ctx.SessionData.Clear();
+            encryptedData.Dispose();
+            return new EncodedObject(memory.Memory.Pin(), 0, dhGenOk.Length);
         }
-        encryptedData.Dispose();
-        throw new TLExecutionException(String.Format("Inner data was not client_DH_inner_data."));
+        else
+        {
+            var newNonceHash2 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
+                    .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
+                .Skip(4).ToArray();
+            var dhGenRetry = dh_gen_retry.Create(sessionNonce, sessionServerNonce, newNonceHash2, out var memory);
+            encryptedData.Dispose();
+            return new EncodedObject(memory.Memory.Pin(), 0, dhGenRetry.Length);
+        }
     }
 }

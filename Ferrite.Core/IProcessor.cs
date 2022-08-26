@@ -18,12 +18,13 @@
 using System;
 using System.Buffers;
 using Ferrite.TL;
+using Ferrite.TL.slim;
 
 namespace Ferrite.Core;
 
 public interface IProcessor
 {
     public Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx);
-    public Task Process(object? sender, IMemoryOwner<byte> input, Queue<IMemoryOwner<byte>> output, TLExecutionContext ctx);
+    public Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx);
 }
 

@@ -22,6 +22,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using MessagePack;
 using Message = Ferrite.TL.mtproto.Message;
 
@@ -90,7 +91,7 @@ public class ServiceMessagesProcessor : IProcessor
         }
     }
 
-    public async Task Process(object? sender, IMemoryOwner<byte> input, Queue<IMemoryOwner<byte>> output, TLExecutionContext ctx)
+    public async Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

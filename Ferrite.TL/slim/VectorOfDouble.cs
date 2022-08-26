@@ -22,120 +22,75 @@ using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public readonly unsafe struct VectorOfDouble : ITLObjectReader, ITLSerializable, IDisposable
+public ref struct VectorOfDouble
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private VectorOfDouble(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private Span<double> _buff;
+    private int _offset;
+    public VectorOfDouble()
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
+        _buff = new double[32];
+        SetConstructor(unchecked((int)0x1cb5c415));
+        SetCount(0);
+        _offset = 1;
     }
-    private VectorOfDouble(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
+    public VectorOfDouble(Span<byte> buffer)
     {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        if (MemoryMarshal.Read<int>(buffer[..4]) != unchecked((int)0x1cb5c415))
+        {
+            throw new InvalidOperationException();
+        }
+
+        _buff = MemoryMarshal.Cast<byte, double>(buffer);
+        _offset = 1;
     }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Cast<double, int>(_buff)[0];
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Cast<double, int>(_buff)[0] = constructor;
     }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
-    public ref readonly int Count => ref Unsafe.AsRef<int>((int*)(_buff + 4));
+    public ReadOnlySpan<byte> ToReadOnlySpan() => MemoryMarshal.Cast<double, byte>(_buff)[..Length];
+    public readonly int Count => MemoryMarshal.Cast<double, int>(_buff)[1];
+    public readonly int Length => _offset*8;
     private void SetCount(int count)
     {
-        var p = (int*)(_buff + 4);
-        *p = count;
+        MemoryMarshal.Cast<double, int>(_buff)[1] = count;
     }
-    public int Length { get; }
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        {
+            throw new InvalidOperationException();
+        }
+        int count = MemoryMarshal.Read<int>(data.Slice(offset + 4, 4));
         int len = 8 + count * 8;
-        bytesRead = len;
-        var obj = new VectorOfDouble(data.Slice(offset, bytesRead), null);
-        return obj;
+        if (offset + len > data.Length)
+        {
+            throw new InvalidOperationException();
+        }
+        return data.Slice(offset, len);
     }
 
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        var ptr = buffer + offset;
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8 + count * 8;
-        bytesRead = len;
-        var obj = new VectorOfDouble(buffer + offset, bytesRead, null);
-        return obj;
-    }
-
-    public static int ReadSize(Span<byte> data, in int offset)
-    {
-        var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        {
+            throw new InvalidOperationException();
+        }
+        int count = MemoryMarshal.Read<int>(data.Slice(offset + 4, 4));
         return 8 + count * 8;
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    
+    public void Append(double value)
     {
-        var ptr = buffer + offset;
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        return 8 + count * 8;
-    }
-
-    public static VectorOfDouble Create(ICollection<double> items, MemoryPool<byte>? pool = null)
-    {
-        var length = 8 + items.Count * 8;
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new VectorOfDouble(memory.Memory.Span[..length], memory);
-        obj.SetConstructor(unchecked((int)0x1cb5c415));
-        obj.SetCount(items.Count);
-        int offset = 8;
-        foreach (var item in items)
+        if (_buff.Length == _offset)
         {
-            obj.Write(item, offset);
-            offset += 8;
+            var tmp = new Double[_buff.Length * 2];
+            _buff.CopyTo(tmp);
+            _buff = tmp;
         }
-
-        return obj;
+        MemoryMarshal.Cast<double, int>(_buff)[1]++;
+        _buff[_offset++] = value;
     }
-
-    public static VectorOfDouble Create(ReadOnlySpan<double> items, MemoryPool<byte>? pool = null)
-    {
-        var length = 8 + items.Length * 8;
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new VectorOfDouble(memory.Memory.Span[..length], null);
-        obj.SetConstructor(unchecked((int)0x1cb5c415));
-        obj.SetCount(items.Length);
-        obj.Write(MemoryMarshal.Cast<double, byte>(items), 8);
-        return obj;
-    }
-    private void Write(ReadOnlySpan<byte> value, int offset)
-    {
-        fixed (byte* p = value)
-        {
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset,value.Length);
-        }
-    }
-    private void Write(in double value, int offset)
-    {
-        *(double*)(_buff + offset) = value;
-    }
-
-    public ref readonly double this[int index] => ref *(double*)(_buff + 8 + index * 8);
-
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
-    }
+    public ref readonly double this[int index] => ref _buff[1 + index];
 }
