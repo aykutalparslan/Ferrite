@@ -44,6 +44,7 @@ public class InMemoryStore : IVolatileKVStore
 
     private async Task DoExpire()
     {
+        (byte[], long) current;
         while (true)
         {
             await Task.Delay(100);
@@ -59,7 +60,11 @@ public class InMemoryStore : IVolatileKVStore
                 _ttlQueue.TryDequeue(out currentKey, out var currentPriority);
                 if (currentPriority <= now)
                 {
-                    _dictionary.TryRemove(currentKey.ArrayValue, out var removed);
+                    _dictionary.TryGetValue(currentKey.ArrayValue, out current);
+                    if (current.Item2 <= now)
+                    {
+                        _dictionary.TryRemove(currentKey.ArrayValue, out current);
+                    }
                 }
                 else
                 {
@@ -99,6 +104,25 @@ public class InMemoryStore : IVolatileKVStore
             _ttlChannel.Writer.WriteAsync(primaryKey);
         }
     }
+
+    public void UpdateTtl(TimeSpan? ttl = null, params object[] keys)
+    {
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        if (ttl.HasValue)
+        {
+            primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + (long)ttl.Value.TotalMilliseconds;
+        }
+        if (_dictionary.ContainsKey(primaryKey.ArrayValue))
+        {
+            _dictionary.TryGetValue(primaryKey.ArrayValue, out var current);
+            _dictionary.TryUpdate(primaryKey.ArrayValue, (current.Item1, primaryKey.ExpiresAt), current);
+            if (ttl.HasValue)
+            {
+                _ttlChannel.Writer.WriteAsync(primaryKey);
+            }
+        }
+    }
+
     public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
         SortedList<long, byte[]>? list;
