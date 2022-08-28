@@ -22,6 +22,7 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
+using Ferrite.Data.Repositories;
 using xxHash;
 
 namespace Ferrite.Services;
@@ -33,16 +34,19 @@ public class AuthService : IAuthService
     private readonly IPersistentStore _store;
     private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
+    private readonly IUnitOfWork _unitOfWork;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
-    public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store, ISearchEngine search)
+    public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store, ISearchEngine search,
+        IUnitOfWork unitOfWork)
     {
         _random = random;
         _cache = cache;
         _store = store;
         _search = search;
         _userIdCnt = _cache.GetCounter("counter_user_id");
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token)
@@ -77,7 +81,9 @@ public class AuthService : IAuthService
 
     public async Task<bool> BindTempAuthKey(long tempAuthKeyId, long permAuthKeyId, int expiresAt)
     {
-        return await _cache.PutBoundAuthKeyAsync(tempAuthKeyId, permAuthKeyId, new TimeSpan(0, 0, expiresAt));
+        _unitOfWork.BoundAuthKeyRepository.PutBoundAuthKey(tempAuthKeyId, 
+            permAuthKeyId, new TimeSpan(0, 0, expiresAt));
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
@@ -97,7 +103,16 @@ public class AuthService : IAuthService
 
     public async Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys)
     {
-        return await _cache.DeleteTempAuthKeysAsync(authKeyId, exceptAuthKeys);
+        var tempKeys = _unitOfWork.BoundAuthKeyRepository.GetTempAuthKeys(authKeyId);
+        foreach (var key in tempKeys)
+        {
+            if (!exceptAuthKeys.Contains(key))
+            {
+                _unitOfWork.TempAuthKeyRepository.DeleteTempAuthKey(key);
+            }
+        }
+
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId)
