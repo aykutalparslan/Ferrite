@@ -34,7 +34,7 @@ public interface IDistributedCache
     //public byte[]? GetTempAuthKey(long tempAuthKeyId);
     //public Task<bool> DeleteTempAuthKeysAsync(long authKeyId, ICollection<long> exceptIds);
     //public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
-    public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
+    //public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
     public Task<bool> PutSessionAsync(long sessionId, byte[] sessionData, TimeSpan expire);
     public bool PutSession(long sessionId, byte[] sessionData, TimeSpan expire);
     public Task<bool> SetSessionTTLAsync(long sessionId, TimeSpan expire);
