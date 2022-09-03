@@ -6,107 +6,78 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct rpc_error : ITLObjectReader, ITLSerializable
+public readonly ref struct rpc_error
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private rpc_error(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public rpc_error(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private rpc_error(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public RpcError GetAsRpcError()
-    {
-        return new RpcError(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(3, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new rpc_error(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(3, buffer + offset, length);
-        var obj = new rpc_error(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(3, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize(int len_error_message)
     {
         return 4 + 4 + BufferUtils.CalculateTLBytesLength(len_error_message);
     }
-    public static rpc_error Create(int error_code, ReadOnlySpan<byte> error_message, MemoryPool<byte>? pool = null)
+    public static rpc_error Create(int error_code, ReadOnlySpan<byte> error_message, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize(error_message.Length);
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new rpc_error(memory.Memory.Span[..length], memory);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
+        var obj = new rpc_error(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0x2144ca19));
         obj.Set_error_code(error_code);
         obj.Set_error_message(error_message);
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(3, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(3, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    public readonly int error_code => MemoryMarshal.Read<int>(_buff[GetOffset(1, _buff)..]);
+    private void Set_error_code(int value)
     {
-        return GetOffset(3, buffer + offset, length);
+        MemoryMarshal.Write(_buff[GetOffset(1, _buff)..], ref value);
     }
-    public ref readonly int error_code => ref *(int*)(_buff + GetOffset(1, _buff, Length));
-    private void Set_error_code(in int value)
-    {
-        var p = (int*)(_buff + GetOffset(1, _buff, Length));
-        *p = value;
-    }
-    public ReadOnlySpan<byte> error_message => BufferUtils.GetTLBytes(_buff, GetOffset(2, _buff, Length), Length);
+    public ReadOnlySpan<byte> error_message => BufferUtils.GetTLBytes(_buff, GetOffset(2, _buff));
     private void Set_error_message(ReadOnlySpan<byte> value)
     {
         if(value.Length == 0)
         {
             return;
         }
-        var offset = GetOffset(2, _buff, Length);
-        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset, Length);
-        fixed (byte* p = value)
-        {
-            Buffer.MemoryCopy(p, _buff + offset + lenBytes,
-                Length - offset, value.Length);
-        }
+        var offset = GetOffset(2, _buff);
+        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset);
+        if(_buff.Length < offset + lenBytes + value.Length) return;
+        value.CopyTo(_buff[(offset + lenBytes)..]);
     }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
         if(index >= 2) offset += 4;
-        if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset, length);
+        if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

@@ -97,7 +97,7 @@ public class Program
             .SingleInstance();
         builder.RegisterType<MessageRepository>().As<IMessageRepository>()
             .SingleInstance();
-        builder.RegisterType<CassandraUnitOfWork>().As<IUnitOfWork>()
+        builder.RegisterType<DefaultUnitOfWork>().As<IUnitOfWork>()
             .SingleInstance();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
@@ -136,8 +136,8 @@ public class Program
             .As<IDistributedObjectStore>().SingleInstance();
         builder.Register(_ => new CassandraDataStore("ferrite","localhost"))
             .As<IPersistentStore>().SingleInstance();
-        builder.Register(_ => new CassandraUnitOfWork(new SerilogLogger(),
-                "ferrite","localhost"))
+        builder.Register(_ => new DefaultUnitOfWork(new SerilogLogger(),
+                "localhost:6379", "ferrite","localhost"))
             .As<IUnitOfWork>().SingleInstance();
         builder.Register(_ => new ElasticSearchEngine("https://localhost:9200",
                 "ferrite", "ferrite-server",

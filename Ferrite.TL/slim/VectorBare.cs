@@ -20,136 +20,98 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct VectorBare<T> : ITLObjectReader, ITLSerializable, IDisposable where T : ITLObjectReader, ITLSerializable
+public ref struct VectorBare
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private VectorBare(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private Span<byte> _buff;
+    private int _position;
+    private int _offset;
+    public VectorBare()
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
+        _buff = new byte[512];
+        SetConstructor(unchecked((int)0x1cb5c415));
+        SetCount(0);
         _position = 4;
-        _memoryOwner = memoryOwner;
+        _offset = 4;
     }
-    private VectorBare(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
+    public VectorBare(Span<byte> buffer)
     {
         _buff = buffer;
-        Length = length;
         _position = 4;
-        _memoryOwner = memoryOwner;
+        _offset = 4;
     }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
-    public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff));
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
+    private void SetConstructor(int constructor)
+    {
+        MemoryMarshal.Write(_buff[..4], ref constructor);
+    }
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public readonly int Count => MemoryMarshal.Read<int>(_buff.Slice(4, 4));
+    public readonly int Length => _offset;
     private void SetCount(int count)
     {
-        var p = (int*)(_buff);
-        *p = count;
+        MemoryMarshal.Write(_buff.Slice(4, 4), ref count);
     }
-    public int Length { get; }
-    private int _position;
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8;
-        for (int i = 0; i < count; i++)
-        {
-            len += T.ReadSize(data, len);
-        }
-        bytesRead = len;
-        var obj = new VectorBare<T>(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        var ptr = buffer+offset;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8;
-        for (int i = 0; i < count; i++)
-        {
-            len += T.ReadSize(buffer, length, offset + len);
-        }
-        bytesRead = len;
-        var obj = new VectorBare<T>(buffer + offset, bytesRead, null);
-        return obj;
-    }
-
-    public static int ReadSize(Span<byte> data, in int offset)
-    {
-        var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        int count = MemoryMarshal.Read<int>(data.Slice(offset, 4));
         int len = 4;
         for (int i = 0; i < count; i++)
         {
-            len += T.ReadSize(data, len);
+            var sizeReader = ObjectReader.GetObjectSizeReader(
+                MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
+            len += sizeReader.Invoke(data, len);
         }
-        return len;
+        return data.Slice(offset, len);
     }
 
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        var ptr = buffer + offset;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8;
+        int count = MemoryMarshal.Read<int>(data.Slice(offset, 4));
+        int len = 4;
         for (int i = 0; i < count; i++)
         {
-            len += T.ReadSize(buffer, length, len);
+            var sizeReader = ObjectReader.GetObjectSizeReader(
+                MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
+            len += sizeReader.Invoke(data, len);
         }
         return len;
     }
-
-    public static VectorBare<T> Create(ICollection<T> items, MemoryPool<byte>? pool = null)
+    
+    public void Append(ReadOnlySpan<byte> value)
     {
-        var length = 4;
-        foreach (var item in items)
+        if (value.Length + _offset > _buff.Length)
         {
-            length += item.Length;
+            var tmp = new byte[_buff.Length * 2];
+            _buff.CopyTo(tmp);
+            _buff = tmp;
         }
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new VectorBare<T>(memory.Memory.Span[..length], memory);
-        obj.SetCount(items.Count);
-        int offset = 4;
-        foreach (var item in items)
-        {
-            obj.Write(item.ToReadOnlySpan(), offset);
-            offset += item.Length;
-        }
-        return obj;
+        value.CopyTo(_buff[_offset..]);
+        _offset += value.Length;
     }
-
-    private void Write(ReadOnlySpan<byte> value, int offset)
+    public ReadOnlySpan<byte> Read()
     {
-        fixed (byte* p = value)
-        {
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset,value.Length);
-        }
-    }
-    public T Read()
-    {
-        if (_position == Length)
+        if (_position == _offset)
         {
             throw new EndOfStreamException();
         }
-        var obj = T.Read(new Span<byte>(_buff + _position, 
-            Length - _position), 0, out var bytesRead);
-         _position += bytesRead;
-        return (T)obj;
+        ObjectReaderDelegate? reader = ObjectReader.GetObjectReader(
+            MemoryMarshal.Read<int>(_buff.Slice(_position, 4)));
+        if (reader == null)
+        {
+            throw new NotSupportedException();
+        }
+
+        var result = reader.Invoke(_buff, _position);
+        _position += result.Length;
+        return result;
     }
     public void Reset()
     {
         _position = 4;
-    }
-
-    public ref readonly int Constructor => throw new NotImplementedException();
-
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

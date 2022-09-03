@@ -20,7 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -28,10 +31,15 @@ public class SetTyping : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMessagesService _messages;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public SetTyping(ITLObjectFactory objectFactory)
+    public SetTyping(ITLObjectFactory objectFactory, IMessagesService messages,
+        IMapperContext mapper)
     {
         factory = objectFactory;
+        _messages = messages;
+        _mapper = mapper;
     }
 
     public int Constructor => 1486110434;
@@ -103,11 +111,24 @@ public class SetTyping : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var success = true;
-        var result = factory.Resolve<RpcResult>();
-        result.ReqMsgId = ctx.MessageId;
-        result.Result = success ? new BoolTrue() : new BoolFalse();
-        return result;
+        var serviceResult = await _messages.SetTyping(ctx.CurrentAuthKeyId,
+            _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer),
+            _mapper.MapToDTO<SendMessageAction, SendMessageActionDTO>(_action), _flags[0] ? _topMsgId : null);
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            rpcResult.Result = err;
+        }
+        else
+        {
+            rpcResult.Result = serviceResult.Result ? new BoolTrue() : new BoolFalse();
+        }
+        
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)

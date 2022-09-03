@@ -6,94 +6,64 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct msg_copy : ITLObjectReader, ITLSerializable
+public readonly ref struct msg_copy
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private msg_copy(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public msg_copy(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private msg_copy(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public MessageCopy GetAsMessageCopy()
-    {
-        return new MessageCopy(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(2, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new msg_copy(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(2, buffer + offset, length);
-        var obj = new msg_copy(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(2, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize(int len_orig_message)
     {
         return 4 + len_orig_message;
     }
-    public static msg_copy Create(Message orig_message, MemoryPool<byte>? pool = null)
+    public static msg_copy Create(Message orig_message, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize(orig_message.Length);
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new msg_copy(memory.Memory.Span[..length], memory);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
+        var obj = new msg_copy(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0xe06046b2));
         obj.Set_orig_message(orig_message.ToReadOnlySpan());
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(2, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(2, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
-    {
-        return GetOffset(2, buffer + offset, length);
-    }
-    public Message orig_message => (Message)Message.Read(_buff, Length, GetOffset(1, _buff, Length), out var bytesRead);
+    public Message orig_message => new Message(_buff.Slice(GetOffset(1, _buff)));
     private void Set_orig_message(ReadOnlySpan<byte> value)
     {
-        fixed (byte* p = value)
-        {
-            int offset = GetOffset(1, _buff, Length);
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset, value.Length);
-        }
+        value.CopyTo(_buff[GetOffset(1, _buff)..]);
     }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
-        if(index >= 2) offset += Message.ReadSize(buffer, length, offset);
+        if(index >= 2) offset += Message.ReadSize(buffer, offset);
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

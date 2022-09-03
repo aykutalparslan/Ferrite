@@ -44,7 +44,7 @@ public class TempAuthKeyRepository : ITempAuthKeyRepository
     {
         return _store.Get(tempAuthKeyId);
     }
-
+    
     public async ValueTask<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId)
     {
         return await _store.GetAsync(tempAuthKeyId);

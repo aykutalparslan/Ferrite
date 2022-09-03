@@ -21,6 +21,8 @@ namespace Ferrite.Data.Repositories;
 public interface IUnitOfWork
 {
     IAuthKeyRepository AuthKeyRepository { get; }
+    ITempAuthKeyRepository TempAuthKeyRepository { get; }
+    IBoundAuthKeyRepository BoundAuthKeyRepository { get; }
     IAuthorizationRepository AuthorizationRepository { get; }
     IServerSaltRepository ServerSaltRepository { get; }
     IMessageRepository MessageRepository { get; }

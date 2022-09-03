@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL.currentLayer;
 using Ferrite.Utils;
 
@@ -35,21 +36,18 @@ public class AbridgedFrameDecoder : IFrameDecoder
     private int _remaining;
     private bool _isStream;
     private Aes256Ctr? _decryptor;
-    private readonly IDistributedCache _cache;
-    private readonly IPersistentStore _db;
+    private readonly IMTProtoService _mtproto;
     byte[] _headerBytes = new byte[72];
 
-    public AbridgedFrameDecoder(IDistributedCache cache, IPersistentStore db)
+    public AbridgedFrameDecoder(IMTProtoService mtproto)
     {
-        _cache = cache;
-        _db = db;
+        _mtproto = mtproto;
     }
 
-    public AbridgedFrameDecoder(Aes256Ctr decryptor, IDistributedCache cache, IPersistentStore db)
+    public AbridgedFrameDecoder(Aes256Ctr decryptor, IMTProtoService mtproto)
     {
         _decryptor = decryptor;
-        _cache = cache;
-        _db = db;
+        _mtproto = mtproto;
     }
 
     public bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, 
@@ -74,7 +72,7 @@ public class AbridgedFrameDecoder : IFrameDecoder
                     _decryptor.Transform(_lengthBytes.AsSpan().Slice(0, 1));
                 }
             }
-            if ((_lengthBytes[0] & 0x80) == 0x80)
+            if ((_lengthBytes[0] & 1 << 7) == 1 << 7)
             {
                 requiresQuickAck = true;
                 _lengthBytes[0] &= 0x7f;
@@ -96,6 +94,11 @@ public class AbridgedFrameDecoder : IFrameDecoder
                 if (_decryptor != null)
                 {
                     _decryptor.Transform(_lengthBytes.AsSpan().Slice(1, 3));
+                }
+                if ((_lengthBytes[3] & 1 << 7) == 1 << 7)
+                {
+                    requiresQuickAck = true;
+                    _lengthBytes[3] &= 0x7f;
                 }
                 _length = (_lengthBytes[1]) |
                           (_lengthBytes[2] << 8) |
@@ -177,12 +180,10 @@ public class AbridgedFrameDecoder : IFrameDecoder
             reader = IAsyncBinaryReader.Create(header);
         }
         long authKeyId = reader.ReadInt64(true);
-        var authKey = (_cache.GetAuthKey(authKeyId) ?? 
-                       _cache.GetTempAuthKey(authKeyId)) ?? 
-                      _db.GetAuthKey(authKeyId);
+        var authKey = (_mtproto.GetAuthKey(authKeyId) ?? 
+                       _mtproto.GetTempAuthKey(authKeyId));
         if (authKey is { Length: > 0 })
         {
-            _ = _cache.PutAuthKeyAsync(authKeyId, authKey);
             Span<byte> messageKey = stackalloc byte[16];
             reader.Read(messageKey);
             AesIge aesIge = new AesIge(authKey, messageKey);
@@ -191,9 +192,9 @@ public class AbridgedFrameDecoder : IFrameDecoder
             aesIge.Decrypt(messageHeader);
             SpanReader<byte> sr = new SpanReader<byte>(messageHeader);
             sr.Advance(32);
-            int construstor = sr.ReadInt32(true);
-            if (construstor == TLConstructor.Upload_SaveFilePart ||
-                construstor == TLConstructor.Upload_SaveBigFilePart)
+            int constructor = sr.ReadInt32(true);
+            if (constructor == TLConstructor.Upload_SaveFilePart ||
+                constructor == TLConstructor.Upload_SaveBigFilePart)
             {
                 return true;
             }

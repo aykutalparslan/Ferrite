@@ -16,7 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record SendMessageActionDTO(SendMessageActionType SendMessageActionType, int? Progress = null,
-    int? MessageId = null, string? DataJSON= null, string? Emoticon = null);
+    int? MessageId = null, string? Interaction = null, string? Emoticon = null);

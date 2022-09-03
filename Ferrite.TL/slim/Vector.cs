@@ -20,144 +20,138 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Ferrite.Utils;
+using Nest;
 
 namespace Ferrite.TL.slim;
 
-public unsafe struct Vector<T> : ITLObjectReader, ITLSerializable, IDisposable where T : ITLObjectReader, ITLSerializable
+public ref struct Vector
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private Vector(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private Span<byte> _buff;
+    private int _position;
+    private int _offset;
+    public Vector()
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
+        _buff = new byte[512];
+        SetConstructor(unchecked((int)0x1cb5c415));
+        SetCount(0);
         _position = 8;
-        _memoryOwner = memoryOwner;
+        _offset = 8;
     }
-    private Vector(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
+    public Vector(Span<byte> buffer)
     {
+        if (MemoryMarshal.Read<int>(buffer) != unchecked((int)0x1cb5c415))
+        {
+            throw new InvalidOperationException();
+        }
         _buff = buffer;
-        Length = length;
         _position = 8;
-        _memoryOwner = memoryOwner;
+        _offset = buffer.Length;
     }
-    public ref readonly int Constructor => ref Unsafe.AsRef<int>((int*)_buff);
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff[..4], ref constructor);
     }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new ReadOnlySpan<byte>(_buff, Length);
-    public readonly ref int Count => ref Unsafe.AsRef<int>((int*)(_buff + 4));
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff[.._offset];
+    public readonly int Count => MemoryMarshal.Read<int>(_buff.Slice(4, 4));
+    public readonly int Length => _offset;
     private void SetCount(int count)
     {
-        var p = (int*)(_buff + 4);
-        *p = count;
+        MemoryMarshal.Write(_buff.Slice(4, 4), ref count);
     }
-    public int Length { get; }
-    private int _position;
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        {
+            throw new InvalidOperationException();
+        }
+        int count = MemoryMarshal.Read<int>(data.Slice(offset + 4, 4));
         int len = 8;
         for (int i = 0; i < count; i++)
         {
-            len += T.ReadSize(data, len);
+            var sizeReader = ObjectReader.GetObjectSizeReader(
+                MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
+            len += sizeReader.Invoke(data, len);
         }
-        bytesRead = len;
-        var obj = new Vector<T>(data.Slice(offset, bytesRead), null);
-        return obj;
+        return data.Slice(offset, len);
     }
 
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        var ptr = buffer+offset;
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8;
-        for (int i = 0; i < count; i++)
+        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
         {
-            len += T.ReadSize(buffer, length, offset + len);
+            throw new InvalidOperationException();
         }
-        bytesRead = len;
-        var obj = new Vector<T>(buffer + offset, bytesRead, null);
-        return obj;
-    }
-
-    public static int ReadSize(Span<byte> data, in int offset)
-    {
-        var ptr = (byte*)Unsafe.AsPointer(ref data.Slice(offset)[0]);
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
+        int count = MemoryMarshal.Read<int>(data.Slice(offset + 4, 4));
         int len = 8;
         for (int i = 0; i < count; i++)
         {
-            len += T.ReadSize(data, len);
+            var sizeReader = ObjectReader.GetObjectSizeReader(
+                MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
+            len += sizeReader.Invoke(data, len);
         }
         return len;
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    
+    public void AppendTLObject(ReadOnlySpan<byte> value)
     {
-        var ptr = buffer + offset;
-        ptr += 4;
-        int count = *ptr & 0xff | (*++ptr & 0xff) << 8 | (*++ptr & 0xff) << 16| (*++ptr & 0xff) << 24;
-        int len = 8;
-        for (int i = 0; i < count; i++)
+        if (value.Length + _offset > _buff.Length)
         {
-            len += T.ReadSize(buffer, length, len);
+            var tmp = new byte[_buff.Length * 2];
+            _buff.CopyTo(tmp);
+            _buff = tmp;
         }
-        return len;
+        value.CopyTo(_buff[_offset..]);
+        MemoryMarshal.Cast<byte, int>(_buff)[1]++;
+        _offset += value.Length;
     }
-
-    public static Vector<T> Create(ICollection<T> items, MemoryPool<byte>? pool = null)
+    public void AppendTLBytes(ReadOnlySpan<byte> value)
     {
-        var length = 8;
-        foreach (var item in items)
+        int len = BufferUtils.CalculateTLBytesLength(value.Length);
+        if (value.Length + len + _offset > _buff.Length)
         {
-            length += item.Length;
+            var tmp = new byte[_buff.Length * 2];
+            _buff.CopyTo(tmp);
+            _buff = tmp;
         }
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new Vector<T>(memory.Memory.Span[..length], memory);
-        obj.SetConstructor(unchecked((int)0x1cb5c415));
-        obj.SetCount(items.Count);
-        int offset = 8;
-        foreach (var item in items)
-        {
-            obj.Write(item.ToReadOnlySpan(), offset);
-            offset += item.Length;
-        }
-        return obj;
+        int lenBytes = BufferUtils.WriteLenBytes(_buff, value, _offset);
+        value.CopyTo(_buff[(lenBytes + _offset)..]);
+        MemoryMarshal.Cast<byte, int>(_buff)[1]++;
+        _offset += len;
     }
-
-    private void Write(ReadOnlySpan<byte> value, int offset)
+    public Span<byte> ReadTLObject()
     {
-        fixed (byte* p = value)
-        {
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset,value.Length);
-        }
-    }
-    public T Read()
-    {
-        if (_position == Length)
+        if (_position == _offset)
         {
             throw new EndOfStreamException();
         }
-        var obj = T.Read(new Span<byte>(_buff + _position, 
-            Length - _position), 0, out var bytesRead);
-         _position += bytesRead;
-        return (T)obj;
+        ObjectReaderDelegate? reader = ObjectReader.GetObjectReader(
+            MemoryMarshal.Read<int>(_buff.Slice(_position, 4)));
+        if (reader == null)
+        {
+            throw new NotSupportedException();
+        }
+
+        var result = reader.Invoke(_buff, _position);
+        _position += result.Length;
+        return result;
+    }
+    public Span<byte> ReadTLBytes()
+    {
+        if (_position == _offset)
+        {
+            throw new EndOfStreamException();
+        }
+        int bytesLength = BufferUtils.GetTLBytesLength(_buff, _position);
+        var result = BufferUtils.GetTLBytes(_buff, _position);
+        _position += bytesLength;
+        return result;
     }
     public void Reset()
     {
         _position = 8;
-    }
-
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

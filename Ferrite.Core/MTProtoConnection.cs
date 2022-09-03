@@ -39,6 +39,7 @@ using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.storage;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.ObjectMapper;
+using Ferrite.TL.slim;
 using MessagePack;
 using Org.BouncyCastle.Cms;
 using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
@@ -50,8 +51,7 @@ public class MTProtoConnection : IMTProtoConnection
     public MTProtoTransport TransportType { get; private set; }
     public bool IsEncrypted => _authKeyId != 0;
     private readonly ITransportDetector transportDetector;
-    private readonly IDistributedCache _cache;
-    private readonly IPersistentStore _db;
+    private readonly IMTProtoService _mtproto;
     private readonly ILogger _log;
     private readonly IRandomGenerator _random;
     private readonly ISessionService _sessionManager;
@@ -89,7 +89,7 @@ public class MTProtoConnection : IMTProtoConnection
 
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
-        IDistributedCache cache, IPersistentStore persistentStore,
+        IMTProtoService mtproto,
         ILogger logger, IRandomGenerator random, ISessionService sessionManager,
         IMTProtoTime protoTime, IProcessorManager processorManager,
         IMapperContext mapper)
@@ -98,8 +98,7 @@ public class MTProtoConnection : IMTProtoConnection
         TransportType = MTProtoTransport.Unknown;
         factory = objectFactory;
         transportDetector = detector;
-        _cache = cache;
-        _db = persistentStore;
+        _mtproto = mtproto;
         _log = logger;
         _random = random;
         _sessionManager = sessionManager;
@@ -253,12 +252,15 @@ public class MTProtoConnection : IMTProtoConnection
                     var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
                     var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
                     msg.Data = tlObj.TLBytes.ToArray();
-                    _log.Debug($"==> Sending Updates ==<");
+                    if (tlObj is UpdatesImpl updt)
+                    {
+                        _log.Debug($"==> Sending Updates with Seq: {updt.Seq} ==<");
+                    }
                     SendEncrypted(msg, sess);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    //SendQuickAck(msg.QuickAck);
+                    SendQuickAck(msg.QuickAck);
                 }
                 else if (_authKeyId == 0)
                 {
@@ -498,11 +500,11 @@ public class MTProtoConnection : IMTProtoConnection
     private void SendQuickAck(int ack)
     {
         writer.Clear();
+        ack |= 1 << 31;
         if (encoder is AbridgedFrameEncoder)
         {
             ack = BinaryPrimitives.ReverseEndianness(ack);
         }
-        ack |= 1 << 31;
         writer.WriteInt32(ack, true);
         var msg = writer.ToReadOnlySequence();
         var encoded = encoder.EncodeBlock(msg);
@@ -593,7 +595,7 @@ public class MTProtoConnection : IMTProtoConnection
 
             if (_authKeyId != 0 && _permAuthKeyId == 0)
             {
-                long? permAuthKey = await _cache.GetBoundAuthKeyAsync(authKeyId);
+                long? permAuthKey = await _mtproto.GetBoundAuthKeyAsync(authKeyId);
                 _permAuthKeyId = permAuthKey ?? 0;
             }
 
@@ -735,8 +737,8 @@ public class MTProtoConnection : IMTProtoConnection
     {
         if (_authKey == null)
         {
-            _log.Information("Trying to get the authKey from cache");
-            var authKey = _cache.GetAuthKey(_authKeyId);
+            _log.Information("Trying to get the authKey");
+            var authKey = _mtproto.GetAuthKey(_authKeyId);
             if (authKey != null)
             {
                 Interlocked.CompareExchange(ref _authKey, authKey, null);
@@ -746,29 +748,16 @@ public class MTProtoConnection : IMTProtoConnection
         if (_authKey == null)
         {
             _log.Information("Trying to get tempAuthKey");
-            var authKey = _cache.GetTempAuthKey(_authKeyId);
+            var authKey = _mtproto.GetTempAuthKey(_authKeyId);
             if (authKey != null)
             {
                 Interlocked.CompareExchange(ref _authKey, authKey, null);
             }
         }
-        if (_authKey == null)
-        {
-            _log.Information("Trying to get the authKey from db");
-            var authKey = _db.GetAuthKey(_authKeyId);
-            if (authKey != null)
-            {
-                Interlocked.CompareExchange(ref _authKey, authKey, null);
-                _permAuthKeyId = _authKeyId;
-                _ = _cache.PutAuthKeyAsync(_authKeyId, _authKey);
-            }
-        }
-
         if (_authKey == null)
         {
             _sendSemaphore.Wait();
             SendTransportError(404);
-            Abort(new Exception("Auth key not found"));
         }
     }
 
@@ -906,7 +895,8 @@ public class MTProtoConnection : IMTProtoConnection
         _context.MessageId = msgId;
         _context.AuthKeyId = _authKeyId;
         _context.PermAuthKeyId = _permAuthKeyId;
-        _processorManager.Process(this, messageData, _context);
+        _processorManager.Process(this, new EncodedObject(
+            messageData.Memory.Pin(), 0, messageDataLength), _context);
         //_processorManager.Process(this, msg, _context);
         //OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
     }
@@ -930,7 +920,7 @@ public class MTProtoConnection : IMTProtoConnection
         {
             ProcessUnencryptedMessage(bytes.Slice(8));
         }
-        else
+        else if(_authKey != null)
         {
             ProcessEncryptedMessageAsync(bytes.Slice(8), requiresQuickAck);
         }

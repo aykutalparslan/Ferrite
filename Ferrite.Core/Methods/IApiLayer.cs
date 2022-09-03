@@ -22,5 +22,5 @@ namespace Ferrite.Core.Methods;
 
 public interface IApiLayer
 {
-    public IQueryHandler<T>? GetHandler<T>(int constructor) where T : ITLSerializable;
+    public IQueryHandler? GetHandler(int constructor);
 }

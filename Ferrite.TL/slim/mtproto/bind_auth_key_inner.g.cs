@@ -6,63 +6,47 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct bind_auth_key_inner : ITLObjectReader, ITLSerializable
+public readonly ref struct bind_auth_key_inner
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private bind_auth_key_inner(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public bind_auth_key_inner(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private bind_auth_key_inner(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public BindAuthKeyInner GetAsBindAuthKeyInner()
-    {
-        return new BindAuthKeyInner(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(6, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new bind_auth_key_inner(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(6, buffer + offset, length);
-        var obj = new bind_auth_key_inner(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(6, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 8 + 8 + 8 + 4;
     }
-    public static bind_auth_key_inner Create(long nonce, long temp_auth_key_id, long perm_auth_key_id, long temp_session_id, int expires_at, MemoryPool<byte>? pool = null)
+    public static bind_auth_key_inner Create(long nonce, long temp_auth_key_id, long perm_auth_key_id, long temp_session_id, int expires_at, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize();
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new bind_auth_key_inner(memory.Memory.Span[..length], memory);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
+        var obj = new bind_auth_key_inner(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0x75a3f765));
         obj.Set_nonce(nonce);
         obj.Set_temp_auth_key_id(temp_auth_key_id);
@@ -71,46 +55,36 @@ public readonly unsafe struct bind_auth_key_inner : ITLObjectReader, ITLSerializ
         obj.Set_expires_at(expires_at);
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(6, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(6, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    public readonly long nonce => MemoryMarshal.Read<long>(_buff[GetOffset(1, _buff)..]);
+    private void Set_nonce(long value)
     {
-        return GetOffset(6, buffer + offset, length);
+        MemoryMarshal.Write(_buff[GetOffset(1, _buff)..], ref value);
     }
-    public ref readonly long nonce => ref *(long*)(_buff + GetOffset(1, _buff, Length));
-    private void Set_nonce(in long value)
+    public readonly long temp_auth_key_id => MemoryMarshal.Read<long>(_buff[GetOffset(2, _buff)..]);
+    private void Set_temp_auth_key_id(long value)
     {
-        var p = (long*)(_buff + GetOffset(1, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(2, _buff)..], ref value);
     }
-    public ref readonly long temp_auth_key_id => ref *(long*)(_buff + GetOffset(2, _buff, Length));
-    private void Set_temp_auth_key_id(in long value)
+    public readonly long perm_auth_key_id => MemoryMarshal.Read<long>(_buff[GetOffset(3, _buff)..]);
+    private void Set_perm_auth_key_id(long value)
     {
-        var p = (long*)(_buff + GetOffset(2, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(3, _buff)..], ref value);
     }
-    public ref readonly long perm_auth_key_id => ref *(long*)(_buff + GetOffset(3, _buff, Length));
-    private void Set_perm_auth_key_id(in long value)
+    public readonly long temp_session_id => MemoryMarshal.Read<long>(_buff[GetOffset(4, _buff)..]);
+    private void Set_temp_session_id(long value)
     {
-        var p = (long*)(_buff + GetOffset(3, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(4, _buff)..], ref value);
     }
-    public ref readonly long temp_session_id => ref *(long*)(_buff + GetOffset(4, _buff, Length));
-    private void Set_temp_session_id(in long value)
+    public readonly int expires_at => MemoryMarshal.Read<int>(_buff[GetOffset(5, _buff)..]);
+    private void Set_expires_at(int value)
     {
-        var p = (long*)(_buff + GetOffset(4, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(5, _buff)..], ref value);
     }
-    public ref readonly int expires_at => ref *(int*)(_buff + GetOffset(5, _buff, Length));
-    private void Set_expires_at(in int value)
-    {
-        var p = (int*)(_buff + GetOffset(5, _buff, Length));
-        *p = value;
-    }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
         if(index >= 2) offset += 8;
@@ -119,9 +93,5 @@ public readonly unsafe struct bind_auth_key_inner : ITLObjectReader, ITLSerializ
         if(index >= 5) offset += 8;
         if(index >= 6) offset += 4;
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

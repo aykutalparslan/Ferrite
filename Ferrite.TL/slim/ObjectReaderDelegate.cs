@@ -16,14 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using DotNext;
-
 namespace Ferrite.TL.slim;
 
-public interface ITLObjectReader
-{
-    public static abstract ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead);
-    public static abstract unsafe ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead);
-    public static abstract int ReadSize(Span<byte> data, in int offset);
-    public static abstract unsafe int ReadSize(byte* buffer, in int length, in int offset);
-}
+public delegate Span<byte> ObjectReaderDelegate(Span<byte> buffer, int offset);

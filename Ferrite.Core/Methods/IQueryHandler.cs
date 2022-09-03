@@ -16,12 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
 namespace Ferrite.Core.Methods;
 
-public interface IQueryHandler<in TQuery> where TQuery : ITLSerializable
+public interface IQueryHandler
 {
-    public Task<ITLSerializable?> Process(TQuery query, TLExecutionContext ctx);
+    public Task<EncodedObject?> Process(EncodedObject q, TLExecutionContext ctx);
 }

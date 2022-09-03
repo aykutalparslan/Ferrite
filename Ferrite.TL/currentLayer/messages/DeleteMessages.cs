@@ -20,6 +20,9 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.messages;
@@ -27,10 +30,15 @@ public class DeleteMessages : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMessagesService _messages;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public DeleteMessages(ITLObjectFactory objectFactory)
+    public DeleteMessages(ITLObjectFactory objectFactory, IMessagesService messages,
+        IMapperContext mapper)
     {
         factory = objectFactory;
+        _messages = messages;
+        _mapper = mapper;
     }
 
     public int Constructor => -443640366;
@@ -83,7 +91,25 @@ public class DeleteMessages : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _messages.DeleteMessages(ctx.CurrentAuthKeyId, _id, Revoke);
+        var rpcResult = factory.Resolve<RpcResult>();
+        rpcResult.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            rpcResult.Result = err;
+        }
+        else
+        {
+            var affected = factory.Resolve<AffectedMessagesImpl>();
+            affected.Pts = serviceResult.Result.Pts;
+            affected.PtsCount = serviceResult.Result.PtsCount;
+            rpcResult.Result = affected;
+        }
+
+        return rpcResult;
     }
 
     public void Parse(ref SequenceReader buff)

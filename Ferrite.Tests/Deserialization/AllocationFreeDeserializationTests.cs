@@ -27,6 +27,7 @@ using Autofac.Core.Lifetime;
 using Autofac.Extras.Moq;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
@@ -55,7 +56,8 @@ public class AllocationFreeDeserializationTests
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
         req_DH_params reqDhParams =
-            (req_DH_params)req_DH_params.Read(data, 0, out var bytesRead);
+           new req_DH_params(data);
+        Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());
         Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
         Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
         Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.server_nonce.ToArray());
@@ -78,8 +80,8 @@ public class AllocationFreeDeserializationTests
         fingerprints.Add(923874923784422L);
         tmp.ServerPublicKeyFingerprints = fingerprints;
         byte[] data = tmp.TLBytes.ToArray();
-        resPQ value =
-            (resPQ)resPQ.Read(data, 0, out var bytesRead);
+        resPQ value = new resPQ(data);
+        Assert.Equal(data, value.ToReadOnlySpan().ToArray());
         Assert.Equal(tmp.Constructor, value.Constructor);
         Assert.Equal((byte[])tmp.Nonce, value.nonce.ToArray());
         Assert.Equal((byte[])tmp.ServerNonce, value.server_nonce.ToArray());
@@ -109,11 +111,12 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(tmp);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = (Ferrite.TL.slim.Vector<req_DH_params>)Ferrite.TL.slim.Vector<req_DH_params>.Read(data, 0, out var bytesRead);
+        var vec = new Ferrite.TL.slim.Vector(data); 
+        
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
-            var reqDhParams = vec.Read();
+            var reqDhParams = new req_DH_params(vec.ReadTLObject());
             Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
             Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
             Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.server_nonce.ToArray());
@@ -124,7 +127,7 @@ public class AllocationFreeDeserializationTests
         }
     }
     [Fact]
-    public void VectorOfString_Should_Read()
+    public void VectorOfBytes_Should_Read()
     {
         var vecTmp = new VectorOfString();
         for (int i = 0; i < 50; i++)
@@ -138,11 +141,11 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(sb.ToString()+i);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = (Ferrite.TL.slim.Vector<TLString>)Ferrite.TL.slim.Vector<TLString>.Read(data, 0, out var bytesRead);
+        var vec = new Ferrite.TL.slim.Vector(data);
         for (int i = 0; i < vec.Count; i++)
         {
             var expected = vecTmp[i];
-            var actual = Encoding.UTF8.GetString(vec.Read().GetValueBytes());
+            var actual = Encoding.UTF8.GetString(vec.ReadTLBytes());
             Assert.Equal(expected, actual);
         }
     }
@@ -155,7 +158,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(i);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = (Ferrite.TL.slim.VectorOfInt)Ferrite.TL.slim.VectorOfInt.Read(data, 0, out var bytesRead);
+        var vec = new Ferrite.TL.slim.VectorOfInt(data);
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
@@ -172,7 +175,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(i*10000000000L);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = (Ferrite.TL.slim.VectorOfLong)Ferrite.TL.slim.VectorOfLong.Read(data, 0, out var bytesRead);
+        var vec = new Ferrite.TL.slim.VectorOfLong(data);
         for (int i = 0; i < vecTmp.Count; i++)
         {
             var tmp = vecTmp[i];
@@ -189,7 +192,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(i+0.3);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = (Ferrite.TL.slim.VectorOfDouble)Ferrite.TL.slim.VectorOfDouble.Read(data, 0, out var bytesRead);
+        var vec = new Ferrite.TL.slim.VectorOfDouble(data);
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
@@ -202,18 +205,13 @@ public class AllocationFreeDeserializationTests
         var logger = new Mock<ILogger>();
         Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
         Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
-        var redis = new Mock<IDistributedCache>();
-        redis.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        var proto = new Mock<IMTProtoService>();
+        proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
         {
             authKeys.Add(a, b);
             return true;
         });
-        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
-        {
-            sessions.Add(a, b);
-            return true;
-        });
-        redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!authKeys.ContainsKey(a))
             {
@@ -221,6 +219,14 @@ public class AllocationFreeDeserializationTests
             }
             return authKeys[a];
         });
+        var redis = new Mock<IDistributedCache>();
+        
+        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
+        {
+            sessions.Add(a, b);
+            return true;
+        });
+        
         redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!sessions.ContainsKey(a))
@@ -236,19 +242,7 @@ public class AllocationFreeDeserializationTests
         });
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
-        cassandra.Setup(x => x.SaveAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
-        {
-            authKeys2.Add(a, b);
-            return true;
-        });
-        cassandra.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!authKeys2.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return authKeys[a];
-        });
+        
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -262,6 +256,7 @@ public class AllocationFreeDeserializationTests
         builder.RegisterMock(cassandra);
         builder.RegisterMock(redis);
         builder.RegisterMock(logger);
+        builder.RegisterMock(proto);
         var container = builder.Build();
         return container;
     }

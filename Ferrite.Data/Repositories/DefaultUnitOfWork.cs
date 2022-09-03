@@ -20,18 +20,24 @@ using Ferrite.Utils;
 
 namespace Ferrite.Data.Repositories;
 
-public class CassandraUnitOfWork : IUnitOfWork
+public class DefaultUnitOfWork : IUnitOfWork
 {
     private readonly CassandraContext _cassandra;
     private readonly ILogger _log;
-    public CassandraUnitOfWork(ILogger log, string cassandraKeyspace, params string[] cassandraHosts)
+    public DefaultUnitOfWork(ILogger log, string redisConfig, string cassandraKeyspace, params string[] cassandraHosts)
     {
         _cassandra = new CassandraContext(cassandraKeyspace, cassandraHosts);
         _log = log;
+        AuthKeyRepository = new AuthKeyRepository(new CassandraKVStore(_cassandra), new RedisDataStore(redisConfig));
+        TempAuthKeyRepository = new TempAuthKeyRepository(new RedisDataStore(redisConfig));
+        BoundAuthKeyRepository = new BoundAuthKeyRepository(new RedisDataStore(redisConfig),
+            new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
         MessageRepository = new MessageRepository(new CassandraKVStore(_cassandra));
         UserStatusRepository = new UserStatusRepository(new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
+    public ITempAuthKeyRepository TempAuthKeyRepository { get; }
+    public IBoundAuthKeyRepository BoundAuthKeyRepository { get; }
     public IAuthorizationRepository AuthorizationRepository { get; }
     public IServerSaltRepository ServerSaltRepository { get; }
     public IMessageRepository MessageRepository { get; }

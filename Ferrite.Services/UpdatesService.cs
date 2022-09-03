@@ -105,26 +105,38 @@ public class UpdatesService : IUpdatesService
             var updateList = new List<UpdateBase>() { update };
             List<UserDTO> userList = new();
             List<ChatDTO> chatList = new();
+            UpdatesBase updates = null;
             if (update is UpdateReadHistoryInboxDTO readHistoryInbox)
             {
                 var peerUser = await _store.GetUserAsync(readHistoryInbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
+                updates = new UpdatesDTO(updateList, userList, chatList, 
+                    (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
             }
             else if (update is UpdateReadHistoryOutboxDTO readHistoryOutbox)
             {
                 var peerUser = await _store.GetUserAsync(readHistoryOutbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
+                updates = new UpdatesDTO(updateList, userList, chatList, 
+                    (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
             }
             else if (update is UpdateNewMessageDTO messageNotification &&
                      messageNotification.Message.FromId is { PeerType: PeerType.User })
             {
                 var peerUser = await _store.GetUserAsync(messageNotification.Message.FromId.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
+                updates = new UpdatesDTO(updateList, userList, chatList, 
+                    (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
+            }
+            else if (update is UpdateUserTypingDTO userTyping)
+            {
+                updates = new UpdateShortDTO(update, (int)DateTimeOffset.Now.ToUnixTimeSeconds());
             }
 
-            
-            var updates = new UpdatesDTO(updateList, userList, chatList, 
-                (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
+            if (updates == null)
+            {
+                return false;
+            }
             var sessions = await _sessions.GetSessionsAsync(a.AuthKeyId);
             foreach (var s in sessions)
             {

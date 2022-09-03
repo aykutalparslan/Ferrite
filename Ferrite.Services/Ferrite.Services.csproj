@@ -25,11 +25,11 @@
     <Compile Remove="SessionManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext.IO" Version="4.6.1" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.6.1" />
+    <PackageReference Include="DotNext.IO" Version="4.7.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.7.0" />
     <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
-    <PackageReference Include="SkiaSharp" Version="2.88.0" />
-    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.0" />
+    <PackageReference Include="SkiaSharp" Version="2.88.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.1" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

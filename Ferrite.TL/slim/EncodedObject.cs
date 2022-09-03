@@ -16,10 +16,32 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
+
 namespace Ferrite.TL.slim;
 
-public interface ITLSerializable : IDisposable
+public readonly struct EncodedObject: IDisposable
 {
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan();
+    private readonly MemoryHandle? _handle;
+    private readonly int _offset;
+    private readonly int _length;
+    public EncodedObject(MemoryHandle handle, int offset, int length)
+    {
+        _handle = handle;
+        _offset = offset;
+        _length = length;
+    }
+
+    public unsafe Span<byte> AsSpan()
+    {
+        if (_handle != null)
+        {
+            return new Span<byte>((int*)_handle.Value.Pointer + _offset, _length);
+        }
+        return new Span<byte>();
+    }
+    public void Dispose()
+    {
+        _handle?.Dispose();
+    }
 }

@@ -189,7 +189,7 @@ public class MessagesService : IMessagesService
     }
 
     public async Task<ServiceResult<AffectedHistoryDTO>> DeleteHistory(long authKeyId, InputPeerDTO peer, 
-        int maxId, int minDate = -1, int maxDate = -1,
+        int maxId, int? minDate = null, int? maxDate = null,
         bool justClear = false, bool revoke = false)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
@@ -201,8 +201,8 @@ public class MessagesService : IMessagesService
             List<int> deletedIds = new();
             foreach (var m in messages)
             {
-                if (m.Id < maxId && (minDate > 0 && m.Date > minDate) &&
-                    (maxDate > 0 && m.Date < maxDate))
+                if (m.Id < maxId && (minDate != null && m.Date > minDate) &&
+                    (maxDate != null && m.Date < maxDate))
                 {
                     deletedIds.Add(m.Id);
                     _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
@@ -239,6 +239,22 @@ public class MessagesService : IMessagesService
         }
 
         throw new NotSupportedException();
+    }
+
+    public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
+    {
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        foreach (var m in id)
+        {
+            _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m);
+        }
+        int pts = await userCtx.IncrementPts();
+        var deleteMessages = new UpdateDeleteMessagesDTO(id.ToList(), pts, 1);
+        _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+        
+        return new ServiceResult<AffectedMessagesDTO>(new AffectedMessagesDTO(pts, 1), true,
+            ErrorMessages.None);
     }
 
     public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, 
@@ -390,6 +406,14 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
     {
+        var peerDTO = PeerFromInputPeer(peer);
+        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        if (peerDTO.PeerType == PeerType.User)
+        {
+            var update = new UpdateUserTypingDTO(auth.UserId, action);
+            _updates.EnqueueUpdate(peerDTO.PeerId, update);
+            return new ServiceResult<bool>(true, true, ErrorMessages.None);
+        }
         throw new NotImplementedException();
     }
 

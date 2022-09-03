@@ -26,8 +26,8 @@ namespace Ferrite.Tests.Data;
 public class InMemoryStoreTests
 {
     [Theory]
-    [InlineData(20)]
     [InlineData(50)]
+    [InlineData(75)]
     [InlineData(100)]
     [InlineData(200)]
     async Task InMemoryStore_Exist_ConformsToExpirationRules(int ms)
@@ -38,8 +38,8 @@ public class InMemoryStoreTests
             new KeyDefinition("pk",
                 new DataColumn { Name = "id", Type = DataType.String })));
         store.Put(RandomNumberGenerator.GetBytes(8), ttl, "test123");
-        await Task.Delay(ttl/4*3).ContinueWith(_ => Assert.True(store.Exists("test123")));
-        await Task.Delay(ttl-ttl/4*2).ContinueWith(_ => Assert.False(store.Exists("test123")));
+        await Task.Delay(ttl/5*2).ContinueWith(_ => Assert.True(store.Exists("test123")));
+        await Task.Delay(ttl-ttl/5*1).ContinueWith(_ => Assert.False(store.Exists("test123")));
     }
     [Theory]
     [InlineData(20)]
@@ -54,8 +54,8 @@ public class InMemoryStoreTests
             new KeyDefinition("pk",
                 new DataColumn { Name = "id", Type = DataType.String })));
         store.Put(RandomNumberGenerator.GetBytes(8), ttl, "test123");
-        await Task.Delay(ttl/4*3).ContinueWith(_ => Assert.NotNull(store.Get("test123")));
-        await Task.Delay(ttl-ttl/4*2).ContinueWith(_ => Assert.Null(store.Get("test123")));
+        await Task.Delay(ttl/5*2).ContinueWith(_ => Assert.NotNull(store.Get("test123")));
+        await Task.Delay(ttl-ttl/5*1).ContinueWith(_ => Assert.Null(store.Get("test123")));
     }
     [Fact]
     async Task InMemoryStore_Get_ReturnsValue()

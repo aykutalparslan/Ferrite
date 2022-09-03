@@ -21,6 +21,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Autofac;
 using Ferrite.TL;
+using Ferrite.TL.slim;
 using Ferrite.Utils;
 
 namespace Ferrite.Core;
@@ -74,13 +75,13 @@ public class IncomingMessageHandler: IProcessorManager
         } while (tobeProcessed.Count > 0 && processor != null);
     }
 
-    public async Task Process(object? sender, IMemoryOwner<byte> input, TLExecutionContext ctx)
+    public async Task Process(object? sender, EncodedObject input, TLExecutionContext ctx)
     {
         if (_processors.Count == 0)
         {
             return;
         }
-        Queue<IMemoryOwner<byte>> tobeProcessed = new();
+        Queue<EncodedObject> tobeProcessed = new();
         tobeProcessed.Enqueue(input);
         int idx = 0;
         var processor = _processors[idx];

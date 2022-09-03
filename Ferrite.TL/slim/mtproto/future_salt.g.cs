@@ -6,106 +6,78 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct future_salt : ITLObjectReader, ITLSerializable
+public readonly ref struct future_salt
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private future_salt(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public future_salt(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private future_salt(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public FutureSalt GetAsFutureSalt()
-    {
-        return new FutureSalt(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(4, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new future_salt(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(4, buffer + offset, length);
-        var obj = new future_salt(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(4, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize()
     {
         return 4 + 4 + 4 + 8;
     }
-    public static future_salt Create(int valid_since, int valid_until, long salt, MemoryPool<byte>? pool = null)
+    public static future_salt Create(int valid_since, int valid_until, long salt, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize();
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new future_salt(memory.Memory.Span[..length], memory);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
+        var obj = new future_salt(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0x0949d9dc));
         obj.Set_valid_since(valid_since);
         obj.Set_valid_until(valid_until);
         obj.Set_salt(salt);
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(4, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(4, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    public readonly int valid_since => MemoryMarshal.Read<int>(_buff[GetOffset(1, _buff)..]);
+    private void Set_valid_since(int value)
     {
-        return GetOffset(4, buffer + offset, length);
+        MemoryMarshal.Write(_buff[GetOffset(1, _buff)..], ref value);
     }
-    public ref readonly int valid_since => ref *(int*)(_buff + GetOffset(1, _buff, Length));
-    private void Set_valid_since(in int value)
+    public readonly int valid_until => MemoryMarshal.Read<int>(_buff[GetOffset(2, _buff)..]);
+    private void Set_valid_until(int value)
     {
-        var p = (int*)(_buff + GetOffset(1, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(2, _buff)..], ref value);
     }
-    public ref readonly int valid_until => ref *(int*)(_buff + GetOffset(2, _buff, Length));
-    private void Set_valid_until(in int value)
+    public readonly long salt => MemoryMarshal.Read<long>(_buff[GetOffset(3, _buff)..]);
+    private void Set_salt(long value)
     {
-        var p = (int*)(_buff + GetOffset(2, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(3, _buff)..], ref value);
     }
-    public ref readonly long salt => ref *(long*)(_buff + GetOffset(3, _buff, Length));
-    private void Set_salt(in long value)
-    {
-        var p = (long*)(_buff + GetOffset(3, _buff, Length));
-        *p = value;
-    }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
         if(index >= 2) offset += 4;
         if(index >= 3) offset += 4;
         if(index >= 4) offset += 8;
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

@@ -6,82 +6,57 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct destroy_auth_key_fail : ITLObjectReader, ITLSerializable
+public readonly ref struct destroy_auth_key_fail
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private destroy_auth_key_fail(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public destroy_auth_key_fail(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private destroy_auth_key_fail(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public DestroyAuthKeyRes GetAsDestroyAuthKeyRes()
-    {
-        return new DestroyAuthKeyRes(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(1, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new destroy_auth_key_fail(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(1, buffer + offset, length);
-        var obj = new destroy_auth_key_fail(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(1, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize()
     {
         return 4;
     }
-    public static destroy_auth_key_fail Create(MemoryPool<byte>? pool = null)
+    public static destroy_auth_key_fail Create(out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize();
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new destroy_auth_key_fail(memory.Memory.Span[..length], memory);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
+        var obj = new destroy_auth_key_fail(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0xea109b13));
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(1, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(1, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
-    {
-        return GetOffset(1, buffer + offset, length);
-    }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

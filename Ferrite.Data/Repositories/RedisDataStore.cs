@@ -42,6 +42,14 @@ public class RedisDataStore : IVolatileKVStore
         db.StringSet(key, (RedisValue)value, ttl);
     }
 
+    public void UpdateTtl(TimeSpan? ttl = null, params object[] keys)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        db.KeyExpire(key, ttl);
+    }
+
     public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();

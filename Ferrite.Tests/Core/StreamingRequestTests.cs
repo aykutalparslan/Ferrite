@@ -35,6 +35,7 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
@@ -156,8 +157,16 @@ public class StreamingRequestTests
         Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
         Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
         authKeys.Add(1, authKey);
-        var redis = new Mock<IDistributedCache>();
-        redis.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        var proto = new Mock<IMTProtoService>();
+        proto.Setup(x => x.GetAuthKey(It.IsAny<long>())).Returns((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
+        proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
         {
             if (!authKeys.ContainsKey(a))
             {
@@ -165,26 +174,21 @@ public class StreamingRequestTests
             }
             return true;
         });
+        proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
+        builder.RegisterMock(proto);
+        var redis = new Mock<IDistributedCache>();
+        
         redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
         {
             sessions.Add(a, b);
             return true;
-        });
-        redis.Setup(x => x.GetAuthKey(It.IsAny<long>())).Returns((long a) =>
-        {
-            if (!authKeys.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return authKeys[a];
-        });
-        redis.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!authKeys.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return authKeys[a];
         });
         redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
@@ -256,22 +260,25 @@ public class StreamingRequestTests
             return ValueTask.FromResult(result!);
         });
         var logger = new Mock<ILogger>();
-        
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
-        var cassandra = new Mock<IPersistentStore>();
-        cassandra.Setup(x => x.SaveAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        var proto = new Mock<IMTProtoService>();
+        proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
         {
             authKeys2.Add(a, b);
             return true;
         });
-        cassandra.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
         {
             if (!authKeys2.ContainsKey(a))
             {
                 return new byte[0];
             }
+
             return authKeys2[a];
         });
+
+        var cassandra = new Mock<IPersistentStore>();
+        
         Queue<long> unixTimes = new Queue<long>();
         var time = new Mock<IMTProtoTime>();
         unixTimes.Enqueue(1649323587);
@@ -350,6 +357,7 @@ public class StreamingRequestTests
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterMock(time);
+        builder.RegisterMock(proto);
         builder.RegisterMock(random);
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterAssemblyTypes(tl)
@@ -368,6 +376,7 @@ public class StreamingRequestTests
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
+        builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterMock(cassandra);

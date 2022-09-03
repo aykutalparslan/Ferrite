@@ -24,16 +24,16 @@ public interface IDistributedCache
 {
     public IAtomicCounter GetCounter(string name);
     public IUpdatesContext GetUpdatesContext(long? authKeyId, long userId);
-    public Task<byte[]> GetAuthKeyAsync(long authKeyId);
-    public byte[]? GetAuthKey(long authKeyId);
-    public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
-    public Task<bool> DeleteAuthKeyAsync(long authKeyId);
+    //public Task<byte[]> GetAuthKeyAsync(long authKeyId);
+    //public byte[]? GetAuthKey(long authKeyId);
+    //public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
+    //public Task<bool> DeleteAuthKeyAsync(long authKeyId);
     public Task<byte[]> GetSessionAsync(long sessionId);
-    public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
-    public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
-    public byte[]? GetTempAuthKey(long tempAuthKeyId);
-    public Task<bool> DeleteTempAuthKeysAsync(long authKeyId, ICollection<long> exceptIds);
-    public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
+    //public Task<bool> PutTempAuthKeyAsync(long tempAuthKeyId, byte[] tempAuthKey, TimeSpan expiresIn);
+    //public Task<byte[]?> GetTempAuthKeyAsync(long tempAuthKeyId);
+    //public byte[]? GetTempAuthKey(long tempAuthKeyId);
+    //public Task<bool> DeleteTempAuthKeysAsync(long authKeyId, ICollection<long> exceptIds);
+    //public Task<bool> PutBoundAuthKeyAsync(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn);
     public Task<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
     public Task<bool> PutSessionAsync(long sessionId, byte[] sessionData, TimeSpan expire);
     public bool PutSession(long sessionId, byte[] sessionData, TimeSpan expire);

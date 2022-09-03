@@ -18,6 +18,7 @@
 using System;
 using System.Security.Cryptography;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using Ferrite.Utils;
 
 namespace Ferrite.Services;
@@ -27,11 +28,14 @@ public class MTProtoService : IMTProtoService
     private readonly IPersistentStore _store;
     private readonly IDistributedCache _cache;
     private readonly IMTProtoTime _time;
-    public MTProtoService(IPersistentStore store, IDistributedCache cache, IMTProtoTime time)
+    private readonly IUnitOfWork _unitOfWork;
+    public MTProtoService(IPersistentStore store, IDistributedCache cache, IMTProtoTime time,
+        IUnitOfWork unitOfWork)
     {
         _store = store;
         _cache = cache;
         _time = time;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count)
@@ -73,18 +77,65 @@ public class MTProtoService : IMTProtoService
         return validSince;
     }
 
+    public async Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey)
+    {
+        var result = _unitOfWork.AuthKeyRepository.PutAuthKey(authKeyId, authKey);
+        return result && await _unitOfWork.SaveAsync();
+    }
+
+    public bool PutAuthKey(long authKeyId, byte[] authKey)
+    {
+        var result = _unitOfWork.AuthKeyRepository.PutAuthKey(authKeyId, authKey);
+        return result && _unitOfWork.Save();
+    }
+
+    public byte[]? GetAuthKey(long authKeyId)
+    {
+        return _unitOfWork.AuthKeyRepository.GetAuthKey(authKeyId);
+    }
+
     public async Task<byte[]?> GetAuthKeyAsync(long authKeyId)
     {
-        var authKey = await _cache.GetAuthKeyAsync(authKeyId);
-        if (authKey == null)
-        {
-            authKey = await _cache.GetTempAuthKeyAsync(authKeyId);
-        }
-        if (authKey == null)
-        {
-            authKey = await _store.GetAuthKeyAsync(authKeyId);
-        }
-        return authKey;
+        return await _unitOfWork.AuthKeyRepository.GetAuthKeyAsync(authKeyId);
+    }
+
+    public bool PutTempAuthKey(long authKeyId, byte[] authKey, TimeSpan expiresIn)
+    {
+        var result = _unitOfWork.TempAuthKeyRepository.PutTempAuthKey(authKeyId, authKey, expiresIn);
+        return result && _unitOfWork.Save();
+    }
+
+    public async Task<bool> PutTempAuthKeyAsync(long authKeyId, byte[] authKey, TimeSpan expiresIn)
+    {
+        var result = _unitOfWork.TempAuthKeyRepository.PutTempAuthKey(authKeyId, authKey, expiresIn);
+        return result && await _unitOfWork.SaveAsync();
+    }
+
+    public byte[]? GetTempAuthKey(long authKeyId)
+    {
+        return _unitOfWork.TempAuthKeyRepository.GetTempAuthKey(authKeyId);
+    }
+
+    public async Task<byte[]?> GetTempAuthKeyAsync(long authKeyId)
+    {
+        return await _unitOfWork.TempAuthKeyRepository.GetTempAuthKeyAsync(authKeyId);
+    }
+
+    public async Task<bool> PutBoundAuthKey(long tempAuthKeyId, long authKeyId, TimeSpan expiresIn)
+    {
+        var result = _unitOfWork.BoundAuthKeyRepository.PutBoundAuthKey(tempAuthKeyId, authKeyId, expiresIn);
+        return result && await _unitOfWork.SaveAsync();
+    }
+
+    public async ValueTask<long?> GetBoundAuthKeyAsync(long tempAuthKeyId)
+    {
+        return await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(tempAuthKeyId);
+    }
+
+    public async Task<bool> DestroyAuthKeyAsync(long authKeyId)
+    {
+        var success = _unitOfWork.AuthKeyRepository.DeleteAuthKey(authKeyId);
+        return success && await _unitOfWork.SaveAsync();
     }
 }
 

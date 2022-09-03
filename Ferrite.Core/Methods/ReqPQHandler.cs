@@ -26,7 +26,7 @@ using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Core.Methods;
 
-public class ReqPQHandler : IQueryHandler<req_pq_multi>
+public class ReqPQHandler : IQueryHandler
 {
     private IRandomGenerator _randomGenerator;
     private IKeyProvider _keyPairProvider;
@@ -35,30 +35,30 @@ public class ReqPQHandler : IQueryHandler<req_pq_multi>
         _randomGenerator = generator;
         _keyPairProvider = provider;
     }
-    public async Task<ITLSerializable?> Process(req_pq_multi query, TLExecutionContext ctx)
+    public async Task<EncodedObject?> Process(EncodedObject q, TLExecutionContext ctx)
     {
         byte[] serverNonce;
         if (!ctx.SessionData.ContainsKey("nonce"))
         {
-            ctx.SessionData.Add("nonce", query.nonce.ToArray());
+            ctx.SessionData.Add("nonce", new req_pq_multi(q.AsSpan()).nonce.ToArray());
             serverNonce = _randomGenerator.GetRandomBytes(16);
             ctx.SessionData.Add("server_nonce", serverNonce);
             await Task.Delay(100);
         }
-        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(query.nonce))
+        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new req_pq_multi(q.AsSpan()).nonce))
         {
-            ctx.SessionData["nonce"] = query.nonce.ToArray();
+            ctx.SessionData["nonce"] = new req_pq_multi(q.AsSpan()).nonce.ToArray();
             serverNonce = _randomGenerator.GetRandomBytes(16);
             ctx.SessionData["server_nonce"] = serverNonce;
             return null;
         }
-        else
-        {
-            serverNonce = (byte[])ctx.SessionData["server_nonce"];
-        }
-        byte[] nonce = (byte[])ctx.SessionData["nonce"];
         serverNonce = (byte[])ctx.SessionData["server_nonce"];
-        
+        return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
+    }
+
+    private EncodedObject? ProcessInternal(byte[] serverNonce, req_pq_multi query, TLExecutionContext ctx)
+    {
+        byte[] nonce = (byte[])ctx.SessionData["nonce"];
         if (ctx.SessionData.ContainsKey("p"))
         {
             ctx.SessionData.Remove("p");
@@ -67,7 +67,6 @@ public class ReqPQHandler : IQueryHandler<req_pq_multi>
         {
             ctx.SessionData.Remove("q");
         }
-
         int a = _randomGenerator.GetRandomPrime();
         int b = _randomGenerator.GetRandomPrime();
         BigInteger pq = new BigInteger(a) * b;
@@ -85,9 +84,13 @@ public class ReqPQHandler : IQueryHandler<req_pq_multi>
         byte[] Pq = pq.ToByteArray(isBigEndian: true);
 
         var tmp = _keyPairProvider.GetRSAFingerprints();
-        var fingerprints = TL.slim.VectorOfLong.Create(tmp);
+        var fingerprints = new TL.slim.VectorOfLong();
+        foreach (var f in tmp)
+        {
+            fingerprints.Append(f);
+        }
         var resPq = resPQ.Create(nonce, 
-            serverNonce, Pq, fingerprints);
-        return resPq;
+            serverNonce, Pq, fingerprints, out var memory);
+        return new EncodedObject(memory.Memory.Pin(), 0, resPq.Length);
     }
 }

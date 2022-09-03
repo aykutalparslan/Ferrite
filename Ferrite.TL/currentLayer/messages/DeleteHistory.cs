@@ -150,8 +150,8 @@ public class DeleteHistory : ITLObject, ITLMethod
     {
         var serviceResult = await _messages.DeleteHistory(ctx.CurrentAuthKeyId,
             _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer), _maxId,
-            _flags[2] ? _minDate : -1,
-            _flags[3] ? _maxDate : -1,
+            _flags[2] ? _minDate : null,
+            _flags[3] ? _maxDate : null,
             JustClear, Revoke);
         var rpcResult = factory.Resolve<RpcResult>();
         rpcResult.ReqMsgId = ctx.MessageId;

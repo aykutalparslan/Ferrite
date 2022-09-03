@@ -56,7 +56,7 @@ public class CassandraContext : ICassandraContext
     {
         return await _session.ExecuteAsync(statement);
     }
-    public RowSet ExecuteQueue()
+    public RowSet? ExecuteQueue()
     {
         //_executionSemaphore.Wait();
         if (_executionQueue.Count == 1)
@@ -66,7 +66,7 @@ public class CassandraContext : ICassandraContext
             //_executionSemaphore.Release();
             return result;
         }
-        else
+        else if (_executionQueue.Count > 1)
         {
             var batch = new BatchStatement();
             while (_executionQueue.Count > 0)
@@ -78,8 +78,10 @@ public class CassandraContext : ICassandraContext
             //_executionSemaphore.Release();
             return result;
         }
+
+        return null;
     }
-    public async Task<RowSet> ExecuteQueueAsync()
+    public async Task<RowSet?> ExecuteQueueAsync()
     {
         //await _executionSemaphore.WaitAsync();
         if (_executionQueue.Count == 1)
@@ -89,7 +91,7 @@ public class CassandraContext : ICassandraContext
             //_executionSemaphore.Release();
             return result;
         }
-        else
+        else if (_executionQueue.Count > 1)
         {
             var batch = new BatchStatement();
             while (_executionQueue.Count > 0)
@@ -101,5 +103,7 @@ public class CassandraContext : ICassandraContext
             //_executionSemaphore.Release();
             return result;
         }
+
+        return null;
     }
 }

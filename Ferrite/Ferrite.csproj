@@ -23,11 +23,14 @@
     <None Update="default-public.key">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="node.guid">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="DotNext" Version="4.6.1" />
-    <PackageReference Include="DotNext.IO" Version="4.6.1" />
-    <PackageReference Include="DotNext.Unsafe" Version="4.6.1" />
+    <PackageReference Include="DotNext" Version="4.7.0" />
+    <PackageReference Include="DotNext.IO" Version="4.7.0" />
+    <PackageReference Include="DotNext.Unsafe" Version="4.7.0" />
     <PackageReference Include="MessagePack" Version="2.4.35" />
   </ItemGroup>
   <ItemGroup>

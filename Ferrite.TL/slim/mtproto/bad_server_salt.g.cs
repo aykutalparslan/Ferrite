@@ -6,63 +6,47 @@
 #nullable enable
 
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.slim.mtproto;
 
-public readonly unsafe struct bad_server_salt : ITLObjectReader, ITLSerializable
+public readonly ref struct bad_server_salt
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private bad_server_salt(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    public bad_server_salt(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private bad_server_salt(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     
-    public BadMsgNotification GetAsBadMsgNotification()
-    {
-        return new BadMsgNotification(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(5, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new bad_server_salt(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(5, buffer + offset, length);
-        var obj = new bad_server_salt(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(5, data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 4 + 4 + 8;
     }
-    public static bad_server_salt Create(long bad_msg_id, int bad_msg_seqno, int error_code, long new_server_salt, MemoryPool<byte>? pool = null)
+    public static bad_server_salt Create(long bad_msg_id, int bad_msg_seqno, int error_code, long new_server_salt, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
     {
         var length = GetRequiredBufferSize();
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new bad_server_salt(memory.Memory.Span[..length], memory);
+        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
+        memory.Memory.Span.Clear();
+        var obj = new bad_server_salt(memory.Memory.Span[..length]);
         obj.SetConstructor(unchecked((int)0xedab447b));
         obj.Set_bad_msg_id(bad_msg_id);
         obj.Set_bad_msg_seqno(bad_msg_seqno);
@@ -70,40 +54,31 @@ public readonly unsafe struct bad_server_salt : ITLObjectReader, ITLSerializable
         obj.Set_new_server_salt(new_server_salt);
         return obj;
     }
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
-        return GetOffset(5, (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
+        return GetOffset(5, data[offset..]);
     }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
+    public readonly long bad_msg_id => MemoryMarshal.Read<long>(_buff[GetOffset(1, _buff)..]);
+    private void Set_bad_msg_id(long value)
     {
-        return GetOffset(5, buffer + offset, length);
+        MemoryMarshal.Write(_buff[GetOffset(1, _buff)..], ref value);
     }
-    public ref readonly long bad_msg_id => ref *(long*)(_buff + GetOffset(1, _buff, Length));
-    private void Set_bad_msg_id(in long value)
+    public readonly int bad_msg_seqno => MemoryMarshal.Read<int>(_buff[GetOffset(2, _buff)..]);
+    private void Set_bad_msg_seqno(int value)
     {
-        var p = (long*)(_buff + GetOffset(1, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(2, _buff)..], ref value);
     }
-    public ref readonly int bad_msg_seqno => ref *(int*)(_buff + GetOffset(2, _buff, Length));
-    private void Set_bad_msg_seqno(in int value)
+    public readonly int error_code => MemoryMarshal.Read<int>(_buff[GetOffset(3, _buff)..]);
+    private void Set_error_code(int value)
     {
-        var p = (int*)(_buff + GetOffset(2, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(3, _buff)..], ref value);
     }
-    public ref readonly int error_code => ref *(int*)(_buff + GetOffset(3, _buff, Length));
-    private void Set_error_code(in int value)
+    public readonly long new_server_salt => MemoryMarshal.Read<long>(_buff[GetOffset(4, _buff)..]);
+    private void Set_new_server_salt(long value)
     {
-        var p = (int*)(_buff + GetOffset(3, _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset(4, _buff)..], ref value);
     }
-    public ref readonly long new_server_salt => ref *(long*)(_buff + GetOffset(4, _buff, Length));
-    private void Set_new_server_salt(in long value)
-    {
-        var p = (long*)(_buff + GetOffset(4, _buff, Length));
-        *p = value;
-    }
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = 4;
         if(index >= 2) offset += 8;
@@ -111,9 +86,5 @@ public readonly unsafe struct bad_server_salt : ITLObjectReader, ITLSerializable
         if(index >= 4) offset += 4;
         if(index >= 5) offset += 8;
         return offset;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
     }
 }

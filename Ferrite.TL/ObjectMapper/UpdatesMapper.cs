@@ -86,6 +86,13 @@ public class UpdatesMapper : ITLObjectMapper<Updates, UpdatesBase>
             }
             return update;
         }
+        else if (obj is UpdateShortDTO updateShort)
+        {
+            var update = _factory.Resolve<UpdateShortImpl>();
+            update.Date = updateShort.Date;
+            update.Update = _mapper.MapToTLObject<Update, UpdateBase>(updateShort.Update);
+            return update;
+        }
         throw new NotSupportedException("Updates type is not supported.");
     }
 }
