@@ -28,6 +28,7 @@ public interface IUnitOfWork
     IMessageRepository MessageRepository { get; }
     IUserStatusRepository UserStatusRepository { get; }
     ISessionRepository SessionRepository { get; }
+    IAuthSessionRepository AuthSessionRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

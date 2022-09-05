@@ -133,7 +133,8 @@ public class SessionService : ISessionService
     public async Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
-        var remoteAdd = await _cache.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
+        var remoteAdd = _unitOfWork.AuthSessionRepository.PutAuthKeySession(nonce, MessagePackSerializer.Serialize(state));
+        await _unitOfWork.SaveAsync();
         var key = (Nonce)nonce;
         if (_localAuthSessions.ContainsKey(key))
         {
@@ -144,12 +145,14 @@ public class SessionService : ISessionService
 
     public async Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state)
     {
-        return await _cache.PutAuthKeySessionAsync(nonce, MessagePackSerializer.Serialize(state));
+        bool result = _unitOfWork.AuthSessionRepository.PutAuthKeySession(nonce, MessagePackSerializer.Serialize(state));
+        await _unitOfWork.SaveAsync();
+        return result;
     }
 
     public async Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce)
     {
-        var rawSession = await _cache.GetAuthKeySessionAsync(nonce);
+        var rawSession = _unitOfWork.AuthSessionRepository.GetAuthKeySession(nonce);
         if (rawSession != null)
         {
             var state = MessagePackSerializer.Deserialize<AuthSessionState>(rawSession);
@@ -171,7 +174,8 @@ public class SessionService : ISessionService
 
     public bool RemoveAuthSession(byte[] nonce)
     {
-        _cache.RemoveAuthKeySessionAsync(nonce);
+        _unitOfWork.AuthSessionRepository.RemoveAuthKeySession(nonce);
+        _unitOfWork.Save();
         return _localAuthSessions.TryRemove((Nonce)nonce, out var a);
     }
 

@@ -35,6 +35,7 @@ public class DefaultUnitOfWork : IUnitOfWork
         MessageRepository = new MessageRepository(new CassandraKVStore(_cassandra));
         UserStatusRepository = new UserStatusRepository(new CassandraKVStore(_cassandra));
         SessionRepository = new SessionRepository(new RedisDataStore(redisConfig));
+        AuthSessionRepository = new AuthSessionRepository(new RedisDataStore(redisConfig));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -44,6 +45,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public IMessageRepository MessageRepository { get; }
     public IUserStatusRepository UserStatusRepository { get; }
     public ISessionRepository SessionRepository { get; }
+    public IAuthSessionRepository AuthSessionRepository { get; }
 
     public bool Save()
     {
