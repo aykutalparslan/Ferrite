@@ -21,6 +21,7 @@ using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.mtproto;
@@ -28,12 +29,12 @@ public class DestroySession : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IDistributedCache _cache;
+    private readonly ISessionService _sessions;
     private bool serialized = false;
-    public DestroySession(ITLObjectFactory objectFactory, IDistributedCache cache)
+    public DestroySession(ITLObjectFactory objectFactory, ISessionService sessions)
     {
         factory = objectFactory;
-        _cache = cache;
+        _sessions = sessions;
     }
 
     public int Constructor => -414113498;
@@ -64,7 +65,7 @@ public class DestroySession : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var destroyed = await _cache.DeleteSessionAsync(sessionId);
+        var destroyed = await _sessions.DeleteSessionAsync(sessionId);
         if (destroyed)
         {
             var resp = factory.Resolve<DestroySessionOk>();

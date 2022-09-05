@@ -64,6 +64,14 @@ public class RedisDataStore : IVolatileKVStore
         return true;
     }
 
+    public bool ListDelete(byte[] value, params object[] keys)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        return db.SortedSetRemove(key, value);
+    }
+
     public bool ListDeleteByScore(long score, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();

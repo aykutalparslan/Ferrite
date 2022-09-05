@@ -25,5 +25,6 @@ public interface ISessionRepository
     public bool SetSessionTTL(long sessionId, TimeSpan expire);
     public bool DeleteSession(long sessionId);
     public bool PutSessionForAuthKey(long authKeyId, long sessionId);
+    public bool DeleteSessionForAuthKey(long authKeyId, long sessionId);
     public ICollection<long> GetSessionsByAuthKey(long authKeyId, TimeSpan expire);
 }

@@ -173,6 +173,38 @@ public class InMemoryStore : IVolatileKVStore
         return true;
     }
 
+    public bool ListDelete(byte[] value, params object[] keys)
+    {
+        
+        SortedList<long, byte[]>? list;
+        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        (byte[] data, long expiry) = existing;
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (rem && data != null &&
+            (expiry <= 0 || expiry <= now))
+        {
+            try
+            {
+                list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                foreach (var (k, v) in list)
+                {
+                    if (v.SequenceEqual(value))
+                    {
+                        list.Remove(k);
+                    }
+                }
+            }
+            catch (MessagePackSerializationException e)
+            {
+                // nothing to do since this is not a list
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public bool ListDeleteByScore(long score, params object[] keys)
     {
         SortedList<long, byte[]>? list;

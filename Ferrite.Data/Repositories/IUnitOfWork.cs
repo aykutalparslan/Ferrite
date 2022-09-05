@@ -27,6 +27,7 @@ public interface IUnitOfWork
     IServerSaltRepository ServerSaltRepository { get; }
     IMessageRepository MessageRepository { get; }
     IUserStatusRepository UserStatusRepository { get; }
+    ISessionRepository SessionRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

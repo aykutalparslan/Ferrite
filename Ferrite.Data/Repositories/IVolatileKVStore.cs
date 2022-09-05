@@ -37,6 +37,7 @@ public interface IVolatileKVStore
     public void Put(byte[] value, TimeSpan? ttl = null, params object[] keys);
     public void UpdateTtl(TimeSpan? ttl = null, params object[] keys);
     public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys);
+    public bool ListDelete(byte[] value, params object[] keys);
     public bool ListDeleteByScore(long score, params object[] keys);
     public IList<byte[]> ListGet(params object[] keys);
     public void Delete(params object[] keys);

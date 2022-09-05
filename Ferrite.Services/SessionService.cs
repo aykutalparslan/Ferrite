@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Concurrent;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using MessagePack;
 
 namespace Ferrite.Services;
@@ -29,6 +30,7 @@ public class SessionService : ISessionService
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
     private readonly ConcurrentDictionary<Nonce, MTProtoSession> _localAuthSessions = new();
     private readonly IDistributedCache _cache;
+    private readonly IUnitOfWork _unitOfWork;
     private Guid GetNodeId()
     {
         if (File.Exists("node.guid"))
@@ -43,17 +45,19 @@ public class SessionService : ISessionService
             return guid;
         }
     }
-    public SessionService(IDistributedCache cache)
+    public SessionService(IDistributedCache cache, IUnitOfWork unitOfWork)
     {
         NodeId = GetNodeId();
         _cache = cache;
+        _unitOfWork = unitOfWork;
     }
     public async Task<bool> AddSessionAsync(SessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
-        var remoteAdd = await _cache.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state),
+        var remoteAdd =  _unitOfWork.SessionRepository.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
             new TimeSpan(0,0, FerriteConfig.SessionTTL));
-        var authKeyAdd = await _cache.PutSessionForAuthKeyAsync(state.AuthKeyId, state.SessionId);
+        var authKeyAdd = _unitOfWork.SessionRepository.PutSessionForAuthKey(state.AuthKeyId, state.SessionId);
+        await _unitOfWork.SaveAsync();
         if (_localSessions.ContainsKey(state.SessionId))
         {
             _localSessions.Remove(state.SessionId, out var value);
@@ -64,9 +68,10 @@ public class SessionService : ISessionService
     public bool AddSession(SessionState state, MTProtoSession session)
     {
         state.NodeId = NodeId;
-        var remoteAdd = _cache.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
+        var remoteAdd = _unitOfWork.SessionRepository.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
             new TimeSpan(0,0, FerriteConfig.SessionTTL));
-        var authKeyAdd = _cache.PutSessionForAuthKey(state.AuthKeyId, state.SessionId);
+        var authKeyAdd = _unitOfWork.SessionRepository.PutSessionForAuthKey(state.AuthKeyId, state.SessionId);
+        _unitOfWork.Save();
         if (_localSessions.ContainsKey(state.SessionId))
         {
             _localSessions.Remove(state.SessionId, out var value);
@@ -81,9 +86,17 @@ public class SessionService : ISessionService
         return await GetSessionState(sessionId);
     }
 
+    public async Task<bool> DeleteSessionAsync(long sessionId)
+    {
+        _localSessions.TryRemove(sessionId, out var removed);
+        _unitOfWork.SessionRepository.DeleteSession(sessionId);
+        await _unitOfWork.SaveAsync();
+        return true;
+    }
+
     private async Task<SessionState> GetSessionState(long sessionId)
     {
-        var rawSession = await _cache.GetSessionAsync(sessionId);
+        var rawSession = _unitOfWork.SessionRepository.GetSession(sessionId);
         if (rawSession != null)
         {
             var state = MessagePackSerializer.Deserialize<SessionState>(rawSession);
@@ -92,8 +105,9 @@ public class SessionService : ISessionService
                 state.ServerSaltOld = state.ServerSalt;
                 var salt = new ServerSaltDTO();
                 state.ServerSalt = salt;
-                await _cache.PutSessionAsync(state.SessionId, MessagePackSerializer.Serialize(state),
+                _unitOfWork.SessionRepository.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
                     new TimeSpan(0, 0, FerriteConfig.SessionTTL));
+                await _unitOfWork.SaveAsync();
             }
             return state;
         }
@@ -102,8 +116,9 @@ public class SessionService : ISessionService
 
     public async Task<bool> RemoveSession(long authKeyId, long sessionId)
     {
-        await _cache.DeleteSessionAsync(sessionId);
-        await _cache.DeleteSessionForAuthKeyAsync(authKeyId, sessionId);
+        _unitOfWork.SessionRepository.DeleteSession(sessionId);
+        _unitOfWork.SessionRepository.DeleteSessionForAuthKey(authKeyId, sessionId);
+        await _unitOfWork.SaveAsync();
         return _localSessions.TryRemove(sessionId, out var session);
     }
     public bool LocalSessionExists(long sessionId)
@@ -162,13 +177,15 @@ public class SessionService : ISessionService
 
     public async Task<bool> OnPing(long authKeyId, long sessionId)
     {
-        var ttlSet = await _cache.SetSessionTTLAsync(sessionId, new TimeSpan(0, 0, FerriteConfig.SessionTTL));
-        return ttlSet && await _cache.PutSessionForAuthKeyAsync(authKeyId, sessionId);
+        var ttlSet = _unitOfWork.SessionRepository.SetSessionTTL(sessionId, new TimeSpan(0, 0, FerriteConfig.SessionTTL));
+        bool sessionSaved = _unitOfWork.SessionRepository.PutSessionForAuthKey(authKeyId, sessionId);
+        await _unitOfWork.SaveAsync();
+        return ttlSet && sessionSaved;
     }
 
     public async Task<ICollection<SessionState>> GetSessionsAsync(long authKeyId)
     {
-        var sessionIds = await _cache.GetSessionsByAuthKeyAsync(authKeyId,
+        var sessionIds = _unitOfWork.SessionRepository.GetSessionsByAuthKey(authKeyId,
             new TimeSpan(0, 0, FerriteConfig.SessionTTL));
 
         List<SessionState> result = new();

@@ -184,25 +184,6 @@ public class StreamingRequestTests
         });
         builder.RegisterMock(proto);
         var redis = new Mock<IDistributedCache>();
-        
-        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
-        {
-            sessions.Add(a, b);
-            return true;
-        });
-        redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!sessions.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return sessions[a];
-        });
-        redis.Setup(x => x.DeleteSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            sessions.Remove(a);
-            return true;
-        });
         builder.RegisterMock(redis);
         ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
         var objectStore = new Mock<IDistributedObjectStore>();
