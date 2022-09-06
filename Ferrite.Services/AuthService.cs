@@ -332,7 +332,8 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
-        await _cache.PutSignInAsync(authKeyId, phoneNumber, phoneCodeHash);
+        _unitOfWork.SignInRepository.PutSignIn(authKeyId, phoneNumber, phoneCodeHash);
+        await _unitOfWork.SaveAsync();
         var user = await _store.GetUserAsync(phoneNumber);
         if(user == null)
         {
@@ -378,7 +379,7 @@ public class AuthService : IAuthService
             userId = await _userIdCnt.IncrementAndGet();
         }
         var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
-        var signedInAuthKeyId = await _cache.GetSignInAsync(phoneNumber, phoneCodeHash);
+        var signedInAuthKeyId = _unitOfWork.SignInRepository.GetSignIn(phoneNumber, phoneCodeHash);
         if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {
             return new AuthorizationDTO()
