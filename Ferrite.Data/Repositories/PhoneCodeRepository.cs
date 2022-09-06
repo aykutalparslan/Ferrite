@@ -31,7 +31,7 @@ public class PhoneCodeRepository : IPhoneCodeRepository
                 new DataColumn { Name = "phone_number", Type = DataType.String },
                 new DataColumn { Name = "phone_code_hash", Type = DataType.String })));
     }
-    public void PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
+    public void PutPhoneCode(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn)
     {
         _store.Put(Encoding.UTF8.GetBytes(phoneCode), expiresIn, phoneNumber, phoneCodeHash);
     }

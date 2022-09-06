@@ -88,7 +88,8 @@ public class AuthService : IAuthService
 
     public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
     {
-        return await _cache.DeletePhoneCodeAsync(phoneNumber, phoneCodeHash);
+        _unitOfWork.PhoneCodeRepository.DeletePhoneCode(phoneNumber, phoneCodeHash);
+        return await _unitOfWork.SaveAsync();
     }
 
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
@@ -267,13 +268,13 @@ public class AuthService : IAuthService
 
     public async Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash)
     {
-        var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != null)
         {
             Console.WriteLine("auth.sentCode=>" + phoneCode);
-            await _cache.PutPhoneCodeAsync(phoneNumber, phoneCodeHash, phoneCode,
+            _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, phoneCodeHash, phoneCode,
                 new TimeSpan(0, 0, PhoneCodeTimeout * 2));
-
+            await _unitOfWork.SaveAsync();
             return new SentCodeDTO()
             {
                 CodeType = SentCodeType.Sms,
@@ -309,9 +310,9 @@ public class AuthService : IAuthService
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
+        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
-        
+        await _unitOfWork.SaveAsync();
         return new SentCodeDTO()
         {
             CodeType = SentCodeType.Sms,
@@ -323,7 +324,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
             return new AuthorizationDTO()
@@ -376,7 +377,7 @@ public class AuthService : IAuthService
         {
             userId = await _userIdCnt.IncrementAndGet();
         }
-        var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         var signedInAuthKeyId = await _cache.GetSignInAsync(phoneNumber, phoneCodeHash);
         if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {

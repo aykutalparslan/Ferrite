@@ -29,6 +29,7 @@ public interface IUnitOfWork
     IUserStatusRepository UserStatusRepository { get; }
     ISessionRepository SessionRepository { get; }
     IAuthSessionRepository AuthSessionRepository { get; }
+    IPhoneCodeRepository PhoneCodeRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

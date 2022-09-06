@@ -323,9 +323,9 @@ public partial class AccountService : IAccountService
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
+        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
-        
+        await _unitOfWork.SaveAsync();
         var result = new SentCodeDTO()
         {
             CodeType = SentCodeType.Sms,
@@ -338,7 +338,7 @@ public partial class AccountService : IAccountService
 
     public async Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.None);

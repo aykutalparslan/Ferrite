@@ -20,7 +20,7 @@ namespace Ferrite.Data.Repositories;
 
 public interface IPhoneCodeRepository
 {
-    public void PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode,
+    public void PutPhoneCode(string phoneNumber, string phoneCodeHash, string phoneCode,
         TimeSpan expiresIn);
     public string? GetPhoneCode(string phoneNumber, string phoneCodeHash);
     public bool DeletePhoneCode(string phoneNumber, string phoneCodeHash);
