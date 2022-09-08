@@ -22,5 +22,6 @@ public interface IAppInfoRepository
 {
     public bool PutAppInfo(AppInfoDTO appInfo);
     public AppInfoDTO? GetAppInfo(long authKeyId);
+    public AppInfoDTO? GetAppInfoByAppHash(long hash);
     public long? GetAuthKeyIdByAppHash(long hash);
 }
