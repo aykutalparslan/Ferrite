@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using DotNext.Collections.Generic;
+
 namespace Ferrite.Data.Repositories;
 
 public class RocksDBKVStore : IKVStore
@@ -111,7 +113,13 @@ public class RocksDBKVStore : IKVStore
     public byte[]? Get(params object[] keys)
     {
         var key = EncodedKey.Create(_table.FullName, keys);
-        return _context.Get(key.Value);
+        var result = _context.Get(key.Value);//all the fields may be present
+        if (result != null)
+        {
+            return result;
+        }
+        result =_context.Iterate(key.ArrayValue).FirstOrDefault();//if not do a prefix search
+        return result;
     }
 
     public ValueTask<byte[]?> GetAsync(params object[] keys)
