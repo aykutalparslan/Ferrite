@@ -98,4 +98,6 @@ public interface IKVStore
     /// <param name="keys">Fields of the primary key with the right order.</param>
     /// <returns>Enumerator for the matching values.</returns>
     public IAsyncEnumerable<byte[]> IterateAsync(params object[] keys);
+    public IEnumerable<byte[]> IterateBySecondaryIndex(string indexName, params object[] keys);
+    public IAsyncEnumerable<byte[]> IterateBySecondaryIndexAsync(string indexName, params object[] keys);
 }

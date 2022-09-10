@@ -478,24 +478,7 @@ public class CassandraKVStore : IKVStore
             var row = results.FirstOrDefault();
             if (row != null)
             {
-                List<object> primaryParameters = new();
-                foreach (var c in _table.PrimaryKey.Columns)
-                {
-                    primaryParameters.Add(row.GetValue(GetManagedType(c.Type), c.Name));
-                }
-                sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
-                first = true;
-                for (int i = 0; i < primaryParameters.Count; i++)
-                {
-                    var col = _table.PrimaryKey.Columns[i];
-                    if (!first)
-                    {
-                        sb.Append($" AND ");
-                    }
-                    first = false;
-                    sb.Append($"{col.Name} = ?");
-                }
-                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
+                var statementInner = GenerateInnerStatement(row);
                 var resultsInner = _context.Execute(statementInner);
                 var rowInner = resultsInner.FirstOrDefault();
                 return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
@@ -535,30 +518,41 @@ public class CassandraKVStore : IKVStore
             var row = results.FirstOrDefault();
             if (row != null)
             {
-                List<object> primaryParameters = new();
-                foreach (var c in _table.PrimaryKey.Columns)
-                {
-                    primaryParameters.Add(row.GetValue(GetManagedType(c.Type), c.Name));
-                }
-                sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
-                first = true;
-                for (int i = 0; i < primaryParameters.Count; i++)
-                {
-                    var col = _table.PrimaryKey.Columns[i];
-                    if (!first)
-                    {
-                        sb.Append($" AND ");
-                    }
-                    first = false;
-                    sb.Append($"{col.Name} = ?");
-                }
-                var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
+                SimpleStatement statementInner = GenerateInnerStatement(row);
                 var resultsInner = await _context.ExecuteAsync(statementInner);
                 var rowInner = resultsInner.FirstOrDefault();
                 return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
             }
         }
         return null;
+    }
+
+    private SimpleStatement GenerateInnerStatement(Row row)
+    {
+        StringBuilder sb;
+        bool first;
+        List<object> primaryParameters = new();
+        foreach (var c in _table.PrimaryKey.Columns)
+        {
+            primaryParameters.Add(row.GetValue(GetManagedType(c.Type), c.Name));
+        }
+
+        sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name} WHERE ");
+        first = true;
+        for (int i = 0; i < primaryParameters.Count; i++)
+        {
+            var col = _table.PrimaryKey.Columns[i];
+            if (!first)
+            {
+                sb.Append($" AND ");
+            }
+
+            first = false;
+            sb.Append($"{col.Name} = ?");
+        }
+
+        var statementInner = new SimpleStatement(sb.ToString(), primaryParameters.ToArray());
+        return statementInner;
     }
 
     public IEnumerable<byte[]> Iterate(params object[] keys)
@@ -619,6 +613,83 @@ public class CassandraKVStore : IKVStore
         foreach (var row in results)
         {
             yield return row.GetValue<byte[]>($"{_table.Name}_data");
+        }
+    }
+
+    public IEnumerable<byte[]> IterateBySecondaryIndex(string indexName, params object[] keys)
+    {
+        var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
+        if (sc != null)
+        {
+            StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name}_{sc.Name} WHERE ");
+            bool first = true;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                var col = sc.Columns[i];
+                if (keys[i].GetType() != GetManagedType(col.Type))
+                {
+                    throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                        $"the parameter was of type {keys[i].GetType()}");
+                }
+                if (!first)
+                {
+                    sb.Append($" AND ");
+                }
+                first = false;
+                sb.Append($"{col.Name} = ?");
+            }
+            var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
+            var results = _context.Execute(statement);
+            if (results == null)
+            {
+                yield break;
+            }
+            foreach (var row in results)
+            {
+                SimpleStatement statementInner = GenerateInnerStatement(row);
+                var resultsInner = _context.Execute(statementInner);
+                var rowInner = resultsInner.FirstOrDefault();
+                yield return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
+            }
+        }
+    }
+
+    public async IAsyncEnumerable<byte[]> IterateBySecondaryIndexAsync(string indexName, params object[] keys)
+    {
+        var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
+        if (sc != null)
+        {
+            StringBuilder sb = new StringBuilder($"SELECT * FROM {_table.Keyspace}.{_table.Name}_{sc.Name} WHERE ");
+            bool first = true;
+            for (int i = 0; i < keys.Length; i++)
+            {
+                var col = sc.Columns[i];
+                if (keys[i].GetType() != GetManagedType(col.Type))
+                {
+                    throw new Exception($"Expected type was {GetManagedType(col.Type)} and " +
+                                        $"the parameter was of type {keys[i].GetType()}");
+                }
+                if (!first)
+                {
+                    sb.Append($" AND ");
+                }
+                first = false;
+                sb.Append($"{col.Name} = ?");
+            }
+            var statement = new SimpleStatement(sb.ToString(), keys.ToArray());
+            var results = await _context.ExecuteAsync(statement);
+            if (results == null)
+            {
+                yield break;
+            }
+
+            foreach (var row in results)
+            {
+                SimpleStatement statementInner = GenerateInnerStatement(row);
+                var resultsInner = await _context.ExecuteAsync(statementInner);
+                var rowInner = resultsInner.FirstOrDefault();
+                yield return rowInner?.GetValue<byte[]>($"{_table.Name}_data");
+            }
         }
     }
 }

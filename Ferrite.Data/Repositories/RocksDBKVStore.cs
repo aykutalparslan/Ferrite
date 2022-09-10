@@ -159,4 +159,26 @@ public class RocksDBKVStore : IKVStore
             yield return val;
         }
     }
+
+    public IEnumerable<byte[]> IterateBySecondaryIndex(string indexName, params object[] keys)
+    {
+        var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
+        var key = EncodedKey.Create(sc.FullName, keys);
+        var iter = _context.Iterate(key.ArrayValue);
+        foreach (var primaryKey in iter)
+        {
+            yield return _context.Get(primaryKey);
+        }
+    }
+
+    public async IAsyncEnumerable<byte[]> IterateBySecondaryIndexAsync(string indexName, params object[] keys)
+    {
+        var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
+        var key = EncodedKey.Create(sc.FullName, keys);
+        var iter = _context.Iterate(key.ArrayValue);
+        foreach (var primaryKey in iter)
+        {
+            yield return _context.Get(primaryKey);
+        }
+    }
 }
