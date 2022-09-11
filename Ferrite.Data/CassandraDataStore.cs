@@ -1220,7 +1220,7 @@ namespace Ferrite.Data
                 result.Add(new SavedContactDTO(contactUser.Phone,
                     row.GetValue<string>("firstname"),
                     row.GetValue<string>("lastname"), 
-                    (int)added));
+                    (int)added, 0, 0));
             }
             return result;
         }

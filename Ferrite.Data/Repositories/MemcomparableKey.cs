@@ -26,184 +26,101 @@ namespace Ferrite.Data;
 //encodes multi column keys to a single key using the memcomparable format
 //here: https://github.com/facebook/mysql-5.6/wiki/MyRocks-record-format#memcomparable-format
 //documentation license: Creative Commons Attribution 4.0 International Public License
-public class EncodedKey
+public class MemcomparableKey
 {
     private readonly byte[] _key;
     public ReadOnlySpan<byte> Value => _key;
     public Span<byte> Span => _key;
     public byte[] ArrayValue => _key;
     public long ExpiresAt { get; set; }
-    private EncodedKey(byte[] value)
+    private MemcomparableKey(byte[] value)
     {
         _key = value;
     }
-    public EncodedKey(string tableName)
-    {
-        var chars = tableName.AsSpan();
-        var bytes = MemoryMarshal.Cast<char, byte>(chars);
-        var hash = bytes.GetXxHash64();
-        _key = new byte[4];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-    }
-    public EncodedKey(string tableName, int value)
+    public MemcomparableKey(string tableName)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
         _key = new byte[8];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        BinaryPrimitives.WriteUInt32BigEndian(_key.AsSpan().Slice(4), (uint)value);
-        if (value < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-        }
+        Encode(_key, (long)hash, 0);
     }
-    public EncodedKey(string tableName, bool value)
+    
+    public MemcomparableKey(string tableName, int value)
+    {
+        var chars = tableName.AsSpan();
+        var bytes = MemoryMarshal.Cast<char, byte>(chars);
+        var hash = bytes.GetXxHash64();
+        _key = new byte[12];
+        Encode(_key, (long)hash, 0);
+        Encode(_key, value, 8);
+    }
+    public MemcomparableKey(string tableName, bool value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
         byte byteValue = (byte)(value ? 1 : 0);
-        _key = new byte[5];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        _key[4] |= byteValue;
+        _key = new byte[9];
+        Encode(_key, (long)hash, 0);
+        _key[8] |= byteValue;
     }
-    public EncodedKey(long value)
-    {
-        _key = new byte[8];
-        BinaryPrimitives.WriteUInt64BigEndian(_key.AsSpan(), (ulong)value);
-        if (value < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-        }
-    }
-    public EncodedKey(string tableName, long value)
+    public MemcomparableKey(string tableName, long value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
-        _key = new byte[12];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        BinaryPrimitives.WriteUInt64BigEndian(_key.AsSpan().Slice(4), (ulong)value);
-        if (value < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-        }
+        _key = new byte[16];
+        Encode(_key, (long)hash, 0);
+        Encode(_key, value, 8);
     }
-    public EncodedKey(string tableName, DateTime value)
+    public MemcomparableKey(string tableName, DateTime value)
     {
         long val = value.Ticks;
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
-        _key = new byte[12];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        BinaryPrimitives.WriteUInt64BigEndian(_key.AsSpan().Slice(4), (ulong)val);
-        if (val < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-        }
+        _key = new byte[16];
+        Encode(_key, (long)hash, 0);
+        Encode(_key, val, 8);
     }
-    public EncodedKey(string tableName, DateTimeOffset value)
+    public MemcomparableKey(string tableName, DateTimeOffset value)
     {
         long val = value.Ticks;
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
+        _key = new byte[16];
+        Encode(_key, (long)hash, 0);
+        Encode(_key, val, 8);
+    }
+    public MemcomparableKey(string tableName, float value)
+    {
+        var chars = tableName.AsSpan();
+        var bytes = MemoryMarshal.Cast<char, byte>(chars);
+        var hash = bytes.GetXxHash64();
         _key = new byte[12];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        BinaryPrimitives.WriteUInt64BigEndian(_key.AsSpan().Slice(4), (ulong)val);
-        if (val < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-        }
+        Encode(_key, (long)hash, 0);
+        Encode(_key, value, 8);
     }
-    public EncodedKey(string tableName, float value)
+    public MemcomparableKey(string tableName, double value)
     {
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
-        _key = new byte[8];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        BinaryPrimitives.WriteSingleBigEndian(_key.AsSpan().Slice(4), value);
-        if (value < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-            _key[7]++;
-        }
+        _key = new byte[16];
+        Encode(_key, (long)hash, 0);
+        Encode(_key, value, 8);
     }
-    public EncodedKey(string tableName, double value)
-    {
-        var chars = tableName.AsSpan();
-        var bytes = MemoryMarshal.Cast<char, byte>(chars);
-        var hash = bytes.GetXxHash64();
-        _key = new byte[8];
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
-        BinaryPrimitives.WriteDoubleBigEndian(_key.AsSpan().Slice(4), value);
-        if (value < 0)
-        {
-            for (int i = 4; i < _key.Length; i++)
-            {
-                _key[i] = (byte)(~_key[i]);
-            }
-        }
-        else
-        {
-            _key[4] |= 0x80;
-            _key[11]++;
-        }
-    }
-    public EncodedKey(string tableName, Span<byte> value)
+    public MemcomparableKey(string tableName, Span<byte> value)
     {
         int blocks = value.Length / 8 + 
             value.Length % 8 == 0 ? 0 : 1;
-        _key = new byte[4 + value.Length + blocks * 9];
+        _key = new byte[8 + blocks * 9];
         var chars = tableName.AsSpan();
         var bytes = MemoryMarshal.Cast<char, byte>(chars);
         var hash = bytes.GetXxHash64();
-        BinaryPrimitives.WriteUInt32BigEndian(_key, (uint)hash);
+        Encode(_key, (long)hash, 0);
         for (int i = 0; i < blocks; i++)
         {
             int significantBytes = value.Length - i * 8;
@@ -211,12 +128,35 @@ public class EncodedKey
             {
                 significantBytes = 9;
             }
-            _key[4 + i * 9 + 8] = (byte)significantBytes;
+            _key[8 + i * 9 + 8] = (byte)significantBytes;
             value.Slice(i * 8, Math.Min(significantBytes, 8))
-                .CopyTo(_key.AsSpan().Slice(4 + i * 9));
+                .CopyTo(_key.AsSpan().Slice(8 + i * 9));
         }
     }
-    public EncodedKey Append(Span<byte> value)
+
+    public MemcomparableKey(string tableName, string val)
+    {
+        var value = Encoding.UTF8.GetBytes(val).AsSpan();
+        int blocks = value.Length / 8 + 
+            value.Length % 8 == 0 ? 0 : 1;
+        _key = new byte[8 + blocks * 9];
+        var chars = tableName.AsSpan();
+        var bytes = MemoryMarshal.Cast<char, byte>(chars);
+        var hash = bytes.GetXxHash64();
+        Encode(_key, (long)hash, 0);
+        for (int i = 0; i < blocks; i++)
+        {
+            int significantBytes = value.Length - i * 8;
+            if (significantBytes > 8)
+            {
+                significantBytes = 9;
+            }
+            _key[8 + i * 9 + 8] = (byte)significantBytes;
+            value.Slice(i * 8, Math.Min(significantBytes, 8))
+                .CopyTo(_key.AsSpan().Slice(8 + i * 9));
+        }
+    }
+    public MemcomparableKey Append(Span<byte> value)
     {
         int blocks = value.Length / 8 + 
             value.Length % 8 == 0 ? 0 : 1;
@@ -234,106 +174,62 @@ public class EncodedKey
                 .CopyTo(newKey.AsSpan().Slice(_key.Length + i * 9));
         }
 
-        return new EncodedKey(newKey);
+        return new MemcomparableKey(newKey);
     }
-    public EncodedKey Append(bool value)
+    public MemcomparableKey Append(bool value)
     {
         byte[] newKey = new byte[_key.Length + 1];
         _key.CopyTo(newKey.AsSpan());
         byte byteValue = (byte)(value ? 1 : 0);
         newKey[_key.Length] = byteValue;
 
-        return new EncodedKey(newKey);
+        return new MemcomparableKey(newKey);
     }
-    public EncodedKey Append(int value)
+    public MemcomparableKey Append(int value)
     {
         byte[] newKey = new byte[_key.Length + 4];
         _key.CopyTo(newKey.AsSpan());
-        BinaryPrimitives.WriteUInt32BigEndian(newKey.AsSpan().Slice(_key.Length), (uint)value);
-        if (value < 0)
-        {
-            for (int i = _key.Length; i < newKey.Length; i++)
-            {
-                newKey[i] = (byte)(~newKey[i]);
-            }
-        }
-        else
-        {
-            newKey[_key.Length] |= 0x80;
-        }
-        return new EncodedKey(newKey);
+        Encode(newKey, value, _key.Length);
+        return new MemcomparableKey(newKey);
     }
-    public EncodedKey Append(long value)
+    public MemcomparableKey Append(long value)
     {
         byte[] newKey = new byte[_key.Length + 8];
         _key.CopyTo(newKey.AsSpan());
-        BinaryPrimitives.WriteUInt64BigEndian(newKey.AsSpan().Slice(_key.Length), (ulong)value);
-        if (value < 0)
-        {
-            for (int i = _key.Length; i < newKey.Length; i++)
-            {
-                newKey[i] = (byte)(~newKey[i]);
-            }
-        }
-        else
-        {
-            newKey[_key.Length] |= 0x80;
-        }
-        return new EncodedKey(newKey);
+        Encode(newKey, value, _key.Length);
+        return new MemcomparableKey(newKey);
     }
-    public EncodedKey Append(float value)
+    public MemcomparableKey Append(float value)
     {
         byte[] newKey = new byte[_key.Length + 4];
         _key.CopyTo(newKey.AsSpan());
         BinaryPrimitives.WriteSingleBigEndian(newKey.AsSpan().Slice(_key.Length), value);
-        if (value < 0)
-        {
-            for (int i = _key.Length; i < newKey.Length; i++)
-            {
-                newKey[i] = (byte)(~newKey[i]);
-            }
-        }
-        else
-        {
-            newKey[_key.Length] |= 0x80;
-            newKey[_key.Length + 3]++;
-        }
-        return new EncodedKey(newKey);
+        Encode(newKey, value, _key.Length);
+        return new MemcomparableKey(newKey);
     }
-    public EncodedKey Append(double value)
+    public MemcomparableKey Append(double value)
     {
         byte[] newKey = new byte[_key.Length + 4];
         _key.CopyTo(newKey.AsSpan());
         BinaryPrimitives.WriteDoubleBigEndian(newKey.AsSpan().Slice(_key.Length), value);
-        if (value < 0)
-        {
-            for (int i = _key.Length; i < newKey.Length; i++)
-            {
-                newKey[i] = (byte)(~newKey[i]);
-            }
-        }
-        else
-        {
-            newKey[_key.Length] |= 0x80;
-            newKey[_key.Length + 7]++;
-        }
-        return new EncodedKey(newKey);
+        Encode(newKey, value, _key.Length);
+        return new MemcomparableKey(newKey);
     }
-    public EncodedKey Append(string value)
+    public MemcomparableKey Append(string value)
     {
         return Append(Encoding.UTF8.GetBytes(value));
     }
-    public EncodedKey Append(DateTime value)
+    public MemcomparableKey Append(DateTime value)
     {
         return Append(value.Ticks);
     }
-    public EncodedKey Append(DateTimeOffset value)
+    public MemcomparableKey Append(DateTimeOffset value)
     {
         return Append(value.Ticks);
     }
-    public static EncodedKey Create(string tableName, IReadOnlyCollection<object> values)
+    public static MemcomparableKey Create(string tableName, IReadOnlyCollection<object> values)
     {
-        EncodedKey key = new EncodedKey(tableName);
+        MemcomparableKey key = new MemcomparableKey(tableName);
         foreach (var v in values)
         {
             if (v is int intValue)
@@ -375,5 +271,89 @@ public class EncodedKey
         }
 
         return key;
+    }
+    private static void Encode(byte[] key, int value, int offset)
+    {
+        BinaryPrimitives.WriteUInt32BigEndian(key.AsSpan(offset), (uint)value);
+        if (value < 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                key[offset + i] = (byte)(~key[offset + i]);
+            }
+        }
+        else
+        {
+            key[offset] ^= 128;
+        }
+    }
+    private static void Encode(byte[] key, long value, int offset)
+    {
+        BinaryPrimitives.WriteUInt64BigEndian(key.AsSpan(offset), (ulong)value);
+        if (value < 0)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                key[offset + i] = (byte)(~key[offset + i]);
+            }
+        }
+        else
+        {
+            key[offset] ^= 128;
+        }
+    }
+    private static void Encode(byte[] key, float value, int offset)
+    {
+        if (value == 0.0f)
+        {
+            key[offset] = 128;
+            for (int i = 1; i < 4; i++)
+            {
+                key[offset + i] = 0;
+            }
+            return;
+        }
+        BinaryPrimitives.WriteSingleBigEndian(key.AsSpan(offset), (uint)value);
+        if (value < 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                key[offset + i] = (byte)(~key[offset + i]);
+            }
+        }
+        else
+        {
+            ushort exponent = (ushort)((key[0] << 8) | key[1] | 32768);
+            exponent += 1 << 7;
+            key[offset] = (byte)(exponent >> 8);
+            key[offset + 1] = (byte)(exponent);
+        }
+    }
+    private static void Encode(byte[] key, double value, int offset)
+    {
+        if (value == 0.0d)
+        {
+            key[offset] = 128;
+            for (int i = 1; i < 8; i++)
+            {
+                key[offset + i] = 0;
+            }
+            return;
+        }
+        BinaryPrimitives.WriteSingleBigEndian(key.AsSpan(offset), (uint)value);
+        if (value < 0)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                key[offset + i] = (byte)(~key[offset + i]);
+            }
+        }
+        else
+        {
+            ushort exponent = (ushort)((key[0] << 8) | key[1] | 32768);
+            exponent += 1 << 7;
+            key[offset] = (byte)(exponent >> 4);
+            key[offset + 1] = (byte)(exponent);
+        }
     }
 }
