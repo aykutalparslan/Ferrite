@@ -20,7 +20,7 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject]
+[MessagePackObject(true)]
 public record AppInfoDTO
 {
     public long Hash { get; init; }
