@@ -120,13 +120,11 @@ public class RocksDBKVStore : IKVStore
     public byte[]? Get(params object[] keys)
     {
         var key = MemcomparableKey.Create(_table.FullName, keys);
-        var result = _context.Get(key.Value);//all the fields may be present
-        if (result != null)
+        if (keys.Length == _table.PrimaryKey.Columns.Count)
         {
-            return result;
+            return _context.Get(key.Value);
         }
-        result =_context.Iterate(key.ArrayValue).FirstOrDefault();//if not do a prefix search
-        return result;
+        return _context.Iterate(key.ArrayValue).FirstOrDefault();
     }
 
     public ValueTask<byte[]?> GetAsync(params object[] keys)
