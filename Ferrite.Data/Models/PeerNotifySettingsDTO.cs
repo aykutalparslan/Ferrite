@@ -1,5 +1,8 @@
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record PeerNotifySettingsDTO
 {
     public bool ShowPreviews { get; init; }
