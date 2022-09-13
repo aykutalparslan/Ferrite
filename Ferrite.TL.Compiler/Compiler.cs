@@ -308,7 +308,7 @@ public static class ObjectReader
         if (_objectReaders.ContainsKey(constructor))
         {
             var reader = _objectReaders[constructor];
-            return reader.Invoke(buff, 0);
+            return reader(buff, 0);
         }
         return Span<byte>.Empty;
     }
@@ -321,7 +321,7 @@ public static class ObjectReader
         if (_objectReaders.ContainsKey(constructor))
         {
             var reader = _objectReaders[constructor];
-            return reader.Invoke(buff, 0);
+            return reader(buff, 0);
         }
         return Span<byte>.Empty;
     }
@@ -335,7 +335,7 @@ public static class ObjectReader
         if (_sizeReaders.ContainsKey(constructor))
         {
             var reader = _sizeReaders[constructor];
-            return reader.Invoke(buff, 0);
+            return reader(buff, 0);
         }
         return 0;
     }
