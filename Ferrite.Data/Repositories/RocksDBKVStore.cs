@@ -93,7 +93,14 @@ public class RocksDBKVStore : IKVStore
     public ValueTask<bool> DeleteAsync(params object[] keys)
     {
         var key = MemcomparableKey.Create(_table.FullName, keys);
-        _context.Delete(key.Value);
+        if (keys.Length == _table.PrimaryKey.Columns.Count)
+        {
+            _context.Delete(key.Value);
+        }
+        else
+        {
+            _context.DeleteWithPrefix(key.ArrayValue);
+        }
         return ValueTask.FromResult(true);
     }
 
