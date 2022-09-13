@@ -16,8 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record PrivacyRuleDTO
 {
     public PrivacyRuleType PrivacyRuleType { get; init; }
