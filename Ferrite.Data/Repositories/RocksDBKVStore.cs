@@ -82,11 +82,43 @@ public class RocksDBKVStore : IKVStore
         if (keys.Length == _table.PrimaryKey.Columns.Count)
         {
             _context.Delete(key.Value);
+            foreach (var sc in _table.SecondaryIndices)
+            {
+                List<object> secondaryParams = new();
+                foreach (var c in sc.Columns)
+                {
+                    secondaryParams.Add(keys[_table.PrimaryKey.GetOrdinal(c.Name)]);
+                }
+
+                var secondaryKey = MemcomparableKey.Create(sc.FullName, secondaryParams);
+                _context.Delete(secondaryKey.Value);
+            }
         }
         else
         {
-            _context.DeleteWithPrefix(key.ArrayValue);
+            if(_table.SecondaryIndices.Count == 0) _context.DeleteWithPrefix(key.ArrayValue);
+            else
+            {
+                var iter = _context.IterateKeys(key.ArrayValue);
+                foreach (var k in iter)
+                {
+                    _context.Delete(k);
+                    var primaryKey = MemcomparableKey.From(k);
+                    foreach (var sc in _table.SecondaryIndices)
+                    {
+                        List<object> secondaryParams = new();
+                        foreach (var c in sc.Columns)
+                        {
+                            secondaryParams.Add(primaryKey.GetValue(_table.PrimaryKey, c.Name));
+                        }
+
+                        var secondaryKey = MemcomparableKey.Create(sc.FullName, secondaryParams);
+                        _context.Delete(secondaryKey.Value);
+                    }
+                }
+            }
         }
+
         return true;
     }
 

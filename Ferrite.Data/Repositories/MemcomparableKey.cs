@@ -20,6 +20,7 @@ using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Unicode;
+using DotNext.Generic;
 using Ferrite.Data.Repositories;
 using xxHash;
 
@@ -158,6 +159,10 @@ public class MemcomparableKey
         var newKey = new MemcomparableKey(tableName).Append(value);
         _key = newKey._key;
     }
+    public static MemcomparableKey From(byte[] value)
+    {
+        return new MemcomparableKey(value);
+    }
     public MemcomparableKey Append(Span<byte> value)
     {
         int blocks = value.Length / 8 + 
@@ -274,6 +279,46 @@ public class MemcomparableKey
 
         return key;
     }
+
+    public object? GetValue(KeyDefinition definition, string name)
+    {
+        int index = definition.GetOrdinal(name);
+        if (definition[index].Type == DataType.Int)
+        {
+            return GetInt32(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.Bool)
+        {
+            return GetBool(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.Long)
+        {
+            return GetInt64(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.Float)
+        {
+            return GetSingle(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.Double)
+        {
+            return GetDouble(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.String)
+        {
+            return GetString(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.DateTime)
+        {
+            return GetDateTime(definition, definition[index].Name);
+        }
+        else if (definition[index].Type == DataType.Bytes)
+        {
+            return GetBytes(definition, definition[index].Name);
+        }
+
+        return null;
+    }
+
     public bool? GetBool(KeyDefinition definition, string field)
     {
         int offset = 8;

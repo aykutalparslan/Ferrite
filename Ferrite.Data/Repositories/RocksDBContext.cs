@@ -66,6 +66,21 @@ public class RocksDBContext : IDisposable
             iter.Next();
         }
     }
+    public IEnumerable<byte[]> IterateKeys(byte[] key)
+    {
+        var iter = _db.NewIterator(_cf);
+        iter.Seek(key);
+        while(iter.Valid())
+        {
+            if (iter.Key().Length < key.Length) yield break;
+            if (!key.AsSpan().SequenceEqual(iter.Key().AsSpan(0, key.Length)))
+            {
+                yield break;
+            }
+            yield return iter.Key();
+            iter.Next();
+        }
+    }
 
     public void Dispose()
     {
