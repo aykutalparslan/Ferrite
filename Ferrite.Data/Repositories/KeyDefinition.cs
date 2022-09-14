@@ -42,6 +42,7 @@ public class KeyDefinition
     public DataColumn this[int index] => Columns[index];
     public DataColumn this[string name] => Columns[_colsIndex[name]];
     public int GetOrdinal(string name) => _colsIndex[name];
+    public bool HasColumn(string name) => _colsIndex.ContainsKey(name);
 
     public KeyDefinition(string name, params DataColumn[] args)
     {
