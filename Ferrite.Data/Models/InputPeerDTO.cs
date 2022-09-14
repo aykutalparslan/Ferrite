@@ -30,5 +30,24 @@ public record InputPeerDTO
     public long AccessHash { get; set; }
     public int MsgId { get; set; }
     public InputPeerDTO? Peer { get; set; }
+
+    public long GetPeerId()
+    {
+        long peerId = 0;
+        if (Peer.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
+        {
+            peerId = Peer.UserId;
+        }
+        else if (Peer.InputPeerType == InputPeerType.Chat)
+        {
+            peerId = Peer.ChatId;
+        }
+        else if (Peer.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        {
+            peerId = Peer.ChannelId;
+        }
+
+        return peerId;
+    }
 }
 
