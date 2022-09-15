@@ -30,21 +30,21 @@ public class RedisCounter : IAtomicCounter
         _name = name;
     }
 
-    public async Task<long> Get()
+    public async ValueTask<long> Get()
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
         return (long)await db.StringGetAsync(_name);
     }
 
-    public async Task<long> IncrementAndGet()
+    public async ValueTask<long> IncrementAndGet()
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
         return await db.StringIncrementAsync(_name);
     }
 
-    public async Task<long> IncrementByAndGet(long inc)
+    public async ValueTask<long> IncrementByAndGet(long inc)
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
