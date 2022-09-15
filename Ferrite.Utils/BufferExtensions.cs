@@ -186,7 +186,7 @@ public static class BufferExtensions
             writer.Write(zero);
         }
     }
-    public static void WriteTLBytes(this ref SpanWriter<byte> writer, in byte[] bytes)
+    /*public static void WriteTLBytes(this ref SpanWriter<byte> writer, in byte[] bytes)
     {
         const byte zero = 0;
         int rem;
@@ -208,7 +208,7 @@ public static class BufferExtensions
         {
             writer.Write(zero);
         }
-    }
+    }*/
 }
 
 

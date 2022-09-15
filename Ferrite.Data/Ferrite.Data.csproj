@@ -29,19 +29,20 @@
     <None Remove="Updates\" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="AWSSDK.S3" Version="3.7.9.41" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.9.52" />
     <PackageReference Include="Elasticsearch.Net" Version="7.17.4" />
+    <PackageReference Include="Microsoft.FASTER.Core" Version="2.0.17" />
     <PackageReference Include="NEST" Version="7.17.4" />
     <PackageReference Include="NonBlocking" Version="2.1.0" />
-    <PackageReference Include="RocksDB" Version="7.4.5.31520" />
-    <PackageReference Include="StackExchange.Redis" Version="2.6.48" />
+    <PackageReference Include="RocksDB" Version="7.5.3.32564" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.66" />
     <PackageReference Include="CassandraCSharpDriver" Version="3.18.0" />
     <PackageReference Include="MessagePack" Version="2.4.35" />
     <PackageReference Include="MessagePackAnalyzer" Version="2.4.35">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Confluent.Kafka" Version="1.9.2" />
+    <PackageReference Include="Confluent.Kafka" Version="1.9.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />

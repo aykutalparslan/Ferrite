@@ -33,8 +33,7 @@ public partial class AccountService : IAccountService
     private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
     private readonly IUnitOfWork _unitOfWork;
-    [RegexGenerator("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled)]
-    private static partial Regex UsernameRegex();
+    private static Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
     private const int PhoneCodeTimeout = 60;//seconds
     public AccountService(IDistributedCache cache, IPersistentStore store, 
         ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork)
@@ -128,7 +127,7 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> CheckUsername(string username)
     {
-        if (!UsernameRegex().IsMatch(username))
+        if (!UsernameRegex.IsMatch(username))
         {
             return false;
         }
@@ -144,7 +143,7 @@ public partial class AccountService : IAccountService
 
     public async Task<UserDTO?> UpdateUsername(long authKeyId, string username)
     {
-        if (!UsernameRegex().IsMatch(username))
+        if (!UsernameRegex.IsMatch(username))
         {
             return null;
         }

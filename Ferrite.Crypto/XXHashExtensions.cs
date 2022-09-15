@@ -106,8 +106,8 @@ public static class XXHashExtensions
         return acc + Prime64Fourth;
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ProcessRemaining(ref ReadOnlySpan<byte> data,
-        ref ReadOnlySpan<uint> blocks, int numblocks, ref uint acc,
+    private static void ProcessRemaining(ReadOnlySpan<byte> data,
+        ReadOnlySpan<uint> blocks, int numblocks, ref uint acc,
         ref uint lane, ref int remaining, ref int position)
     {
         while (remaining >= 4)
@@ -129,8 +129,8 @@ public static class XXHashExtensions
         }
     }
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ProcessRemaining(ref ReadOnlySpan<byte> data,
-        ref ReadOnlySpan<ulong> blocks, int numblocks, ref ulong acc,
+    private static void ProcessRemaining(ReadOnlySpan<byte> data,
+        ReadOnlySpan<ulong> blocks, int numblocks, ref ulong acc,
         ref ulong lane, ref int remaining, ref int position)
     {
         while (remaining >= 8)
@@ -205,7 +205,7 @@ public static class XXHashExtensions
             acc = acc + (uint)data.Length;
             remaining = data.Length - numblocks * 16;
             position = 0;
-            ProcessRemaining(ref data, ref blocks, numblocks, ref acc,
+            ProcessRemaining(data, blocks, numblocks, ref acc,
                 ref lane, ref remaining, ref position);
             Avalanche(ref acc);
             return acc;
@@ -225,7 +225,7 @@ public static class XXHashExtensions
         remaining = data.Length - numblocks * 16;
         position = 0;
 
-        ProcessRemaining(ref data, ref blocks, numblocks, ref acc, ref lane,
+        ProcessRemaining(data, blocks, numblocks, ref acc, ref lane,
             ref remaining, ref position);
         acc = acc ^ (acc >> 15);
         acc = acc * Prime32Second;
@@ -264,7 +264,7 @@ public static class XXHashExtensions
             acc = acc + (ulong)data.Length;
             remaining = data.Length;
             position = 0;
-            ProcessRemaining(ref data, ref blocks, numblocks, ref acc,
+            ProcessRemaining(data, blocks, numblocks, ref acc,
                 ref lane, ref remaining, ref position);
             Avalanche(ref acc);
             return acc;
@@ -286,7 +286,7 @@ public static class XXHashExtensions
 
         remaining = data.Length - numblocks * 32;
         position = 0;
-        ProcessRemaining(ref data, ref blocks, numblocks, ref acc, ref lane,
+        ProcessRemaining(data, blocks, numblocks, ref acc, ref lane,
             ref remaining, ref position);
         Avalanche(ref acc);
         return acc;
