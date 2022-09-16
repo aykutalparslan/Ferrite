@@ -57,5 +57,10 @@ public class RedisCounter : IAtomicCounter
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
         return (long)await db.StringSetAndGetAsync(_name, value);
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _redis.DisposeAsync();
+    }
 }
 

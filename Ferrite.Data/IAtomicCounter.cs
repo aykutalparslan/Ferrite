@@ -18,7 +18,7 @@
 using System;
 namespace Ferrite.Data;
 
-public interface IAtomicCounter
+public interface IAtomicCounter : IAsyncDisposable
 {
     public ValueTask<long> Get();
     public ValueTask<long> IncrementAndGet();
