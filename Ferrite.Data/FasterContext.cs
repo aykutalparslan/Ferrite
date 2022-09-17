@@ -43,6 +43,7 @@ public class FasterContext<Tkey, TValue> : IAsyncDisposable
         {
             TryRecoverLatest = true,
             RemoveOutdatedCheckpoints = true,
+            CheckpointDir = Path.Combine(path, "checkpoints"),
         });
         _checkpointHybrid = IssueHybridLogCheckpoints();
         _checkpointFull = IssueFullCheckpoints();

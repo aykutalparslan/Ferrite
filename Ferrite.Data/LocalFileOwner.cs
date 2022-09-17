@@ -18,14 +18,14 @@
 
 namespace Ferrite.Data;
 
-public class S3FileOwner : IFileOwner
+public class LocalFileOwner : IFileOwner
 {
     private readonly UploadedFileInfoDTO _fileInfo;
     private readonly IObjectStore _objectStore;
     private readonly int _offset;
     private readonly int _limit;
 
-    public S3FileOwner(UploadedFileInfoDTO fileInfo, IObjectStore objectStore, int offset, int limit, long reqMsgId)
+    public LocalFileOwner(UploadedFileInfoDTO fileInfo, IObjectStore objectStore, int offset, int limit, long reqMsgId)
     {
         _fileInfo = fileInfo;
         _objectStore = objectStore;

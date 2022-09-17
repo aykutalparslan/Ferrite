@@ -16,8 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
+using System.Buffers;
 
-namespace Ferrite.TL;
+namespace Ferrite.Data;
 
-public readonly record struct TLObjectStream(IFileOwner? File, bool Success, ITLObject? Error);
+public interface IObjectStore
+{
+    public ValueTask<bool> SaveFilePart(long fileId, int filePart, Stream data);
+    public ValueTask<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
+    public ValueTask<Stream> GetFilePart(long fileId, int filePart);
+    public ValueTask<Stream> GetBigFilePart(long fileId, int filePart);
+}

@@ -133,7 +133,7 @@ public class Program
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.Register(_ => new S3ObjectStore("http://localhost:9000", 
                 "minioadmin", "minioadmin"))
-            .As<IDistributedObjectStore>().SingleInstance();
+            .As<IObjectStore>().SingleInstance();
         builder.Register(_ => new CassandraDataStore("ferrite","localhost"))
             .As<IPersistentStore>().SingleInstance();
         builder.Register(_ => new DefaultUnitOfWork(new SerilogLogger(),

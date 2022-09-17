@@ -30,9 +30,9 @@ namespace Ferrite.TL.currentLayer.upload;
 public class SaveFilePart : ITLObject, ITLMethod, IPipeOwner
 {
     private readonly ITLObjectFactory _factory;
-    private readonly IDistributedObjectStore _objectStore;
+    private readonly IObjectStore _objectStore;
     private readonly IPersistentStore _store;
-    public SaveFilePart(ITLObjectFactory factory, IDistributedObjectStore objectStore, IPersistentStore store)
+    public SaveFilePart(ITLObjectFactory factory, IObjectStore objectStore, IPersistentStore store)
     {
         _factory = factory;
         _objectStore = objectStore;

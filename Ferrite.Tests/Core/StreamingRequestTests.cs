@@ -186,7 +186,7 @@ public class StreamingRequestTests
         var redis = new Mock<IDistributedCache>();
         builder.RegisterMock(redis);
         ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
-        var objectStore = new Mock<IDistributedObjectStore>();
+        var objectStore = new Mock<IObjectStore>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
             It.IsAny<int>(), It.IsAny<Stream>())).Returns(async (long fileId, int filePart, Stream data) =>
             {

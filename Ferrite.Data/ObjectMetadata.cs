@@ -16,8 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
+using Org.BouncyCastle.Asn1.X9;
 
-namespace Ferrite.TL;
+namespace Ferrite.Data;
 
-public readonly record struct TLObjectStream(IFileOwner? File, bool Success, ITLObject? Error);
+public record struct ObjectMetadata(long FileId, int PartNum, int Size, DateTimeOffset Timestamp, bool IsBig);

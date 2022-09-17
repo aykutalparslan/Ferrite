@@ -18,8 +18,4 @@
 
 namespace Ferrite.Data;
 
-public interface IDistributedFileOwner
-{
-    public Task<Stream> GetFileStream();
-    public long ReqMsgId { get; }
-}
+public record struct ObjectId(long FileId, int PartNum);

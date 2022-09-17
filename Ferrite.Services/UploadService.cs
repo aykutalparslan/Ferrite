@@ -23,9 +23,9 @@ namespace Ferrite.Services;
 
 public class UploadService : IUploadService
 {
-    private readonly IDistributedObjectStore _objectStore;
+    private readonly IObjectStore _objectStore;
     private readonly IPersistentStore _store;
-    public UploadService(IDistributedObjectStore objectStore, IPersistentStore store)
+    public UploadService(IObjectStore objectStore, IPersistentStore store)
     {
         _objectStore = objectStore;
         _store = store;
@@ -40,7 +40,7 @@ public class UploadService : IUploadService
         return await _objectStore.SaveBigFilePart(fileId, filePart, fileTotalParts, data);
     }
 
-    public async Task<ServiceResult<IDistributedFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
+    public async Task<ServiceResult<IFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
         string thumbSize, int offset, int limit, long regMsgId, bool precise = false, bool cdnSupported = false)
     {
         var reference = await _store.GetFileReferenceAsync(fileReference);
@@ -58,7 +58,7 @@ public class UploadService : IUploadService
             }
             var file = await _store.GetBigFileInfoAsync(thumbFileId);
             var owner = new S3FileOwner(file, _objectStore, offset, limit, regMsgId);
-            return new ServiceResult<IDistributedFileOwner>(owner, true, ErrorMessages.None);
+            return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
         else
         {
@@ -74,7 +74,7 @@ public class UploadService : IUploadService
             }
             var file = await _store.GetFileInfoAsync(thumbFileId);
             var owner = new S3FileOwner(file, _objectStore, offset, limit, regMsgId);
-            return new ServiceResult<IDistributedFileOwner>(owner, true, ErrorMessages.None);
+            return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
     }
 }

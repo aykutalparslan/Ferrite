@@ -69,7 +69,7 @@ public class MTProtoConnection : IMTProtoConnection
     private ITransportConnection socketConnection;
     private Task? receiveTask;
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
-    private Channel<IDistributedFileOwner> _outgoingStreams = Channel.CreateUnbounded<IDistributedFileOwner>();
+    private Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private Task? sendTask;
     private Task? sendStreamTask;
@@ -107,7 +107,7 @@ public class MTProtoConnection : IMTProtoConnection
         _mapper = mapper;
     }
 
-    public async ValueTask SendAsync(IDistributedFileOwner message)
+    public async ValueTask SendAsync(IFileOwner message)
     {
         if (message != null)
         {
@@ -332,7 +332,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
     
-    private async Task SendStream(IDistributedFileOwner message, SessionState state)
+    private async Task SendStream(IFileOwner message, SessionState state)
     {
         if (message == null) return;
         var rpcResult = factory.Resolve<RpcResult>();

@@ -16,8 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
+namespace Ferrite.Data;
 
-namespace Ferrite.TL;
-
-public readonly record struct TLObjectStream(IFileOwner? File, bool Success, ITLObject? Error);
+public interface IFileOwner
+{
+    public ValueTask<Stream> GetFileStream();
+    public long ReqMsgId { get; }
+}

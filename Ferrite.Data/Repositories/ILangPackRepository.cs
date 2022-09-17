@@ -16,14 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-
 namespace Ferrite.Data;
 
-public interface IDistributedObjectStore
+public interface ILangPackRepository
 {
-    public Task<bool> SaveFilePart(long fileId, int filePart, Stream data);
-    public Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
-    public Task<Stream> GetFilePart(long fileId, int filePart);
-    public Task<Stream> GetBigFilePart(long fileId, int filePart);
+    public Task<bool> SaveLanguageAsync(string langPack, LangPackLanguageDTO languageDto);
+    public Task<bool> SaveLangPackDifferenceAsync(string langPack, LangPackDifferenceDTO difference);
+    public Task<ICollection<LangPackLanguageDTO>> GetLanguagesAsync(string? langPack);
+    public Task<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode);
+    public Task<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode);
+    public Task<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion);
+    public Task<ICollection<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode, ICollection<string> keys);
 }

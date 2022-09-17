@@ -30,9 +30,9 @@ public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IDistributedObjectStore _objectStore;
+    private readonly IObjectStore _objectStore;
     private readonly IPersistentStore _store;
-    public SaveBigFilePart(ITLObjectFactory objectFactory, IDistributedObjectStore objectStore, IPersistentStore store)
+    public SaveBigFilePart(ITLObjectFactory objectFactory, IObjectStore objectStore, IPersistentStore store)
     {
         factory = objectFactory;
         _objectStore = objectStore;

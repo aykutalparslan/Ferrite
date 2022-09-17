@@ -25,6 +25,6 @@ public interface IUploadService
 {
     public Task<bool> SaveFilePart(long fileId, int filePart, Stream data);
     public Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
-    public Task<ServiceResult<IDistributedFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
+    public Task<ServiceResult<IFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
         string thumbSize, int offset, int limit, long regMsgId, bool precise = false, bool cdnSupported = false);
 }
