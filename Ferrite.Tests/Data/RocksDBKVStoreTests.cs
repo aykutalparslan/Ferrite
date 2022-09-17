@@ -88,5 +88,6 @@ public class RocksDBKVStoreTests
             count++;
         }
         Assert.Equal(0, count);
+        if(Directory.Exists(path)) Directory.Delete(path, true);
     }
 }

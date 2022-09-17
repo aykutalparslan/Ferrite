@@ -31,10 +31,9 @@ public class LocalFileOwnerTests
     [InlineData(8192)]
     public async Task LocalFileOwner_ShouldSaveAndGet(int len)
     {
-        if(Directory.Exists("object-metadata")) DeleteDirectory("object-metadata");
-        if(Directory.Exists("ferrite-files")) DeleteDirectory("ferrite-files");
-        FasterContext<ObjectId, ObjectMetadata> ctx = new("object-metadata");
-        LocalObjectStore store = new (ctx, "ferrite-files");
+        string pathSuffix = Random.Shared.Next().ToString();
+        FasterContext<ObjectId, ObjectMetadata> ctx = new("object-metadata"+pathSuffix);
+        LocalObjectStore store = new (ctx, "ferrite-files"+pathSuffix);
         var randomBytes = new byte[len * 10];
         Random.Shared.NextBytes(randomBytes);
         var l = new List<byte[]>();
@@ -43,21 +42,21 @@ public class LocalFileOwnerTests
             var b = randomBytes.AsSpan(i * len, len).ToArray();
             l.Add(b);
         }
-
+        long fileId = Random.Shared.Next();
         for (int i = 0; i < 10; i++)
         {
-            await store.SaveFilePart(1, i, new MemoryStream(l[i]));
+            await store.SaveFilePart(fileId, i, new MemoryStream(l[i]));
         }
         for (int i = 0; i < 10; i++)
         {
-            var fileStream = await store.GetFilePart(1, i);
+            var fileStream = await store.GetFilePart(fileId, i);
             var a = new byte[fileStream.Length];
             fileStream.Read(a);
             fileStream.Close();
             Assert.Equal(l[i], a);
         }
 
-        LocalFileOwner owner = new LocalFileOwner(new UploadedFileInfoDTO(1, len, 10,
+        LocalFileOwner owner = new LocalFileOwner(new UploadedFileInfoDTO(fileId, len, 10,
                 0, "", null, DateTimeOffset.Now, false),
             store, 0, len * 10, 1);
 
@@ -75,8 +74,8 @@ public class LocalFileOwnerTests
         
         Assert.Equal(randomBytes, actual);
         
-        if(Directory.Exists("object-metadata")) DeleteDirectory("object-metadata");
-        if(Directory.Exists("ferrite-files")) DeleteDirectory("ferrite-files");
+        if(Directory.Exists("object-metadata"+pathSuffix)) DeleteDirectory("object-metadata"+pathSuffix);
+        if(Directory.Exists("ferrite-files"+pathSuffix)) DeleteDirectory("ferrite-files"+pathSuffix);
     }
     //From: https://stackoverflow.com/a/329502/2015348
     private static void DeleteDirectory(string target_dir)
