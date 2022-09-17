@@ -11,7 +11,7 @@ The project is still a work in progress. The following are the features that are
 - MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
 - TL Serialization/Deserialization
 - auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
-- Saved Messages and Sending messages works with text messages to some extent.
+- Saved Messages and Sending messages works with text messages only.
 
 ## Debugging the server
 - Clone the repository.
