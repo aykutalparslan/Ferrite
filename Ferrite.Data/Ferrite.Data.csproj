@@ -32,6 +32,10 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="3.7.9.52" />
     <PackageReference Include="Elasticsearch.Net" Version="7.17.4" />
+    <PackageReference Include="Lucene.Net" Version="4.8.0-beta00016" />
+    <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />
+    <PackageReference Include="Lucene.Net.Queries" Version="4.8.0-beta00016" />
+    <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
     <PackageReference Include="Microsoft.FASTER.Core" Version="2.0.17" />
     <PackageReference Include="NEST" Version="7.17.4" />
     <PackageReference Include="NonBlocking" Version="2.1.0" />
