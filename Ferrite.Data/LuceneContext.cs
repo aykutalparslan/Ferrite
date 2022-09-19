@@ -48,7 +48,7 @@ public class LuceneContext
     public void Index(string id, Document doc)
     {
         AddField(id, doc, "_id");
-        _writer.AddDocument(doc);
+        _writer.UpdateDocument(new Term("_id", id), doc);
         _writer.Flush(triggerMerge: false, applyAllDeletes: false);
     }
     public void Delete(string id)
@@ -73,7 +73,7 @@ public class LuceneContext
         return docs;
     }
 
-    private static void AddField(object v, Document doc, string k)
+    public static void AddField(object v, Document doc, string k)
     {
         if (v is int i) doc.Add(new Int32Field(k, i, Field.Store.YES));
         else if (v is long l) doc.Add(new Int64Field(k, l, Field.Store.YES));

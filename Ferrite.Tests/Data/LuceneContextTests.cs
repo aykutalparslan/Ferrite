@@ -43,6 +43,19 @@ public class LuceneContextTests
             };
             context.Index(i.ToString(), doc);
         }
+        for (int i = 0; i < 20; i++)
+        {
+            var doc = new Document
+            {
+                new StringField("name",
+                    "name-" + (i * 11111),
+                    Field.Store.YES),
+                new TextField("favoritePhrase",
+                    "phrase-" + (i * 11111),
+                    Field.Store.YES)
+            };
+            context.Index(i.ToString(), doc);
+        }
 
         var docs = context.Search(new MultiPhraseQuery
         {
