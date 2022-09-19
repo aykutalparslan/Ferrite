@@ -16,57 +16,133 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data.Repositories;
 
 public class UserRepository : IUserRepository
 {
+    private readonly IKVStore _store;
+    private readonly IKVStore _storeTTL;
+
+    public UserRepository(IKVStore store, IKVStore storeTTL)
+    {
+        _store = store;
+        _store.SetSchema(new TableDefinition("ferrite", "users",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "phone", Type = DataType.String },
+                new DataColumn { Name = "username", Type = DataType.String }),
+            new KeyDefinition("by_phone",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "phone", Type = DataType.String }),
+            new KeyDefinition("by_username",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "username", Type = DataType.String })));
+        _storeTTL = storeTTL;
+        _storeTTL.SetSchema(new TableDefinition("ferrite", "account_ttls",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long })));
+    }
+
     public bool PutUser(UserDTO user)
     {
-        throw new NotImplementedException();
+        var userBytes = MessagePackSerializer.Serialize(user);
+        return _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
     }
 
     public bool UpdateUsername(long userId, string username)
     {
-        throw new NotImplementedException();
+        var userBytes = _store.Get(userId);
+        if (userBytes != null)
+        {
+            var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+            _store.Delete(user); //TODO: fix this by committing together with put
+            user.Username = username;
+            userBytes = MessagePackSerializer.Serialize(user);
+            _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
+            return true;
+        }
+
+        return false;
     }
 
     public bool UpdateUserPhone(long userId, string phone)
     {
-        throw new NotImplementedException();
+        var userBytes = _store.Get(userId);
+        if (userBytes != null)
+        {
+            var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+            _store.Delete(user); //TODO: fix this by committing together with put
+            user.Phone = phone;
+            userBytes = MessagePackSerializer.Serialize(user);
+            _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
+            return true;
+        }
+
+        return false;
     }
 
     public UserDTO? GetUser(long userId)
     {
-        throw new NotImplementedException();
+        var userBytes = _store.Get(userId);
+        if (userBytes != null)
+        {
+            return MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+        }
+
+        return null;
     }
 
     public UserDTO? GetUser(string phone)
     {
-        throw new NotImplementedException();
+        var userBytes = _store.GetBySecondaryIndex("by_phone", phone);
+        if (userBytes != null)
+        {
+            return MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+        }
+
+        return null;
     }
 
     public long? GetUserId(string phone)
     {
-        throw new NotImplementedException();
+        var userBytes = _store.GetBySecondaryIndex("by_phone", phone);
+        if (userBytes != null)
+        {
+            var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+            return user?.Id;
+        }
+
+        return null;
     }
 
     public UserDTO? GetUserByUsername(string username)
     {
-        throw new NotImplementedException();
+        var userBytes = _store.GetBySecondaryIndex("by_username", username);
+        if (userBytes != null)
+        {
+            return MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+        }
+
+        return null;
     }
 
     public bool DeleteUser(UserDTO user)
     {
-        throw new NotImplementedException();
+        return _store.Delete(user.Id); // delete by prefix as this is less error prone
     }
 
     public bool UpdateAccountTTL(long userId, int accountDaysTTL)
     {
-        throw new NotImplementedException();
+        var expire = DateTimeOffset.Now.AddDays(accountDaysTTL).ToUnixTimeSeconds();
+        return _storeTTL.Put(BitConverter.GetBytes(expire), userId);
     }
 
     public int GetAccountTTL(long userId)
     {
-        throw new NotImplementedException();
+        var expire = BitConverter.ToInt64(_storeTTL.Get(userId));
+        var expireDays = DateTimeOffset.FromUnixTimeSeconds(expire) - DateTimeOffset.Now;
+        return expireDays.Days;
     }
 }
