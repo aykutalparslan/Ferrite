@@ -48,10 +48,18 @@ public class RocksDBKVStore : IKVStore
 
     public bool Put(byte[] data, params object[] keys)
     {
+        MemcomparableKey primaryKey = GeneratePrimaryKey(keys);
+        PutInternal(data, keys, primaryKey);
+        return true;
+    }
+
+    private MemcomparableKey GeneratePrimaryKey(object[] keys)
+    {
         if (keys.Length != _table.PrimaryKey.Columns.Count)
         {
             throw new Exception("Parameter count mismatch.");
         }
+
         for (int i = 0; i < keys.Length; i++)
         {
             var col = _table.PrimaryKey.Columns[i];
@@ -61,7 +69,13 @@ public class RocksDBKVStore : IKVStore
                                     $"the parameter was of type {keys[i].GetType()}");
             }
         }
+
         var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
+        return primaryKey;
+    }
+
+    private void PutInternal(byte[] data, object[] keys, MemcomparableKey primaryKey)
+    {
         _context.Put(primaryKey.Value, data);
         foreach (var sc in _table.SecondaryIndices)
         {
@@ -70,18 +84,25 @@ public class RocksDBKVStore : IKVStore
             {
                 secondaryParams.Add(keys[_table.PrimaryKey.GetOrdinal(c.Name)]);
             }
+
             var secondaryKey = MemcomparableKey.Create(sc.FullName, secondaryParams);
             _context.Put(secondaryKey.Value, primaryKey.Value);
         }
-        return true;
     }
 
     public bool Delete(params object[] keys)
     {
         var key = MemcomparableKey.Create(_table.FullName, keys);
+        DeleteSecondaryIndices(keys, key);
+        if (keys.Length == _table.PrimaryKey.Columns.Count) _context.Delete(key.Value);
+        else _context.DeleteWithPrefix(key.ArrayValue);
+        return true;
+    }
+
+    private void DeleteSecondaryIndices(object[] keys, MemcomparableKey key)
+    {
         if (keys.Length == _table.PrimaryKey.Columns.Count)
         {
-            _context.Delete(key.Value);
             foreach (var sc in _table.SecondaryIndices)
             {
                 List<object> secondaryParams = new();
@@ -94,45 +115,35 @@ public class RocksDBKVStore : IKVStore
                 _context.Delete(secondaryKey.Value);
             }
         }
-        else
+        else if (_table.SecondaryIndices.Count > 0)
         {
-            if(_table.SecondaryIndices.Count == 0) _context.DeleteWithPrefix(key.ArrayValue);
-            else
+            var iter = _context.IterateKeys(key.ArrayValue);
+            foreach (var k in iter)
             {
-                var iter = _context.IterateKeys(key.ArrayValue);
-                foreach (var k in iter)
+                _context.Delete(k);
+                var primaryKey = MemcomparableKey.From(k);
+                foreach (var sc in _table.SecondaryIndices)
                 {
-                    _context.Delete(k);
-                    var primaryKey = MemcomparableKey.From(k);
-                    foreach (var sc in _table.SecondaryIndices)
+                    List<object> secondaryParams = new();
+                    foreach (var c in sc.Columns)
                     {
-                        List<object> secondaryParams = new();
-                        foreach (var c in sc.Columns)
-                        {
-                            secondaryParams.Add(primaryKey.GetValue(_table.PrimaryKey, c.Name));
-                        }
-
-                        var secondaryKey = MemcomparableKey.Create(sc.FullName, secondaryParams);
-                        _context.Delete(secondaryKey.Value);
+                        secondaryParams.Add(primaryKey.GetValue(_table.PrimaryKey, c.Name));
                     }
+
+                    var secondaryKey = MemcomparableKey.Create(sc.FullName, secondaryParams);
+                    _context.Delete(secondaryKey.Value);
                 }
             }
         }
-
-        return true;
     }
 
     public ValueTask<bool> DeleteAsync(params object[] keys)
     {
         var key = MemcomparableKey.Create(_table.FullName, keys);
-        if (keys.Length == _table.PrimaryKey.Columns.Count)
-        {
-            _context.Delete(key.Value);
-        }
-        else
-        {
-            _context.DeleteWithPrefix(key.ArrayValue);
-        }
+        if (keys.Length == _table.PrimaryKey.Columns.Count) _context.Delete(key.Value);
+        else if(_table.SecondaryIndices.Count == 0) _context.DeleteWithPrefix(key.ArrayValue);
+        
+        DeleteSecondaryIndices(keys, key);
         return ValueTask.FromResult(true);
     }
 
@@ -141,8 +152,8 @@ public class RocksDBKVStore : IKVStore
         var sc = _table.SecondaryIndices.FirstOrDefault(x=>x.Name == indexName);
         var secondaryKey = MemcomparableKey.Create(sc.FullName, keys);
         var primaryKey = _context.Get(secondaryKey.Value);
+        DeleteSecondaryIndices(keys, MemcomparableKey.From(primaryKey));
         _context.Delete(primaryKey);
-        _context.Delete(secondaryKey.Value);
         return true;
     }
 
@@ -152,7 +163,7 @@ public class RocksDBKVStore : IKVStore
         var secondaryKey = MemcomparableKey.Create(sc.FullName, keys);
         var primaryKey = _context.Get(secondaryKey.Value);
         _context.Delete(primaryKey);
-        _context.Delete(secondaryKey.Value);
+        DeleteSecondaryIndices(keys, MemcomparableKey.From(primaryKey));
         return ValueTask.FromResult(true);
     }
 

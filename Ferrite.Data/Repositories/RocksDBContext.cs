@@ -57,8 +57,9 @@ public class RocksDBContext : IDisposable
         iter.Seek(key);
         while(iter.Valid())
         {
-            if (iter.Key().Length < key.Length) yield break;
-            if (!key.AsSpan().SequenceEqual(iter.Key().AsSpan(0, key.Length)))
+            var iterKey = iter.Key();
+            if (iterKey.Length < key.Length) yield break;
+            if (!key.AsSpan().SequenceEqual(iterKey.AsSpan(0, key.Length)))
             {
                 yield break;
             }
@@ -72,12 +73,13 @@ public class RocksDBContext : IDisposable
         iter.Seek(key);
         while(iter.Valid())
         {
-            if (iter.Key().Length < key.Length) yield break;
-            if (!key.AsSpan().SequenceEqual(iter.Key().AsSpan(0, key.Length)))
+            var iterKey = iter.Key();
+            if (iterKey.Length < key.Length) yield break;
+            if (!key.AsSpan().SequenceEqual(iterKey.AsSpan(0, key.Length)))
             {
                 yield break;
             }
-            yield return iter.Key();
+            yield return iterKey;
             iter.Next();
         }
     }

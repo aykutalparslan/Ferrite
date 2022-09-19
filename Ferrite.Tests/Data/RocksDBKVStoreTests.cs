@@ -26,6 +26,61 @@ namespace Ferrite.Tests.Data;
 public class RocksDBKVStoreTests
 {
     [Fact]
+    public void RocksDBKVStore_Should_PutAndGet()
+    {
+        string path = "test-" + Random.Shared.Next();
+        using RocksDBContext context = new RocksDBContext(path);
+        RocksDBKVStore store = new RocksDBKVStore(context);
+        var table = new TableDefinition("test", "test",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "phone_number", Type = DataType.String }),
+            new KeyDefinition("by_phone",
+                new DataColumn { Name = "phone_number", Type = DataType.String }));
+        store.SetSchema(table);
+        byte[] expected = RandomNumberGenerator.GetBytes(128);
+        store.Put(expected, 123L, "5554443322");
+        Assert.Equal(expected, store.Get(123L));
+        Assert.Equal(expected, store.GetBySecondaryIndex("by_phone", "5554443322"));
+        if(Directory.Exists(path)) Directory.Delete(path, true);
+    }
+    [Fact]
+    public void RocksDBKVStore_Should_Iterate()
+    {
+        string path = "test-" + Random.Shared.Next();
+        using RocksDBContext context = new RocksDBContext(path);
+        RocksDBKVStore store = new RocksDBKVStore(context);
+        var table = new TableDefinition("test", "test",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "phone_number", Type = DataType.String }),
+            new KeyDefinition("by_phone",
+                new DataColumn { Name = "phone_number", Type = DataType.String }));
+        store.SetSchema(table);
+        List<byte[]> records = new();
+        for (int i = 0; i < 10; i++)
+        {
+            byte[] b = RandomNumberGenerator.GetBytes(128);
+            records.Add(b);
+        }
+
+        int num = 0;
+        foreach (var r in records)
+        {
+            store.Put(r, 123L, "555444332" + num++);
+        }
+
+        var iterator = store.Iterate(123L);
+        int count = 0;
+        foreach (var b in iterator)
+        {
+            Assert.Equal(records[count], b);
+            count++;
+        }
+        
+        if(Directory.Exists(path)) Directory.Delete(path, true);
+    }
+    [Fact]
     public void RocksDBKVStore_Should_DeleteSecondaryKeys()
     {
         string path = "test-" + Random.Shared.Next();
@@ -88,6 +143,30 @@ public class RocksDBKVStoreTests
             count++;
         }
         Assert.Equal(0, count);
+        if(Directory.Exists(path)) Directory.Delete(path, true);
+    }
+    [Fact]
+    public void RocksDBKVStore_Should_DeleteBySecondaryIndex()
+    {
+        string path = "test-" + Random.Shared.Next();
+        using RocksDBContext context = new RocksDBContext(path);
+        RocksDBKVStore store = new RocksDBKVStore(context);
+        var table = new TableDefinition("test", "test",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "phone_number", Type = DataType.String }),
+            new KeyDefinition("by_phone",
+                new DataColumn { Name = "phone_number", Type = DataType.String }));
+        store.SetSchema(table);
+        store.Put(RandomNumberGenerator.GetBytes(8), 123L, "5554443322");
+        var primaryKey = new MemcomparableKey(table.FullName,  123L).Append("5554443322");
+        var secondaryKey = new MemcomparableKey(table.SecondaryIndices[0].FullName, "5554443322");
+        Assert.NotNull(context.Get(primaryKey.Value));
+        Assert.NotNull(context.Get(secondaryKey.Value));
+        //store.Delete(123L, "5554443322");
+        store.DeleteBySecondaryIndex("by_phone", "5554443322");
+        Assert.Null(context.Get(primaryKey.Value));
+        Assert.Null(context.Get(secondaryKey.Value));
         if(Directory.Exists(path)) Directory.Delete(path, true);
     }
 }
