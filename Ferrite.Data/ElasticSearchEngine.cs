@@ -38,21 +38,21 @@ public class ElasticSearchEngine : ISearchEngine
         _client = new ElasticClient(connectionSettings);*/
     }
 
-    public async Task<bool> IndexUser(Search.UserSearchModel user)
+    public async ValueTask<bool> IndexUser(Search.UserSearchModel user)
     {
         /*var result = await _client.IndexAsync(user, _ => _.Index("users").Id(user.Id));
         return result.Result is Result.Created or Result.Updated;*/
         return true;
     }
 
-    public async Task<bool> DeleteUser(long userId)
+    public async ValueTask<bool> DeleteUser(long userId)
     {
         /*var result = await _client.DeleteAsync(new DeleteRequest("users", userId));
         return result.Result is Result.Deleted or Result.NotFound;*/
         return true;
     }
 
-    public async Task<IReadOnlyCollection<Search.UserSearchModel>> SearchByUsername(string q)
+    public async ValueTask<List<UserSearchModel>> SearchByUsername(string q)
     {
         /*var result = await _client.SearchAsync<Search.UserSearchModel>(s =>
             s.Query(q => q.Prefix(c => c
@@ -66,21 +66,21 @@ public class ElasticSearchEngine : ISearchEngine
         return new List<UserSearchModel>();
     }
 
-    public async Task<bool> IndexMessage(MessageSearchModel message)
+    public async ValueTask<bool> IndexMessage(MessageSearchModel message)
     {
         /*var result = await _client.IndexAsync(message, _ => _.Index("messages").Id(message.Id));
         return result.Result is Result.Created or Result.Updated;*/
         return true;
     }
 
-    public async Task<bool> DeleteMessage(string id)
+    public async ValueTask<bool> DeleteMessage(string id)
     {
         /*var result = await _client.DeleteAsync(new DeleteRequest("messages", id));
         return result.Result is Result.Deleted or Result.NotFound;*/
         return true;
     }
 
-    public async Task<IReadOnlyCollection<MessageSearchModel>> SearchMessages(string q)
+    public async ValueTask<List<MessageSearchModel>> SearchMessages(string q)
     {
         /*var result = await _client.SearchAsync<MessageSearchModel>(s =>
             s.Query(q => q.Prefix(c => c
