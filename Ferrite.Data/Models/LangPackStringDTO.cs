@@ -16,17 +16,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record LangPackStringDTO
 {
-    public LangPackStringType StringType { get; init; }
-    public string Key { get; init; } = default!;
-    public string Value { get; init; } = default!;
-    public string ZeroValue { get; init; } = default!;
-    public string OneValue { get; init; } = default!;
-    public string TwoValue { get; init; } = default!;
-    public string FewValue { get; init; } = default!;
-    public string ManyValue { get; init; } = default!;
-    public string OtherValue { get; init; } = default!;
+    public LangPackStringType StringType { get; set; }
+    public string Key { get; set; } = default!;
+    public string Value { get; set; } = default!;
+    public string ZeroValue { get; set; } = default!;
+    public string OneValue { get; set; } = default!;
+    public string TwoValue { get; set; } = default!;
+    public string FewValue { get; set; } = default!;
+    public string ManyValue { get; set; } = default!;
+    public string OtherValue { get; set; } = default!;
 }
