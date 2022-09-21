@@ -26,7 +26,6 @@ public class RedisMessageBox : IMessageBox
     private readonly IAtomicCounter _ptsCounter;
     private readonly IAtomicCounter _messageIdCounter;
     private readonly long _userId;
-    private readonly SortedSet<RedisKey> _dialogs = new SortedSet<RedisKey>();
     public RedisMessageBox(ConnectionMultiplexer redis, long userId)
     {
         _redis = redis;
@@ -44,10 +43,8 @@ public class RedisMessageBox : IMessageBox
     {
         IDatabase db = _redis.GetDatabase();
         RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
-        if (!_dialogs.Contains(key))
-        {
-            _dialogs.Add(key);
-        }
+        RedisKey dialogsKey = $"msg:dialogs:{_userId}";
+        db.SortedSetAdd(dialogsKey, $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}", 0);
         db.SortedSetAdd(key, messageId, messageId);
         return (int)await _ptsCounter.IncrementAndGet();
     }
@@ -67,11 +64,7 @@ public class RedisMessageBox : IMessageBox
         IDatabase db = _redis.GetDatabase();
         RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
         await db.SortedSetRemoveRangeByScoreAsync(key, 0, maxId);
-        int unread = 0;
-        foreach (var k in _dialogs)
-        {
-            unread += (int)await db.SortedSetLengthAsync(k);
-        }
+        GetUnread(db, out var unread);
         RedisKey keyRead = $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
         //TODO: Use a LUA script for this
         bool success = false;
@@ -91,6 +84,17 @@ public class RedisMessageBox : IMessageBox
         return unread;
     }
 
+    private void GetUnread(IDatabase db, out int unread)
+    {
+        unread = 0;
+        RedisKey dialogsKey = $"msg:dialogs:{_userId}";
+        var dialogs = db.SortedSetScan(dialogsKey);
+        foreach (var e in dialogs)
+        {
+            unread += (int) db.SortedSetLength(new RedisKey((string)e.Element));
+        }
+    }
+
     public async Task<int> ReadMessagesMaxId(PeerDTO peer)
     {
         IDatabase db = _redis.GetDatabase();
@@ -101,11 +105,7 @@ public class RedisMessageBox : IMessageBox
     public async Task<int> UnreadMessages()
     {
         IDatabase db = _redis.GetDatabase();
-        int unread = 0;
-        foreach (var k in _dialogs)
-        {
-            unread += (int)await db.SortedSetLengthAsync(k);
-        }
+        GetUnread(db, out var unread);
 
         return unread;
     }
