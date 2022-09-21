@@ -80,10 +80,4 @@ public class FasterCounterTests
             Assert.True(bag2.Contains(i));
         }
     }
-    public static void MultiThreadedTest()
-    {
-        
-
-        
-    }
 }
