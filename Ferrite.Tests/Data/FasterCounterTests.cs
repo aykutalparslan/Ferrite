@@ -17,6 +17,7 @@
 // 
 
 using System.Collections.Concurrent;
+using System.Runtime.Loader;
 using Ferrite.Data;
 using Xunit;
 
@@ -79,5 +80,19 @@ public class FasterCounterTests
         {
             Assert.True(bag2.Contains(i));
         }
+    }
+    [Theory]
+    [InlineData(1, 5, 5)]
+    [InlineData(90, 100, 100)]
+    [InlineData(100, 94, 100)]
+    [InlineData(100, 150, 150)]
+    [InlineData(150, 110, 150)]
+    public async void FasterCounter_Should_IncrementTo(int initial, int a, int b)
+    {
+        FasterContext<string, long> context = new FasterContext<string, long>();
+        FasterCounter counter = new FasterCounter(context, "counter1");
+        await counter.IncrementTo(initial);
+        await counter.IncrementTo(a);
+        Assert.Equal(b, await counter.Get());
     }
 }

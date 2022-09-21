@@ -37,42 +37,42 @@ public class RedisUpdatesContext : IUpdatesContext
         _commonMessageBox = new RedisMessageBox(redis, userId);
         _secondaryMessageBox = authKeyId != null ? new RedisSecretMessageBox(redis, (long)authKeyId) : null;
     }
-    public async Task<int> Pts()
+    public async ValueTask<int> Pts()
     {
         return await _commonMessageBox.Pts();
     }
 
-    public async Task<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
+    public async ValueTask<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
     {
         return await _commonMessageBox.IncrementPtsForMessage(peer, messageId);
     }
 
-    public async Task<int> NextMessageId()
+    public async ValueTask<int> NextMessageId()
     {
         return await _commonMessageBox.NextMessageId();
     }
 
-    public async Task<int> ReadMessages(PeerDTO peer, int maxId)
+    public async ValueTask<int> ReadMessages(PeerDTO peer, int maxId)
     {
         return await _commonMessageBox.ReadMessages(peer, maxId);
     }
 
-    public async Task<int> ReadMessagesMaxId(PeerDTO peer)
+    public async ValueTask<int> ReadMessagesMaxId(PeerDTO peer)
     {
         return await _commonMessageBox.ReadMessagesMaxId(peer);
     }
 
-    public async Task<int> UnreadMessages()
+    public async ValueTask<int> UnreadMessages()
     {
         return await _commonMessageBox.UnreadMessages();
     }
 
-    public async Task<int> UnreadMessages(PeerDTO peer)
+    public async ValueTask<int> UnreadMessages(PeerDTO peer)
     {
         return await _commonMessageBox.UnreadMessages(peer);
     }
 
-    public async Task<int> IncrementPts()
+    public async ValueTask<int> IncrementPts()
     {
         return await _commonMessageBox.IncrementPts();
     }

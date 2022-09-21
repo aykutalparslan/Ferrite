@@ -63,7 +63,16 @@ public class FasterCounter : IAtomicCounter
         return value;
     }
 
-    
+    public async ValueTask<long> IncrementTo(long val)
+    {
+        var session = _context.Store.NewSession(new RMWSimpleFunctions<string, long>(
+            (input, oldValue) => input > oldValue ? input : oldValue));
+        session.RMW(_name, val, out var output);
+        await session.WaitForCommitAsync();
+        return output;
+    }
+
+
     class RMWSimpleFunctions<Key, Value> : SimpleFunctions<Key, Value>
     {
         public RMWSimpleFunctions(Func<Value, Value, Value> merger) : base(merger) { }
