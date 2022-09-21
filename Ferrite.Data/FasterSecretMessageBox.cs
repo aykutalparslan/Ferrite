@@ -16,20 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using StackExchange.Redis;
-
 namespace Ferrite.Data;
 
-public class RedisSecretMessageBox : ISecretMessageBox
+public class FasterSecretMessageBox : ISecretMessageBox
 {
-    private readonly ConnectionMultiplexer _redis;
     private readonly IAtomicCounter _counter;
     private readonly long _authKeyId;
-    public RedisSecretMessageBox(ConnectionMultiplexer redis, long authKeyId)
+    public FasterSecretMessageBox(FasterContext<string, long> counterContext, long authKeyId)
     {
-        _redis = redis;
         _authKeyId = authKeyId;
-        _counter = new RedisCounter(redis, $"seq:qts:{authKeyId}");
+        _counter = new FasterCounter(counterContext , $"seq:qts:{authKeyId}");
     }
     public async ValueTask<int> Qts()
     {

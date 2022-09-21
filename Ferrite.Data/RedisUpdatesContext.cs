@@ -77,12 +77,12 @@ public class RedisUpdatesContext : IUpdatesContext
         return await _commonMessageBox.IncrementPts();
     }
 
-    public async Task<int> Qts()
+    public async ValueTask<int> Qts()
     {
         return _secondaryMessageBox != null ? await _secondaryMessageBox.Qts() : 0;
     }
 
-    public async Task<int> IncrementQts()
+    public async ValueTask<int> IncrementQts()
     {
         return _secondaryMessageBox != null ? await _secondaryMessageBox.IncrementQts() : 0;
     }
