@@ -32,8 +32,8 @@ public interface IPersistentStore
     public Task<ICollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone);
     public Task<bool> DeleteAuthorizationAsync(long authKeyId);
     //public Task<bool> DeleteAuthKeyAsync(long authKeyId);
-    public Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL);
-    public Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
+    //public Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL);
+    //public Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
     public Task<bool> SaveUserAsync(UserDTO user);
     public Task<bool> UpdateUserAsync(UserDTO user);
     public Task<bool> UpdateUsernameAsync(long userId, string username);

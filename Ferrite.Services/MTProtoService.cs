@@ -38,14 +38,14 @@ public class MTProtoService : IMTProtoService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count)
+    public async Task<IReadOnlyCollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count)
     {
-        var serverSalts = await _store.GetServerSaltsAsync(authKeyId, count);
+        var serverSalts = await _unitOfWork.ServerSaltRepository.GetServerSaltsAsync(authKeyId, count);
         if (serverSalts.Count == 0)
         {
             await GenerateSalts(authKeyId);
         }
-        return await _store.GetServerSaltsAsync(authKeyId, count);
+        return await _unitOfWork.ServerSaltRepository.GetServerSaltsAsync(authKeyId, count);
     }
 
     private async Task GenerateSalts(long authKeyId)
@@ -57,18 +57,18 @@ public class MTProtoService : IMTProtoService
         {
             RandomNumberGenerator.Fill(saltBytes);
             long salt = BitConverter.ToInt64(saltBytes);
-            await _store.SaveServerSaltAsync(authKeyId, salt, time + offset, offset + 3600);
-            await _cache.PutServerSaltAsync(authKeyId, salt, time + offset, new TimeSpan(0, 0, offset + 3600));
+            _unitOfWork.ServerSaltRepository.PutServerSalt(authKeyId, new ServerSaltDTO(salt, time + offset), offset + 3600);
+            await _unitOfWork.SaveAsync();
             offset += 3600;
         }
     }
 
     public async Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
     {
-        long validSince = await _cache.GetServerSaltValidityAsync(authKeyId, serverSalt);
+        long validSince = await _unitOfWork.ServerSaltRepository.GetServerSaltValidityAsync(authKeyId, serverSalt);
         if(validSince == 0)
         {
-            var serverSalts = _store.GetServerSaltsAsync(authKeyId, 64);
+            var serverSalts = _unitOfWork.ServerSaltRepository.GetServerSaltsAsync(authKeyId, 64);
             if (serverSalts.Result.Count == 0)
             {
                 _ = GenerateSalts(authKeyId);

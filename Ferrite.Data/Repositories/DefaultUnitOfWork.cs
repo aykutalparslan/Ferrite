@@ -38,6 +38,8 @@ public class DefaultUnitOfWork : IUnitOfWork
         AuthSessionRepository = new AuthSessionRepository(new RedisDataStore(redisConfig));
         PhoneCodeRepository = new PhoneCodeRepository(new RedisDataStore(redisConfig));
         SignInRepository = new SignInRepository(new RedisDataStore(redisConfig));
+        ServerSaltRepository =
+            new ServerSaltRepository(new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }

@@ -23,7 +23,7 @@ namespace Ferrite.Services;
 
 public interface IMTProtoService
 {
-    public Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
+    public Task<IReadOnlyCollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
     public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
     public Task<bool> PutAuthKeyAsync(long authKeyId, byte[] authKey);
     public bool PutAuthKey(long authKeyId, byte[] authKey);

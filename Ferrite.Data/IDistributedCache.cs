@@ -52,14 +52,14 @@ public interface IDistributedCache
     //public Task<bool> PutPhoneCodeAsync(string phoneNumber, string phoneCodeHash, string phoneCode, TimeSpan expiresIn);
     //public Task<bool> PutSignInAsync(long authKeyId, string phoneNumber, string phoneCodeHash);
     //public Task<long> GetSignInAsync(string phoneNumber, string phoneCodeHash);
-    public Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn);
+    //public Task<bool> PutServerSaltAsync(long authKeyId, long serverSalt, long validSince, TimeSpan expiresIn);
     /// <summary>
     /// 
     /// </summary>
     /// <param name="authKeyId"></param>
     /// <param name="serverSalt"></param>
     /// <returns>ValidSince</returns>
-    public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
+    //public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
     public Task<bool> PutLoginTokenAsync(LoginViaQRDTO login, TimeSpan expiresIn);
     public Task<LoginViaQRDTO?> GetLoginTokenAsync(byte[] token);
     public Task<bool> PutUserStatusAsync(long userId, bool status);
