@@ -39,13 +39,13 @@ public class AuthService : IAuthService
     private const int PhoneCodeTimeout = 60;//seconds
 
     public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store, ISearchEngine search,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork, ICounterFactory counterFactory)
     {
         _random = random;
         _cache = cache;
         _store = store;
         _search = search;
-        _userIdCnt = _cache.GetCounter("counter_user_id");
+        _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
     }
 

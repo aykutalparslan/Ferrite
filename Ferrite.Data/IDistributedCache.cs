@@ -22,7 +22,7 @@ namespace Ferrite.Data;
 
 public interface IDistributedCache
 {
-    public IAtomicCounter GetCounter(string name);
+    //public IAtomicCounter GetCounter(string name);
     public IUpdatesContext GetUpdatesContext(long? authKeyId, long userId);
     //public Task<byte[]> GetAuthKeyAsync(long authKeyId);
     //public byte[]? GetAuthKey(long authKeyId);
