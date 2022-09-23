@@ -150,6 +150,7 @@ public class Program
         builder.Register(_=> new RedisPipe("localhost:6379")).As<IDistributedPipe>();
         //builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.Register(_=> new FasterCounterFactory("faster-counter-data")).As<ICounterFactory>();
+        builder.Register(_=> new FasterUpdatesContextFactory("faster-updates-data")).As<IUpdatesContextFactory>();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         builder.RegisterType<SessionService>().As<ISessionService>().SingleInstance();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();

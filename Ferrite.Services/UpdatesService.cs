@@ -33,8 +33,11 @@ public class UpdatesService : IUpdatesService
     private readonly IPersistentStore _store;
     private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUpdatesContextFactory _updatesContextFactory;
+
     public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe,
-        IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork)
+        IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork,
+        IUpdatesContextFactory updatesContextFactory)
     {
         _time = time;
         _sessions = sessions;
@@ -42,12 +45,13 @@ public class UpdatesService : IUpdatesService
         _store = store;
         _cache = cache;
         _unitOfWork = unitOfWork;
+        _updatesContextFactory = updatesContextFactory;
     }
 
     public async Task<StateDTO> GetState(long authKeyId)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         return new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds(),
@@ -60,7 +64,7 @@ public class UpdatesService : IUpdatesService
         int qts, int? ptsTotalLimit = null)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int currentPts = await updatesCtx.Pts();
         var state = new StateDTO()
         {
@@ -100,7 +104,7 @@ public class UpdatesService : IUpdatesService
         //TODO: we should be able to get the active sessions by the userId
         foreach (var a in authorizations)
         {
-            var updatesCtx = _cache.GetUpdatesContext(a.AuthKeyId, a.UserId);
+            var updatesCtx = _updatesContextFactory.GetUpdatesContext(a.AuthKeyId, a.UserId);
             int seq = await updatesCtx.IncrementSeq();
             var updateList = new List<UpdateBase>() { update };
             List<UserDTO> userList = new();
@@ -160,7 +164,7 @@ public class UpdatesService : IUpdatesService
     public async Task<int> IncrementUpdatesSequence(long authKeyId)
     {
         var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         return await updatesCtx.IncrementSeq();
     }
 }
