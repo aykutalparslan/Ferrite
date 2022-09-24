@@ -183,8 +183,6 @@ public class StreamingRequestTests
             return authKeys[a];
         });
         builder.RegisterMock(proto);
-        var redis = new Mock<IDistributedCache>();
-        builder.RegisterMock(redis);
         ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
         var objectStore = new Mock<IObjectStore>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 

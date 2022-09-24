@@ -203,9 +203,7 @@ public class AllocationFreeSerializationTests
             }
             return authKeys[a];
         });
-        
-        var redis = new Mock<IDistributedCache>();
-        
+
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
         var tl = Assembly.Load("Ferrite.TL");
@@ -220,7 +218,6 @@ public class AllocationFreeSerializationTests
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(proto);
         builder.RegisterMock(cassandra);
-        builder.RegisterMock(redis);
         builder.RegisterMock(logger);
         var container = builder.Build();
         return container;

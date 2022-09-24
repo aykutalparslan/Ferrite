@@ -29,7 +29,6 @@ public class SessionService : ISessionService
     public Guid NodeId { get; private set; }
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
     private readonly ConcurrentDictionary<Nonce, MTProtoSession> _localAuthSessions = new();
-    private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
     private Guid GetNodeId()
     {
@@ -45,10 +44,9 @@ public class SessionService : ISessionService
             return guid;
         }
     }
-    public SessionService(IDistributedCache cache, IUnitOfWork unitOfWork)
+    public SessionService(IUnitOfWork unitOfWork)
     {
         NodeId = GetNodeId();
-        _cache = cache;
         _unitOfWork = unitOfWork;
     }
     public async Task<bool> AddSessionAsync(SessionState state, MTProtoSession session)

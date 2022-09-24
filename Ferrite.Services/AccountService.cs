@@ -28,17 +28,15 @@ namespace Ferrite.Services;
 
 public partial class AccountService : IAccountService
 {
-    private readonly IDistributedCache _cache;
     private readonly IPersistentStore _store;
     private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
     private readonly IUnitOfWork _unitOfWork;
     private static Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
     private const int PhoneCodeTimeout = 60;//seconds
-    public AccountService(IDistributedCache cache, IPersistentStore store, 
+    public AccountService(IPersistentStore store, 
         ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork)
     {
-        _cache = cache;
         _store = store;
         _search = search;
         _random = random;

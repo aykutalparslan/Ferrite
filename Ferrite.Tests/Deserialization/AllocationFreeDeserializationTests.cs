@@ -219,7 +219,6 @@ public class AllocationFreeDeserializationTests
             }
             return authKeys[a];
         });
-        var redis = new Mock<IDistributedCache>();
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
         
@@ -234,7 +233,6 @@ public class AllocationFreeDeserializationTests
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(cassandra);
-        builder.RegisterMock(redis);
         builder.RegisterMock(logger);
         builder.RegisterMock(proto);
         var container = builder.Build();

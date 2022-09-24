@@ -25,13 +25,10 @@ namespace Ferrite.Services;
 public class ContactsService : IContactsService
 {
     private readonly IPersistentStore _store;
-    private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
-    public ContactsService(IPersistentStore store, IDistributedCache cache,
-        IUnitOfWork unitOfWork)
+    public ContactsService(IPersistentStore store, IUnitOfWork unitOfWork)
     {
         _store = store;
-        _cache = cache;
         _unitOfWork = unitOfWork;
     }
 

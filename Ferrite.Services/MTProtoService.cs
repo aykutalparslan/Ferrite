@@ -26,14 +26,12 @@ namespace Ferrite.Services;
 public class MTProtoService : IMTProtoService
 {
     private readonly IPersistentStore _store;
-    private readonly IDistributedCache _cache;
     private readonly IMTProtoTime _time;
     private readonly IUnitOfWork _unitOfWork;
-    public MTProtoService(IPersistentStore store, IDistributedCache cache, IMTProtoTime time,
+    public MTProtoService(IPersistentStore store, IMTProtoTime time,
         IUnitOfWork unitOfWork)
     {
         _store = store;
-        _cache = cache;
         _time = time;
         _unitOfWork = unitOfWork;
     }

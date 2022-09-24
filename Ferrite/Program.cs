@@ -145,9 +145,6 @@ public class Program
             .As<ISearchEngine>().SingleInstance();
         builder.Register(_ => new LangPackDataStore("ferrite","localhost"))
             .As<ILangPackDataStore>().SingleInstance();
-        builder.Register(_=> new RedisCache("localhost:6379", new MTProtoTime()))
-            .As<IDistributedCache>().SingleInstance();
-        builder.Register(_=> new RedisPipe("localhost:6379")).As<IDistributedPipe>();
         //builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.Register(_=> new FasterCounterFactory("faster-counter-data")).As<ICounterFactory>();
         builder.Register(_=> new FasterUpdatesContextFactory("faster-updates-data")).As<IUpdatesContextFactory>();

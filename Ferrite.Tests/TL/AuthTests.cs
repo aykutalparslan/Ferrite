@@ -1184,7 +1184,6 @@ public class AuthTests
             }
             return authKeys[a];
         });
-        var redis = new Mock<IDistributedCache>();
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
         Queue<long> unixTimes = new Queue<long>();
@@ -1288,7 +1287,6 @@ public class AuthTests
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterMock(proto);
         builder.RegisterMock(cassandra);
-        builder.RegisterMock(redis);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
         builder.RegisterType<AuthKeyProcessor>();
