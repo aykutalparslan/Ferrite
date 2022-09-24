@@ -17,6 +17,7 @@
 //
 
 using System.Text.RegularExpressions;
+using DotNext.Threading;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -44,12 +45,14 @@ public partial class AccountService : IAccountService
     }
     public async Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo)
     {
-        return await _store.SaveDeviceInfoAsync(deviceInfo);
+        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds)
     {
-        return await _store.DeleteDeviceInfoAsync(authKeyId, token, otherUserIds);
+        _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(authKeyId, token, otherUserIds);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
@@ -268,8 +271,8 @@ public partial class AccountService : IAccountService
         foreach (var a in authorizations)
         {
             _unitOfWork.AuthorizationRepository.DeleteAuthorization(a.AuthKeyId);
-            var device = await _store.GetDeviceInfoAsync(a.AuthKeyId);
-            await _store.DeleteDeviceInfoAsync(a.AuthKeyId, device.Token, device.OtherUserIds);
+            var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(a.AuthKeyId);
+             _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(a.AuthKeyId, device.Token, device.OtherUserIds);
             await _store.DeleteNotifySettingsAsync(a.AuthKeyId);
             await _unitOfWork.SaveAsync();
         }

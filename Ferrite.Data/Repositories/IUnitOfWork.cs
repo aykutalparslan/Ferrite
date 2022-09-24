@@ -35,6 +35,7 @@ public interface IUnitOfWork
     IDeviceLockedRepository DeviceLockedRepository { get; }
     IUserRepository UserRepository { get; }
     IAppInfoRepository AppInfoRepository { get; }
+    IDeviceInfoRepository DeviceInfoRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }
