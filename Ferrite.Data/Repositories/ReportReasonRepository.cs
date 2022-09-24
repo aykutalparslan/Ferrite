@@ -21,7 +21,7 @@ namespace Ferrite.Data.Repositories;
 public class ReportReasonRepository : IReportReasonRepository
 {
     private readonly IKVStore _store;
-    public ReportReasonRepository(IKVStore store, IKVStore storeExported)
+    public ReportReasonRepository(IKVStore store)
     {
         _store = store;
         _store.SetSchema(new TableDefinition("ferrite", "report_reasons",

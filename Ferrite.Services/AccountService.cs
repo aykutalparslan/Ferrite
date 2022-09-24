@@ -126,7 +126,8 @@ public partial class AccountService : IAccountService
         {
             return false;
         }
-        return await _store.SavePeerReportReasonAsync(auth.UserId, peer, reason);
+        _unitOfWork.ReportReasonRepository.PutPeerReportReason(auth.UserId, peer, reason);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> CheckUsername(string username)

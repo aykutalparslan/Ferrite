@@ -23,7 +23,7 @@ namespace Ferrite.Data.Repositories;
 public class NotifySettingsRepository : INotifySettingsRepository
 {
     private readonly IKVStore _store;
-    public NotifySettingsRepository(IKVStore store, IKVStore storeUsers)
+    public NotifySettingsRepository(IKVStore store)
     {
         _store = store;
         _store.SetSchema(new TableDefinition("ferrite", "devices",
