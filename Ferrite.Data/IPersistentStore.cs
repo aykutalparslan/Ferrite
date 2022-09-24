@@ -56,9 +56,9 @@ public interface IPersistentStore
     /// <param name="user"></param>
     /// <returns></returns>
     //public Task<bool> DeleteUserAsync(UserDTO user);
-    public Task<bool> SaveAppInfoAsync(AppInfoDTO appInfo);
-    public Task<AppInfoDTO?> GetAppInfoAsync(long authKeyId);
-    public Task<long?> GetAuthKeyIdByAppHashAsync(long hash);
+    //public Task<bool> SaveAppInfoAsync(AppInfoDTO appInfo);
+    //public Task<AppInfoDTO?> GetAppInfoAsync(long authKeyId);
+    //public Task<long?> GetAuthKeyIdByAppHashAsync(long hash);
     public Task<bool> SaveDeviceInfoAsync(DeviceInfoDTO deviceInfo);
     public Task<DeviceInfoDTO?> GetDeviceInfoAsync(long authKeyId);
     public Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds);

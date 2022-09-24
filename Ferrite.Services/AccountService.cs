@@ -59,7 +59,7 @@ public partial class AccountService : IAccountService
 
     public async Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
     {
-        var info = await _store.GetAppInfoAsync(authKeyId);
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info.LangPack.ToLower().Contains("android"))
         {
@@ -377,7 +377,7 @@ public partial class AccountService : IAccountService
         List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
         {
-            auths.Add(await _store.GetAppInfoAsync(a.AuthKeyId));
+            auths.Add(_unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId));
         }
 
         return new AuthorizationsDTO(_unitOfWork.UserRepository.GetAccountTTL(auth.UserId), auths);
@@ -385,7 +385,7 @@ public partial class AccountService : IAccountService
 
     public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)
     {
-        var sessAuthKeyId = await _store.GetAuthKeyIdByAppHashAsync(hash);
+        var sessAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if (sessAuthKeyId == null)
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
@@ -425,17 +425,18 @@ public partial class AccountService : IAccountService
     public async Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled, bool callRequestsDisabled)
     {
-        var appAuthKeyId = await _store.GetAuthKeyIdByAppHashAsync(hash);
+        var appAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if(appAuthKeyId == null)
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
         }
-        var info = await _store.GetAppInfoAsync((long)appAuthKeyId);
-        var success =await _store.SaveAppInfoAsync(info with
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
+        var success = _unitOfWork.AppInfoRepository.PutAppInfo(info with
         {
             EncryptedRequestsDisabled = encryptedRequestsDisabled,
             CallRequestsDisabled = callRequestsDisabled
         });
+        await _unitOfWork.SaveAsync();
         return new ServiceResult<bool>(success, success, ErrorMessages.None);
     }
 }

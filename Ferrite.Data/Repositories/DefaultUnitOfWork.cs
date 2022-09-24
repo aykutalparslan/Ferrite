@@ -45,6 +45,7 @@ public class DefaultUnitOfWork : IUnitOfWork
         LoginTokenRepository = new LoginTokenRepository(new RedisDataStore(redisConfig));
         DeviceLockedRepository = new DeviceLockedRepository(new RedisDataStore(redisConfig));
         UserRepository = new UserRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
+        AppInfoRepository = new AppInfoRepository(new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -60,6 +61,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public ILoginTokenRepository LoginTokenRepository { get; }
     public IDeviceLockedRepository DeviceLockedRepository { get; }
     public IUserRepository UserRepository { get; }
+    public IAppInfoRepository AppInfoRepository { get; }
 
     public bool Save()
     {

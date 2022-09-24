@@ -63,7 +63,7 @@ public class UserService : IUsersService
         }
         var user = _unitOfWork.UserRepository.GetUser(userId);
         user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
-        var info = await _store.GetAppInfoAsync(authKeyId);
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info.LangPack.ToLower().Contains("android"))
         {

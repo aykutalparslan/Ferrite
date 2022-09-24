@@ -72,7 +72,7 @@ public class AuthService : IAuthService
                 LoggedIn = true
             });
             await _unitOfWork.SaveAsync();
-            var app = await _store.GetAppInfoAsync(t.AuthKeyId);
+            var app = _unitOfWork.AppInfoRepository.GetAppInfo(t.AuthKeyId);
             return app;
         }
         return null;
@@ -456,12 +456,13 @@ public class AuthService : IAuthService
 
     public async Task<bool> SaveAppInfo(AppInfoDTO info)
     {
-        return await _store.SaveAppInfoAsync(info);
+        _unitOfWork.AppInfoRepository.PutAppInfo(info);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<AppInfoDTO?> GetAppInfo(long authKeyId)
     {
-        return await _store.GetAppInfoAsync(authKeyId);
+        return _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
     }
 }
 
