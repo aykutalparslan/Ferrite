@@ -119,16 +119,18 @@ public class ContactsService : IContactsService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
-            return await _store.SaveBlockedUserAsync(auth.UserId, id.ChannelId, PeerType.Channel);
+            _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.ChannelId, PeerType.Channel);
         }
         if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
         {
-            return await _store.SaveBlockedUserAsync(auth.UserId, id.UserId, PeerType.User);
+            _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.UserId, PeerType.User);
         }
         else
         {
-            return await _store.SaveBlockedUserAsync(auth.UserId, id.ChatId, PeerType.Chat);
+            _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.ChatId, PeerType.Chat);
         }
+
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> Unblock(long authKeyId, InputPeerDTO id)
@@ -136,22 +138,24 @@ public class ContactsService : IContactsService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
-            return await _store.DeleteBlockedPeerAsync(auth.UserId, id.ChannelId, PeerType.Channel);
+            _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.ChannelId, PeerType.Channel);
         }
         if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
         {
-            return await _store.DeleteBlockedPeerAsync(auth.UserId, id.UserId, PeerType.User);
+            _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.UserId, PeerType.User);
         }
         else
         {
-            return await _store.DeleteBlockedPeerAsync(auth.UserId, id.ChatId, PeerType.Chat);
+            _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.ChatId, PeerType.Chat);
         }
+
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<BlockedDTO> GetBlocked(long authKeyId, int offset, int limit)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var blockedPeers = await _store.GetBlockedPeersAsync(auth.UserId);
+        var blockedPeers = _unitOfWork.BlockedPeersRepository.GetBlockedPeers(auth.UserId);
         List<UserDTO> users= new();
         foreach (var p in blockedPeers)
         {

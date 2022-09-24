@@ -41,6 +41,7 @@ public interface IUnitOfWork
     IPrivacyRulesRepository PrivacyRulesRepository { get; }
     IChatRepository ChatRepository { get; }
     IContactsRepository ContactsRepository { get; }
+    IBlockedPeersRepository BlockedPeersRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

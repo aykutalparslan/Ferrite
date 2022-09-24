@@ -78,9 +78,9 @@ public interface IPersistentStore
     //public Task<bool> DeleteContactsAsync(long userId);
     //public Task<ICollection<SavedContactDTO>> GetSavedContactsAsync(long userId);
     //public Task<ICollection<ContactDTO>> GetContactsAsync(long userId);
-    public Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType);
-    public Task<bool> DeleteBlockedPeerAsync(long userId, long peerId, PeerType peerType);
-    public Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId);
+    //public Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType);
+    //public Task<bool> DeleteBlockedPeerAsync(long userId, long peerId, PeerType peerType);
+    //public Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId);
     public Task<bool> SaveFileInfoAsync(UploadedFileInfoDTO uploadedFile);
     public Task<UploadedFileInfoDTO?> GetFileInfoAsync(long fileId);
     public Task<bool> SaveBigFileInfoAsync(UploadedFileInfoDTO uploadedFile);

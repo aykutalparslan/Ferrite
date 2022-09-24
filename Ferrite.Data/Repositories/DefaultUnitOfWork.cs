@@ -54,6 +54,7 @@ public class DefaultUnitOfWork : IUnitOfWork
         PrivacyRulesRepository = new PrivacyRulesRepository(new CassandraKVStore(_cassandra));
         ChatRepository = new ChatRepository(new CassandraKVStore(_cassandra));
         ContactsRepository = new ContactsRepository(new CassandraKVStore(_cassandra));
+        BlockedPeersRepository = new BlockedPeersRepository(new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -76,6 +77,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public IPrivacyRulesRepository PrivacyRulesRepository { get; }
     public IChatRepository ChatRepository { get; }
     public IContactsRepository ContactsRepository { get; }
+    public IBlockedPeersRepository BlockedPeersRepository { get; }
 
     public bool Save()
     {
