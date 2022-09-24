@@ -60,8 +60,8 @@ public interface IDistributedCache
     /// <param name="serverSalt"></param>
     /// <returns>ValidSince</returns>
     //public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
-    public Task<bool> PutLoginTokenAsync(LoginViaQRDTO login, TimeSpan expiresIn);
-    public Task<LoginViaQRDTO?> GetLoginTokenAsync(byte[] token);
+    //public Task<bool> PutLoginTokenAsync(LoginViaQRDTO login, TimeSpan expiresIn);
+    //public Task<LoginViaQRDTO?> GetLoginTokenAsync(byte[] token);
     public Task<bool> PutUserStatusAsync(long userId, bool status);
     public Task<(int wasOnline, bool online)> GetUserStatusAsync(long userId);
     public Task<bool> PutDeviceLockedAsync(long authKeyId, int period);

@@ -38,7 +38,7 @@ public class LoginTokenRepository : ILoginTokenRepository
         return true;
     }
 
-    public LoginViaQRDTO? GetLoginTokenAsync(byte[] token)
+    public LoginViaQRDTO? GetLoginToken(byte[] token)
     {
         var tokenBytes = _store.Get(token);
         if (tokenBytes == null)

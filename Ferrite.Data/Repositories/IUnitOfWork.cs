@@ -31,6 +31,7 @@ public interface IUnitOfWork
     IAuthSessionRepository AuthSessionRepository { get; }
     IPhoneCodeRepository PhoneCodeRepository { get; }
     ISignInRepository SignInRepository { get; }
+    ILoginTokenRepository LoginTokenRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

@@ -40,6 +40,7 @@ public class DefaultUnitOfWork : IUnitOfWork
         SignInRepository = new SignInRepository(new RedisDataStore(redisConfig));
         ServerSaltRepository =
             new ServerSaltRepository(new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
+        LoginTokenRepository = new LoginTokenRepository(new RedisDataStore(redisConfig));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -52,6 +53,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public IAuthSessionRepository AuthSessionRepository { get; }
     public IPhoneCodeRepository PhoneCodeRepository { get; }
     public ISignInRepository SignInRepository { get; }
+    public ILoginTokenRepository LoginTokenRepository { get; }
 
     public bool Save()
     {

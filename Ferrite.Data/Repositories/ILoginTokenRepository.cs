@@ -23,5 +23,5 @@ namespace Ferrite.Data.Repositories;
 public interface ILoginTokenRepository
 {
     public bool PutLoginToken(LoginViaQRDTO login, TimeSpan expiresIn);
-    public LoginViaQRDTO? GetLoginTokenAsync(byte[] token);
+    public LoginViaQRDTO? GetLoginToken(byte[] token);
 }

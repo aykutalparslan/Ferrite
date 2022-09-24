@@ -51,7 +51,7 @@ public class AuthService : IAuthService
 
     public async Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token)
     {
-        var t = await _cache.GetLoginTokenAsync(token);
+        var t = _unitOfWork.LoginTokenRepository.GetLoginToken(token);
         var auth = await _store.GetAuthorizationAsync(authKeyId);
         if (auth != null && t != null&& t.ExceptUserIds.Contains(auth.UserId))
         {
@@ -64,7 +64,8 @@ public class AuthService : IAuthService
                 AcceptedByUserId = auth.UserId,
                 Status = true
             };
-            _ = _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 60));
+            _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 60));
+            await _unitOfWork.SaveAsync();
             await _store.SaveAuthorizationAsync(new AuthInfoDTO()
             {
                 AuthKeyId = t.AuthKeyId,
@@ -166,7 +167,8 @@ public class AuthService : IAuthService
             Status = false,
             ExceptUserIds = exceptIds
         };
-        await _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 30));
+        _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 30));
+        await _unitOfWork.SaveAsync();
         return new LoginTokenDTO()
         {
             LoginTokenType = LoginTokenType.Token,
