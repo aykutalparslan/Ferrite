@@ -58,7 +58,7 @@ public class ContactsService : IContactsService
         List<UserDTO> userList = new List<UserDTO>();
         foreach (var c in contactList)
         {
-            userList.Add(await _store.GetUserAsync(c.UserId));
+            userList.Add(_unitOfWork.UserRepository.GetUser(c.UserId));
         }
 
         return new ContactsDTO(contactList, contactList.Count, userList);
@@ -72,7 +72,7 @@ public class ContactsService : IContactsService
         foreach (var c in contacts)
         {
             var imported = await _store.SaveContactAsync(auth.UserId, c);
-            users.Add(await  _store.GetUserAsync(imported.UserId));
+            users.Add(_unitOfWork.UserRepository.GetUser(imported.UserId));
             importedContacts.Add(imported);
         }
 
@@ -96,8 +96,8 @@ public class ContactsService : IContactsService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var p in phones)
         {
-            var userId = await _store.GetUserIdAsync(p);
-            await _store.DeleteContactAsync(auth.UserId, userId);
+            var userId = _unitOfWork.UserRepository.GetUserId(p);
+            if(userId!=null) await _store.DeleteContactAsync(auth.UserId, (long)userId);
         }
 
         return true;
@@ -151,7 +151,7 @@ public class ContactsService : IContactsService
         {
             if (p.PeerId.PeerType == PeerType.User)
             {
-                users.Add(await _store.GetUserAsync(p.PeerId.PeerId));
+                users.Add(_unitOfWork.UserRepository.GetUser(p.PeerId.PeerId));
             }
         }
         //TODO: also fetch the chats from the db

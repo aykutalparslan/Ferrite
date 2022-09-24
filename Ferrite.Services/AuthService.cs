@@ -142,7 +142,7 @@ public class AuthService : IAuthService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth!= null && auth.LoggedIn &&
-            await _store.GetUserAsync(auth.UserId) is UserDTO user)
+            _unitOfWork.UserRepository.GetUser(auth.UserId) is UserDTO user)
         {
             return new LoginTokenDTO()
             {
@@ -193,7 +193,7 @@ public class AuthService : IAuthService
         if (auth != null && exported != null &&
             auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
         {
-            var user = await _store.GetUserAsync(auth.UserId);
+            var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
             if(user == null)
             {
                 return new AuthorizationDTO()
@@ -347,7 +347,7 @@ public class AuthService : IAuthService
         }
         _unitOfWork.SignInRepository.PutSignIn(authKeyId, phoneNumber, phoneCodeHash);
         await _unitOfWork.SaveAsync();
-        var user = await _store.GetUserAsync(phoneNumber);
+        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if(user == null)
         {
             return new AuthorizationDTO()
@@ -422,7 +422,7 @@ public class AuthService : IAuthService
                 Empty = true
             }
         };
-        await _store.SaveUserAsync(user);
+        _unitOfWork.UserRepository.PutUser(user);
         await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
             user.FirstName, user.LastName, user.Phone));
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);

@@ -39,7 +39,7 @@ public class UserService : IUsersService
         {
             if (u.UserId != 0)
             {
-                var user = await _store.GetUserAsync(u.UserId);
+                var user = _unitOfWork.UserRepository.GetUser(u.UserId);
                 if (user != null)
                 {
                     user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
@@ -61,7 +61,7 @@ public class UserService : IUsersService
             userId = auth.UserId;
             self = true;
         }
-        var user = await _store.GetUserAsync(userId);
+        var user = _unitOfWork.UserRepository.GetUser(userId);
         user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
         var info = await _store.GetAppInfoAsync(authKeyId);
         DeviceType deviceType = DeviceType.Other;

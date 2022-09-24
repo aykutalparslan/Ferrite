@@ -57,12 +57,12 @@ public class MessagesService : IMessagesService
                 messages.Add(message);
                 if (message.Out && message.PeerId.PeerType == PeerType.User)
                 {
-                    var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                    var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                     users.Add(user);
                 }
                 else if (!message.Out && message.FromId.PeerType == PeerType.User)
                 {
-                    var user = await _store.GetUserAsync(message.FromId.PeerId);
+                    var user = _unitOfWork.UserRepository.GetUser(message.FromId.PeerId);
                     users.Add(user);
                 }
             }
@@ -90,7 +90,7 @@ public class MessagesService : IMessagesService
                 false, false, false, 
                 null, null, null);
             var users = new List<UserDTO>();
-            var user = await _store.GetUserAsync(peer.UserId);
+            var user = _unitOfWork.UserRepository.GetUser(peer.UserId);
             users.Add(user);
             return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), users)
                 , true, ErrorMessages.None);
@@ -332,7 +332,7 @@ public class MessagesService : IMessagesService
     {
         if (!userList.ContainsKey(userId))
         {
-            userList.Add(userId, await _store.GetUserAsync(m.PeerId.PeerId));
+            userList.Add(userId, _unitOfWork.UserRepository.GetUser(m.PeerId.PeerId));
         }
 
         if (!peerList.ContainsKey(userId))
@@ -368,7 +368,7 @@ public class MessagesService : IMessagesService
                 messagesList.Add(m);
                 if (!m.Out && m.FromId.PeerType == PeerType.User)
                 {
-                    userList.Add(m.FromId.PeerId.ToString(), await _store.GetUserAsync(m.FromId.PeerId));
+                    userList.Add(m.FromId.PeerId.ToString(), _unitOfWork.UserRepository.GetUser(m.FromId.PeerId));
                 }
             }
         }
@@ -396,7 +396,7 @@ public class MessagesService : IMessagesService
             messages.Add(message);
             if (message.Out && message.PeerId.PeerType == PeerType.User)
             {
-                var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                 users.Add(user);
             }
         }

@@ -85,7 +85,7 @@ public partial class AccountService : IAccountService
     public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth != null && await _store.GetUserAsync(auth.UserId) is { } user )
+        if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } user )
         {
             var userNew = user with
             {
@@ -93,7 +93,8 @@ public partial class AccountService : IAccountService
                 LastName = lastName ?? user.LastName,
                 About = about ?? user.About,
             };
-            await _store.SaveUserAsync(userNew);
+            _unitOfWork.UserRepository.PutUser(userNew);
+            await _unitOfWork.SaveAsync();
             await _search.IndexUser(new Data.Search.UserSearchModel(userNew.Id, userNew.Username, 
                 userNew.FirstName, userNew.LastName, userNew.Phone));
             return userNew;
@@ -130,7 +131,7 @@ public partial class AccountService : IAccountService
             return false;
         }
 
-        var user = await _store.GetUserByUsernameAsync(username);
+        var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user != null)
         {
             return false;
@@ -150,12 +151,14 @@ public partial class AccountService : IAccountService
         {
             return null;
         }
-        var user = await _store.GetUserByUsernameAsync(username);
+        var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user == null)
         {
-            await _store.UpdateUsernameAsync(auth.UserId, username);
+            _unitOfWork.UserRepository.UpdateUsername(auth.UserId, username);
         }
-        user = await _store.GetUserAsync(auth.UserId);
+
+        await _unitOfWork.SaveAsync();
+        user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
                 user.FirstName, user.LastName, user.Phone));
         return user;
@@ -181,7 +184,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetUserAsync(id) is { } user)
+                    if (_unitOfWork.UserRepository.GetUser(id) is { } user)
                     {
                         users.Add(user);
                     }  
@@ -228,7 +231,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetUserAsync(id) is { } user)
+                    if (_unitOfWork.UserRepository.GetUser(id) is { } user)
                     {
                         users.Add(user);
                     }  
@@ -260,7 +263,7 @@ public partial class AccountService : IAccountService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
 
         foreach (var a in authorizations)
         {
@@ -273,8 +276,8 @@ public partial class AccountService : IAccountService
 
         await _store.DeletePrivacyRulesAsync(user.Id);
 
-        await _store.DeleteUserAsync(user);
-
+        _unitOfWork.UserRepository.DeleteUser(user);
+        await _unitOfWork.SaveAsync();
         await _search.DeleteUser(user.Id);
         
         return true;
@@ -288,7 +291,8 @@ public partial class AccountService : IAccountService
             return false;
         }
 
-        return await _store.UpdateAccountTTLAsync(auth.UserId, accountDaysTTL);
+        _unitOfWork.UserRepository.UpdateAccountTTL(auth.UserId, accountDaysTTL);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<int> GetAccountTTL(long authKeyId)
@@ -299,7 +303,7 @@ public partial class AccountService : IAccountService
             return 0;
         }
 
-        return await _store.GetAccountTTLAsync(auth.UserId);
+        return _unitOfWork.UserRepository.GetAccountTTL(auth.UserId);
     }
 
     public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)
@@ -310,7 +314,7 @@ public partial class AccountService : IAccountService
             return new ServiceResult<SentCodeDTO>(null, false, 
                 ErrorMessages.FreshChangePhoneForbidden);
         }
-        var user = await _store.GetUserAsync(phoneNumber);
+        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != new UserDTO())
         {
             return new ServiceResult<SentCodeDTO>(null, false, 
@@ -342,7 +346,7 @@ public partial class AccountService : IAccountService
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.None);
         }
 
-        var user = await _store.GetUserAsync(phoneNumber);
+        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != null)
         {
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.PhoneNumberOccupied);
@@ -353,8 +357,9 @@ public partial class AccountService : IAccountService
         {
             _unitOfWork.AuthorizationRepository.PutAuthorization(authorization with { Phone = phoneNumber });
         }
-        await _store.UpdateUserPhoneAsync(auth.UserId, phoneNumber);
-        user = await _store.GetUserAsync(phoneNumber);
+        _unitOfWork.UserRepository.UpdateUserPhone(auth.UserId, phoneNumber);
+        await _unitOfWork.SaveAsync();
+        user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         await _unitOfWork.SaveAsync();
         return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);
     }
@@ -375,7 +380,7 @@ public partial class AccountService : IAccountService
             auths.Add(await _store.GetAppInfoAsync(a.AuthKeyId));
         }
 
-        return new AuthorizationsDTO(await _store.GetAccountTTLAsync(auth.UserId), auths);
+        return new AuthorizationsDTO(_unitOfWork.UserRepository.GetAccountTTL(auth.UserId), auths);
     }
 
     public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)

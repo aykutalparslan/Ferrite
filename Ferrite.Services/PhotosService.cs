@@ -47,7 +47,7 @@ public class PhotosService : IPhotosService
     public async Task<ServiceResult<PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         var date = DateTime.Now;
         await _store.SaveProfilePhotoAsync(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
         var photoInner = new Data.PhotoDTO(false, id.Id, id.AccessHash, id.FileReference,
@@ -110,7 +110,7 @@ public class PhotosService : IPhotosService
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.PhotoFileMissing);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         
         if (file.IsBigFile)
         {
@@ -260,7 +260,7 @@ public class PhotosService : IPhotosService
     public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         if (auth.UserId == user.Id)
         {
             user = user with { Self = true };

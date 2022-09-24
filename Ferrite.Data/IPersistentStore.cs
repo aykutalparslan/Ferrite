@@ -34,20 +34,20 @@ public interface IPersistentStore
     //public Task<bool> DeleteAuthKeyAsync(long authKeyId);
     //public Task<bool> SaveServerSaltAsync(long authKeyId, long serverSalt, long validSince, int TTL);
     //public Task<ICollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count);
-    public Task<bool> SaveUserAsync(UserDTO user);
-    public Task<bool> UpdateUserAsync(UserDTO user);
-    public Task<bool> UpdateUsernameAsync(long userId, string username);
+    //public Task<bool> SaveUserAsync(UserDTO user);
+    //public Task<bool> UpdateUserAsync(UserDTO user);
+    //public Task<bool> UpdateUsernameAsync(long userId, string username);
     /// <summary>
     /// Must be called only after phone fields in the other tables are updated.
     /// </summary>
     /// <param name="userId"></param>
     /// <param name="phone"></param>
     /// <returns></returns>
-    public Task<bool> UpdateUserPhoneAsync(long userId, string phone);
-    public Task<UserDTO?> GetUserAsync(long userId);
-    public Task<UserDTO?> GetUserAsync(string phone);
-    public Task<long> GetUserIdAsync(string phone);
-    public Task<UserDTO?> GetUserByUsernameAsync(string username);
+    //public Task<bool> UpdateUserPhoneAsync(long userId, string phone);
+    //public Task<UserDTO?> GetUserAsync(long userId);
+    //public Task<UserDTO?> GetUserAsync(string phone);
+    //public Task<long> GetUserIdAsync(string phone);
+    //public Task<UserDTO?> GetUserByUsernameAsync(string username);
     /// <summary>
     /// Deletes a user. This method does not check if the related user data is deleted
     /// therefore must be called only after all user related data has been deleted.
@@ -55,7 +55,7 @@ public interface IPersistentStore
     /// </summary>
     /// <param name="user"></param>
     /// <returns></returns>
-    public Task<bool> DeleteUserAsync(UserDTO user);
+    //public Task<bool> DeleteUserAsync(UserDTO user);
     public Task<bool> SaveAppInfoAsync(AppInfoDTO appInfo);
     public Task<AppInfoDTO?> GetAppInfoAsync(long authKeyId);
     public Task<long?> GetAuthKeyIdByAppHashAsync(long hash);
@@ -71,8 +71,8 @@ public interface IPersistentStore
     public Task<ICollection<PrivacyRuleDTO>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
     public Task<bool> SaveChatAsync(ChatDTO chat);
     public Task<ChatDTO?> GetChatAsync(long chatId);
-    public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
-    public Task<int> GetAccountTTLAsync(long userId);
+    //public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
+    //public Task<int> GetAccountTTLAsync(long userId);
     public Task<ImportedContactDTO?> SaveContactAsync(long userId, InputContactDTO contact);
     public Task<bool> DeleteContactAsync(long userId, long contactUserId);
     public Task<bool> DeleteContactsAsync(long userId);

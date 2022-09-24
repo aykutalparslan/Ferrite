@@ -78,13 +78,13 @@ public class UpdatesService : IUpdatesService
             if (message.Out && message.PeerId.PeerType == PeerType.User 
                             && message.PeerId.PeerId != auth.UserId)
             {
-                var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                 users.Add(user);
             }
             else if (!message.Out && message.FromId.PeerType == PeerType.User
                                   && message.PeerId.PeerId != auth.UserId)
             {
-                var user = await _store.GetUserAsync(message.FromId.PeerId);
+                var user = _unitOfWork.UserRepository.GetUser(message.FromId.PeerId);
                 users.Add(user);
             }
         }
@@ -97,7 +97,7 @@ public class UpdatesService : IUpdatesService
 
     public async Task<bool> EnqueueUpdate(long userId, UpdateBase update)
     {
-        var user = await _store.GetUserAsync(userId);
+        var user = _unitOfWork.UserRepository.GetUser(userId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(user.Phone);
         //TODO: we should be able to get the active sessions by the userId
         foreach (var a in authorizations)
@@ -110,14 +110,14 @@ public class UpdatesService : IUpdatesService
             UpdatesBase updates = null;
             if (update is UpdateReadHistoryInboxDTO readHistoryInbox)
             {
-                var peerUser = await _store.GetUserAsync(readHistoryInbox.Peer.PeerId);
+                var peerUser = _unitOfWork.UserRepository.GetUser(readHistoryInbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
                 updates = new UpdatesDTO(updateList, userList, chatList, 
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
             }
             else if (update is UpdateReadHistoryOutboxDTO readHistoryOutbox)
             {
-                var peerUser = await _store.GetUserAsync(readHistoryOutbox.Peer.PeerId);
+                var peerUser = _unitOfWork.UserRepository.GetUser(readHistoryOutbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
                 updates = new UpdatesDTO(updateList, userList, chatList, 
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
@@ -125,7 +125,7 @@ public class UpdatesService : IUpdatesService
             else if (update is UpdateNewMessageDTO messageNotification &&
                      messageNotification.Message.FromId is { PeerType: PeerType.User })
             {
-                var peerUser = await _store.GetUserAsync(messageNotification.Message.FromId.PeerId);
+                var peerUser = _unitOfWork.UserRepository.GetUser(messageNotification.Message.FromId.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
                 updates = new UpdatesDTO(updateList, userList, chatList, 
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
