@@ -27,7 +27,7 @@ public class AppInfoRepository : IAppInfoRepository
     public AppInfoRepository(IKVStore store)
     {
         _store = store;
-        _store.SetSchema(new TableDefinition("ferrite", "auth_keys",
+        _store.SetSchema(new TableDefinition("ferrite", "app_infos",
             new KeyDefinition("pk",
                 new DataColumn { Name = "auth_key_id", Type = DataType.Long },
                 new DataColumn { Name = "hash", Type = DataType.Long }),

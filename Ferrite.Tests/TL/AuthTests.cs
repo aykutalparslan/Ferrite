@@ -1152,7 +1152,7 @@ public class AuthTests
     private ContainerBuilder GetBuilder()
     {
         ConcurrentQueue<byte[]> _channel = new();
-        var pipe = new Mock<IDistributedPipe>();
+        var pipe = new Mock<IMessagePipe>();
         pipe.Setup(x => x.WriteMessageAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync((string a, byte[] b) =>
         {
             _channel.Enqueue(b);

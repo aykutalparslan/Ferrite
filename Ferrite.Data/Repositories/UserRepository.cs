@@ -141,7 +141,9 @@ public class UserRepository : IUserRepository
 
     public int GetAccountTTL(long userId)
     {
-        var expire = BitConverter.ToInt64(_storeTTL.Get(userId));
+        var val = _storeTTL.Get(userId);
+        if (val == null) return 365;
+        var expire = BitConverter.ToInt64(val);
         var expireDays = DateTimeOffset.FromUnixTimeSeconds(expire) - DateTimeOffset.Now;
         return expireDays.Days;
     }

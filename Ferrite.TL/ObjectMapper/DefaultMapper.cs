@@ -39,7 +39,7 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(User), new UserMapper(factory));
         _mappers.TryAdd(typeof(PrivacyRule), new PrivacyRuleMapper(factory, this));
         _mappers.TryAdd(typeof(Chat), new ChatMapper(factory,this));
-        _mappers.TryAdd(typeof(InputPrivacyRule), new PrivacyRuleMapper(factory, this));
+        _mappers.TryAdd(typeof(InputPrivacyRule), new InputPrivacyRuleMapper());
         _mappers.TryAdd(typeof(ReplyMarkup), new ReplyMarkupMapper(factory, this));
         _mappers.TryAdd(typeof(MessageEntity), new MessageEntityMapper(factory, this));
         _mappers.TryAdd(typeof(Update), new UpdateMapper(factory, this));
@@ -52,6 +52,7 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(InputMessage), new InputMessageMapper());
         _mappers.TryAdd(typeof(Dialog), new DialogMapper(factory, this));
         _mappers.TryAdd(typeof(SendMessageAction), new SendMessageActionMapper(factory, this));
+        _mappers.TryAdd(typeof(InputPeerNotifySettings), new InputPeerNotifySettingsMapper(factory));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject

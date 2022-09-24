@@ -33,9 +33,9 @@ public class MsgContainerProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionService _sessionManager;
-    private readonly IDistributedPipe _pipe;
+    private readonly IMessagePipe _pipe;
     private readonly ILogger _log;
-    public MsgContainerProcessor(ILifetimeScope scope, ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
+    public MsgContainerProcessor(ILifetimeScope scope, ISessionService sessionManager, IMessagePipe pipe, ILogger log)
     {
         _scope = scope;
         _sessionManager = sessionManager;

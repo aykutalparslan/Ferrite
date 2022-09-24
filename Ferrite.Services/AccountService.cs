@@ -75,7 +75,8 @@ public partial class AccountService : IAccountService
         {
             return new PeerNotifySettingsDTO();
         }
-        return settings.First(_ => _.DeviceType == deviceType);
+        return settings.First(_ => _.DeviceType == deviceType) ??
+               new PeerNotifySettingsDTO();
     }
 
     public async Task<bool> ResetNotifySettings(long authKeyId)

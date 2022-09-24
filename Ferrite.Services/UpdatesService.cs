@@ -29,11 +29,11 @@ public class UpdatesService : IUpdatesService
 {
     private readonly IMTProtoTime _time;
     private readonly ISessionService _sessions;
-    private readonly IDistributedPipe _pipe;
+    private readonly IMessagePipe _pipe;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUpdatesContextFactory _updatesContextFactory;
 
-    public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe,
+    public UpdatesService(IMTProtoTime time, ISessionService sessions, IMessagePipe pipe,
         IUnitOfWork unitOfWork, IUpdatesContextFactory updatesContextFactory)
     {
         _time = time;

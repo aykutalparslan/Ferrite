@@ -28,8 +28,8 @@ public class UpdatesManager : IUpdatesManager
 {
     private readonly ISessionService _sessions;
     private readonly ITLObjectFactory _factory;
-    private readonly IDistributedPipe _pipe;
-    public UpdatesManager(ISessionService sessions, ITLObjectFactory factory, IDistributedPipe pipe)
+    private readonly IMessagePipe _pipe;
+    public UpdatesManager(ISessionService sessions, ITLObjectFactory factory, IMessagePipe pipe)
     {
         _sessions = sessions;
         _factory = factory;

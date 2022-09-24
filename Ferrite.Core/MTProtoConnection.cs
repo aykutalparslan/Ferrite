@@ -593,12 +593,6 @@ public class MTProtoConnection : IMTProtoConnection
                 GetAuthKey();
             }
 
-            if (_authKeyId != 0 && _permAuthKeyId == 0)
-            {
-                long? permAuthKey = await _mtproto.GetBoundAuthKeyAsync(authKeyId);
-                _permAuthKeyId = permAuthKey ?? 0;
-            }
-
             var incomingMessageKey = new byte[16];
             reader.Read(incomingMessageKey);
             var aesKey = new byte[32];
@@ -737,7 +731,7 @@ public class MTProtoConnection : IMTProtoConnection
     {
         if (_authKey == null)
         {
-            _log.Information("Trying to get the authKey");
+            _log.Information($"Trying to get the authKey with Id: {_authKeyId}");
             var authKey = _mtproto.GetAuthKey(_authKeyId);
             if (authKey != null)
             {
@@ -747,7 +741,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
         if (_authKey == null)
         {
-            _log.Information("Trying to get tempAuthKey");
+            _log.Information($"Trying to get tempAuthKey  with Id: {_authKeyId}");
             var authKey = _mtproto.GetTempAuthKey(_authKeyId);
             if (authKey != null)
             {
@@ -758,6 +752,11 @@ public class MTProtoConnection : IMTProtoConnection
         {
             _sendSemaphore.Wait();
             SendTransportError(404);
+        }
+        if (_authKeyId != 0 && _permAuthKeyId == 0)
+        {
+            long? pKey = _mtproto.GetBoundAuthKey(_authKeyId);
+            _permAuthKeyId = pKey ?? 0;
         }
     }
 

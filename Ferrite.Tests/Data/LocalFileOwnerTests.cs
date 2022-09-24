@@ -33,7 +33,7 @@ public class LocalFileOwnerTests
     {
         string pathSuffix = Random.Shared.Next().ToString();
         FasterContext<ObjectId, ObjectMetadata> ctx = new("object-metadata"+pathSuffix);
-        LocalObjectStore store = new (ctx, "ferrite-files"+pathSuffix);
+        LocalObjectStore store = new ("ferrite-files"+pathSuffix);
         var randomBytes = new byte[len * 10];
         Random.Shared.NextBytes(randomBytes);
         var l = new List<byte[]>();

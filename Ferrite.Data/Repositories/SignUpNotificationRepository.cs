@@ -21,7 +21,7 @@ namespace Ferrite.Data.Repositories;
 public class SignUpNotificationRepository : ISignUpNotificationRepository
 {
     private readonly IKVStore _store;
-    public SignUpNotificationRepository(IKVStore store, IKVStore storeExported)
+    public SignUpNotificationRepository(IKVStore store)
     {
         _store = store;
         _store.SetSchema(new TableDefinition("ferrite", "signup_notifications",
@@ -35,6 +35,8 @@ public class SignUpNotificationRepository : ISignUpNotificationRepository
 
     public bool GetSignUpNotification(long userId)
     {
-        return BitConverter.ToBoolean(_store.Get(userId));
+        var val = _store.Get(userId);
+        if (val == null) return false;
+        return BitConverter.ToBoolean(val);
     }
 }

@@ -127,6 +127,11 @@ public class MTProtoService : IMTProtoService
         return await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(tempAuthKeyId);
     }
 
+    public long? GetBoundAuthKey(long tempAuthKeyId)
+    {
+        return _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKey(tempAuthKeyId);
+    }
+
     public async Task<bool> DestroyAuthKeyAsync(long authKeyId)
     {
         var success = _unitOfWork.AuthKeyRepository.DeleteAuthKey(authKeyId);

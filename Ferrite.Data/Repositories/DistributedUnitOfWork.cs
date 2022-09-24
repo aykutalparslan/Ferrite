@@ -20,11 +20,11 @@ using Ferrite.Utils;
 
 namespace Ferrite.Data.Repositories;
 
-public class DefaultUnitOfWork : IUnitOfWork
+public class DistributedUnitOfWork : IUnitOfWork
 {
     private readonly CassandraContext _cassandra;
     private readonly ILogger _log;
-    public DefaultUnitOfWork(ILogger log, string redisConfig, string cassandraKeyspace, params string[] cassandraHosts)
+    public DistributedUnitOfWork(ILogger log, string redisConfig, string cassandraKeyspace, params string[] cassandraHosts)
     {
         _cassandra = new CassandraContext(cassandraKeyspace, cassandraHosts);
         _log = log;
@@ -60,6 +60,7 @@ public class DefaultUnitOfWork : IUnitOfWork
             new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
         PhotoRepository = new PhotoRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
         LangPackRepository = new LangPackRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
+        SignUpNotificationRepository = new SignUpNotificationRepository(new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }

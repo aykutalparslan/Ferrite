@@ -89,6 +89,7 @@ public class FasterMessageBox : IMessageBox
     {
         int unread = 0;
         var dialogs = _dialogs.Get();
+        if(dialogs == null) return ValueTask.FromResult(unread);
         foreach (var d in dialogs)
         {
             FasterSortedSet<long> unreadForPeer = new FasterSortedSet<long>(_unreadContext, d);

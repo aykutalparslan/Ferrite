@@ -23,6 +23,7 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.Utils;
 using xxHash;
 
 namespace Ferrite.Services;
@@ -33,16 +34,19 @@ public class AuthService : IAuthService
     private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger _log;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
     public AuthService(IRandomGenerator random, ISearchEngine search,
-        IUnitOfWork unitOfWork, ICounterFactory counterFactory)
+        IUnitOfWork unitOfWork, ICounterFactory counterFactory,
+        ILogger log)
     {
         _random = random;
         _search = search;
         _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
+        _log = log;
     }
 
     public async Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token)
@@ -240,6 +244,14 @@ public class AuthService : IAuthService
             return false;
         }
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (authKeyDetails == null)
+        {
+            var permAuthKey = await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(authKeyId);
+            if (permAuthKey != null)
+            {
+                authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)permAuthKey);
+            }
+        }
         return authKeyDetails?.LoggedIn ?? false;
     }
 
@@ -258,6 +270,7 @@ public class AuthService : IAuthService
             UserId = 0,
             LoggedIn = false
         });
+        _log.Debug($"Log Out for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
         return new LoggedOutDTO()
         {
@@ -359,9 +372,10 @@ public class AuthService : IAuthService
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
-            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
+            ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
+        _log.Debug($"Sign In for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
         return new AuthorizationDTO()
         {
@@ -429,9 +443,10 @@ public class AuthService : IAuthService
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
-            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
+            ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
+        _log.Debug($"Sign Up for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
         return new AuthorizationDTO()
         {
@@ -455,11 +470,13 @@ public class AuthService : IAuthService
     public async Task<bool> SaveAppInfo(AppInfoDTO info)
     {
         _unitOfWork.AppInfoRepository.PutAppInfo(info);
+        _log.Debug($"=== Save App Info for authKey with Id: {info.AuthKeyId}");
         return await _unitOfWork.SaveAsync();
     }
 
     public async Task<AppInfoDTO?> GetAppInfo(long authKeyId)
     {
+        _log.Debug($"=== Get App Info for authKey with Id: {authKeyId}");
         return _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
     }
 }

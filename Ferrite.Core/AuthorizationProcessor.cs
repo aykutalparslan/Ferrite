@@ -34,11 +34,11 @@ public class AuthorizationProcessor : IProcessor
     private readonly ILifetimeScope _scope;
     private readonly ISessionService _sessionManager;
     private readonly IAuthService _auth;
-    private readonly IDistributedPipe _pipe;
+    private readonly IMessagePipe _pipe;
     private readonly ILogger _log;
     private readonly SortedSet<int> _unauthorizedMethods = new();
     public AuthorizationProcessor(ILifetimeScope scope, ISessionService sessionManager,
-        IAuthService auth, IDistributedPipe pipe, ILogger log)
+        IAuthService auth, IMessagePipe pipe, ILogger log)
     {
         _scope = scope;
         _sessionManager = sessionManager;

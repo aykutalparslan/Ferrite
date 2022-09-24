@@ -74,7 +74,8 @@ public class AuthorizationRepository : IAuthorizationRepository
     public async ValueTask<IReadOnlyCollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone)
     {
         List<AuthInfoDTO> infoDTOs = new List<AuthInfoDTO>();
-        var authorizations = _store.IterateBySecondaryIndexAsync("by_id", phone);
+        var authorizations = _store.IterateBySecondaryIndexAsync("by_phone", phone);
+        if (authorizations == null) return infoDTOs;
         await foreach (var auth in authorizations)
         {
             if (auth != null)

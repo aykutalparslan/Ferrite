@@ -35,9 +35,9 @@ public class MTProtoRequestProcessor : IProcessor
 {
     private readonly ITLObjectFactory _factory;
     private readonly ISessionService _sessionManager;
-    private readonly IDistributedPipe _pipe;
+    private readonly IMessagePipe _pipe;
     private readonly ILogger _log;
-    public MTProtoRequestProcessor(ITLObjectFactory factory,ISessionService sessionManager, IDistributedPipe pipe, ILogger log)
+    public MTProtoRequestProcessor(ITLObjectFactory factory,ISessionService sessionManager, IMessagePipe pipe, ILogger log)
     {
         _factory = factory;
         _sessionManager = sessionManager;

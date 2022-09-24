@@ -17,7 +17,6 @@
 // 
 
 using System.Threading.Channels;
-using Cassandra.DataStax.Graph;
 using MessagePack;
 using NonBlocking;
 

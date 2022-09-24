@@ -26,7 +26,7 @@ public class PrivacyRulesRepository : IPrivacyRulesRepository
     public PrivacyRulesRepository(IKVStore store)
     {
         _store = store;
-        _store.SetSchema(new TableDefinition("ferrite", "authorizations",
+        _store.SetSchema(new TableDefinition("ferrite", "privacy_rules",
             new KeyDefinition("pk",
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "privacy_key", Type = DataType.Int },

@@ -29,12 +29,12 @@ public class LocalObjectStore : IObjectStore
     private readonly ClientSession<ObjectId, ObjectMetadata, ObjectMetadata, ObjectMetadata, Empty, 
         IFunctions<ObjectId, ObjectMetadata, ObjectMetadata, ObjectMetadata, Empty>> _session;
 
-    public LocalObjectStore(FasterContext<ObjectId, ObjectMetadata> metadataStore, string path)
+    public LocalObjectStore(string path)
     {
         _parentDir = path;
         _smallFilesDir = Path.Combine(_parentDir, "small");
         _bigFilesDir = Path.Combine(_parentDir, "big");
-        _metadataStore = metadataStore;
+        _metadataStore = new FasterContext<ObjectId, ObjectMetadata>(path+"-faster-object-metadata");
         _session = _metadataStore.Store.NewSession(new SimpleFunctions<ObjectId, ObjectMetadata>());
         if (!Directory.Exists(_parentDir)) Directory.CreateDirectory(_parentDir);
         if (!Directory.Exists(_smallFilesDir)) Directory.CreateDirectory(_smallFilesDir);

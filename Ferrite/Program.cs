@@ -71,34 +71,59 @@ public class Program
 
     private static IContainer BuildContainer()
     {
-        var tl = Assembly.Load("Ferrite.TL");
-        var core = Assembly.Load("Ferrite.Core");
         var builder = new ContainerBuilder();
+        RegisterPrimitives(builder);
+        RegisterServices(builder);
+        RegisterSchema(builder);
+        RegisterCoreComponents(builder);
+        RegisterLocalDataStores(builder);
+        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+        var container = builder.Build();
+        return container;
+    }
+
+    private static void RegisterPrimitives(ContainerBuilder builder)
+    {
         builder.RegisterType<MTProtoTime>().As<IMTProtoTime>().SingleInstance();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
-        builder.RegisterType<MTProtoService>().As<IMTProtoService>()
+    }
+
+    private static void RegisterLocalDataStores(ContainerBuilder builder)
+    {
+        builder.Register(_ => new LocalPipe())
+            .As<IMessagePipe>().SingleInstance();
+        builder.Register(_ => new LocalObjectStore("uploaded-files"))
+            .As<IObjectStore>().SingleInstance();
+        builder.Register(_ => new LuceneSearchEngine("lucene-index-data"))
+            .As<ISearchEngine>().SingleInstance();
+        builder.Register(_ => new FasterCounterFactory("faster-counter-data"))
+            .As<ICounterFactory>();
+        builder.Register(_ => new FasterUpdatesContextFactory("faster-updates-data"))
+            .As<IUpdatesContextFactory>();
+        builder.RegisterType<LocalUnitOfWork>().As<IUnitOfWork>()
             .SingleInstance();
-        builder.RegisterType<LangPackService>().As<ILangPackService>()
-            .SingleInstance();
-        builder.RegisterType<UpdatesService>().As<IUpdatesService>()
-            .SingleInstance();
-        builder.RegisterType<ContactsService>().As<IContactsService>()
-            .SingleInstance();
-        builder.RegisterType<UserService>().As<IUsersService>()
-            .SingleInstance();
-        builder.RegisterType<SkiaPhotoProcessor>().As<IPhotoProcessor>()
-            .SingleInstance();
-        builder.RegisterType<PhotosService>().As<IPhotosService>()
-            .SingleInstance();
-        builder.RegisterType<UploadService>().As<IUploadService>()
-            .SingleInstance();
-        builder.RegisterType<MessagesService>().As<IMessagesService>()
-            .SingleInstance();
-        builder.RegisterType<MessageRepository>().As<IMessageRepository>()
-            .SingleInstance();
-        builder.RegisterType<DefaultUnitOfWork>().As<IUnitOfWork>()
-            .SingleInstance();
+    }
+
+    private static void RegisterCoreComponents(ContainerBuilder builder)
+    {
+        builder.RegisterType<MTProtoConnection>();
+        builder.RegisterType<DefaultApiLayer>().As<IApiLayer>().SingleInstance();
+        builder.RegisterType<AuthKeyProcessor>();
+        builder.RegisterType<MsgContainerProcessor>();
+        builder.RegisterType<ServiceMessagesProcessor>();
+        builder.RegisterType<AuthorizationProcessor>();
+        builder.RegisterType<MTProtoRequestProcessor>();
+        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
+        builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
+        builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
+        builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();
+    }
+
+    private static void RegisterSchema(ContainerBuilder builder)
+    {
+        var tl = Assembly.Load("Ferrite.TL");
+        var core = Assembly.Load("Ferrite.Core");
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
@@ -117,40 +142,34 @@ public class Program
         builder.RegisterAssemblyOpenGenericTypes(core)
             .Where(t => t.Namespace == "Ferrite.Core.Methods")
             .AsSelf();
-        builder.RegisterType<DefaultApiLayer>().As<IApiLayer>().SingleInstance();
-        builder.RegisterType<DefaultMapper>().As<IMapperContext>().SingleInstance();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
-        builder.RegisterType<MTProtoConnection>();
-        builder.RegisterType<AuthKeyProcessor>();
-        builder.RegisterType<MsgContainerProcessor>();
-        builder.RegisterType<ServiceMessagesProcessor>();
-        builder.RegisterType<AuthorizationProcessor>();
-        builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
+        builder.RegisterType<DefaultMapper>().As<IMapperContext>().SingleInstance();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
-        builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.Register(_ => new S3ObjectStore("http://localhost:9000", 
-                "minioadmin", "minioadmin"))
-            .As<IObjectStore>().SingleInstance();
-        builder.Register(_ => new DefaultUnitOfWork(new SerilogLogger(),
-                "localhost:6379", "ferrite","localhost"))
-            .As<IUnitOfWork>().SingleInstance();
-        builder.Register(_ => new ElasticSearchEngine("https://localhost:9200",
-                "ferrite", "ferrite-server",
-                 "49:99:E9:CA:B6:8C:6B:78:8F:C5:A2:7A:F2:78:CA:FA:08:1E:66:9F:2F:E8:2C:C5:87:35:49:B4:4C:07:62:DD"))
-            .As<ISearchEngine>().SingleInstance();
-        //builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
-        builder.Register(_=> new FasterCounterFactory("faster-counter-data")).As<ICounterFactory>();
-        builder.Register(_=> new FasterUpdatesContextFactory("faster-updates-data")).As<IUpdatesContextFactory>();
-        builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
+    }
+
+    private static void RegisterServices(ContainerBuilder builder)
+    {
+        builder.RegisterType<MTProtoService>().As<IMTProtoService>()
+            .SingleInstance();
+        builder.RegisterType<LangPackService>().As<ILangPackService>()
+            .SingleInstance();
+        builder.RegisterType<UpdatesService>().As<IUpdatesService>()
+            .SingleInstance();
+        builder.RegisterType<ContactsService>().As<IContactsService>()
+            .SingleInstance();
+        builder.RegisterType<UserService>().As<IUsersService>()
+            .SingleInstance();
+        builder.RegisterType<PhotosService>().As<IPhotosService>()
+            .SingleInstance();
+        builder.RegisterType<UploadService>().As<IUploadService>()
+            .SingleInstance();
+        builder.RegisterType<MessagesService>().As<IMessagesService>()
+            .SingleInstance();
         builder.RegisterType<SessionService>().As<ISessionService>().SingleInstance();
-        builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();
         builder.RegisterType<AuthService>().As<IAuthService>().SingleInstance();
         builder.RegisterType<AccountService>().As<IAccountService>().SingleInstance();
-        var container = builder.Build();
-
-        return container;
+        builder.RegisterType<SkiaPhotoProcessor>().As<IPhotoProcessor>()
+            .SingleInstance();
     }
 }

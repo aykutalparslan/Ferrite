@@ -40,6 +40,7 @@ public class LangPackRepository : ILangPackRepository
             new KeyDefinition("pk",
                 new DataColumn { Name = "lang_pack", Type = DataType.String },
                 new DataColumn { Name = "lang_code", Type = DataType.String })));
+        loadFromDisk = LoadFromDisk();
     }
     private async Task LoadFromDisk()
     {
@@ -89,7 +90,8 @@ public class LangPackRepository : ILangPackRepository
 
     public async ValueTask<List<LangPackLanguageDTO>> GetLanguagesAsync(string? langPack)
     {
-        if (loadingFromDisk != null)
+        if (loadingFromDisk &&
+            loadFromDisk != null)
         {
             await loadFromDisk;
         }
@@ -105,7 +107,8 @@ public class LangPackRepository : ILangPackRepository
 
     public async ValueTask<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode)
     {
-        if (loadingFromDisk != null)
+        if (loadingFromDisk &&
+            loadFromDisk != null)
         {
             await loadFromDisk;
         }
@@ -120,7 +123,8 @@ public class LangPackRepository : ILangPackRepository
 
     public async ValueTask<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode)
     {
-        if (loadingFromDisk != null)
+        if (loadingFromDisk &&
+            loadFromDisk != null)
         {
             await loadFromDisk;
         }
@@ -160,7 +164,8 @@ public class LangPackRepository : ILangPackRepository
 
     public async ValueTask<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
     {
-        if (loadingFromDisk != null)
+        if (loadingFromDisk &&
+            loadFromDisk != null)
         {
             await loadFromDisk;
         }
@@ -170,7 +175,8 @@ public class LangPackRepository : ILangPackRepository
     public async ValueTask<List<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode,
         ICollection<string> keys)
     {
-        if (loadingFromDisk != null)
+        if (loadingFromDisk &&
+            loadFromDisk != null)
         {
             await loadFromDisk;
         }

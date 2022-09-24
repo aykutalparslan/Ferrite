@@ -23,7 +23,7 @@ using Confluent.Kafka.Admin;
 
 namespace Ferrite.Data;
 
-public class KafkaPipe : IDistributedPipe
+public class KafkaPipe : IMessagePipe
 {
     private readonly IProducer<Null,byte[]> _producer;
     private readonly IConsumer<Ignore,byte[]> _consumer;
@@ -56,7 +56,7 @@ public class KafkaPipe : IDistributedPipe
         return await _consumed.Reader.ReadAsync(cancellationToken);
     }
 
-    public async Task<bool> SubscribeAsync(string channel)
+    public async ValueTask<bool> SubscribeAsync(string channel)
     {
         if(_consumer == null)
         {
@@ -81,7 +81,7 @@ public class KafkaPipe : IDistributedPipe
         return true;
     }
 
-    private async Task<bool> CreateChannelAsync(string channel)
+    private async ValueTask<bool> CreateChannelAsync(string channel)
     {
         try
         {
@@ -95,7 +95,7 @@ public class KafkaPipe : IDistributedPipe
         return true;
     }
 
-    public async Task<bool> UnSubscribeAsync()
+    public async ValueTask<bool> UnSubscribeAsync()
     {
         if (!_unsubscribed)
         {
@@ -105,7 +105,7 @@ public class KafkaPipe : IDistributedPipe
         return true;
     }
 
-    public async Task<bool> WriteMessageAsync(string channel, byte[] message)
+    public async ValueTask<bool> WriteMessageAsync(string channel, byte[] message)
     {
         await _producer.ProduceAsync(channel, new Message<Null, byte[]> { Value = message });
         return true;

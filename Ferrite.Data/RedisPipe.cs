@@ -4,7 +4,7 @@ using StackExchange.Redis;
 
 namespace Ferrite.Data;
 
-public class RedisPipe: IDistributedPipe
+public class RedisPipe: IMessagePipe
 {
     private readonly ConnectionMultiplexer redis;
     private ChannelMessageQueue messageQueue;
@@ -23,15 +23,15 @@ public class RedisPipe: IDistributedPipe
         return (byte[])message.Message;
     }
 
-    public async Task<bool> SubscribeAsync(string channel)
+    public async ValueTask<bool> SubscribeAsync(string channel)
     {
         Interlocked.CompareExchange<ChannelMessageQueue>(ref messageQueue,
-            redis.GetSubscriber().Subscribe(channel),
+            await redis.GetSubscriber().SubscribeAsync(channel),
             null);
         return true;
     }
 
-    public async Task<bool> UnSubscribeAsync()
+    public async ValueTask<bool> UnSubscribeAsync()
     {
         if (messageQueue == null)
         {
@@ -41,7 +41,7 @@ public class RedisPipe: IDistributedPipe
         return true;
     }
 
-    public async Task<bool> WriteMessageAsync(string channel, byte[] message)
+    public async ValueTask<bool> WriteMessageAsync(string channel, byte[] message)
     {
         object _asyncState = new object();
         IDatabase db = redis.GetDatabase(asyncState: _asyncState);

@@ -26,7 +26,7 @@ public class NotifySettingsRepository : INotifySettingsRepository
     public NotifySettingsRepository(IKVStore store)
     {
         _store = store;
-        _store.SetSchema(new TableDefinition("ferrite", "devices",
+        _store.SetSchema(new TableDefinition("ferrite", "notify_settings",
             new KeyDefinition("pk",
                 new DataColumn { Name = "auth_key_id", Type = DataType.Long },
                 new DataColumn { Name = "notify_peer_type", Type = DataType.Int }, 
@@ -38,20 +38,20 @@ public class NotifySettingsRepository : INotifySettingsRepository
     {
         var settingBytes = MessagePackSerializer.Serialize(settings);
         long peerId = 0;
-        if (peer.Peer.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
+        if (peer.Peer?.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
         {
             peerId = peer.Peer.UserId;
         }
-        else if (peer.Peer.InputPeerType == InputPeerType.Chat)
+        else if (peer.Peer?.InputPeerType == InputPeerType.Chat)
         {
             peerId = peer.Peer.ChatId;
         }
-        else if (peer.Peer.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        else if (peer.Peer?.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
             peerId = peer.Peer.ChannelId;
         }
         return _store.Put(settingBytes, authKeyId,
-            (int)peer.NotifyPeerType, (int)peer.Peer.InputPeerType,
+            (int)peer.NotifyPeerType, peer.Peer != null ? (int)peer.Peer.InputPeerType : 0,
             peerId, (int)settings.DeviceType);
     }
 
@@ -59,21 +59,25 @@ public class NotifySettingsRepository : INotifySettingsRepository
     {
         List<PeerNotifySettingsDTO> results = new();
         long peerId = 0;
-        if (peer.Peer.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
+        int inputPeerType = 0;
+        if (peer.Peer?.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
         {
             peerId = peer.Peer.UserId;
+            inputPeerType = (int)peer.Peer.InputPeerType;
         }
-        else if (peer.Peer.InputPeerType == InputPeerType.Chat)
+        else if (peer.Peer?.InputPeerType == InputPeerType.Chat)
         {
             peerId = peer.Peer.ChatId;
+            inputPeerType = (int)peer.Peer.InputPeerType;
         }
-        else if (peer.Peer.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        else if (peer.Peer?.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
             peerId = peer.Peer.ChannelId;
+            inputPeerType = (int)peer.Peer.InputPeerType;
         }
 
         var iter = _store.Iterate(authKeyId,
-            (int)peer.NotifyPeerType, (int)peer.Peer.InputPeerType,
+            (int)peer.NotifyPeerType, inputPeerType,
             peerId);
         foreach (var settingBytes in iter)
         {
