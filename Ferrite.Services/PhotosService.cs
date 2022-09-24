@@ -63,7 +63,7 @@ public class PhotosService : IPhotosService
         IReadOnlyCollection<FilePartDTO> fileParts;
         if (photo != null)
         {
-            fileParts = await _store.GetFilePartsAsync(photo.Id);
+            fileParts = _unitOfWork.FileInfoRepository.GetFileParts(photo.Id);
             if (fileParts.Count != photo.Parts ||
                 fileParts.First().PartNum != 0 ||
                 fileParts.Last().PartNum != photo.Parts - 1)
@@ -114,16 +114,16 @@ public class PhotosService : IPhotosService
         
         if (file.IsBigFile)
         {
-            await _store.SaveBigFileInfoAsync(file);
+            _unitOfWork.FileInfoRepository.PutBigFileInfo(file);
         }
         else
         {
-            await _store.SaveFileInfoAsync(file);
+            _unitOfWork.FileInfoRepository.PutFileInfo(file);
         }
         var date = DateTime.Now;
         byte[] reference = _random.GetRandomBytes(16);
-        await _store.SaveFileReferenceAsync(new FileReferenceDTO(reference, file.Id, file.IsBigFile));
-
+        _unitOfWork.FileInfoRepository.PutFileReference(new FileReferenceDTO(reference, file.Id, file.IsBigFile));
+        await _unitOfWork.SaveAsync();
         using var imageData = UnmanagedMemoryAllocator.Allocate<byte>(size);
         int offset = 0;
         if (!file.IsBigFile)
@@ -222,13 +222,14 @@ public class PhotosService : IPhotosService
         var thumbnail = _photoProcessor.GenerateThumbnail(imageData.Span, w, filter);
         var thumbId = _random.NextLong();
         await _objectStore.SaveFilePart(thumbId, 0, new MemoryStream(thumbnail));
-        await _store.SaveFilePartAsync(new FilePartDTO(thumbId, 0, thumbnail.Length));
-        await _store.SaveFileInfoAsync(new UploadedFileInfoDTO(thumbId, thumbnail.Length, 1,
+        _unitOfWork.FileInfoRepository.PutFilePart(new FilePartDTO(thumbId, 0, thumbnail.Length));
+        _unitOfWork.FileInfoRepository.PutFileInfo(new UploadedFileInfoDTO(thumbId, thumbnail.Length, 1,
             _random.NextLong(), "", null, DateTimeOffset.Now, false));
         var thumb = new ThumbnailDTO(file.Id, thumbId, type,
             thumbnail.Length, w, w, null, null);
         thumbnails.Add(thumb);
         await _store.SaveThumbnailAsync(thumb);
+        await _unitOfWork.SaveAsync();
     }
 
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos)
@@ -237,15 +238,15 @@ public class PhotosService : IPhotosService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var photo in photos)
         {
-            var reference = await _store.GetFileReferenceAsync(photo.FileReference);
+            var reference = _unitOfWork.FileInfoRepository.GetFileReference(photo.FileReference);
             UploadedFileInfoDTO? file = null;
             if (reference.IsBigfile)
             {
-                file = await _store.GetBigFileInfoAsync(reference.FileId);
+                file = _unitOfWork.FileInfoRepository.GetBigFileInfo(reference.FileId);
             }
             else
             {
-                file = await _store.GetFileInfoAsync(reference.FileId);
+                file = _unitOfWork.FileInfoRepository.GetFileInfo(reference.FileId);
             }
 
             if (file != null && photo.AccessHash == file.AccessHash &&

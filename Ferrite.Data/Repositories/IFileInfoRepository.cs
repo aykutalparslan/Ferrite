@@ -22,9 +22,11 @@ public interface IFileInfoRepository
 {
     public bool SaveFileInfo(UploadedFileInfoDTO uploadedFile);
     public UploadedFileInfoDTO? GetFileInfo(long fileId);
+    public bool PutFileInfo(UploadedFileInfoDTO uploadedFile);
     public bool PutBigFileInfo(UploadedFileInfoDTO uploadedFile);
     public UploadedFileInfoDTO? GetBigFileInfo(long fileId);
     public bool PutFilePart(FilePartDTO part);
+    public bool PutBigFilePart(FilePartDTO part);
     public IReadOnlyCollection<FilePartDTO> GetFileParts(long fileId);
     public bool SaveBigFilePart(FilePartDTO part);
     public IReadOnlyCollection<FilePartDTO> GetBigFileParts(long fileId);

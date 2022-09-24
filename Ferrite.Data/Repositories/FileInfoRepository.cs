@@ -67,6 +67,12 @@ public class FileInfoRepository : IFileInfoRepository
         return info;
     }
 
+    public bool PutFileInfo(UploadedFileInfoDTO uploadedFile)
+    {
+        var infoBytes = MessagePackSerializer.Serialize(uploadedFile);
+        return _storeFiles.Put(infoBytes, uploadedFile.Id);
+    }
+
     public bool PutBigFileInfo(UploadedFileInfoDTO uploadedFile)
     {
         var infoBytes = MessagePackSerializer.Serialize(uploadedFile);
@@ -85,6 +91,12 @@ public class FileInfoRepository : IFileInfoRepository
     {
         var partBytes = MessagePackSerializer.Serialize(part);
         return _storeFileParts.Put(partBytes, part.FileId, part.PartNum);
+    }
+
+    public bool PutBigFilePart(FilePartDTO part)
+    {
+        var partBytes = MessagePackSerializer.Serialize(part);
+        return _storeBigFileParts.Put(partBytes, part.FileId, part.PartNum);
     }
 
     public IReadOnlyCollection<FilePartDTO> GetFileParts(long fileId)

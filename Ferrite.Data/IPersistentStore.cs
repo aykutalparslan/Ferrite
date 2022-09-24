@@ -81,16 +81,16 @@ public interface IPersistentStore
     //public Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType);
     //public Task<bool> DeleteBlockedPeerAsync(long userId, long peerId, PeerType peerType);
     //public Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId);
-    public Task<bool> SaveFileInfoAsync(UploadedFileInfoDTO uploadedFile);
-    public Task<UploadedFileInfoDTO?> GetFileInfoAsync(long fileId);
-    public Task<bool> SaveBigFileInfoAsync(UploadedFileInfoDTO uploadedFile);
-    public Task<UploadedFileInfoDTO?> GetBigFileInfoAsync(long fileId);
-    public Task<bool> SaveFilePartAsync(FilePartDTO part);
-    public Task<IReadOnlyCollection<FilePartDTO>> GetFilePartsAsync(long fileId);
-    public Task<bool> SaveBigFilePartAsync(FilePartDTO part);
-    public Task<IReadOnlyCollection<FilePartDTO>> GetBigFilePartsAsync(long fileId);
-    public Task<bool> SaveFileReferenceAsync(FileReferenceDTO reference);
-    public Task<FileReferenceDTO?> GetFileReferenceAsync(byte[] referenceBytes);
+    //public Task<bool> SaveFileInfoAsync(UploadedFileInfoDTO uploadedFile);
+    //public Task<UploadedFileInfoDTO?> GetFileInfoAsync(long fileId);
+    //public Task<bool> SaveBigFileInfoAsync(UploadedFileInfoDTO uploadedFile);
+    //public Task<UploadedFileInfoDTO?> GetBigFileInfoAsync(long fileId);
+    //public Task<bool> SaveFilePartAsync(FilePartDTO part);
+    //public Task<IReadOnlyCollection<FilePartDTO>> GetFilePartsAsync(long fileId);
+    //public Task<bool> SaveBigFilePartAsync(FilePartDTO part);
+    //public Task<IReadOnlyCollection<FilePartDTO>> GetBigFilePartsAsync(long fileId);
+    //public Task<bool> SaveFileReferenceAsync(FileReferenceDTO reference);
+    //public Task<FileReferenceDTO?> GetFileReferenceAsync(byte[] referenceBytes);
     public Task<bool> SaveProfilePhotoAsync(long userId, long fileId, long accessHash,
         byte[] referenceBytes, DateTime date);
     public Task<bool> DeleteProfilePhotoAsync(long userId, long fileId);

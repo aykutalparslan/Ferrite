@@ -43,6 +43,7 @@ public interface IUnitOfWork
     IContactsRepository ContactsRepository { get; }
     IBlockedPeersRepository BlockedPeersRepository { get; }
     ISignUpNotificationRepository SignUpNotificationRepository { get; }
+    IFileInfoRepository FileInfoRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }
