@@ -49,7 +49,8 @@ public class PhotosService : IPhotosService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         var date = DateTime.Now;
-        await _store.SaveProfilePhotoAsync(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
+        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
+        await _unitOfWork.SaveAsync();
         var photoInner = new Data.PhotoDTO(false, id.Id, id.AccessHash, id.FileReference,
             (int)((DateTimeOffset)date).ToUnixTimeSeconds(), new List<PhotoSizeDTO>(), null, 1);
         var photo = new PhotoDTO(photoInner, new[] { user });
@@ -162,7 +163,8 @@ public class PhotosService : IPhotosService
                 thumbnail.Width, thumbnail.Height, thumbnail.Size, thumbnail.Bytes, thumbnail.Sizes));
         }
         
-        await _store.SaveProfilePhotoAsync(auth.UserId, file.Id, file.AccessHash, reference, date);
+        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, file.Id, file.AccessHash, reference, date);
+        await _unitOfWork.SaveAsync();
         var photoInner = new Data.PhotoDTO(false, file.Id, file.AccessHash, reference,
             (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 2);
         var result = new PhotoDTO(photoInner, new[] { user });
@@ -228,7 +230,7 @@ public class PhotosService : IPhotosService
         var thumb = new ThumbnailDTO(file.Id, thumbId, type,
             thumbnail.Length, w, w, null, null);
         thumbnails.Add(thumb);
-        await _store.SaveThumbnailAsync(thumb);
+        _unitOfWork.PhotoRepository.PutThumbnail(thumb);
         await _unitOfWork.SaveAsync();
     }
 
@@ -250,12 +252,13 @@ public class PhotosService : IPhotosService
             }
 
             if (file != null && photo.AccessHash == file.AccessHash &&
-                await _store.DeleteProfilePhotoAsync(auth.UserId, reference.FileId))
+                _unitOfWork.PhotoRepository.DeleteProfilePhoto(auth.UserId, reference.FileId))
             {
                 result.Add(photo.Id);
             }
         }
-        
+
+        await _unitOfWork.SaveAsync();
         return result;
     }
     public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
@@ -266,7 +269,7 @@ public class PhotosService : IPhotosService
         {
             user = user with { Self = true };
         }
-        var profilePhotos = await _store.GetProfilePhotosAsync(auth.UserId);
+        var profilePhotos = _unitOfWork.PhotoRepository.GetProfilePhotos(auth.UserId);
         return new PhotosDTO(profilePhotos, new List<UserDTO> { user });
     }
 }

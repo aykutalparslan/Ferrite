@@ -44,6 +44,7 @@ public interface IUnitOfWork
     IBlockedPeersRepository BlockedPeersRepository { get; }
     ISignUpNotificationRepository SignUpNotificationRepository { get; }
     IFileInfoRepository FileInfoRepository { get; }
+    IPhotoRepository PhotoRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

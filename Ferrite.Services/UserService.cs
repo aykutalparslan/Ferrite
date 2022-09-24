@@ -96,7 +96,7 @@ public class UserService : IUsersService
 
         if (user != null)
         {
-            var profilePhoto = await _store.GetProfilePhotoAsync(user.Id, user.Photo.PhotoId);
+            var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
             var fullUser = new Ferrite.Data.UserFullDTO
             {
                 About = user.About,

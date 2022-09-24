@@ -55,7 +55,7 @@ public class UploadService : IUploadService
         var reference = _unitOfWork.FileInfoRepository.GetFileReference(fileReference);
         if (reference.IsBigfile)
         {
-            var thumbs = await _store.GetThumbnailsAsync(fileId);
+            var thumbs = _unitOfWork.PhotoRepository.GetThumbnails(fileId);
             long thumbFileId = 0;
             foreach (var t in thumbs)
             {
@@ -71,7 +71,7 @@ public class UploadService : IUploadService
         }
         else
         {
-            var thumbs = await _store.GetThumbnailsAsync(fileId);
+            var thumbs = _unitOfWork.PhotoRepository.GetThumbnails(fileId);
             long thumbFileId = 0;
             foreach (var t in thumbs)
             {

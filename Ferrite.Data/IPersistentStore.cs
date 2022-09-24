@@ -91,13 +91,13 @@ public interface IPersistentStore
     //public Task<IReadOnlyCollection<FilePartDTO>> GetBigFilePartsAsync(long fileId);
     //public Task<bool> SaveFileReferenceAsync(FileReferenceDTO reference);
     //public Task<FileReferenceDTO?> GetFileReferenceAsync(byte[] referenceBytes);
-    public Task<bool> SaveProfilePhotoAsync(long userId, long fileId, long accessHash,
-        byte[] referenceBytes, DateTime date);
-    public Task<bool> DeleteProfilePhotoAsync(long userId, long fileId);
-    public Task<IReadOnlyCollection<PhotoDTO>> GetProfilePhotosAsync(long userId);
-    public Task<PhotoDTO?> GetProfilePhotoAsync(long userId, long fileId);
-    public Task<bool> SaveThumbnailAsync(ThumbnailDTO thumbnail);
-    public Task<IReadOnlyCollection<ThumbnailDTO>> GetThumbnailsAsync(long photoId);
+    //public Task<bool> SaveProfilePhotoAsync(long userId, long fileId, long accessHash,
+    //    byte[] referenceBytes, DateTime date);
+    //public Task<bool> DeleteProfilePhotoAsync(long userId, long fileId);
+    //public Task<IReadOnlyCollection<PhotoDTO>> GetProfilePhotosAsync(long userId);
+    //public Task<PhotoDTO?> GetProfilePhotoAsync(long userId, long fileId);
+    //public Task<bool> SaveThumbnailAsync(ThumbnailDTO thumbnail);
+    //public Task<IReadOnlyCollection<ThumbnailDTO>> GetThumbnailsAsync(long photoId);
     //public Task<bool> SaveSignUoNotificationAsync(long userId, bool silent);
     //public Task<bool> GetSignUoNotificationAsync(long userId);
 }

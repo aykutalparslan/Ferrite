@@ -26,6 +26,6 @@ public interface IPhotoRepository
     public bool DeleteProfilePhoto(long userId, long fileId);
     public IReadOnlyCollection<PhotoDTO> GetProfilePhotos(long userId);
     public PhotoDTO? GetProfilePhoto(long userId, long fileId);
-    public bool SaveThumbnail(ThumbnailDTO thumbnail);
+    public bool PutThumbnail(ThumbnailDTO thumbnail);
     public IReadOnlyCollection<ThumbnailDTO> GetThumbnails(long photoId);
 }

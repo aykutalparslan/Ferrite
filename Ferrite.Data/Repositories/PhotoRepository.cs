@@ -96,7 +96,7 @@ public class PhotoRepository : IPhotoRepository
         return photo;
     }
 
-    public bool SaveThumbnail(ThumbnailDTO thumbnail)
+    public bool PutThumbnail(ThumbnailDTO thumbnail)
     {
         var thumbBytes = MessagePackSerializer.Serialize(thumbnail);
         return _storeThumb.Put(thumbBytes, thumbnail.FileId,
