@@ -19,41 +19,42 @@ using System;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 
 namespace Ferrite.Services;
 
 public class LangPackService : ILangPackService
 {
-    private readonly ILangPackDataStore _store;
-    public LangPackService(ILangPackDataStore store)
+    private readonly IUnitOfWork _unitOfWork;
+    public LangPackService(IUnitOfWork unitOfWork)
     {
-        _store = store;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
     {
-        return await _store.GetDifferenceAsync(langPack, langCode, fromVersion);
+        return await _unitOfWork.LangPackRepository.GetDifferenceAsync(langPack, langCode, fromVersion);
     }
 
     public async Task<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode)
     {
-        return await _store.GetLangPackAsync(langPack, langCode);
+        return await _unitOfWork.LangPackRepository.GetLangPackAsync(langPack, langCode);
     }
 
     public async Task<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode)
     {
-        return await _store.GetLanguageAsync(langPack, langCode);
+        return await _unitOfWork.LangPackRepository.GetLanguageAsync(langPack, langCode);
     }
 
     public async Task<ICollection<LangPackLanguageDTO>> GetLanguagesAsync(string langPack)
     {
-        return await _store.GetLanguagesAsync(langPack);
+        return await _unitOfWork.LangPackRepository.GetLanguagesAsync(langPack);
     }
 
     public async Task<ICollection<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode,
         ICollection<string> keys)
     {
-        return await _store.GetStringsAsync(langPack, langCode, keys);
+        return await _unitOfWork.LangPackRepository.GetStringsAsync(langPack, langCode, keys);
     }
 }
 

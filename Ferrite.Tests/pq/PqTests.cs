@@ -191,8 +191,6 @@ public class PqTests
         });
         
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
-        var cassandra = new Mock<IPersistentStore>();
-        
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -204,7 +202,6 @@ public class PqTests
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(proto);
-        builder.RegisterMock(cassandra);
         builder.RegisterMock(logger);
         var container = builder.Build();
         return container;
@@ -231,7 +228,6 @@ public class PqTests
             }
             return authKeys[a];
         });
-        var cassandra = new Mock<IPersistentStore>();
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -243,7 +239,6 @@ public class PqTests
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(proto);
-        builder.RegisterMock(cassandra);
         builder.RegisterMock(logger);
         var container = builder.Build();
         return container;

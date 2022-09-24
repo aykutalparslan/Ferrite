@@ -141,8 +141,6 @@ public class Program
                 "ferrite", "ferrite-server",
                  "49:99:E9:CA:B6:8C:6B:78:8F:C5:A2:7A:F2:78:CA:FA:08:1E:66:9F:2F:E8:2C:C5:87:35:49:B4:4C:07:62:DD"))
             .As<ISearchEngine>().SingleInstance();
-        builder.Register(_ => new LangPackDataStore("ferrite","localhost"))
-            .As<ILangPackDataStore>().SingleInstance();
         //builder.Register(_=> new KafkaPipe("kafka:9092")).As<IDistributedPipe>();
         builder.Register(_=> new FasterCounterFactory("faster-counter-data")).As<ICounterFactory>();
         builder.Register(_=> new FasterUpdatesContextFactory("faster-updates-data")).As<IUpdatesContextFactory>();

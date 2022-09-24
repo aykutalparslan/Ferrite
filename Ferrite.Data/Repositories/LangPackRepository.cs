@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Text.Json;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -24,6 +25,8 @@ public class LangPackRepository : ILangPackRepository
 {
     private readonly IKVStore _store;
     private readonly IKVStore _storeStrings;
+    private bool loadingFromDisk = false;
+    private Task? loadFromDisk;
 
     public LangPackRepository(IKVStore store, IKVStore storeStrings)
     {
@@ -38,6 +41,40 @@ public class LangPackRepository : ILangPackRepository
                 new DataColumn { Name = "lang_pack", Type = DataType.String },
                 new DataColumn { Name = "lang_code", Type = DataType.String })));
     }
+    private async Task LoadFromDisk()
+    {
+        if (loadingFromDisk)
+        {
+            return;
+        }
+
+        loadingFromDisk = true;
+        var iter = _store.Iterate("android");
+        if (iter.FirstOrDefault() != null)
+        {
+            loadingFromDisk = false;
+            return;
+        }
+        string[] langPacks = {"android", "ios", "tdesktop", "macos", "android_x" };
+        foreach (var langPack in langPacks)
+        {
+            using StreamReader rd = new StreamReader($"LangData/{langPack}-languages.json");
+            var options = new JsonSerializerOptions
+            {
+                IncludeFields = true
+            };
+            LangPackLanguageDTO[] languages = JsonSerializer.Deserialize<LangPackLanguageDTO[]>(rd.ReadToEnd());
+            foreach (LangPackLanguageDTO language in languages)
+            {
+                SaveLanguage(langPack, language);
+                using StreamReader rd2 = new StreamReader($"LangData/{langPack}-{language.LangCode}.json");
+                LangPackDifferenceDTO difference = JsonSerializer.Deserialize<LangPackDifferenceDTO>(rd2.ReadToEnd());
+                SaveLangPackDifference(langPack, difference);
+            }
+        }
+
+        loadingFromDisk = false;
+    }
     public bool SaveLanguage(string langPack, LangPackLanguageDTO languageDto)
     {
         var langPackBytes = MessagePackSerializer.Serialize(languageDto);
@@ -50,8 +87,12 @@ public class LangPackRepository : ILangPackRepository
         return _storeStrings.Put(differenceBytes, langPack, difference.LangCode);
     }
 
-    public ValueTask<List<LangPackLanguageDTO>> GetLanguagesAsync(string? langPack)
+    public async ValueTask<List<LangPackLanguageDTO>> GetLanguagesAsync(string? langPack)
     {
+        if (loadingFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         List<LangPackLanguageDTO> result = new List<LangPackLanguageDTO>();
         var iter = _store.Iterate(langPack);
         foreach (var langPackBytes in iter)
@@ -59,24 +100,32 @@ public class LangPackRepository : ILangPackRepository
             var language = MessagePackSerializer.Deserialize<LangPackLanguageDTO>(langPackBytes);
         }
 
-        return ValueTask.FromResult(result);
+        return result;
     }
 
-    public ValueTask<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode)
+    public async ValueTask<LangPackLanguageDTO?> GetLanguageAsync(string langPack, string langCode)
     {
+        if (loadingFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         var langPackBytes = _store.Get(langPack, langCode);
         if (langPackBytes != null)
         {
-            return ValueTask.FromResult(MessagePackSerializer.Deserialize<LangPackLanguageDTO>(langPackBytes));
+            return MessagePackSerializer.Deserialize<LangPackLanguageDTO>(langPackBytes);
         }
 
-        return ValueTask.FromResult(default(LangPackLanguageDTO));
+        return default(LangPackLanguageDTO);
     }
 
-    public ValueTask<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode)
+    public async ValueTask<LangPackDifferenceDTO?> GetLangPackAsync(string langPack, string langCode)
     {
+        if (loadingFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         int version = 0;
-        return ValueTask.FromResult(GetDifferenceInternal(langPack, langCode, version));
+        return GetDifferenceInternal(langPack, langCode, version);
     }
 
     private LangPackDifferenceDTO? GetDifferenceInternal(string langPack, string langCode, int version)
@@ -109,14 +158,22 @@ public class LangPackRepository : ILangPackRepository
         return diff;
     }
 
-    public ValueTask<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
+    public async ValueTask<LangPackDifferenceDTO?> GetDifferenceAsync(string langPack, string langCode, int fromVersion)
     {
-        return ValueTask.FromResult(GetDifferenceInternal(langPack, langCode, fromVersion));
+        if (loadingFromDisk != null)
+        {
+            await loadFromDisk;
+        }
+        return GetDifferenceInternal(langPack, langCode, fromVersion);
     }
 
-    public ValueTask<List<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode,
+    public async ValueTask<List<LangPackStringDTO>> GetStringsAsync(string langPack, string langCode,
         ICollection<string> keys)
     {
+        if (loadingFromDisk != null)
+        {
+            await loadFromDisk;
+        }
         List<LangPackStringDTO> result = new List<LangPackStringDTO>();
         var diff = GetDifferenceInternal(langPack, langCode, 0);
         if (diff == null)
@@ -130,6 +187,6 @@ public class LangPackRepository : ILangPackRepository
             }
         }
 
-        return ValueTask.FromResult(result);
+        return result;
     }
 }

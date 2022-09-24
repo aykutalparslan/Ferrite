@@ -59,6 +59,7 @@ public class DefaultUnitOfWork : IUnitOfWork
             new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra),
             new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
         PhotoRepository = new PhotoRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
+        LangPackRepository = new LangPackRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -85,6 +86,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public ISignUpNotificationRepository SignUpNotificationRepository { get; }
     public IFileInfoRepository FileInfoRepository { get; }
     public IPhotoRepository PhotoRepository { get; }
+    public ILangPackRepository LangPackRepository { get; }
 
     public bool Save()
     {

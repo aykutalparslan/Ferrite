@@ -33,6 +33,7 @@ using DotNext.Buffers;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.ObjectMapper;
@@ -184,7 +185,7 @@ public class StreamingRequestTests
         });
         builder.RegisterMock(proto);
         ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
-        var objectStore = new Mock<IObjectStore>();
+        var objectStore = new Mock<IUploadService>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
             It.IsAny<int>(), It.IsAny<Stream>())).Returns(async (long fileId, int filePart, Stream data) =>
             {
@@ -198,7 +199,6 @@ public class StreamingRequestTests
                 return true;
             });
         builder.RegisterMock(objectStore);
-
         var processorManager = new Mock<IProcessorManager>();
         processorManager.Setup(x => x.Process(It.IsAny<object?>(),
             It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback( 

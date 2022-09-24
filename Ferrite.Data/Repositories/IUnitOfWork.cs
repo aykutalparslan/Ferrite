@@ -45,6 +45,7 @@ public interface IUnitOfWork
     ISignUpNotificationRepository SignUpNotificationRepository { get; }
     IFileInfoRepository FileInfoRepository { get; }
     IPhotoRepository PhotoRepository { get; }
+    ILangPackRepository LangPackRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }
