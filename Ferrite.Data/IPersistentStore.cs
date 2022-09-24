@@ -73,11 +73,11 @@ public interface IPersistentStore
     //public Task<ChatDTO?> GetChatAsync(long chatId);
     //public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
     //public Task<int> GetAccountTTLAsync(long userId);
-    public Task<ImportedContactDTO?> SaveContactAsync(long userId, InputContactDTO contact);
-    public Task<bool> DeleteContactAsync(long userId, long contactUserId);
-    public Task<bool> DeleteContactsAsync(long userId);
-    public Task<ICollection<SavedContactDTO>> GetSavedContactsAsync(long userId);
-    public Task<ICollection<ContactDTO>> GetContactsAsync(long userId);
+    //public Task<ImportedContactDTO?> SaveContactAsync(long userId, InputContactDTO contact);
+    //public Task<bool> DeleteContactAsync(long userId, long contactUserId);
+    //public Task<bool> DeleteContactsAsync(long userId);
+    //public Task<ICollection<SavedContactDTO>> GetSavedContactsAsync(long userId);
+    //public Task<ICollection<ContactDTO>> GetContactsAsync(long userId);
     public Task<bool> SaveBlockedUserAsync(long userId, long peerId, PeerType peerType);
     public Task<bool> DeleteBlockedPeerAsync(long userId, long peerId, PeerType peerType);
     public Task<ICollection<PeerBlocked>> GetBlockedPeersAsync(long userId);

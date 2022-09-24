@@ -40,7 +40,7 @@ public class ContactsService : IContactsService
     public async Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var contactList = await _store.GetContactsAsync(auth.UserId);
+        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
         var result =  new List<ContactStatusDTO>();
         foreach (var c in contactList)
         {
@@ -54,7 +54,7 @@ public class ContactsService : IContactsService
     public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var contactList = await _store.GetContactsAsync(auth.UserId);
+        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
         List<UserDTO> userList = new List<UserDTO>();
         foreach (var c in contactList)
         {
@@ -71,7 +71,8 @@ public class ContactsService : IContactsService
         List<UserDTO> users = new();
         foreach (var c in contacts)
         {
-            var imported = await _store.SaveContactAsync(auth.UserId, c);
+            var user = _unitOfWork.UserRepository.GetUser(c.Phone);
+            var imported = _unitOfWork.ContactsRepository.PutContact(auth.UserId, user.Id, c);
             users.Add(_unitOfWork.UserRepository.GetUser(imported.UserId));
             importedContacts.Add(imported);
         }
@@ -85,9 +86,10 @@ public class ContactsService : IContactsService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var c in id)
         {
-            await _store.DeleteContactAsync(auth.UserId, c.UserId);
+            _unitOfWork.ContactsRepository.DeleteContact(auth.UserId, c.UserId);
         }
-        
+
+        await _unitOfWork.SaveAsync();
         return null;
     }
 
@@ -97,7 +99,11 @@ public class ContactsService : IContactsService
         foreach (var p in phones)
         {
             var userId = _unitOfWork.UserRepository.GetUserId(p);
-            if(userId!=null) await _store.DeleteContactAsync(auth.UserId, (long)userId);
+            if (userId != null)
+            {
+                _unitOfWork.ContactsRepository.DeleteContact(auth.UserId, (long)userId);
+                await _unitOfWork.SaveAsync();
+            }
         }
 
         return true;
@@ -182,13 +188,14 @@ public class ContactsService : IContactsService
     public async Task<bool> ResetSaved(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        return await _store.DeleteContactsAsync(auth.UserId);
+        _unitOfWork.ContactsRepository.DeleteContacts(auth.UserId);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<ServiceResult<ICollection<SavedContactDTO>>> GetSaved(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        return new ServiceResult<ICollection<SavedContactDTO>>(await _store.GetSavedContactsAsync(auth.UserId),
+        return new ServiceResult<ICollection<SavedContactDTO>>(_unitOfWork.ContactsRepository.GetSavedContacts(auth.UserId),
                 true, ErrorMessages.None);
     }
 

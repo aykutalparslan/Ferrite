@@ -40,6 +40,7 @@ public interface IUnitOfWork
     IReportReasonRepository ReportReasonRepository { get; }
     IPrivacyRulesRepository PrivacyRulesRepository { get; }
     IChatRepository ChatRepository { get; }
+    IContactsRepository ContactsRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }
