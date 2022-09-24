@@ -69,8 +69,8 @@ public interface IPersistentStore
     //public Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
     //public Task<bool> DeletePrivacyRulesAsync(long userId);
     //public Task<ICollection<PrivacyRuleDTO>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
-    public Task<bool> SaveChatAsync(ChatDTO chat);
-    public Task<ChatDTO?> GetChatAsync(long chatId);
+    //public Task<bool> SaveChatAsync(ChatDTO chat);
+    //public Task<ChatDTO?> GetChatAsync(long chatId);
     //public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
     //public Task<int> GetAccountTTLAsync(long userId);
     public Task<ImportedContactDTO?> SaveContactAsync(long userId, InputContactDTO contact);

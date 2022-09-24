@@ -52,6 +52,7 @@ public class DefaultUnitOfWork : IUnitOfWork
             new NotifySettingsRepository(new CassandraKVStore(_cassandra));
         ReportReasonRepository = new ReportReasonRepository(new CassandraKVStore(_cassandra));
         PrivacyRulesRepository = new PrivacyRulesRepository(new CassandraKVStore(_cassandra));
+        ChatRepository = new ChatRepository(new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -72,6 +73,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public INotifySettingsRepository NotifySettingsRepository { get; }
     public IReportReasonRepository ReportReasonRepository { get; }
     public IPrivacyRulesRepository PrivacyRulesRepository { get; }
+    public IChatRepository ChatRepository { get; }
 
     public bool Save()
     {

@@ -39,6 +39,7 @@ public interface IUnitOfWork
     INotifySettingsRepository NotifySettingsRepository { get; }
     IReportReasonRepository ReportReasonRepository { get; }
     IPrivacyRulesRepository PrivacyRulesRepository { get; }
+    IChatRepository ChatRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

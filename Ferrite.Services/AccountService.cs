@@ -202,7 +202,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetChatAsync(id) is { } chat)
+                    if (_unitOfWork.ChatRepository.GetChat(id) is { } chat)
                     {
                         chats.Add(chat);
                     }  
@@ -249,7 +249,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetChatAsync(id) is { } chat)
+                    if (_unitOfWork.ChatRepository.GetChat(id) is { } chat)
                     {
                         chats.Add(chat);
                     }  
