@@ -78,6 +78,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public IChatRepository ChatRepository { get; }
     public IContactsRepository ContactsRepository { get; }
     public IBlockedPeersRepository BlockedPeersRepository { get; }
+    public ISignUpNotificationRepository SignUpNotificationRepository { get; }
 
     public bool Save()
     {

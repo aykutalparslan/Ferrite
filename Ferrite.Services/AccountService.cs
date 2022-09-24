@@ -419,13 +419,14 @@ public partial class AccountService : IAccountService
     public async Task<bool> SetContactSignUpNotification(long authKeyId, bool silent)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        return await _store.SaveSignUoNotificationAsync(auth.UserId, silent);
+        _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(auth.UserId, silent);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> GetContactSignUpNotification(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        return await _store.GetSignUoNotificationAsync(auth.UserId);
+        return _unitOfWork.SignUpNotificationRepository.GetSignUpNotification(auth.UserId);
     }
 
     public async Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 

@@ -42,6 +42,7 @@ public interface IUnitOfWork
     IChatRepository ChatRepository { get; }
     IContactsRepository ContactsRepository { get; }
     IBlockedPeersRepository BlockedPeersRepository { get; }
+    ISignUpNotificationRepository SignUpNotificationRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }
