@@ -134,8 +134,6 @@ public class Program
         builder.Register(_ => new S3ObjectStore("http://localhost:9000", 
                 "minioadmin", "minioadmin"))
             .As<IObjectStore>().SingleInstance();
-        builder.Register(_ => new CassandraDataStore("ferrite","localhost"))
-            .As<IPersistentStore>().SingleInstance();
         builder.Register(_ => new DefaultUnitOfWork(new SerilogLogger(),
                 "localhost:6379", "ferrite","localhost"))
             .As<IUnitOfWork>().SingleInstance();

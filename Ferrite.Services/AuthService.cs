@@ -30,18 +30,16 @@ namespace Ferrite.Services;
 public class AuthService : IAuthService
 {
     private readonly IRandomGenerator _random;
-    private readonly IPersistentStore _store;
     private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
-    public AuthService(IRandomGenerator random, IPersistentStore store, ISearchEngine search,
+    public AuthService(IRandomGenerator random, ISearchEngine search,
         IUnitOfWork unitOfWork, ICounterFactory counterFactory)
     {
         _random = random;
-        _store = store;
         _search = search;
         _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;

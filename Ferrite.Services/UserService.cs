@@ -25,11 +25,9 @@ namespace Ferrite.Services;
 
 public class UserService : IUsersService
 {
-    private readonly IPersistentStore _store;
     private readonly IUnitOfWork _unitOfWork;
-    public UserService(IPersistentStore store, IUnitOfWork unitOfWork)
+    public UserService(IUnitOfWork unitOfWork)
     {
-        _store = store;
         _unitOfWork = unitOfWork;
     }
     public async Task<ServiceResult<ICollection<UserDTO>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)

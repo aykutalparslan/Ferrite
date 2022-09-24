@@ -220,8 +220,6 @@ public class AllocationFreeDeserializationTests
             return authKeys[a];
         });
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
-        var cassandra = new Mock<IPersistentStore>();
-        
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
@@ -232,7 +230,6 @@ public class AllocationFreeDeserializationTests
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterMock(cassandra);
         builder.RegisterMock(logger);
         builder.RegisterMock(proto);
         var container = builder.Build();

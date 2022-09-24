@@ -256,8 +256,6 @@ public class StreamingRequestTests
             return authKeys2[a];
         });
 
-        var cassandra = new Mock<IPersistentStore>();
-        
         Queue<long> unixTimes = new Queue<long>();
         var time = new Mock<IMTProtoTime>();
         unixTimes.Enqueue(1649323587);
@@ -358,7 +356,6 @@ public class StreamingRequestTests
         builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.RegisterMock(cassandra);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
         builder.RegisterMock(pipe);

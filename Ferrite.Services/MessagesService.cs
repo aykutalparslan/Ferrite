@@ -26,16 +26,14 @@ namespace Ferrite.Services;
 
 public class MessagesService : IMessagesService
 {
-    private readonly IPersistentStore _store;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISearchEngine _search;
     private readonly IUpdatesService _updates;
     private readonly IUpdatesContextFactory _updatesContextFactory;
 
-    public MessagesService(IPersistentStore store, IUnitOfWork unitOfWork, 
-        ISearchEngine search, IUpdatesService updates, IUpdatesContextFactory updatesContextFactory)
+    public MessagesService(IUnitOfWork unitOfWork,ISearchEngine search, 
+        IUpdatesService updates, IUpdatesContextFactory updatesContextFactory)
     {
-        _store = store;
         _unitOfWork = unitOfWork;
         _search = search;
         _updates = updates;

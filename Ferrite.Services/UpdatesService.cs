@@ -30,18 +30,15 @@ public class UpdatesService : IUpdatesService
     private readonly IMTProtoTime _time;
     private readonly ISessionService _sessions;
     private readonly IDistributedPipe _pipe;
-    private readonly IPersistentStore _store;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUpdatesContextFactory _updatesContextFactory;
 
     public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe,
-        IPersistentStore store, IUnitOfWork unitOfWork,
-        IUpdatesContextFactory updatesContextFactory)
+        IUnitOfWork unitOfWork, IUpdatesContextFactory updatesContextFactory)
     {
         _time = time;
         _sessions = sessions;
         _pipe = pipe;
-        _store = store;
         _unitOfWork = unitOfWork;
         _updatesContextFactory = updatesContextFactory;
     }

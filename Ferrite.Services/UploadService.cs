@@ -25,14 +25,11 @@ namespace Ferrite.Services;
 public class UploadService : IUploadService
 {
     private readonly IObjectStore _objectStore;
-    private readonly IPersistentStore _store;
     private readonly IUnitOfWork _unitOfWork;
 
-    public UploadService(IObjectStore objectStore, IPersistentStore store,
-        IUnitOfWork unitOfWork)
+    public UploadService(IObjectStore objectStore, IUnitOfWork unitOfWork)
     {
         _objectStore = objectStore;
-        _store = store;
         _unitOfWork = unitOfWork;
     }
     public async Task<bool> SaveFilePart(long fileId, int filePart, Stream data)

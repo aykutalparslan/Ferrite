@@ -31,15 +31,13 @@ public class GetUserPhotos : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IPersistentStore _store;
     private readonly IPhotosService _photos;
     private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetUserPhotos(ITLObjectFactory objectFactory, IPersistentStore store, IPhotosService photos,
+    public GetUserPhotos(ITLObjectFactory objectFactory, IPhotosService photos,
         IMapperContext mapper)
     {
         factory = objectFactory;
-        _store = store;
         _photos = photos;
         _mapper = mapper;
     }

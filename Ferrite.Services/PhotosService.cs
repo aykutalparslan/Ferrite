@@ -29,16 +29,14 @@ namespace Ferrite.Services;
 
 public class PhotosService : IPhotosService
 {
-    private readonly IPersistentStore _store;
     private readonly IObjectStore _objectStore;
     private readonly IPhotoProcessor _photoProcessor;
     private readonly IRandomGenerator _random;
     private readonly IUnitOfWork _unitOfWork;
-    public PhotosService(IPersistentStore store, IObjectStore objectStore, 
+    public PhotosService(IObjectStore objectStore, 
         IPhotoProcessor photoProcessor, IRandomGenerator random,
         IUnitOfWork unitOfWork)
     {
-        _store = store;
         _objectStore = objectStore;
         _photoProcessor = photoProcessor;
         _random = random;
