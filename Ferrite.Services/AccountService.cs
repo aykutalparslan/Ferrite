@@ -361,7 +361,8 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)
     {
-        return await _cache.PutDeviceLockedAsync(authKeyId, period);
+         _unitOfWork.DeviceLockedRepository.PutDeviceLocked(authKeyId, TimeSpan.FromSeconds(period));
+         return await _unitOfWork.SaveAsync();
     }
 
     public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)

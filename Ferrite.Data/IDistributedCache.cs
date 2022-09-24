@@ -62,9 +62,9 @@ public interface IDistributedCache
     //public Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt);
     //public Task<bool> PutLoginTokenAsync(LoginViaQRDTO login, TimeSpan expiresIn);
     //public Task<LoginViaQRDTO?> GetLoginTokenAsync(byte[] token);
-    public Task<bool> PutUserStatusAsync(long userId, bool status);
-    public Task<(int wasOnline, bool online)> GetUserStatusAsync(long userId);
-    public Task<bool> PutDeviceLockedAsync(long authKeyId, int period);
-    public Task<int> GetDeviceLockedAsync(long authKeyId);
+    //public Task<bool> PutUserStatusAsync(long userId, bool status);
+    //public Task<(int wasOnline, bool online)> GetUserStatusAsync(long userId);
+    //public Task<bool> PutDeviceLockedAsync(long authKeyId, int period);
+    //public Task<int> GetDeviceLockedAsync(long authKeyId);
 }
 

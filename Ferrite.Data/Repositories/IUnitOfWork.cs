@@ -32,6 +32,7 @@ public interface IUnitOfWork
     IPhoneCodeRepository PhoneCodeRepository { get; }
     ISignInRepository SignInRepository { get; }
     ILoginTokenRepository LoginTokenRepository { get; }
+    IDeviceLockedRepository DeviceLockedRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }
