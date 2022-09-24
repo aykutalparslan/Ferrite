@@ -189,7 +189,6 @@ public class PqTests
             }
             return authKeys[a];
         });
-        var redis = new Mock<IDistributedCache>();
         
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
         var cassandra = new Mock<IPersistentStore>();
@@ -206,7 +205,6 @@ public class PqTests
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(proto);
         builder.RegisterMock(cassandra);
-        builder.RegisterMock(redis);
         builder.RegisterMock(logger);
         var container = builder.Build();
         return container;
@@ -233,7 +231,6 @@ public class PqTests
             }
             return authKeys[a];
         });
-        var redis = new Mock<IDistributedCache>();
         var cassandra = new Mock<IPersistentStore>();
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
@@ -247,7 +244,6 @@ public class PqTests
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
         builder.RegisterMock(proto);
         builder.RegisterMock(cassandra);
-        builder.RegisterMock(redis);
         builder.RegisterMock(logger);
         var container = builder.Build();
         return container;
