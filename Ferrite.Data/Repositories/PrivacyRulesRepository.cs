@@ -23,7 +23,7 @@ namespace Ferrite.Data.Repositories;
 public class PrivacyRulesRepository : IPrivacyRulesRepository
 {
     private readonly IKVStore _store;
-    public PrivacyRulesRepository(IKVStore store, IKVStore storeExported)
+    public PrivacyRulesRepository(IKVStore store)
     {
         _store = store;
         _store.SetSchema(new TableDefinition("ferrite", "authorizations",

@@ -178,8 +178,9 @@ public partial class AccountService : IAccountService
             return null;
         }
 
-        await _store.SavePrivacyRulesAsync(auth.UserId, key, rules);
-        var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
+        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(auth.UserId, key, rules);
+        await _unitOfWork.SaveAsync();
+        var savedRules = _unitOfWork.PrivacyRulesRepository.GetPrivacyRules(auth.UserId, key);
         List<PrivacyRuleDTO> privacyRules = new();
         List<UserDTO> users = new();
         List<ChatDTO> chats = new();
@@ -226,7 +227,7 @@ public partial class AccountService : IAccountService
             return null;
         }
         
-        var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
+        var savedRules = _unitOfWork.PrivacyRulesRepository.GetPrivacyRules(auth.UserId, key);
         List<PrivacyRuleDTO> privacyRules = new();
         List<UserDTO> users = new();
         List<ChatDTO> chats = new();
@@ -280,8 +281,7 @@ public partial class AccountService : IAccountService
             await _unitOfWork.SaveAsync();
         }
 
-        await _store.DeletePrivacyRulesAsync(user.Id);
-
+        _unitOfWork.PrivacyRulesRepository.DeletePrivacyRules(user.Id);
         _unitOfWork.UserRepository.DeleteUser(user);
         await _unitOfWork.SaveAsync();
         await _search.DeleteUser(user.Id);

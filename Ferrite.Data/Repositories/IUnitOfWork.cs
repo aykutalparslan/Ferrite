@@ -38,6 +38,7 @@ public interface IUnitOfWork
     IDeviceInfoRepository DeviceInfoRepository { get; }
     INotifySettingsRepository NotifySettingsRepository { get; }
     IReportReasonRepository ReportReasonRepository { get; }
+    IPrivacyRulesRepository PrivacyRulesRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

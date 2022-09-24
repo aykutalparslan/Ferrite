@@ -66,9 +66,9 @@ public interface IPersistentStore
     //public Task<bool> SavePeerReportReasonAsync(long reportedByUser, InputPeerDTO peer, ReportReason reason);
     //public Task<IReadOnlyCollection<PeerNotifySettingsDTO>> GetNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer);
     //public Task<bool> DeleteNotifySettingsAsync(long authKeyId);
-    public Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
-    public Task<bool> DeletePrivacyRulesAsync(long userId);
-    public Task<ICollection<PrivacyRuleDTO>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
+    //public Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
+    //public Task<bool> DeletePrivacyRulesAsync(long userId);
+    //public Task<ICollection<PrivacyRuleDTO>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
     public Task<bool> SaveChatAsync(ChatDTO chat);
     public Task<ChatDTO?> GetChatAsync(long chatId);
     //public Task<bool> UpdateAccountTTLAsync(long userId, int accountDaysTTL);
