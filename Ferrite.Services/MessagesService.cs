@@ -305,7 +305,7 @@ public class MessagesService : IMessagesService
                     NotifyPeerType = InputNotifyPeerType.Peer,
                     Peer = new InputPeerDTO{InputPeerType = InputPeerType.User, UserId = p.PeerId}
                 };
-                var settings = (await _store.GetNotifySettingsAsync(authKeyId, peer)).FirstOrDefault();
+                var settings = (_unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer)).FirstOrDefault();
                 var dialog = new DialogDTO
                 {
                     DialogType = DialogType.Dialog,

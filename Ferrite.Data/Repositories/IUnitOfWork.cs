@@ -36,6 +36,7 @@ public interface IUnitOfWork
     IUserRepository UserRepository { get; }
     IAppInfoRepository AppInfoRepository { get; }
     IDeviceInfoRepository DeviceInfoRepository { get; }
+    INotifySettingsRepository NotifySettingsRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

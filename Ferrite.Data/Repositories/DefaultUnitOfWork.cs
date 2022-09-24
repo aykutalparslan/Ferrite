@@ -48,6 +48,8 @@ public class DefaultUnitOfWork : IUnitOfWork
         AppInfoRepository = new AppInfoRepository(new CassandraKVStore(_cassandra));
         DeviceInfoRepository =
             new DeviceInfoRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
+        NotifySettingsRepository =
+            new NotifySettingsRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
     }
     public IAuthKeyRepository AuthKeyRepository { get; }
     public ITempAuthKeyRepository TempAuthKeyRepository { get; }
@@ -65,6 +67,7 @@ public class DefaultUnitOfWork : IUnitOfWork
     public IUserRepository UserRepository { get; }
     public IAppInfoRepository AppInfoRepository { get; }
     public IDeviceInfoRepository DeviceInfoRepository { get; }
+    public INotifySettingsRepository NotifySettingsRepository { get; }
 
     public bool Save()
     {

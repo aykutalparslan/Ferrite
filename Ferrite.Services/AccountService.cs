@@ -57,7 +57,8 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
     {
-        return await _store.SaveNotifySettingsAsync(authKeyId, peer, settings);
+        _unitOfWork.NotifySettingsRepository.PutNotifySettings(authKeyId, peer, settings);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
@@ -72,7 +73,7 @@ public partial class AccountService : IAccountService
         {
             deviceType = DeviceType.iOS;
         }
-        var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
+        var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer);
         if (settings.Count == 0)
         {
             return new PeerNotifySettingsDTO();
@@ -82,7 +83,8 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> ResetNotifySettings(long authKeyId)
     {
-        return await _store.DeleteNotifySettingsAsync(authKeyId);
+        _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(authKeyId);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
@@ -273,7 +275,7 @@ public partial class AccountService : IAccountService
             _unitOfWork.AuthorizationRepository.DeleteAuthorization(a.AuthKeyId);
             var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(a.AuthKeyId);
              _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(a.AuthKeyId, device.Token, device.OtherUserIds);
-            await _store.DeleteNotifySettingsAsync(a.AuthKeyId);
+            _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(a.AuthKeyId);
             await _unitOfWork.SaveAsync();
         }
 

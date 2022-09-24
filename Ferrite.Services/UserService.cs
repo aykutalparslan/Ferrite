@@ -74,7 +74,7 @@ public class UserService : IUsersService
             deviceType = DeviceType.iOS;
         }
 
-        var settings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeerDTO
+        var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
             Peer = new InputPeerDTO

@@ -62,10 +62,10 @@ public interface IPersistentStore
     //public Task<bool> SaveDeviceInfoAsync(DeviceInfoDTO deviceInfo);
     //public Task<DeviceInfoDTO?> GetDeviceInfoAsync(long authKeyId);
     //public Task<bool> DeleteDeviceInfoAsync(long authKeyId, string token, ICollection<long> otherUserIds);
-    public Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings);
+    //public Task<bool> SaveNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings);
     public Task<bool> SavePeerReportReasonAsync(long reportedByUser, InputPeerDTO peer, ReportReason reason);
-    public Task<IReadOnlyCollection<PeerNotifySettingsDTO>> GetNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer);
-    public Task<bool> DeleteNotifySettingsAsync(long authKeyId);
+    //public Task<IReadOnlyCollection<PeerNotifySettingsDTO>> GetNotifySettingsAsync(long authKeyId, InputNotifyPeerDTO peer);
+    //public Task<bool> DeleteNotifySettingsAsync(long authKeyId);
     public Task<bool> SavePrivacyRulesAsync(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
     public Task<bool> DeletePrivacyRulesAsync(long userId);
     public Task<ICollection<PrivacyRuleDTO>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
