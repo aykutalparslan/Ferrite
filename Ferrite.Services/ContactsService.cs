@@ -39,7 +39,7 @@ public class ContactsService : IContactsService
 
     public async Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var contactList = await _store.GetContactsAsync(auth.UserId);
         var result =  new List<ContactStatusDTO>();
         foreach (var c in contactList)
@@ -53,7 +53,7 @@ public class ContactsService : IContactsService
 
     public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var contactList = await _store.GetContactsAsync(auth.UserId);
         List<UserDTO> userList = new List<UserDTO>();
         foreach (var c in contactList)
@@ -66,7 +66,7 @@ public class ContactsService : IContactsService
 
     public async Task<ImportedContactsDTO> ImportContacts(long authKeyId, ICollection<InputContactDTO> contacts)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         List<ImportedContactDTO> importedContacts = new();
         List<UserDTO> users = new();
         foreach (var c in contacts)
@@ -82,7 +82,7 @@ public class ContactsService : IContactsService
 
     public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUserDTO> id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var c in id)
         {
             await _store.DeleteContactAsync(auth.UserId, c.UserId);
@@ -93,7 +93,7 @@ public class ContactsService : IContactsService
 
     public async Task<bool> DeleteByPhones(long authKeyId, ICollection<string> phones)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var p in phones)
         {
             var userId = await _store.GetUserIdAsync(p);
@@ -110,7 +110,7 @@ public class ContactsService : IContactsService
 
     public async Task<bool> Block(long authKeyId, InputPeerDTO id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
             return await _store.SaveBlockedUserAsync(auth.UserId, id.ChannelId, PeerType.Channel);
@@ -127,7 +127,7 @@ public class ContactsService : IContactsService
 
     public async Task<bool> Unblock(long authKeyId, InputPeerDTO id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
             return await _store.DeleteBlockedPeerAsync(auth.UserId, id.ChannelId, PeerType.Channel);
@@ -144,7 +144,7 @@ public class ContactsService : IContactsService
 
     public async Task<BlockedDTO> GetBlocked(long authKeyId, int offset, int limit)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var blockedPeers = await _store.GetBlockedPeersAsync(auth.UserId);
         List<UserDTO> users= new();
         foreach (var p in blockedPeers)
@@ -181,13 +181,13 @@ public class ContactsService : IContactsService
 
     public async Task<bool> ResetSaved(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         return await _store.DeleteContactsAsync(auth.UserId);
     }
 
     public async Task<ServiceResult<ICollection<SavedContactDTO>>> GetSaved(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         return new ServiceResult<ICollection<SavedContactDTO>>(await _store.GetSavedContactsAsync(auth.UserId),
                 true, ErrorMessages.None);
     }

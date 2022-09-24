@@ -44,7 +44,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
             return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
         List<MessageDTO> messages = new List<MessageDTO>();
@@ -102,7 +102,7 @@ public class MessagesService : IMessagesService
         InputPeerDTO peer, string message, long randomId, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var senderCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
@@ -168,7 +168,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
@@ -193,7 +193,7 @@ public class MessagesService : IMessagesService
         int maxId, int? minDate = null, int? maxDate = null,
         bool justClear = false, bool revoke = false)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
@@ -244,7 +244,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         foreach (var m in id)
         {
@@ -262,7 +262,7 @@ public class MessagesService : IMessagesService
         InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId);
         List<DialogDTO> userDialogs = new();
@@ -354,7 +354,7 @@ public class MessagesService : IMessagesService
         int offsetDate, int addOffset, int limit, long maxId,
         long minId, long hash)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, 
             PeerFromInputPeer(peer, peer.InputPeerType == InputPeerType.Self ? auth.UserId : 0));
         List<MessageDTO> messagesList = new();
@@ -385,7 +385,7 @@ public class MessagesService : IMessagesService
         //TODO: debug and fix this
         var searchResults =  new List<MessageSearchModel>();//await _search.SearchMessages(q);
         //TODO: implement a proper search with pagination
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
             return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
         List<MessageDTO> messages = new List<MessageDTO>();
@@ -408,7 +408,7 @@ public class MessagesService : IMessagesService
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
     {
         var peerDTO = PeerFromInputPeer(peer);
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (peerDTO.PeerType == PeerType.User)
         {
             var update = new UpdateUserTypingDTO(auth.UserId, action);

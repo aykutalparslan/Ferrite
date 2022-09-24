@@ -29,6 +29,8 @@ public class DefaultUnitOfWork : IUnitOfWork
         _cassandra = new CassandraContext(cassandraKeyspace, cassandraHosts);
         _log = log;
         AuthKeyRepository = new AuthKeyRepository(new CassandraKVStore(_cassandra), new RedisDataStore(redisConfig));
+        AuthorizationRepository =
+            new AuthorizationRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
         TempAuthKeyRepository = new TempAuthKeyRepository(new RedisDataStore(redisConfig));
         BoundAuthKeyRepository = new BoundAuthKeyRepository(new RedisDataStore(redisConfig),
             new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));

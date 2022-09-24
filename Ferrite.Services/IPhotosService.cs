@@ -27,5 +27,5 @@ public interface IPhotosService
     Task<ServiceResult<Data.Photos.PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo,
         InputFileDTO? video, double? videoStartTimestamp);
     Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
-    Task<PhotosDTO> GetUserPhotos(long authKeyId, long userId, int offset, long maxId, int limit);
+    Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit);
 }

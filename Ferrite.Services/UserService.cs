@@ -57,7 +57,7 @@ public class UserService : IUsersService
         bool self = false;
         if (id.InputUserType == InputUserType.Self)
         {
-            var auth = await _store.GetAuthorizationAsync(authKeyId);
+            var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
             userId = auth.UserId;
             self = true;
         }

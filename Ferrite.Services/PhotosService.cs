@@ -22,6 +22,7 @@ using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Photos;
+using Ferrite.Data.Repositories;
 using PhotoDTO = Ferrite.Data.Photos.PhotoDTO;
 
 namespace Ferrite.Services;
@@ -32,17 +33,20 @@ public class PhotosService : IPhotosService
     private readonly IObjectStore _objectStore;
     private readonly IPhotoProcessor _photoProcessor;
     private readonly IRandomGenerator _random;
+    private readonly IUnitOfWork _unitOfWork;
     public PhotosService(IPersistentStore store, IObjectStore objectStore, 
-        IPhotoProcessor photoProcessor, IRandomGenerator random)
+        IPhotoProcessor photoProcessor, IRandomGenerator random,
+        IUnitOfWork unitOfWork)
     {
         _store = store;
         _objectStore = objectStore;
         _photoProcessor = photoProcessor;
         _random = random;
+        _unitOfWork = unitOfWork;
     }
     public async Task<ServiceResult<PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var user = await _store.GetUserAsync(auth.UserId);
         var date = DateTime.Now;
         await _store.SaveProfilePhotoAsync(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
@@ -105,7 +109,7 @@ public class PhotosService : IPhotosService
         {
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.PhotoFileMissing);
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var user = await _store.GetUserAsync(auth.UserId);
         
         if (file.IsBigFile)
@@ -230,7 +234,7 @@ public class PhotosService : IPhotosService
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos)
     {
         List<long> result = new();
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var photo in photos)
         {
             var reference = await _store.GetFileReferenceAsync(photo.FileReference);
@@ -253,15 +257,15 @@ public class PhotosService : IPhotosService
         
         return result;
     }
-    public async Task<PhotosDTO> GetUserPhotos(long authKeyId, long userId, int offset, long maxId, int limit)
+    public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(userId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var user = await _store.GetUserAsync(auth.UserId);
         if (auth.UserId == user.Id)
         {
             user = user with { Self = true };
         }
-        var profilePhotos = await _store.GetProfilePhotosAsync(userId);
+        var profilePhotos = await _store.GetProfilePhotosAsync(auth.UserId);
         return new PhotosDTO(profilePhotos, new List<UserDTO> { user });
     }
 }

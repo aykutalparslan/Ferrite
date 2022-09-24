@@ -108,9 +108,7 @@ public class GetUserPhotos : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var auth = await _store.GetAuthorizationAsync(ctx.CurrentAuthKeyId);
-        var userPhotos = await _photos.GetUserPhotos(auth.AuthKeyId, 
-            auth.UserId, _offset, _maxId, _limit);
+        var userPhotos = await _photos.GetUserPhotos(ctx.CurrentAuthKeyId, _offset, _maxId, _limit);
         var photos = factory.Resolve<PhotosImpl>();
         photos.Photos = factory.Resolve<Vector<currentLayer.Photo>>();
         photos.Users = factory.Resolve<Vector<User>>();

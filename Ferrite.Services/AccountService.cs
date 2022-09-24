@@ -84,7 +84,7 @@ public partial class AccountService : IAccountService
 
     public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null && await _store.GetUserAsync(auth.UserId) is { } user )
         {
             var userNew = user with
@@ -104,7 +104,7 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> UpdateStatus(long authKeyId, bool status)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null)
         {
             return _unitOfWork.UserStatusRepository.PutUserStatus(auth.UserId, status);
@@ -115,7 +115,7 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return false;
@@ -145,7 +145,7 @@ public partial class AccountService : IAccountService
         {
             return null;
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
@@ -163,7 +163,7 @@ public partial class AccountService : IAccountService
 
     public async Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
@@ -211,7 +211,7 @@ public partial class AccountService : IAccountService
 
     public async Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
@@ -258,16 +258,17 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> DeleteAccount(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         var user = await _store.GetUserAsync(auth.UserId);
 
         foreach (var a in authorizations)
         {
-            await _store.DeleteAuthorizationAsync(a.AuthKeyId);
+            _unitOfWork.AuthorizationRepository.DeleteAuthorization(a.AuthKeyId);
             var device = await _store.GetDeviceInfoAsync(a.AuthKeyId);
             await _store.DeleteDeviceInfoAsync(a.AuthKeyId, device.Token, device.OtherUserIds);
             await _store.DeleteNotifySettingsAsync(a.AuthKeyId);
+            await _unitOfWork.SaveAsync();
         }
 
         await _store.DeletePrivacyRulesAsync(user.Id);
@@ -281,7 +282,7 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return false;
@@ -292,7 +293,7 @@ public partial class AccountService : IAccountService
 
     public async Task<int> GetAccountTTL(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return 0;
@@ -303,7 +304,7 @@ public partial class AccountService : IAccountService
 
     public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
             return new ServiceResult<SentCodeDTO>(null, false, 
@@ -346,14 +347,15 @@ public partial class AccountService : IAccountService
         {
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.PhoneNumberOccupied);
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         foreach (var authorization in authorizations)
         {
-            await _store.SaveAuthorizationAsync(authorization with { Phone = phoneNumber });
+            _unitOfWork.AuthorizationRepository.PutAuthorization(authorization with { Phone = phoneNumber });
         }
         await _store.UpdateUserPhoneAsync(auth.UserId, phoneNumber);
         user = await _store.GetUserAsync(phoneNumber);
+        await _unitOfWork.SaveAsync();
         return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);
     }
 
@@ -365,8 +367,8 @@ public partial class AccountService : IAccountService
 
     public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
         {
@@ -383,34 +385,35 @@ public partial class AccountService : IAccountService
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.FreshResetAuthorizationForbidden);
         }
-        var info = await _store.GetAuthorizationAsync((long)sessAuthKeyId);
+        var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)sessAuthKeyId);
         if(info == null)
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
         }
-        await _store.SaveAuthorizationAsync(info with
+        _unitOfWork.AuthorizationRepository.PutAuthorization(info with
         {
             Phone = "",
             UserId = 0,
             LoggedIn = false
         });
+        await _unitOfWork.SaveAsync();
         return new ServiceResult<bool>(true, true, ErrorMessages.None);
     }
 
     public async Task<bool> SetContactSignUpNotification(long authKeyId, bool silent)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         return await _store.SaveSignUoNotificationAsync(auth.UserId, silent);
     }
 
     public async Task<bool> GetContactSignUpNotification(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         return await _store.GetSignUoNotificationAsync(auth.UserId);
     }
 
