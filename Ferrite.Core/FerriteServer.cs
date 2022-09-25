@@ -78,35 +78,43 @@ public class FerriteServer : IFerriteServer
         while (true)
         {
             var result = await _pipe.ReadMessageAsync();
-            try
+            if (result != null)
             {
-                var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
-                if (message is { MessageType: MTProtoMessageType.Unencrypted } &&
-                    message.Nonce != null)
+                try
                 {
-                    var sessionExists = _sessionManager.TryGetLocalAuthSession(message.Nonce, out var protoSession);
-                    if (sessionExists &&
-                        protoSession.TryGetConnection(out var connection) &&
-                        !connection.IsEncrypted)
+                    var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
+                    if (message is { MessageType: MTProtoMessageType.Unencrypted } &&
+                        message.Nonce != null)
                     {
-                        _ = connection.SendAsync(message);
+                        var sessionExists = _sessionManager.TryGetLocalAuthSession(message.Nonce, out var protoSession);
+                        if (sessionExists &&
+                            protoSession.TryGetConnection(out var connection) &&
+                            !connection.IsEncrypted)
+                        {
+                            _ = connection.SendAsync(message);
+                        }
+                    }
+                    else
+                    {
+                        var sessionExists = _sessionManager.TryGetLocalSession(message.SessionId, out var protoSession);
+                        if (sessionExists &&
+                            protoSession.TryGetConnection(out var connection))
+                        {
+                            _log.Debug($"==> Session was found ==<");
+                            await connection.SendAsync(message);
+                        }
                     }
                 }
-                else
+                catch (Exception ex)
                 {
-                    var sessionExists = _sessionManager.TryGetLocalSession(message.SessionId, out var protoSession);
-                    if (sessionExists &&
-                        protoSession.TryGetConnection(out var connection))
-                    {
-                        _log.Debug($"==> Session was found ==<");
-                        await connection.SendAsync(message);
-                    }
+                    _log.Error(ex, ex.Message);
                 }
             }
-            catch (Exception ex)
+            else
             {
-                _log.Error(ex, ex.Message);
+                Thread.Sleep(1000);
             }
+        
         }
     }
 }
