@@ -519,15 +519,15 @@ public class MTProtoConnection : IMTProtoConnection
     private void SendTransportError(int errorCode)
     {
         writer.Clear();
-        writer.WriteInt32(-errorCode, true);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.EncodeBlock(msg);
+        writer.WriteInt32(-1*errorCode, true);
+        var message = writer.ToReadOnlySequence();
+        var encoded = encoder.Encode(message);
         if (webSocketHandler != null)
         {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
         }
-
         socketConnection.Transport.Output.Write(encoded);
+        socketConnection.Transport.Output.FlushAsync();
     }
 
     public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
