@@ -71,12 +71,11 @@ public partial class AccountService : IAccountService
             deviceType = DeviceType.iOS;
         }
         var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer);
-        if (settings.Count == 0)
+        if (settings == null || settings.Count == 0)
         {
             return new PeerNotifySettingsDTO();
         }
-        return settings.First(_ => _.DeviceType == deviceType) ??
-               new PeerNotifySettingsDTO();
+        return settings.First(_ => _.DeviceType == deviceType);
     }
 
     public async Task<bool> ResetNotifySettings(long authKeyId)
