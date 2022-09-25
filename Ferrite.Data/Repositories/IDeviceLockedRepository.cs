@@ -21,5 +21,5 @@ namespace Ferrite.Data.Repositories;
 public interface IDeviceLockedRepository
 {
     public bool PutDeviceLocked(long authKeyId, TimeSpan period);
-    public TimeSpan GetDeviceLocked(long authKeyId);
+    public TimeSpan? GetDeviceLocked(long authKeyId);
 }

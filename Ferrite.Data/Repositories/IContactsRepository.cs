@@ -20,7 +20,7 @@ namespace Ferrite.Data.Repositories;
 
 public interface IContactsRepository
 {
-    public ImportedContactDTO? PutContact(long userId, InputContactDTO contact);
+    public ImportedContactDTO? PutContact(long userId, long contactUserId, InputContactDTO contact);
     public bool DeleteContact(long userId, long contactUserId);
     public bool DeleteContacts(long userId);
     public ICollection<SavedContactDTO> GetSavedContacts(long userId);

@@ -17,6 +17,7 @@
 //
 
 using System.Text.RegularExpressions;
+using DotNext.Threading;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -28,41 +29,38 @@ namespace Ferrite.Services;
 
 public partial class AccountService : IAccountService
 {
-    private readonly IDistributedCache _cache;
-    private readonly IPersistentStore _store;
     private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
     private readonly IUnitOfWork _unitOfWork;
-    [RegexGenerator("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled)]
-    private static partial Regex UsernameRegex();
+    private static Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
     private const int PhoneCodeTimeout = 60;//seconds
-    public AccountService(IDistributedCache cache, IPersistentStore store, 
-        ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork)
+    public AccountService(ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork)
     {
-        _cache = cache;
-        _store = store;
         _search = search;
         _random = random;
         _unitOfWork = unitOfWork;
     }
     public async Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo)
     {
-        return await _store.SaveDeviceInfoAsync(deviceInfo);
+        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds)
     {
-        return await _store.DeleteDeviceInfoAsync(authKeyId, token, otherUserIds);
+        _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(authKeyId, token, otherUserIds);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
     {
-        return await _store.SaveNotifySettingsAsync(authKeyId, peer, settings);
+        _unitOfWork.NotifySettingsRepository.PutNotifySettings(authKeyId, peer, settings);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
     {
-        var info = await _store.GetAppInfoAsync(authKeyId);
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info.LangPack.ToLower().Contains("android"))
         {
@@ -72,8 +70,8 @@ public partial class AccountService : IAccountService
         {
             deviceType = DeviceType.iOS;
         }
-        var settings = await _store.GetNotifySettingsAsync(authKeyId, peer);
-        if (settings.Count == 0)
+        var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer);
+        if (settings == null || settings.Count == 0)
         {
             return new PeerNotifySettingsDTO();
         }
@@ -82,13 +80,14 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> ResetNotifySettings(long authKeyId)
     {
-        return await _store.DeleteNotifySettingsAsync(authKeyId);
+        _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(authKeyId);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        if (auth != null && await _store.GetUserAsync(auth.UserId) is { } user )
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } user )
         {
             var userNew = user with
             {
@@ -96,7 +95,8 @@ public partial class AccountService : IAccountService
                 LastName = lastName ?? user.LastName,
                 About = about ?? user.About,
             };
-            await _store.SaveUserAsync(userNew);
+            _unitOfWork.UserRepository.PutUser(userNew);
+            await _unitOfWork.SaveAsync();
             await _search.IndexUser(new Data.Search.UserSearchModel(userNew.Id, userNew.Username, 
                 userNew.FirstName, userNew.LastName, userNew.Phone));
             return userNew;
@@ -107,7 +107,7 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> UpdateStatus(long authKeyId, bool status)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null)
         {
             return _unitOfWork.UserStatusRepository.PutUserStatus(auth.UserId, status);
@@ -118,22 +118,23 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return false;
         }
-        return await _store.SavePeerReportReasonAsync(auth.UserId, peer, reason);
+        _unitOfWork.ReportReasonRepository.PutPeerReportReason(auth.UserId, peer, reason);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> CheckUsername(string username)
     {
-        if (!UsernameRegex().IsMatch(username))
+        if (!UsernameRegex.IsMatch(username))
         {
             return false;
         }
 
-        var user = await _store.GetUserByUsernameAsync(username);
+        var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user != null)
         {
             return false;
@@ -144,21 +145,23 @@ public partial class AccountService : IAccountService
 
     public async Task<UserDTO?> UpdateUsername(long authKeyId, string username)
     {
-        if (!UsernameRegex().IsMatch(username))
+        if (!UsernameRegex.IsMatch(username))
         {
             return null;
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
         }
-        var user = await _store.GetUserByUsernameAsync(username);
+        var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user == null)
         {
-            await _store.UpdateUsernameAsync(auth.UserId, username);
+            _unitOfWork.UserRepository.UpdateUsername(auth.UserId, username);
         }
-        user = await _store.GetUserAsync(auth.UserId);
+
+        await _unitOfWork.SaveAsync();
+        user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
                 user.FirstName, user.LastName, user.Phone));
         return user;
@@ -166,14 +169,15 @@ public partial class AccountService : IAccountService
 
     public async Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
         }
 
-        await _store.SavePrivacyRulesAsync(auth.UserId, key, rules);
-        var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
+        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(auth.UserId, key, rules);
+        await _unitOfWork.SaveAsync();
+        var savedRules = _unitOfWork.PrivacyRulesRepository.GetPrivacyRules(auth.UserId, key);
         List<PrivacyRuleDTO> privacyRules = new();
         List<UserDTO> users = new();
         List<ChatDTO> chats = new();
@@ -184,7 +188,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetUserAsync(id) is { } user)
+                    if (_unitOfWork.UserRepository.GetUser(id) is { } user)
                     {
                         users.Add(user);
                     }  
@@ -195,7 +199,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetChatAsync(id) is { } chat)
+                    if (_unitOfWork.ChatRepository.GetChat(id) is { } chat)
                     {
                         chats.Add(chat);
                     }  
@@ -214,13 +218,13 @@ public partial class AccountService : IAccountService
 
     public async Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
         }
         
-        var savedRules = await _store.GetPrivacyRulesAsync(auth.UserId, key);
+        var savedRules = _unitOfWork.PrivacyRulesRepository.GetPrivacyRules(auth.UserId, key);
         List<PrivacyRuleDTO> privacyRules = new();
         List<UserDTO> users = new();
         List<ChatDTO> chats = new();
@@ -231,7 +235,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetUserAsync(id) is { } user)
+                    if (_unitOfWork.UserRepository.GetUser(id) is { } user)
                     {
                         users.Add(user);
                     }  
@@ -242,7 +246,7 @@ public partial class AccountService : IAccountService
             {
                 foreach (var id in r.Peers)
                 {
-                    if (await _store.GetChatAsync(id) is { } chat)
+                    if (_unitOfWork.ChatRepository.GetChat(id) is { } chat)
                     {
                         chats.Add(chat);
                     }  
@@ -261,22 +265,22 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> DeleteAccount(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
 
         foreach (var a in authorizations)
         {
-            await _store.DeleteAuthorizationAsync(a.AuthKeyId);
-            var device = await _store.GetDeviceInfoAsync(a.AuthKeyId);
-            await _store.DeleteDeviceInfoAsync(a.AuthKeyId, device.Token, device.OtherUserIds);
-            await _store.DeleteNotifySettingsAsync(a.AuthKeyId);
+            _unitOfWork.AuthorizationRepository.DeleteAuthorization(a.AuthKeyId);
+            var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(a.AuthKeyId);
+             _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(a.AuthKeyId, device.Token, device.OtherUserIds);
+            _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(a.AuthKeyId);
+            await _unitOfWork.SaveAsync();
         }
 
-        await _store.DeletePrivacyRulesAsync(user.Id);
-
-        await _store.DeleteUserAsync(user);
-
+        _unitOfWork.PrivacyRulesRepository.DeletePrivacyRules(user.Id);
+        _unitOfWork.UserRepository.DeleteUser(user);
+        await _unitOfWork.SaveAsync();
         await _search.DeleteUser(user.Id);
         
         return true;
@@ -284,35 +288,36 @@ public partial class AccountService : IAccountService
 
     public async Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return false;
         }
 
-        return await _store.UpdateAccountTTLAsync(auth.UserId, accountDaysTTL);
+        _unitOfWork.UserRepository.UpdateAccountTTL(auth.UserId, accountDaysTTL);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<int> GetAccountTTL(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return 0;
         }
 
-        return await _store.GetAccountTTLAsync(auth.UserId);
+        return _unitOfWork.UserRepository.GetAccountTTL(auth.UserId);
     }
 
     public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
             return new ServiceResult<SentCodeDTO>(null, false, 
                 ErrorMessages.FreshChangePhoneForbidden);
         }
-        var user = await _store.GetUserAsync(phoneNumber);
+        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != new UserDTO())
         {
             return new ServiceResult<SentCodeDTO>(null, false, 
@@ -323,9 +328,9 @@ public partial class AccountService : IAccountService
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
+        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
-        
+        await _unitOfWork.SaveAsync();
         var result = new SentCodeDTO()
         {
             CodeType = SentCodeType.Sms,
@@ -338,98 +343,104 @@ public partial class AccountService : IAccountService
 
     public async Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.None);
         }
 
-        var user = await _store.GetUserAsync(phoneNumber);
+        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != null)
         {
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.PhoneNumberOccupied);
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         foreach (var authorization in authorizations)
         {
-            await _store.SaveAuthorizationAsync(authorization with { Phone = phoneNumber });
+            _unitOfWork.AuthorizationRepository.PutAuthorization(authorization with { Phone = phoneNumber });
         }
-        await _store.UpdateUserPhoneAsync(auth.UserId, phoneNumber);
-        user = await _store.GetUserAsync(phoneNumber);
+        _unitOfWork.UserRepository.UpdateUserPhone(auth.UserId, phoneNumber);
+        await _unitOfWork.SaveAsync();
+        user = _unitOfWork.UserRepository.GetUser(phoneNumber);
+        await _unitOfWork.SaveAsync();
         return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);
     }
 
     public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)
     {
-        return await _cache.PutDeviceLockedAsync(authKeyId, period);
+         _unitOfWork.DeviceLockedRepository.PutDeviceLocked(authKeyId, TimeSpan.FromSeconds(period));
+         return await _unitOfWork.SaveAsync();
     }
 
     public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _store.GetAuthorizationsAsync(auth.Phone);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
         {
-            auths.Add(await _store.GetAppInfoAsync(a.AuthKeyId));
+            auths.Add(_unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId));
         }
 
-        return new AuthorizationsDTO(await _store.GetAccountTTLAsync(auth.UserId), auths);
+        return new AuthorizationsDTO(_unitOfWork.UserRepository.GetAccountTTL(auth.UserId), auths);
     }
 
     public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)
     {
-        var sessAuthKeyId = await _store.GetAuthKeyIdByAppHashAsync(hash);
+        var sessAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if (sessAuthKeyId == null)
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.FreshResetAuthorizationForbidden);
         }
-        var info = await _store.GetAuthorizationAsync((long)sessAuthKeyId);
+        var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)sessAuthKeyId);
         if(info == null)
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
         }
-        await _store.SaveAuthorizationAsync(info with
+        _unitOfWork.AuthorizationRepository.PutAuthorization(info with
         {
             Phone = "",
             UserId = 0,
             LoggedIn = false
         });
+        await _unitOfWork.SaveAsync();
         return new ServiceResult<bool>(true, true, ErrorMessages.None);
     }
 
     public async Task<bool> SetContactSignUpNotification(long authKeyId, bool silent)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        return await _store.SaveSignUoNotificationAsync(auth.UserId, silent);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(auth.UserId, silent);
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> GetContactSignUpNotification(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        return await _store.GetSignUoNotificationAsync(auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        return _unitOfWork.SignUpNotificationRepository.GetSignUpNotification(auth.UserId);
     }
 
     public async Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled, bool callRequestsDisabled)
     {
-        var appAuthKeyId = await _store.GetAuthKeyIdByAppHashAsync(hash);
+        var appAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if(appAuthKeyId == null)
         {
             return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
         }
-        var info = await _store.GetAppInfoAsync((long)appAuthKeyId);
-        var success =await _store.SaveAppInfoAsync(info with
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
+        var success = _unitOfWork.AppInfoRepository.PutAppInfo(info with
         {
             EncryptedRequestsDisabled = encryptedRequestsDisabled,
             CallRequestsDisabled = callRequestsDisabled
         });
+        await _unitOfWork.SaveAsync();
         return new ServiceResult<bool>(success, success, ErrorMessages.None);
     }
 }

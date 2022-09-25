@@ -26,24 +26,23 @@ namespace Ferrite.Services;
 
 public class MessagesService : IMessagesService
 {
-    private readonly IPersistentStore _store;
-    private readonly IDistributedCache _cache;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISearchEngine _search;
     private readonly IUpdatesService _updates;
-    public MessagesService(IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork, 
-        ISearchEngine search, IUpdatesService updates)
+    private readonly IUpdatesContextFactory _updatesContextFactory;
+
+    public MessagesService(IUnitOfWork unitOfWork,ISearchEngine search, 
+        IUpdatesService updates, IUpdatesContextFactory updatesContextFactory)
     {
-        _store = store;
-        _cache = cache;
         _unitOfWork = unitOfWork;
         _search = search;
         _updates = updates;
+        _updatesContextFactory = updatesContextFactory;
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
             return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
         List<MessageDTO> messages = new List<MessageDTO>();
@@ -56,12 +55,12 @@ public class MessagesService : IMessagesService
                 messages.Add(message);
                 if (message.Out && message.PeerId.PeerType == PeerType.User)
                 {
-                    var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                    var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                     users.Add(user);
                 }
                 else if (!message.Out && message.FromId.PeerType == PeerType.User)
                 {
-                    var user = await _store.GetUserAsync(message.FromId.PeerId);
+                    var user = _unitOfWork.UserRepository.GetUser(message.FromId.PeerId);
                     users.Add(user);
                 }
             }
@@ -89,7 +88,7 @@ public class MessagesService : IMessagesService
                 false, false, false, 
                 null, null, null);
             var users = new List<UserDTO>();
-            var user = await _store.GetUserAsync(peer.UserId);
+            var user = _unitOfWork.UserRepository.GetUser(peer.UserId);
             users.Add(user);
             return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), users)
                 , true, ErrorMessages.None);
@@ -101,8 +100,8 @@ public class MessagesService : IMessagesService
         InputPeerDTO peer, string message, long randomId, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var senderCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var senderCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
@@ -125,7 +124,7 @@ public class MessagesService : IMessagesService
 
         if (to.PeerId != from.PeerId)
         {
-            var receiverCtx = _cache.GetUpdatesContext(null, to.PeerId);
+            var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
             int receiverMessageId = await receiverCtx.NextMessageId();
             var incomingMessage = outgoingMessage with
             {
@@ -167,12 +166,12 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
         {
-            var peerCtx = _cache.GetUpdatesContext(null, peer.UserId);
+            var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peer.UserId);
             var unread = await userCtx.ReadMessages(peerDto, maxId);
             int userPts = await userCtx.IncrementPts();
             var updateInbox = new UpdateReadHistoryInboxDTO(peerDto, maxId, unread, userPts, 1);
@@ -192,8 +191,8 @@ public class MessagesService : IMessagesService
         int maxId, int? minDate = null, int? maxDate = null,
         bool justClear = false, bool revoke = false)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
         {
@@ -215,7 +214,7 @@ public class MessagesService : IMessagesService
             
             if (!justClear)
             {
-                var peerCtx = _cache.GetUpdatesContext(null, peerDto.PeerId);
+                var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
                 var peerMessages =
                     _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
                 List<int> peerDeletedIds = new();
@@ -243,8 +242,8 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         foreach (var m in id)
         {
             _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m);
@@ -261,8 +260,8 @@ public class MessagesService : IMessagesService
         InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var userCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId);
         List<DialogDTO> userDialogs = new();
         Dictionary<long, UserDTO> userList = new();
@@ -295,7 +294,7 @@ public class MessagesService : IMessagesService
         {
             if (p.PeerType == PeerType.User)
             {
-                var peerContext = _cache.GetUpdatesContext(null, p.PeerId);
+                var peerContext = _updatesContextFactory.GetUpdatesContext(null, p.PeerId);
                 int unreadFromPeer = await peerContext.UnreadMessages(p);
                 int incomingReadMax = await userCtx.ReadMessagesMaxId(p);
                 int outgoingReadMax = await peerContext.ReadMessagesMaxId(new PeerDTO(PeerType.User, auth.UserId));
@@ -304,7 +303,7 @@ public class MessagesService : IMessagesService
                     NotifyPeerType = InputNotifyPeerType.Peer,
                     Peer = new InputPeerDTO{InputPeerType = InputPeerType.User, UserId = p.PeerId}
                 };
-                var settings = (await _store.GetNotifySettingsAsync(authKeyId, peer)).FirstOrDefault();
+                var settings = (_unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer)).FirstOrDefault();
                 var dialog = new DialogDTO
                 {
                     DialogType = DialogType.Dialog,
@@ -331,7 +330,7 @@ public class MessagesService : IMessagesService
     {
         if (!userList.ContainsKey(userId))
         {
-            userList.Add(userId, await _store.GetUserAsync(m.PeerId.PeerId));
+            userList.Add(userId, _unitOfWork.UserRepository.GetUser(m.PeerId.PeerId));
         }
 
         if (!peerList.ContainsKey(userId))
@@ -353,7 +352,7 @@ public class MessagesService : IMessagesService
         int offsetDate, int addOffset, int limit, long maxId,
         long minId, long hash)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, 
             PeerFromInputPeer(peer, peer.InputPeerType == InputPeerType.Self ? auth.UserId : 0));
         List<MessageDTO> messagesList = new();
@@ -367,7 +366,7 @@ public class MessagesService : IMessagesService
                 messagesList.Add(m);
                 if (!m.Out && m.FromId.PeerType == PeerType.User)
                 {
-                    userList.Add(m.FromId.PeerId.ToString(), await _store.GetUserAsync(m.FromId.PeerId));
+                    userList.Add(m.FromId.PeerId.ToString(), _unitOfWork.UserRepository.GetUser(m.FromId.PeerId));
                 }
             }
         }
@@ -384,7 +383,7 @@ public class MessagesService : IMessagesService
         //TODO: debug and fix this
         var searchResults =  new List<MessageSearchModel>();//await _search.SearchMessages(q);
         //TODO: implement a proper search with pagination
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
             return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
         List<MessageDTO> messages = new List<MessageDTO>();
@@ -395,7 +394,7 @@ public class MessagesService : IMessagesService
             messages.Add(message);
             if (message.Out && message.PeerId.PeerType == PeerType.User)
             {
-                var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                 users.Add(user);
             }
         }
@@ -407,7 +406,7 @@ public class MessagesService : IMessagesService
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
     {
         var peerDTO = PeerFromInputPeer(peer);
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (peerDTO.PeerType == PeerType.User)
         {
             var update = new UpdateUserTypingDTO(auth.UserId, action);

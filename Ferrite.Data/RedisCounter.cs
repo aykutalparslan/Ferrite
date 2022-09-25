@@ -30,32 +30,46 @@ public class RedisCounter : IAtomicCounter
         _name = name;
     }
 
-    public async Task<long> Get()
+    public async ValueTask<long> Get()
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
         return (long)await db.StringGetAsync(_name);
     }
 
-    public async Task<long> IncrementAndGet()
+    public async ValueTask<long> IncrementAndGet()
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
         return await db.StringIncrementAsync(_name);
     }
 
-    public async Task<long> IncrementByAndGet(long inc)
+    public async ValueTask<long> IncrementByAndGet(long inc)
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
         return await db.StringIncrementAsync(_name, inc);
     }
 
-    public async Task<long> Set(long value)
+    public async ValueTask<long> IncrementTo(long value)
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
-        return (long)await db.StringSetAndGetAsync(_name, value);
+        var oldValue = (long)await db.StringGetAsync(_name);
+        if (oldValue > value)
+        {
+            return oldValue;
+        }
+        var tran = db.CreateTransaction();
+        tran.AddCondition(Condition.StringEqual(_name, oldValue));
+        await tran.StringSetAsync(_name, value);
+        await tran.ExecuteAsync();
+        return value;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _redis.DisposeAsync();
     }
 }
 

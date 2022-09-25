@@ -22,7 +22,7 @@ using Amazon.S3.Model;
 
 namespace Ferrite.Data;
 
-public class S3ObjectStore : IDistributedObjectStore
+public class S3ObjectStore : IObjectStore
 {
     private readonly AmazonS3Client _s3Client;
     private const string SmallFileBucketName = "ferrite-small-files";
@@ -65,7 +65,7 @@ public class S3ObjectStore : IDistributedObjectStore
         _bucketsInitialized = true;
     }
 
-    public async Task<bool> SaveFilePart(long fileId, int filePart, Stream data)
+    public async ValueTask<bool> SaveFilePart(long fileId, int filePart, Stream data)
     {
         if (!_bucketsInitialized)
         {
@@ -79,7 +79,7 @@ public class S3ObjectStore : IDistributedObjectStore
         return true;
     }
 
-    public async Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data)
+    public async ValueTask<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data)
     {
         if (!_bucketsInitialized)
         {
@@ -93,7 +93,7 @@ public class S3ObjectStore : IDistributedObjectStore
         return true;
     }
 
-    public async Task<Stream> GetFilePart(long fileId, int filePart)
+    public async ValueTask<Stream> GetFilePart(long fileId, int filePart)
     {
         //get file part from s3 and return as a stream
         GetObjectRequest getObjectRequest = new GetObjectRequest();
@@ -103,7 +103,7 @@ public class S3ObjectStore : IDistributedObjectStore
         return getObjectResponse.ResponseStream;
     }
 
-    public async Task<Stream> GetBigFilePart(long fileId, int filePart)
+    public async ValueTask<Stream> GetBigFilePart(long fileId, int filePart)
     {
         //get big file part from s3 and return as a stream
         GetObjectRequest getObjectRequest = new GetObjectRequest();

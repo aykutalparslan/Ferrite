@@ -1,36 +1,34 @@
-# Project Ferrite (Telegram Server)
+# Project Ferrite (Experimental Telegram Server)
 
-Project Ferrite is an implementation of the Telegram Server API in C#. 
+Project Ferrite is an implementation of the Telegram Server API in C# and this repo records it's work-in-progress. Development is focused on implementing must have features before the first release.
 
 ## What works?
 
-The project is still a work in progress. The following are the features that are implemented and working so far:
+The following are the features that are implemented and working so far:
 - All MTProto transports are implemented (only Abridged and Intermediate transports are tested)
 - Websockets and Obfuscation
 - Creation of an Auth Key
 - MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
 - TL Serialization/Deserialization
 - auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
-- Saved Messages and Sending messages works with text messages to some extent.
+- Saved Messages and Sending messages works with text messages only.
 
 ## Debugging the server
+Debugging previously required an infrastructure comprised of Redis, Cassandra, MinIO and ElasticSearch. Currently however Ferrite has a pluggable storage system and local data stores based on RocksDB, FASTER and Lucene are implemented as well as an in-memory cache so we won't need that infrastructure for debugging.
 - Clone the repository.
 ```console
 git clone https://github.com/aykutalparslan/Ferrite
 ```
-- Start an instance of Redis.
-- Start an instance of Cassandra.
-- Start an instance of MinIO and update username/password in the Program.cs.
-- Start an instance of ElasticSearch and update username/password/fingerprint in the Program.cs.
-- Install the latest preview of .NET 7 
+- Install .NET 7 
+- Make sure default-private.key and default-public-key are copied to the output directory as those are the keys embedded into the modified client.
+- Make sure Ferrite.Data/LangData is also copied to the output directory.
 - Debug the Ferrite Console Application with your favourite IDE or
 ```console
 dotnet run
 ```
-- Make sure default-private.key and default-public-key are copied to the output directory as those are the keys embedded into the modified client
+- Telegram protocol requires clients to have the server's public key.
 - Use the [modified Android client](https://github.com/aykutalparslan/Telegram) to test with.
 
-Note: Docker support is planned in the future
 
 ## Roadmap
 
@@ -41,9 +39,9 @@ Development is currently focused on getting the Android application to run in a 
 - Basic messaging
 - Groups and channels
 
-We would need to implement more than half of the API methods to get to this point. Considering as of this writing (29th June 2022) there are almost 350 unimplemented API methods and that we have approximately 20-40 hours of development time per week we should be at this point in about four months.
+We would need to implement more than half of the API methods to get to this point. Considering as of this writing (25th September 2022) there are almost 350 unimplemented API methods and that we have approximately 20-40 hours of development time per week we should be at this point in about four months.
 
-After the Android application is working as expected the development will focus on the iOS application and then the Destop and Web applications. Basic features are planned to be implemented in the beginning. After all this the next planned steps are:
+After the Android application is working as expected the development will focus on the iOS application and then the Desktop and Web applications. Basic features are planned to be implemented in the beginning. After all this the next planned steps are:
 - There will be a refactor to support memory efficient serialization
 - Support for so called API layers will be added
 - Optimizations and benchmarks

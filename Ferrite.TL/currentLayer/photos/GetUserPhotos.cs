@@ -31,15 +31,13 @@ public class GetUserPhotos : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IPersistentStore _store;
     private readonly IPhotosService _photos;
     private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetUserPhotos(ITLObjectFactory objectFactory, IPersistentStore store, IPhotosService photos,
+    public GetUserPhotos(ITLObjectFactory objectFactory, IPhotosService photos,
         IMapperContext mapper)
     {
         factory = objectFactory;
-        _store = store;
         _photos = photos;
         _mapper = mapper;
     }
@@ -108,9 +106,7 @@ public class GetUserPhotos : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var auth = await _store.GetAuthorizationAsync(ctx.CurrentAuthKeyId);
-        var userPhotos = await _photos.GetUserPhotos(auth.AuthKeyId, 
-            auth.UserId, _offset, _maxId, _limit);
+        var userPhotos = await _photos.GetUserPhotos(ctx.CurrentAuthKeyId, _offset, _maxId, _limit);
         var photos = factory.Resolve<PhotosImpl>();
         photos.Photos = factory.Resolve<Vector<currentLayer.Photo>>();
         photos.Users = factory.Resolve<Vector<User>>();

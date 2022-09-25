@@ -16,10 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public interface IDistributedFileOwner
-{
-    public Task<Stream> GetFileStream();
-    public long ReqMsgId { get; }
-}
+[MessagePackObject(true)]
+public record DeviceUserDTO(long UserId, string Token);

@@ -17,7 +17,6 @@
 // 
 
 using System.Threading.Channels;
-using Cassandra.DataStax.Graph;
 using MessagePack;
 using NonBlocking;
 
@@ -30,8 +29,8 @@ public class InMemoryStore : IVolatileKVStore
     // optimize this in the future
     // TODO: Benchmark and optimize this
     private readonly ConcurrentDictionary<byte[], (byte[], long)> _dictionary = new(new ArrayEqualityComparer());
-    private readonly PriorityQueue<EncodedKey, long> _ttlQueue = new PriorityQueue<EncodedKey, long>();
-    private readonly Channel<EncodedKey> _ttlChannel = Channel.CreateUnbounded<EncodedKey>();
+    private readonly PriorityQueue<MemcomparableKey, long> _ttlQueue = new PriorityQueue<MemcomparableKey, long>();
+    private readonly Channel<MemcomparableKey> _ttlChannel = Channel.CreateUnbounded<MemcomparableKey>();
     private readonly Task? _expire;
     private readonly Task? _addTtl;
     private TableDefinition? _table;
@@ -93,7 +92,7 @@ public class InMemoryStore : IVolatileKVStore
     }
     public void Put(byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         if (ttl.HasValue)
         {
             primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + (long)ttl.Value.TotalMilliseconds;
@@ -107,7 +106,7 @@ public class InMemoryStore : IVolatileKVStore
 
     public void UpdateTtl(TimeSpan? ttl = null, params object[] keys)
     {
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         if (ttl.HasValue)
         {
             primaryKey.ExpiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + (long)ttl.Value.TotalMilliseconds;
@@ -126,7 +125,7 @@ public class InMemoryStore : IVolatileKVStore
     public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
         SortedList<long, byte[]>? list;
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -173,10 +172,42 @@ public class InMemoryStore : IVolatileKVStore
         return true;
     }
 
+    public bool ListDelete(byte[] value, params object[] keys)
+    {
+        
+        SortedList<long, byte[]>? list;
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
+        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        (byte[] data, long expiry) = existing;
+        long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        if (rem && data != null &&
+            (expiry <= 0 || expiry <= now))
+        {
+            try
+            {
+                list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                foreach (var (k, v) in list)
+                {
+                    if (v.SequenceEqual(value))
+                    {
+                        list.Remove(k);
+                    }
+                }
+            }
+            catch (MessagePackSerializationException e)
+            {
+                // nothing to do since this is not a list
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public bool ListDeleteByScore(long score, params object[] keys)
     {
         SortedList<long, byte[]>? list;
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -211,7 +242,7 @@ public class InMemoryStore : IVolatileKVStore
     public IList<byte[]> ListGet(params object[] keys)
     {
         SortedList<long, byte[]>? list;
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -233,13 +264,13 @@ public class InMemoryStore : IVolatileKVStore
 
     public void Delete(params object[] keys)
     {
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         _dictionary.TryRemove(primaryKey.ArrayValue, out var removed);
     }
 
     public bool Exists(params object[] keys)
     {
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         
         if (!_dictionary.TryGetValue(primaryKey.ArrayValue, out var value))
         {
@@ -257,7 +288,7 @@ public class InMemoryStore : IVolatileKVStore
 
     public byte[]? Get(params object[] keys)
     {
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         _dictionary.TryGetValue(primaryKey.ArrayValue, out var value);
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         if (value.Item2 > 0 && value.Item2 <= now)
@@ -270,7 +301,7 @@ public class InMemoryStore : IVolatileKVStore
 
     public ValueTask<byte[]?> GetAsync(params object[] keys)
     {
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         _dictionary.TryGetValue(primaryKey.ArrayValue, out var value);
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         if (value.Item2 > 0 && value.Item2 <= now)

@@ -22,30 +22,33 @@ using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Photos;
+using Ferrite.Data.Repositories;
 using PhotoDTO = Ferrite.Data.Photos.PhotoDTO;
 
 namespace Ferrite.Services;
 
 public class PhotosService : IPhotosService
 {
-    private readonly IPersistentStore _store;
-    private readonly IDistributedObjectStore _objectStore;
+    private readonly IObjectStore _objectStore;
     private readonly IPhotoProcessor _photoProcessor;
     private readonly IRandomGenerator _random;
-    public PhotosService(IPersistentStore store, IDistributedObjectStore objectStore, 
-        IPhotoProcessor photoProcessor, IRandomGenerator random)
+    private readonly IUnitOfWork _unitOfWork;
+    public PhotosService(IObjectStore objectStore, 
+        IPhotoProcessor photoProcessor, IRandomGenerator random,
+        IUnitOfWork unitOfWork)
     {
-        _store = store;
         _objectStore = objectStore;
         _photoProcessor = photoProcessor;
         _random = random;
+        _unitOfWork = unitOfWork;
     }
     public async Task<ServiceResult<PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         var date = DateTime.Now;
-        await _store.SaveProfilePhotoAsync(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
+        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
+        await _unitOfWork.SaveAsync();
         var photoInner = new Data.PhotoDTO(false, id.Id, id.AccessHash, id.FileReference,
             (int)((DateTimeOffset)date).ToUnixTimeSeconds(), new List<PhotoSizeDTO>(), null, 1);
         var photo = new PhotoDTO(photoInner, new[] { user });
@@ -59,7 +62,7 @@ public class PhotosService : IPhotosService
         IReadOnlyCollection<FilePartDTO> fileParts;
         if (photo != null)
         {
-            fileParts = await _store.GetFilePartsAsync(photo.Id);
+            fileParts = _unitOfWork.FileInfoRepository.GetFileParts(photo.Id);
             if (fileParts.Count != photo.Parts ||
                 fileParts.First().PartNum != 0 ||
                 fileParts.Last().PartNum != photo.Parts - 1)
@@ -105,21 +108,21 @@ public class PhotosService : IPhotosService
         {
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.PhotoFileMissing);
         }
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         
         if (file.IsBigFile)
         {
-            await _store.SaveBigFileInfoAsync(file);
+            _unitOfWork.FileInfoRepository.PutBigFileInfo(file);
         }
         else
         {
-            await _store.SaveFileInfoAsync(file);
+            _unitOfWork.FileInfoRepository.PutFileInfo(file);
         }
         var date = DateTime.Now;
         byte[] reference = _random.GetRandomBytes(16);
-        await _store.SaveFileReferenceAsync(new FileReferenceDTO(reference, file.Id, file.IsBigFile));
-
+        _unitOfWork.FileInfoRepository.PutFileReference(new FileReferenceDTO(reference, file.Id, file.IsBigFile));
+        await _unitOfWork.SaveAsync();
         using var imageData = UnmanagedMemoryAllocator.Allocate<byte>(size);
         int offset = 0;
         if (!file.IsBigFile)
@@ -158,7 +161,8 @@ public class PhotosService : IPhotosService
                 thumbnail.Width, thumbnail.Height, thumbnail.Size, thumbnail.Bytes, thumbnail.Sizes));
         }
         
-        await _store.SaveProfilePhotoAsync(auth.UserId, file.Id, file.AccessHash, reference, date);
+        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, file.Id, file.AccessHash, reference, date);
+        await _unitOfWork.SaveAsync();
         var photoInner = new Data.PhotoDTO(false, file.Id, file.AccessHash, reference,
             (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 2);
         var result = new PhotoDTO(photoInner, new[] { user });
@@ -218,50 +222,52 @@ public class PhotosService : IPhotosService
         var thumbnail = _photoProcessor.GenerateThumbnail(imageData.Span, w, filter);
         var thumbId = _random.NextLong();
         await _objectStore.SaveFilePart(thumbId, 0, new MemoryStream(thumbnail));
-        await _store.SaveFilePartAsync(new FilePartDTO(thumbId, 0, thumbnail.Length));
-        await _store.SaveFileInfoAsync(new UploadedFileInfoDTO(thumbId, thumbnail.Length, 1,
+        _unitOfWork.FileInfoRepository.PutFilePart(new FilePartDTO(thumbId, 0, thumbnail.Length));
+        _unitOfWork.FileInfoRepository.PutFileInfo(new UploadedFileInfoDTO(thumbId, thumbnail.Length, 1,
             _random.NextLong(), "", null, DateTimeOffset.Now, false));
         var thumb = new ThumbnailDTO(file.Id, thumbId, type,
             thumbnail.Length, w, w, null, null);
         thumbnails.Add(thumb);
-        await _store.SaveThumbnailAsync(thumb);
+        _unitOfWork.PhotoRepository.PutThumbnail(thumb);
+        await _unitOfWork.SaveAsync();
     }
 
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos)
     {
         List<long> result = new();
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var photo in photos)
         {
-            var reference = await _store.GetFileReferenceAsync(photo.FileReference);
+            var reference = _unitOfWork.FileInfoRepository.GetFileReference(photo.FileReference);
             UploadedFileInfoDTO? file = null;
             if (reference.IsBigfile)
             {
-                file = await _store.GetBigFileInfoAsync(reference.FileId);
+                file = _unitOfWork.FileInfoRepository.GetBigFileInfo(reference.FileId);
             }
             else
             {
-                file = await _store.GetFileInfoAsync(reference.FileId);
+                file = _unitOfWork.FileInfoRepository.GetFileInfo(reference.FileId);
             }
 
             if (file != null && photo.AccessHash == file.AccessHash &&
-                await _store.DeleteProfilePhotoAsync(auth.UserId, reference.FileId))
+                _unitOfWork.PhotoRepository.DeleteProfilePhoto(auth.UserId, reference.FileId))
             {
                 result.Add(photo.Id);
             }
         }
-        
+
+        await _unitOfWork.SaveAsync();
         return result;
     }
-    public async Task<PhotosDTO> GetUserPhotos(long authKeyId, long userId, int offset, long maxId, int limit)
+    public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var user = await _store.GetUserAsync(userId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         if (auth.UserId == user.Id)
         {
             user = user with { Self = true };
         }
-        var profilePhotos = await _store.GetProfilePhotosAsync(userId);
+        var profilePhotos = _unitOfWork.PhotoRepository.GetProfilePhotos(auth.UserId);
         return new PhotosDTO(profilePhotos, new List<UserDTO> { user });
     }
 }

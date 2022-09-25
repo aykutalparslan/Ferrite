@@ -31,12 +31,12 @@ public class RedisSecretMessageBox : ISecretMessageBox
         _authKeyId = authKeyId;
         _counter = new RedisCounter(redis, $"seq:qts:{authKeyId}");
     }
-    public async Task<int> Qts()
+    public async ValueTask<int> Qts()
     {
         return (int)await _counter.Get();
     }
 
-    public async Task<int> IncrementQts()
+    public async ValueTask<int> IncrementQts()
     {
         int qts = (int)await _counter.IncrementAndGet();
         if (qts == 0)

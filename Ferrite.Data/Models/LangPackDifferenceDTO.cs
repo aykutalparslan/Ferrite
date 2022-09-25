@@ -16,12 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record LangPackDifferenceDTO
 {
-    public string LangCode { get; init; } = default!;
-    public int FromVersion { get; init; }
-    public int Version { get; init; }
-    public ICollection<LangPackStringDTO> Strings{ get; init; } = default!;
+    public string LangCode { get; set; } = default!;
+    public int FromVersion { get; set; }
+    public int Version { get; set; }
+    public ICollection<LangPackStringDTO> Strings{ get; set; } = default!;
 }

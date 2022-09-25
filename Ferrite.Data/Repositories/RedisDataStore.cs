@@ -37,7 +37,7 @@ public class RedisDataStore : IVolatileKVStore
     public void Put(byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         db.StringSet(key, (RedisValue)value, ttl);
     }
@@ -45,7 +45,7 @@ public class RedisDataStore : IVolatileKVStore
     public void UpdateTtl(TimeSpan? ttl = null, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         db.KeyExpire(key, ttl);
     }
@@ -53,7 +53,7 @@ public class RedisDataStore : IVolatileKVStore
     public bool ListAdd(long score, byte[] value, TimeSpan? ttl = null, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         db.SortedSetAdd(key, (RedisValue)value, score);
         if (ttl != null)
@@ -64,10 +64,18 @@ public class RedisDataStore : IVolatileKVStore
         return true;
     }
 
+    public bool ListDelete(byte[] value, params object[] keys)
+    {
+        IDatabase db = _redis.GetDatabase();
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
+        RedisKey key = primaryKey.ArrayValue;
+        return db.SortedSetRemove(key, value);
+    }
+
     public bool ListDeleteByScore(long score, params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         db.SortedSetRemoveRangeByScore(key, 0, score);
         return true;
@@ -76,7 +84,7 @@ public class RedisDataStore : IVolatileKVStore
     public IList<byte[]> ListGet(params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         var result = db.SortedSetRangeByScore(key);
         var list = Array.ConvertAll<RedisValue, byte[]>(result, item => (byte[])item);
@@ -86,7 +94,7 @@ public class RedisDataStore : IVolatileKVStore
     public void Delete(params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         db.KeyDelete(key);
     }
@@ -94,7 +102,7 @@ public class RedisDataStore : IVolatileKVStore
     public bool Exists(params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         return db.KeyExists(key);
     }
@@ -102,7 +110,7 @@ public class RedisDataStore : IVolatileKVStore
     public byte[]? Get(params object[] keys)
     {
         IDatabase db = _redis.GetDatabase();
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         return db.StringGet(key);
     }
@@ -111,7 +119,7 @@ public class RedisDataStore : IVolatileKVStore
     {
         object _asyncState = new object();
         IDatabase db = _redis.GetDatabase(asyncState: _asyncState);
-        var primaryKey = EncodedKey.Create(_table.FullName, keys);
+        var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         RedisKey key = primaryKey.ArrayValue;
         return await db.StringGetAsync(key);
     }

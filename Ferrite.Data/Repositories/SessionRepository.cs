@@ -57,6 +57,11 @@ public class SessionRepository : ISessionRepository
             BitConverter.GetBytes(sessionId), null, authKeyId);
     }
 
+    public bool DeleteSessionForAuthKey(long authKeyId, long sessionId)
+    {
+        return _store.ListDelete(BitConverter.GetBytes(sessionId), null, authKeyId);
+    }
+
     public ICollection<long> GetSessionsByAuthKey(long authKeyId, TimeSpan expire)
     {
         var time = DateTimeOffset.Now - expire;

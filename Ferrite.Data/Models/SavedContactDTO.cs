@@ -16,6 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
-public record SavedContactDTO(string Phone, string FirstName, string LastName, int Date);
+[MessagePackObject(true)]
+public record SavedContactDTO(string Phone, string FirstName, string LastName, int Date, long ClientId, long UserId);

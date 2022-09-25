@@ -29,25 +29,24 @@ public class UpdatesService : IUpdatesService
 {
     private readonly IMTProtoTime _time;
     private readonly ISessionService _sessions;
-    private readonly IDistributedPipe _pipe;
-    private readonly IPersistentStore _store;
-    private readonly IDistributedCache _cache;
+    private readonly IMessagePipe _pipe;
     private readonly IUnitOfWork _unitOfWork;
-    public UpdatesService(IMTProtoTime time, ISessionService sessions, IDistributedPipe pipe,
-        IPersistentStore store, IDistributedCache cache, IUnitOfWork unitOfWork)
+    private readonly IUpdatesContextFactory _updatesContextFactory;
+
+    public UpdatesService(IMTProtoTime time, ISessionService sessions, IMessagePipe pipe,
+        IUnitOfWork unitOfWork, IUpdatesContextFactory updatesContextFactory)
     {
         _time = time;
         _sessions = sessions;
         _pipe = pipe;
-        _store = store;
-        _cache = cache;
         _unitOfWork = unitOfWork;
+        _updatesContextFactory = updatesContextFactory;
     }
 
     public async Task<StateDTO> GetState(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         return new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds(),
@@ -59,8 +58,8 @@ public class UpdatesService : IUpdatesService
     public async Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date, 
         int qts, int? ptsTotalLimit = null)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int currentPts = await updatesCtx.Pts();
         var state = new StateDTO()
         {
@@ -76,13 +75,13 @@ public class UpdatesService : IUpdatesService
             if (message.Out && message.PeerId.PeerType == PeerType.User 
                             && message.PeerId.PeerId != auth.UserId)
             {
-                var user = await _store.GetUserAsync(message.PeerId.PeerId);
+                var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                 users.Add(user);
             }
             else if (!message.Out && message.FromId.PeerType == PeerType.User
                                   && message.PeerId.PeerId != auth.UserId)
             {
-                var user = await _store.GetUserAsync(message.FromId.PeerId);
+                var user = _unitOfWork.UserRepository.GetUser(message.FromId.PeerId);
                 users.Add(user);
             }
         }
@@ -95,12 +94,12 @@ public class UpdatesService : IUpdatesService
 
     public async Task<bool> EnqueueUpdate(long userId, UpdateBase update)
     {
-        var user = await _store.GetUserAsync(userId);
-        var authorizations = await _store.GetAuthorizationsAsync(user.Phone);
+        var user = _unitOfWork.UserRepository.GetUser(userId);
+        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(user.Phone);
         //TODO: we should be able to get the active sessions by the userId
         foreach (var a in authorizations)
         {
-            var updatesCtx = _cache.GetUpdatesContext(a.AuthKeyId, a.UserId);
+            var updatesCtx = _updatesContextFactory.GetUpdatesContext(a.AuthKeyId, a.UserId);
             int seq = await updatesCtx.IncrementSeq();
             var updateList = new List<UpdateBase>() { update };
             List<UserDTO> userList = new();
@@ -108,14 +107,14 @@ public class UpdatesService : IUpdatesService
             UpdatesBase updates = null;
             if (update is UpdateReadHistoryInboxDTO readHistoryInbox)
             {
-                var peerUser = await _store.GetUserAsync(readHistoryInbox.Peer.PeerId);
+                var peerUser = _unitOfWork.UserRepository.GetUser(readHistoryInbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
                 updates = new UpdatesDTO(updateList, userList, chatList, 
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
             }
             else if (update is UpdateReadHistoryOutboxDTO readHistoryOutbox)
             {
-                var peerUser = await _store.GetUserAsync(readHistoryOutbox.Peer.PeerId);
+                var peerUser = _unitOfWork.UserRepository.GetUser(readHistoryOutbox.Peer.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
                 updates = new UpdatesDTO(updateList, userList, chatList, 
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
@@ -123,7 +122,7 @@ public class UpdatesService : IUpdatesService
             else if (update is UpdateNewMessageDTO messageNotification &&
                      messageNotification.Message.FromId is { PeerType: PeerType.User })
             {
-                var peerUser = await _store.GetUserAsync(messageNotification.Message.FromId.PeerId);
+                var peerUser = _unitOfWork.UserRepository.GetUser(messageNotification.Message.FromId.PeerId);
                 if (peerUser != null) userList.Add(peerUser);
                 updates = new UpdatesDTO(updateList, userList, chatList, 
                     (int)DateTimeOffset.Now.ToUnixTimeSeconds(), seq);
@@ -159,8 +158,8 @@ public class UpdatesService : IUpdatesService
 
     public async Task<int> IncrementUpdatesSequence(long authKeyId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _cache.GetUpdatesContext(authKeyId, auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         return await updatesCtx.IncrementSeq();
     }
 }

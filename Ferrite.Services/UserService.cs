@@ -25,11 +25,9 @@ namespace Ferrite.Services;
 
 public class UserService : IUsersService
 {
-    private readonly IPersistentStore _store;
     private readonly IUnitOfWork _unitOfWork;
-    public UserService(IPersistentStore store, IUnitOfWork unitOfWork)
+    public UserService(IUnitOfWork unitOfWork)
     {
-        _store = store;
         _unitOfWork = unitOfWork;
     }
     public async Task<ServiceResult<ICollection<UserDTO>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)
@@ -39,7 +37,7 @@ public class UserService : IUsersService
         {
             if (u.UserId != 0)
             {
-                var user = await _store.GetUserAsync(u.UserId);
+                var user = _unitOfWork.UserRepository.GetUser(u.UserId);
                 if (user != null)
                 {
                     user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
@@ -57,13 +55,13 @@ public class UserService : IUsersService
         bool self = false;
         if (id.InputUserType == InputUserType.Self)
         {
-            var auth = await _store.GetAuthorizationAsync(authKeyId);
+            var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
             userId = auth.UserId;
             self = true;
         }
-        var user = await _store.GetUserAsync(userId);
+        var user = _unitOfWork.UserRepository.GetUser(userId);
         user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
-        var info = await _store.GetAppInfoAsync(authKeyId);
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info.LangPack.ToLower().Contains("android"))
         {
@@ -74,7 +72,7 @@ public class UserService : IUsersService
             deviceType = DeviceType.iOS;
         }
 
-        var settings = await _store.GetNotifySettingsAsync(authKeyId, new InputNotifyPeerDTO
+        var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
             Peer = new InputPeerDTO
@@ -96,7 +94,7 @@ public class UserService : IUsersService
 
         if (user != null)
         {
-            var profilePhoto = await _store.GetProfilePhotoAsync(user.Id, user.Photo.PhotoId);
+            var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
             var fullUser = new Ferrite.Data.UserFullDTO
             {
                 About = user.About,

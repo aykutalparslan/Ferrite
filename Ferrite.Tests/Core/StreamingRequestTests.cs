@@ -33,6 +33,7 @@ using DotNext.Buffers;
 using Ferrite.Core;
 using Ferrite.Crypto;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.ObjectMapper;
@@ -183,29 +184,8 @@ public class StreamingRequestTests
             return authKeys[a];
         });
         builder.RegisterMock(proto);
-        var redis = new Mock<IDistributedCache>();
-        
-        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
-        {
-            sessions.Add(a, b);
-            return true;
-        });
-        redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!sessions.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return sessions[a];
-        });
-        redis.Setup(x => x.DeleteSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            sessions.Remove(a);
-            return true;
-        });
-        builder.RegisterMock(redis);
         ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
-        var objectStore = new Mock<IDistributedObjectStore>();
+        var objectStore = new Mock<IUploadService>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
             It.IsAny<int>(), It.IsAny<Stream>())).Returns(async (long fileId, int filePart, Stream data) =>
             {
@@ -219,7 +199,6 @@ public class StreamingRequestTests
                 return true;
             });
         builder.RegisterMock(objectStore);
-
         var processorManager = new Mock<IProcessorManager>();
         processorManager.Setup(x => x.Process(It.IsAny<object?>(),
             It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback( 
@@ -248,7 +227,7 @@ public class StreamingRequestTests
     private ContainerBuilder GetContainerBuilder()
     {
         ConcurrentQueue<byte[]> _channel = new();
-        var pipe = new Mock<IDistributedPipe>();
+        var pipe = new Mock<IMessagePipe>();
         pipe.Setup(x => x.WriteMessageAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync((string a, byte[] b) =>
         {
             _channel.Enqueue(b);
@@ -277,8 +256,6 @@ public class StreamingRequestTests
             return authKeys2[a];
         });
 
-        var cassandra = new Mock<IPersistentStore>();
-        
         Queue<long> unixTimes = new Queue<long>();
         var time = new Mock<IMTProtoTime>();
         unixTimes.Enqueue(1649323587);
@@ -379,7 +356,6 @@ public class StreamingRequestTests
         builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.RegisterMock(cassandra);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
         builder.RegisterMock(pipe);

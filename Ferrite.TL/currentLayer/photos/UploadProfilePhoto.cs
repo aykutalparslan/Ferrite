@@ -34,7 +34,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
     private readonly IPhotosService _photos;
     private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos, IPersistentStore store,
+    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos, 
         IMapperContext mapper)
     {
         factory = objectFactory;

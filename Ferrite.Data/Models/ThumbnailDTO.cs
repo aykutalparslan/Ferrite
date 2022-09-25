@@ -16,7 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record ThumbnailDTO(long FileId, long ThumbnailFileId, string Type, int Size,
     int Width, int Height, byte[]? Bytes, IReadOnlyCollection<int>? Sizes);

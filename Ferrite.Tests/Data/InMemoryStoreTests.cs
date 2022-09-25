@@ -42,10 +42,9 @@ public class InMemoryStoreTests
         await Task.Delay(ttl-ttl/5*1).ContinueWith(_ => Assert.False(store.Exists("test123")));
     }
     [Theory]
-    [InlineData(20)]
-    [InlineData(50)]
-    [InlineData(100)]
     [InlineData(200)]
+    [InlineData(500)]
+    [InlineData(700)]
     async Task InMemoryStore_Get_ConformsToExpirationRules(int ms)
     {
         var ttl = new TimeSpan(0, 0, 0, 0, ms);

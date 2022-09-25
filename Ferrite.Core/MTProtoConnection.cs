@@ -69,7 +69,7 @@ public class MTProtoConnection : IMTProtoConnection
     private ITransportConnection socketConnection;
     private Task? receiveTask;
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
-    private Channel<IDistributedFileOwner> _outgoingStreams = Channel.CreateUnbounded<IDistributedFileOwner>();
+    private Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private Task? sendTask;
     private Task? sendStreamTask;
@@ -107,7 +107,7 @@ public class MTProtoConnection : IMTProtoConnection
         _mapper = mapper;
     }
 
-    public async ValueTask SendAsync(IDistributedFileOwner message)
+    public async ValueTask SendAsync(IFileOwner message)
     {
         if (message != null)
         {
@@ -332,7 +332,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
     
-    private async Task SendStream(IDistributedFileOwner message, SessionState state)
+    private async Task SendStream(IFileOwner message, SessionState state)
     {
         if (message == null) return;
         var rpcResult = factory.Resolve<RpcResult>();
@@ -519,15 +519,15 @@ public class MTProtoConnection : IMTProtoConnection
     private void SendTransportError(int errorCode)
     {
         writer.Clear();
-        writer.WriteInt32(-errorCode, true);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.EncodeBlock(msg);
+        writer.WriteInt32(-1*errorCode, true);
+        var message = writer.ToReadOnlySequence();
+        var encoded = encoder.Encode(message);
         if (webSocketHandler != null)
         {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
+            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
         }
-
         socketConnection.Transport.Output.Write(encoded);
+        socketConnection.Transport.Output.FlushAsync();
     }
 
     public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
@@ -591,12 +591,6 @@ public class MTProtoConnection : IMTProtoConnection
                 _authKeyId = authKeyId;
                 _authKey = null;
                 GetAuthKey();
-            }
-
-            if (_authKeyId != 0 && _permAuthKeyId == 0)
-            {
-                long? permAuthKey = await _mtproto.GetBoundAuthKeyAsync(authKeyId);
-                _permAuthKeyId = permAuthKey ?? 0;
             }
 
             var incomingMessageKey = new byte[16];
@@ -737,7 +731,7 @@ public class MTProtoConnection : IMTProtoConnection
     {
         if (_authKey == null)
         {
-            _log.Information("Trying to get the authKey");
+            _log.Information($"Trying to get the authKey with Id: {_authKeyId}");
             var authKey = _mtproto.GetAuthKey(_authKeyId);
             if (authKey != null)
             {
@@ -747,7 +741,7 @@ public class MTProtoConnection : IMTProtoConnection
         }
         if (_authKey == null)
         {
-            _log.Information("Trying to get tempAuthKey");
+            _log.Information($"Trying to get tempAuthKey  with Id: {_authKeyId}");
             var authKey = _mtproto.GetTempAuthKey(_authKeyId);
             if (authKey != null)
             {
@@ -758,6 +752,11 @@ public class MTProtoConnection : IMTProtoConnection
         {
             _sendSemaphore.Wait();
             SendTransportError(404);
+        }
+        if (_authKeyId != 0 && _permAuthKeyId == 0)
+        {
+            long? pKey = _mtproto.GetBoundAuthKey(_authKeyId);
+            _permAuthKeyId = pKey ?? 0;
         }
     }
 

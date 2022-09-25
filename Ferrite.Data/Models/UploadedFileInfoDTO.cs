@@ -16,7 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record UploadedFileInfoDTO(long Id, int PartSize, int Parts, long AccessHash, 
     string Name, string? MD5Checksum, DateTimeOffset SavedOn, bool IsBigFile);

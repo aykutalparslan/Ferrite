@@ -18,35 +18,41 @@
 
 using System.IO.Pipelines;
 using Ferrite.Data;
+using Ferrite.Data.Repositories;
 
 namespace Ferrite.Services;
 
 public class UploadService : IUploadService
 {
-    private readonly IDistributedObjectStore _objectStore;
-    private readonly IPersistentStore _store;
-    public UploadService(IDistributedObjectStore objectStore, IPersistentStore store)
+    private readonly IObjectStore _objectStore;
+    private readonly IUnitOfWork _unitOfWork;
+
+    public UploadService(IObjectStore objectStore, IUnitOfWork unitOfWork)
     {
         _objectStore = objectStore;
-        _store = store;
+        _unitOfWork = unitOfWork;
     }
     public async Task<bool> SaveFilePart(long fileId, int filePart, Stream data)
-    {
-        return await _objectStore.SaveFilePart(fileId, filePart, data);
+    { 
+        bool saved = await _objectStore.SaveFilePart(fileId, filePart, data);
+        _unitOfWork.FileInfoRepository.PutFilePart(new FilePartDTO(fileId, filePart, (int)data.Length));
+        return saved && await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data)
     {
-        return await _objectStore.SaveBigFilePart(fileId, filePart, fileTotalParts, data);
+        var saved = await _objectStore.SaveBigFilePart(fileId, filePart, fileTotalParts, data);
+        _unitOfWork.FileInfoRepository.PutBigFilePart(new FilePartDTO(fileId, filePart, (int)data.Length));
+        return saved && await _unitOfWork.SaveAsync();
     }
 
-    public async Task<ServiceResult<IDistributedFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
+    public async Task<ServiceResult<IFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
         string thumbSize, int offset, int limit, long regMsgId, bool precise = false, bool cdnSupported = false)
     {
-        var reference = await _store.GetFileReferenceAsync(fileReference);
+        var reference = _unitOfWork.FileInfoRepository.GetFileReference(fileReference);
         if (reference.IsBigfile)
         {
-            var thumbs = await _store.GetThumbnailsAsync(fileId);
+            var thumbs = _unitOfWork.PhotoRepository.GetThumbnails(fileId);
             long thumbFileId = 0;
             foreach (var t in thumbs)
             {
@@ -56,13 +62,13 @@ public class UploadService : IUploadService
                     break;
                 }
             }
-            var file = await _store.GetBigFileInfoAsync(thumbFileId);
+            var file = _unitOfWork.FileInfoRepository.GetBigFileInfo(thumbFileId);
             var owner = new S3FileOwner(file, _objectStore, offset, limit, regMsgId);
-            return new ServiceResult<IDistributedFileOwner>(owner, true, ErrorMessages.None);
+            return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
         else
         {
-            var thumbs = await _store.GetThumbnailsAsync(fileId);
+            var thumbs = _unitOfWork.PhotoRepository.GetThumbnails(fileId);
             long thumbFileId = 0;
             foreach (var t in thumbs)
             {
@@ -72,9 +78,9 @@ public class UploadService : IUploadService
                     break;
                 }
             }
-            var file = await _store.GetFileInfoAsync(thumbFileId);
+            var file = _unitOfWork.FileInfoRepository.GetFileInfo(thumbFileId);
             var owner = new S3FileOwner(file, _objectStore, offset, limit, regMsgId);
-            return new ServiceResult<IDistributedFileOwner>(owner, true, ErrorMessages.None);
+            return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
     }
 }

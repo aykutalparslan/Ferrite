@@ -42,7 +42,7 @@ namespace Ferrite.Utils
         //----
 
 
-        [Theory]
+        /*[Theory]
         [InlineData(new byte[] {1}, 4)]
         [InlineData(new byte[] {1, 2}, 4)]
         [InlineData(new byte[] {1, 2, 3}, 4)]
@@ -107,9 +107,9 @@ namespace Ferrite.Utils
                 expected[i+4] = data[i];
             }
             Assert.Equal(expected, sr.WrittenSpan.ToArray());
-        }
+        }*/
 
-        [Theory]
+        /*[Theory]
         [InlineData(254)]
         [InlineData(512)]
         [InlineData(717)]
@@ -149,7 +149,7 @@ namespace Ferrite.Utils
             Assert.Equal(data, result);
             Assert.Equal(data2, result2);
             Assert.Equal(data3, result3);
-        }
+        }*/
 
         [Theory]
         [InlineData("asdfasdf", "dsf", "ggggggg")]

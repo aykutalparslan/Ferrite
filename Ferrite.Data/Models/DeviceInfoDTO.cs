@@ -1,5 +1,8 @@
+using MessagePack;
+
 namespace Ferrite.Data;
 
+[MessagePackObject(true)]
 public record DeviceInfoDTO
 {
     public long AuthKeyId { get; init; }

@@ -77,7 +77,7 @@ public class MsgContainerTests
     private IContainer BuildIoCContainer()
     {
         ConcurrentQueue<byte[]> _channel = new();
-        var pipe = new Mock<IDistributedPipe>();
+        var pipe = new Mock<IMessagePipe>();
         pipe.Setup(x => x.WriteMessageAsync(It.IsAny<string>(), It.IsAny<byte[]>())).ReturnsAsync((string a, byte[] b) =>
         {
             _channel.Enqueue(b);
@@ -109,27 +109,7 @@ public class MsgContainerTests
             }
             return authKeys[a];
         });
-        var redis = new Mock<IDistributedCache>();
-        redis.Setup(x => x.PutSessionAsync(It.IsAny<long>(), It.IsAny<byte[]>(), It.IsAny<TimeSpan>())).ReturnsAsync((long a, byte[] b, TimeSpan c) =>
-        {
-            sessions.Add(a, b);
-            return true;
-        });
-        redis.Setup(x => x.GetSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            if (!sessions.ContainsKey(a))
-            {
-                return new byte[0];
-            }
-            return sessions[a];
-        });
-        redis.Setup(x => x.DeleteSessionAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
-        {
-            sessions.Remove(a);
-            return true;
-        });
         Dictionary<long, byte[]> authKeys2 = new Dictionary<long, byte[]>();
-        var cassandra = new Mock<IPersistentStore>();
         Queue<long> unixTimes = new Queue<long>();
         var time = new Mock<IMTProtoTime>();
         unixTimes.Enqueue(1649323587);
@@ -229,8 +209,6 @@ public class MsgContainerTests
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterMock(proto);
-        builder.RegisterMock(cassandra);
-        builder.RegisterMock(redis);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
         builder.RegisterType<AuthKeyProcessor>();

@@ -22,10 +22,10 @@ namespace Ferrite.Data;
 
 public interface ISearchEngine
 {
-    public Task<bool> IndexUser(Search.UserSearchModel user);
-    public Task<bool> DeleteUser(long userId);
-    public Task<IReadOnlyCollection<Search.UserSearchModel>> SearchByUsername(string q);
-    public Task<bool> IndexMessage(MessageSearchModel message);
-    public Task<bool> DeleteMessage(string id);
-    public Task<IReadOnlyCollection<MessageSearchModel>> SearchMessages(string q);
+    public ValueTask<bool> IndexUser(Search.UserSearchModel user);
+    public ValueTask<bool> DeleteUser(long userId);
+    public ValueTask<List<UserSearchModel>> SearchByUsername(string q);
+    public ValueTask<bool> IndexMessage(MessageSearchModel message);
+    public ValueTask<bool> DeleteMessage(string id);
+    public ValueTask<List<MessageSearchModel>> SearchMessages(string q);
 }

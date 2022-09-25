@@ -27,6 +27,25 @@ public interface IUnitOfWork
     IServerSaltRepository ServerSaltRepository { get; }
     IMessageRepository MessageRepository { get; }
     IUserStatusRepository UserStatusRepository { get; }
+    ISessionRepository SessionRepository { get; }
+    IAuthSessionRepository AuthSessionRepository { get; }
+    IPhoneCodeRepository PhoneCodeRepository { get; }
+    ISignInRepository SignInRepository { get; }
+    ILoginTokenRepository LoginTokenRepository { get; }
+    IDeviceLockedRepository DeviceLockedRepository { get; }
+    IUserRepository UserRepository { get; }
+    IAppInfoRepository AppInfoRepository { get; }
+    IDeviceInfoRepository DeviceInfoRepository { get; }
+    INotifySettingsRepository NotifySettingsRepository { get; }
+    IReportReasonRepository ReportReasonRepository { get; }
+    IPrivacyRulesRepository PrivacyRulesRepository { get; }
+    IChatRepository ChatRepository { get; }
+    IContactsRepository ContactsRepository { get; }
+    IBlockedPeersRepository BlockedPeersRepository { get; }
+    ISignUpNotificationRepository SignUpNotificationRepository { get; }
+    IFileInfoRepository FileInfoRepository { get; }
+    IPhotoRepository PhotoRepository { get; }
+    ILangPackRepository LangPackRepository { get; }
     public bool Save();
     public ValueTask<bool> SaveAsync();
 }

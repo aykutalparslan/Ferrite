@@ -32,8 +32,8 @@ public class ServiceMessagesProcessor : IProcessor
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionService _sessionManager;
-    private readonly IDistributedPipe _pipe;
-    public ServiceMessagesProcessor(ILifetimeScope scope, ISessionService sessionManager, IDistributedPipe pipe)
+    private readonly IMessagePipe _pipe;
+    public ServiceMessagesProcessor(ILifetimeScope scope, ISessionService sessionManager, IMessagePipe pipe)
     {
         _scope = scope;
         _sessionManager = sessionManager;

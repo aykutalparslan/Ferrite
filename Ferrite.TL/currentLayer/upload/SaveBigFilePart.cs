@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
 using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
@@ -30,13 +31,10 @@ public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
-    private readonly IDistributedObjectStore _objectStore;
-    private readonly IPersistentStore _store;
-    public SaveBigFilePart(ITLObjectFactory objectFactory, IDistributedObjectStore objectStore, IPersistentStore store)
+    public SaveBigFilePart(ITLObjectFactory objectFactory, IUploadService uploadService)
     {
         factory = objectFactory;
-        _objectStore = objectStore;
-        _store = store;
+        _uploadService = uploadService;
     }
 
     public int Constructor => -562337987;
@@ -65,14 +63,14 @@ public class SaveBigFilePart : ITLObject, ITLMethod, IPipeOwner
 
     private MTProtoPipe _bytes;
     private int _length = 0;
+    private readonly IUploadService _uploadService;
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
         var stream = new MTProtoStream(_bytes.Input, _length);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
-        var success = await _objectStore.SaveBigFilePart(_fileId, _filePart, _fileTotalParts, stream);
-        await _store.SaveBigFilePartAsync(new FilePartDTO(_fileId, _filePart, _length));
+        var success = await _uploadService.SaveBigFilePart(_fileId, _filePart, _fileTotalParts, stream);
         result.Result = success ? new BoolTrue() : new BoolFalse();
         return result;
     }

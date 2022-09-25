@@ -16,14 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-
 namespace Ferrite.Data;
 
-public interface IDistributedObjectStore
-{
-    public Task<bool> SaveFilePart(long fileId, int filePart, Stream data);
-    public Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
-    public Task<Stream> GetFilePart(long fileId, int filePart);
-    public Task<Stream> GetBigFilePart(long fileId, int filePart);
-}
+public record struct ObjectId(long FileId, int PartNum);

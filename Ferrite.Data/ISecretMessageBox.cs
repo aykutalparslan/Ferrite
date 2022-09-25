@@ -23,10 +23,10 @@ public interface ISecretMessageBox
     /// <summary>
     /// Returns the current event sequence number.
     /// </summary>
-    public Task<int> Qts();
+    public ValueTask<int> Qts();
     /// <summary>
     ///  Increments the current event sequence number.
     /// </summary>
     /// <returns>Event sequence number after increment.</returns>
-    public Task<int> IncrementQts();
+    public ValueTask<int> IncrementQts();
 }

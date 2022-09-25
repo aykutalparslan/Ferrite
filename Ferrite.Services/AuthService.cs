@@ -23,6 +23,7 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.Utils;
 using xxHash;
 
 namespace Ferrite.Services;
@@ -30,29 +31,28 @@ namespace Ferrite.Services;
 public class AuthService : IAuthService
 {
     private readonly IRandomGenerator _random;
-    private readonly IDistributedCache _cache;
-    private readonly IPersistentStore _store;
     private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger _log;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
-    public AuthService(IRandomGenerator random, IDistributedCache cache, IPersistentStore store, ISearchEngine search,
-        IUnitOfWork unitOfWork)
+    public AuthService(IRandomGenerator random, ISearchEngine search,
+        IUnitOfWork unitOfWork, ICounterFactory counterFactory,
+        ILogger log)
     {
         _random = random;
-        _cache = cache;
-        _store = store;
         _search = search;
-        _userIdCnt = _cache.GetCounter("counter_user_id");
+        _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
+        _log = log;
     }
 
     public async Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token)
     {
-        var t = await _cache.GetLoginTokenAsync(token);
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var t = _unitOfWork.LoginTokenRepository.GetLoginToken(token);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null && t != null&& t.ExceptUserIds.Contains(auth.UserId))
         {
             var login = new LoginViaQRDTO()
@@ -64,8 +64,8 @@ public class AuthService : IAuthService
                 AcceptedByUserId = auth.UserId,
                 Status = true
             };
-            _ = _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 60));
-            await _store.SaveAuthorizationAsync(new AuthInfoDTO()
+            _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 60));
+            _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
             {
                 AuthKeyId = t.AuthKeyId,
                 Phone = auth.Phone,
@@ -73,7 +73,8 @@ public class AuthService : IAuthService
                 ApiLayer = -1,
                 LoggedIn = true
             });
-            var app = await _store.GetAppInfoAsync(t.AuthKeyId);
+            await _unitOfWork.SaveAsync();
+            var app = _unitOfWork.AppInfoRepository.GetAppInfo(t.AuthKeyId);
             return app;
         }
         return null;
@@ -88,7 +89,8 @@ public class AuthService : IAuthService
 
     public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
     {
-        return await _cache.DeletePhoneCodeAsync(phoneNumber, phoneCodeHash);
+        _unitOfWork.PhoneCodeRepository.DeletePhoneCode(phoneNumber, phoneCodeHash);
+        return await _unitOfWork.SaveAsync();
     }
 
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
@@ -117,10 +119,20 @@ public class AuthService : IAuthService
 
     public async Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var data = _random.GetRandomBytes(128);
         //TODO: get current dc id
-        await _store.SaveExportedAuthorizationAsync(auth, 1, dcId, data);
+        //auth, 1, dcId, data
+        _unitOfWork.AuthorizationRepository.PutExportedAuthorization(new ExportedAuthInfoDTO
+        {
+            Data = data,
+            UserId = auth.UserId,
+            Phone = auth.Phone,
+            AuthKeyId = auth.AuthKeyId,
+            NextDcId = dcId,
+            PreviousDcId = 1,
+        });
+        await _unitOfWork.SaveAsync();
         return new ExportedAuthorizationDTO()
         {
             Id = auth.UserId,
@@ -130,9 +142,9 @@ public class AuthService : IAuthService
 
     public async Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth!= null && auth.LoggedIn &&
-            await _store.GetUserAsync(auth.UserId) is UserDTO user)
+            _unitOfWork.UserRepository.GetUser(auth.UserId) is UserDTO user)
         {
             return new LoginTokenDTO()
             {
@@ -165,7 +177,8 @@ public class AuthService : IAuthService
             Status = false,
             ExceptUserIds = exceptIds
         };
-        await _cache.PutLoginTokenAsync(login, new TimeSpan(0, 0, 30));
+        _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 30));
+        await _unitOfWork.SaveAsync();
         return new LoginTokenDTO()
         {
             LoginTokenType = LoginTokenType.Token,
@@ -176,13 +189,13 @@ public class AuthService : IAuthService
 
     public async Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
     {
-        var auth = await _store.GetAuthorizationAsync(authKeyId);
-        var exported = await _store.GetExportedAuthorizationAsync(userId, bytes);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var exported = await _unitOfWork.AuthorizationRepository.GetExportedAuthorizationAsync(userId, bytes);
         
         if (auth != null && exported != null &&
             auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
         {
-            var user = await _store.GetUserAsync(auth.UserId);
+            var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
             if(user == null)
             {
                 return new AuthorizationDTO()
@@ -230,25 +243,35 @@ public class AuthService : IAuthService
         {
             return false;
         }
-        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
+        var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (authKeyDetails == null)
+        {
+            var permAuthKey = await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(authKeyId);
+            if (permAuthKey != null)
+            {
+                authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)permAuthKey);
+            }
+        }
         return authKeyDetails?.LoggedIn ?? false;
     }
 
     public async Task<LoggedOutDTO?> LogOut(long authKeyId)
     {
         var futureAuthToken = _random.GetRandomBytes(32);
-        var info = await _store.GetAuthorizationAsync(authKeyId);
+        var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if(info == null)
         {
             return null;
         }
-        await _store.SaveAuthorizationAsync(info with
+        _unitOfWork.AuthorizationRepository.PutAuthorization(info with
         {
             FutureAuthToken = futureAuthToken,
             Phone = "",
             UserId = 0,
             LoggedIn = false
         });
+        _log.Debug($"Log Out for authKey with Id: {authKeyId}");
+        await _unitOfWork.SaveAsync();
         return new LoggedOutDTO()
         {
             FutureAuthToken = futureAuthToken
@@ -267,13 +290,13 @@ public class AuthService : IAuthService
 
     public async Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash)
     {
-        var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != null)
         {
             Console.WriteLine("auth.sentCode=>" + phoneCode);
-            await _cache.PutPhoneCodeAsync(phoneNumber, phoneCodeHash, phoneCode,
+            _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, phoneCodeHash, phoneCode,
                 new TimeSpan(0, 0, PhoneCodeTimeout * 2));
-
+            await _unitOfWork.SaveAsync();
             return new SentCodeDTO()
             {
                 CodeType = SentCodeType.Sms,
@@ -287,17 +310,19 @@ public class AuthService : IAuthService
 
     public async Task<bool> ResetAuthorizations(long authKeyId)
     {
-        var currentAuth = await _store.GetAuthorizationAsync(authKeyId);
+        var currentAuth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (currentAuth != null)
         {
-            var authorizations = await _store.GetAuthorizationsAsync(currentAuth.Phone);
+            var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(currentAuth.Phone);
             foreach (var auth in authorizations)
             {
                 if(auth.AuthKeyId != authKeyId)
                 {
-                    await _store.DeleteAuthorizationAsync(authKeyId);
+                    _unitOfWork.AuthorizationRepository.DeleteAuthorization(authKeyId);
                 }
             }
+
+            await _unitOfWork.SaveAsync();
             return true;
         }
         return false;
@@ -309,9 +334,9 @@ public class AuthService : IAuthService
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        await _cache.PutPhoneCodeAsync(phoneNumber, hash, code.ToString(),
+        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
-        
+        await _unitOfWork.SaveAsync();
         return new SentCodeDTO()
         {
             CodeType = SentCodeType.Sms,
@@ -323,7 +348,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        var code = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
+        var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
             return new AuthorizationDTO()
@@ -331,8 +356,9 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.PhoneCodeInvalid,
             };
         }
-        await _cache.PutSignInAsync(authKeyId, phoneNumber, phoneCodeHash);
-        var user = await _store.GetUserAsync(phoneNumber);
+        _unitOfWork.SignInRepository.PutSignIn(authKeyId, phoneNumber, phoneCodeHash);
+        await _unitOfWork.SaveAsync();
+        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if(user == null)
         {
             return new AuthorizationDTO()
@@ -340,15 +366,17 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.SignUpRequired,
             };
         }
-        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
-        await _store.SaveAuthorizationAsync(new AuthInfoDTO()
+        var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
-            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
+            ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
+        _log.Debug($"Sign In for authKey with Id: {authKeyId}");
+        await _unitOfWork.SaveAsync();
         return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
@@ -376,8 +404,8 @@ public class AuthService : IAuthService
         {
             userId = await _userIdCnt.IncrementAndGet();
         }
-        var phoneCode = await _cache.GetPhoneCodeAsync(phoneNumber, phoneCodeHash);
-        var signedInAuthKeyId = await _cache.GetSignInAsync(phoneNumber, phoneCodeHash);
+        var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
+        var signedInAuthKeyId = _unitOfWork.SignInRepository.GetSignIn(phoneNumber, phoneCodeHash);
         if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {
             return new AuthorizationDTO()
@@ -406,18 +434,20 @@ public class AuthService : IAuthService
                 Empty = true
             }
         };
-        await _store.SaveUserAsync(user);
+        _unitOfWork.UserRepository.PutUser(user);
         await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
             user.FirstName, user.LastName, user.Phone));
-        var authKeyDetails = await _store.GetAuthorizationAsync(authKeyId);
-        await _store.SaveAuthorizationAsync(new AuthInfoDTO()
+        var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
             UserId = user.Id,
-            ApiLayer = authKeyDetails == null ? -1 : authKeyDetails.ApiLayer,
+            ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
+        _log.Debug($"Sign Up for authKey with Id: {authKeyId}");
+        await _unitOfWork.SaveAsync();
         return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
@@ -439,12 +469,15 @@ public class AuthService : IAuthService
 
     public async Task<bool> SaveAppInfo(AppInfoDTO info)
     {
-        return await _store.SaveAppInfoAsync(info);
+        _unitOfWork.AppInfoRepository.PutAppInfo(info);
+        _log.Debug($"=== Save App Info for authKey with Id: {info.AuthKeyId}");
+        return await _unitOfWork.SaveAsync();
     }
 
     public async Task<AppInfoDTO?> GetAppInfo(long authKeyId)
     {
-        return await _store.GetAppInfoAsync(authKeyId);
+        _log.Debug($"=== Get App Info for authKey with Id: {authKeyId}");
+        return _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
     }
 }
 
