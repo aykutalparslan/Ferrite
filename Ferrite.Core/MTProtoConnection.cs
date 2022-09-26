@@ -592,7 +592,7 @@ public class MTProtoConnection : IMTProtoConnection
                 _authKey = null;
                 GetAuthKey();
             }
-
+            TryGetPermAuthKey();
             var incomingMessageKey = new byte[16];
             reader.Read(incomingMessageKey);
             var aesKey = new byte[32];
@@ -731,33 +731,43 @@ public class MTProtoConnection : IMTProtoConnection
     {
         if (_authKey == null)
         {
-            _log.Information($"Trying to get the authKey with Id: {_authKeyId}");
             var authKey = _mtproto.GetAuthKey(_authKeyId);
             if (authKey != null)
             {
                 Interlocked.CompareExchange(ref _authKey, authKey, null);
                 _permAuthKeyId = _authKeyId;
+                _log.Information($"Retrieved the authKey with Id: {_authKeyId}");
             }
         }
         if (_authKey == null)
         {
-            _log.Information($"Trying to get tempAuthKey  with Id: {_authKeyId}");
             var authKey = _mtproto.GetTempAuthKey(_authKeyId);
             if (authKey != null)
             {
                 Interlocked.CompareExchange(ref _authKey, authKey, null);
+                _log.Information($"Retrieved the tempAuthKey  with Id: {_authKeyId}");
             }
         }
         if (_authKey == null)
         {
             _sendSemaphore.Wait();
-            SendTransportError(404);
+            try
+            {
+                SendTransportError(404);
+            }
+            finally
+            {
+                _sendSemaphore.Release();
+            }
         }
-        if (_authKeyId != 0 && _permAuthKeyId == 0)
-        {
-            long? pKey = _mtproto.GetBoundAuthKey(_authKeyId);
-            _permAuthKeyId = pKey ?? 0;
-        }
+    }
+
+    private void TryGetPermAuthKey()
+    {
+        if (_authKeyId == 0 || _permAuthKeyId != 0) return;
+        var pKey = _mtproto.GetBoundAuthKey(_authKeyId);
+        _permAuthKeyId = pKey ?? 0;
+        _log.Information($"Retrieved the permAuthKey with Id: {_permAuthKeyId}");
     }
 
     private void DecryptAndRaiseEvent(in ReadOnlySequence<byte> bytes, bool requiresQuickAck)
@@ -914,7 +924,7 @@ public class MTProtoConnection : IMTProtoConnection
             _authKeyId = keyId;
             GetAuthKey();
         }
-        
+        TryGetPermAuthKey();
         if (keyId == 0)
         {
             ProcessUnencryptedMessage(bytes.Slice(8));

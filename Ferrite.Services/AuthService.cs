@@ -348,6 +348,7 @@ public class AuthService : IAuthService
 
     public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
+        _log.Debug($"*** Sign In for authKey with Id: {authKeyId} ***");
         var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
@@ -375,7 +376,6 @@ public class AuthService : IAuthService
             ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
-        _log.Debug($"Sign In for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
         return new AuthorizationDTO()
         {
@@ -399,6 +399,7 @@ public class AuthService : IAuthService
     public async Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber,
         string phoneCodeHash, string firstName, string lastName)
     {
+        _log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
         long userId = await _userIdCnt.IncrementAndGet();
         if(userId == 0)
         {
@@ -446,7 +447,6 @@ public class AuthService : IAuthService
             ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
-        _log.Debug($"Sign Up for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
         return new AuthorizationDTO()
         {

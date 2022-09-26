@@ -39,7 +39,7 @@ public class FasterSortedSet<T> where T: IComparable<T>
                 return set ??= new();
             }));
         session.Read(_name, out var result);
-        return result;
+        return result ?? new SortedSet<T>();
     }
 
     public async ValueTask Add(T value)

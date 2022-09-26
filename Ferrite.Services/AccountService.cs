@@ -62,11 +62,11 @@ public partial class AccountService : IAccountService
     {
         var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
-        if (info.LangPack.ToLower().Contains("android"))
+        if (info != null && info.LangPack.ToLower().Contains("android"))
         {
             deviceType = DeviceType.Android;
         }
-        else if (info.LangPack.ToLower().Contains("ios"))
+        else if (info != null && info.LangPack.ToLower().Contains("ios"))
         {
             deviceType = DeviceType.iOS;
         }

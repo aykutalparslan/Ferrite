@@ -106,8 +106,16 @@ public class MessageRepository : IMessageRepository
             var results = _store.IterateAsync(userId);
             await foreach (var val in results)
             {
-                var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-                messages.Add(message);
+                try
+                {
+                    var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
+                    messages.Add(message);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
             }
         }
 

@@ -34,10 +34,8 @@ public class UserRepository : IUserRepository
                 new DataColumn { Name = "phone", Type = DataType.String },
                 new DataColumn { Name = "username", Type = DataType.String }),
             new KeyDefinition("by_phone",
-                new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "phone", Type = DataType.String }),
             new KeyDefinition("by_username",
-                new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "username", Type = DataType.String })));
         _storeTTL = storeTTL;
         _storeTTL.SetSchema(new TableDefinition("ferrite", "account_ttls",

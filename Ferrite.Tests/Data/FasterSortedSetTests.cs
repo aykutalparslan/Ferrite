@@ -95,6 +95,16 @@ public class FasterSortedSetTests
         }
         DeleteDirectory(path);
     }
+    [Fact]
+    public void FasterSortedSet_ShouldNot_ReturnNull()
+    {
+        string path = "faster-sorted-set-test-" + Random.Shared.Next();
+        FasterSortedSet<long> sortedSet =
+            new FasterSortedSet<long>(new FasterContext<string, SortedSet<long>>(path), "test1");
+
+        Assert.NotNull(sortedSet.Get());
+        DeleteDirectory(path);
+    }
 
     //From: https://stackoverflow.com/a/329502/2015348
     private static void DeleteDirectory(string target_dir)
