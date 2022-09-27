@@ -20,6 +20,7 @@ using Ferrite.Data;
 using Ferrite.Data.Messages;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Search;
+using Ferrite.Utils;
 using PeerSettingsDTO = Ferrite.Data.Messages.PeerSettingsDTO;
 
 namespace Ferrite.Services;
@@ -30,14 +31,17 @@ public class MessagesService : IMessagesService
     private readonly ISearchEngine _search;
     private readonly IUpdatesService _updates;
     private readonly IUpdatesContextFactory _updatesContextFactory;
+    private readonly ILogger _log;
 
     public MessagesService(IUnitOfWork unitOfWork,ISearchEngine search, 
-        IUpdatesService updates, IUpdatesContextFactory updatesContextFactory)
+        IUpdatesService updates, IUpdatesContextFactory updatesContextFactory,
+        ILogger log)
     {
         _unitOfWork = unitOfWork;
         _search = search;
         _updates = updates;
         _updatesContextFactory = updatesContextFactory;
+        _log = log;
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
@@ -122,6 +126,19 @@ public class MessagesService : IMessagesService
             outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
         }
 
+        int previousPts = await senderCtx.Pts();
+        int pts = await senderCtx.IncrementPts();
+        _unitOfWork.MessageRepository.PutMessage(auth.UserId,
+            outgoingMessage, pts);
+        _log.Debug($"💬 Message was sent Sender: {auth.UserId} Previous PTS: {previousPts} PTS: {pts}");
+        var searchModelOutgoing = new MessageSearchModel(
+            from.PeerId + "_" + outgoingMessage.Id,
+            from.PeerId, (int)from.PeerType, from.PeerId,
+            (int)to.PeerType, to.PeerId,outgoingMessage.Id,
+            null, outgoingMessage.MessageText, 
+            outgoingMessage.Date);
+        await _search.IndexMessage(searchModelOutgoing);
+        
         if (to.PeerId != from.PeerId)
         {
             var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
@@ -136,31 +153,19 @@ public class MessagesService : IMessagesService
             _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
             UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
             await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
+            var searchModelIncoming = new MessageSearchModel(
+                to.PeerId + "_" + incomingMessage.Id,
+                to.PeerId, (int)to.PeerType, to.PeerId,
+                (int)from.PeerType, from.PeerId,incomingMessage.Id,
+                null, incomingMessage.MessageText, 
+                incomingMessage.Date);
+            await _search.IndexMessage(searchModelIncoming);
         }
         
-        int pts = await senderCtx.IncrementPts();
-       
-        _unitOfWork.MessageRepository.PutMessage(auth.UserId,
-             outgoingMessage, pts);
-       
-        /*var searchModelOutgoing = new MessageSearchModel(
-            from.PeerId + "_" + outgoingMessage.Id,
-            from.PeerId, (int)from.PeerType, from.PeerId,
-            (int)to.PeerType, to.PeerId,outgoingMessage.Id,
-            null, outgoingMessage.MessageText, 
-            outgoingMessage.Date);
-        await _search.IndexMessage(searchModelOutgoing);
-        var searchModelIncoming = new MessageSearchModel(
-            to.PeerId + "_" + incomingMessage.Id,
-            to.PeerId, (int)to.PeerType, to.PeerId,
-            (int)from.PeerType, from.PeerId,incomingMessage.Id,
-            null, incomingMessage.MessageText, 
-            incomingMessage.Date);
-        await _search.IndexMessage(searchModelIncoming);*/
         await _unitOfWork.SaveAsync();
 
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
-                (int)pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
+                pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);
     }
 
@@ -198,19 +203,24 @@ public class MessagesService : IMessagesService
         {
             var messages = _unitOfWork.MessageRepository.GetMessages(auth.UserId, peerDto);
             List<int> deletedIds = new();
-            foreach (var m in messages)
+            int pts = await userCtx.Pts();
+            if (messages != null)
             {
-                if (m.Id < maxId && (minDate != null && m.Date > minDate) &&
-                    (maxDate != null && m.Date < maxDate))
+                foreach (var m in messages)
                 {
-                    deletedIds.Add(m.Id);
-                    _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
+                    if (m.Id < maxId && (minDate == null || m.Date > minDate) &&
+                        (maxDate == null || m.Date < maxDate))
+                    {
+                        deletedIds.Add(m.Id);
+                        _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
+                    }
                 }
-            }
 
-            int pts = await userCtx.IncrementPts();
-            var deleteMessages = new UpdateDeleteMessagesDTO(deletedIds, pts, 1);
-            _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+                await _unitOfWork.SaveAsync();
+                pts = await userCtx.IncrementPts();
+                var deleteMessages = new UpdateDeleteMessagesDTO(deletedIds, pts, 1);
+                _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+            }
             
             if (!justClear)
             {
@@ -218,18 +228,21 @@ public class MessagesService : IMessagesService
                 var peerMessages =
                     _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
                 List<int> peerDeletedIds = new();
-                foreach (var m in peerMessages)
+                if (peerMessages != null)
                 {
-                    if (m.Id < maxId && (minDate > 0 && m.Date > minDate) &&
-                        (maxDate > 0 && m.Date < maxDate))
+                    foreach (var m in peerMessages)
                     {
-                        peerDeletedIds.Add(m.Id);
-                        _unitOfWork.MessageRepository.DeleteMessage(peerDto.PeerId, m.Id);
+                        if (m.Id < maxId && (minDate == null || m.Date > minDate) &&
+                            (maxDate == null || m.Date < maxDate))
+                        {
+                            peerDeletedIds.Add(m.Id);
+                            _unitOfWork.MessageRepository.DeleteMessage(peerDto.PeerId, m.Id);
+                        }
                     }
+                    int peerPts = await userCtx.IncrementPts();
+                    var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
+                    _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
                 }
-                int peerPts = await userCtx.IncrementPts();
-                var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
-                _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
             }
 
             return new ServiceResult<AffectedHistoryDTO>(new AffectedHistoryDTO(pts, 
@@ -274,7 +287,8 @@ public class MessagesService : IMessagesService
         {
             if (m.Out)
             {
-                if (m.PeerId.PeerType == PeerType.User)
+                if (m.PeerId.PeerType == PeerType.User &&
+                    m.PeerId.PeerId != auth.UserId)
                 {
                     long userId = m.PeerId.PeerId;
                     await PopulateLists(userList, userId, m, peerList, topMessages);
@@ -282,7 +296,8 @@ public class MessagesService : IMessagesService
             }
             else
             {
-                if (m.FromId.PeerType == PeerType.User)
+                if (m.FromId.PeerType == PeerType.User &&
+                    m.FromId.PeerId != auth.UserId)
                 {
                     long userId = m.FromId.PeerId;
                     await PopulateLists(userList, userId, m, peerList, topMessages);
@@ -308,7 +323,6 @@ public class MessagesService : IMessagesService
                 {
                     DialogType = DialogType.Dialog,
                     Peer = p,
-                    Pts = pts,
                     TopMessage = topMessages[p.PeerId],
                     UnreadCount = unreadFromPeer,
                     ReadInboxMaxId = incomingReadMax,
@@ -359,9 +373,9 @@ public class MessagesService : IMessagesService
         Dictionary<string, UserDTO> userList = new();
         foreach (var m in messages)
         {
-            if (m.Id > offsetId && m.Date < offsetDate &&
+            if (m.Id > offsetId && (offsetDate <= 0 || m.Date < offsetDate) &&
                 --addOffset < 0 && messagesList.Count < limit &&
-                (maxId > 0 && m.Id <= maxId) && (minId > 0 || m.Id >= minId))
+                (maxId <= 0 || m.Id <= maxId) && (minId <= 0 || m.Id >= minId))
             {
                 messagesList.Add(m);
                 if (!m.Out && m.FromId.PeerType == PeerType.User)
@@ -370,6 +384,7 @@ public class MessagesService : IMessagesService
                 }
             }
         }
+        messagesList.Reverse();
 
         var messagesResult = new MessagesDTO(MessagesType.Messages,
             messagesList, Array.Empty<ChatDTO>(), userList.Values);
@@ -381,7 +396,7 @@ public class MessagesService : IMessagesService
         int offsetId, int addOffset, int limit, long maxId, long minId, long hash)
     {
         //TODO: debug and fix this
-        var searchResults =  new List<MessageSearchModel>();//await _search.SearchMessages(q);
+        var searchResults =  await _search.SearchMessages(q);
         //TODO: implement a proper search with pagination
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)

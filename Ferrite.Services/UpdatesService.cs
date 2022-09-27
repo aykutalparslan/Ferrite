@@ -32,27 +32,32 @@ public class UpdatesService : IUpdatesService
     private readonly IMessagePipe _pipe;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUpdatesContextFactory _updatesContextFactory;
+    private readonly ILogger _log;
 
     public UpdatesService(IMTProtoTime time, ISessionService sessions, IMessagePipe pipe,
-        IUnitOfWork unitOfWork, IUpdatesContextFactory updatesContextFactory)
+        IUnitOfWork unitOfWork, IUpdatesContextFactory updatesContextFactory,
+        ILogger log)
     {
         _time = time;
         _sessions = sessions;
         _pipe = pipe;
         _unitOfWork = unitOfWork;
         _updatesContextFactory = updatesContextFactory;
+        _log = log;
     }
 
     public async Task<StateDTO> GetState(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
-        return new StateDTO()
+        var state = new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds(),
             Pts = await updatesCtx.Pts(),
             Seq = await updatesCtx.Seq(),
         };
+        _log.Debug($"/// State is {state} ///");
+        return state;
     }
 
     public async Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date, 
@@ -79,7 +84,7 @@ public class UpdatesService : IUpdatesService
                 users.Add(user);
             }
             else if (!message.Out && message.FromId.PeerType == PeerType.User
-                                  && message.PeerId.PeerId != auth.UserId)
+                                  && message.FromId.PeerId != auth.UserId)
             {
                 var user = _unitOfWork.UserRepository.GetUser(message.FromId.PeerId);
                 users.Add(user);

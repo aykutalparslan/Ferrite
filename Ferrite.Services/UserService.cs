@@ -95,13 +95,19 @@ public class UserService : IUsersService
         if (user != null)
         {
             var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
+            PeerSettingsDTO settingsDto = new PeerSettingsDTO(true, true, true, false, false,
+                false, false, false, false, null, null, null);
+            if (id.InputUserType == InputUserType.Self)
+            {
+                settingsDto = new PeerSettingsDTO(false, false, false, false, false,
+                    false, false, false, false, null, null, null);
+            }
             var fullUser = new Ferrite.Data.UserFullDTO
             {
                 About = user.About,
                 Blocked = false,
                 Id = user.Id,
-                Settings = new PeerSettingsDTO(true, true, true, false, false,
-                    false, false, false, false, null, null, null),
+                Settings = settingsDto,
                 NotifySettings = notifySettings,
                 PhoneCallsAvailable = true,
                 PhoneCallsPrivate = true,

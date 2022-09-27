@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Net;
 using DotNext.Collections.Generic;
 
 namespace Ferrite.Data.Repositories;
@@ -118,6 +119,7 @@ public class RocksDBKVStore : IKVStore
         else if (_table.SecondaryIndices.Count > 0)
         {
             var iter = _context.IterateKeys(key.ArrayValue);
+            if (iter == null) return;
             foreach (var k in iter)
             {
                 _context.Delete(k);
