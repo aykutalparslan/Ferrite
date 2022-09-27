@@ -98,9 +98,9 @@ public class Program
         builder.Register(_ => new LuceneSearchEngine("lucene-index-data"))
             .As<ISearchEngine>().SingleInstance();
         builder.Register(_ => new FasterCounterFactory("faster-counter-data"))
-            .As<ICounterFactory>();
+            .As<ICounterFactory>().SingleInstance();
         builder.Register(_ => new FasterUpdatesContextFactory("faster-updates-data"))
-            .As<IUpdatesContextFactory>();
+            .As<IUpdatesContextFactory>().SingleInstance();
         builder.RegisterType<LocalUnitOfWork>().As<IUnitOfWork>()
             .SingleInstance();
     }
