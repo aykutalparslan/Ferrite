@@ -102,7 +102,7 @@ public class SetClientDhParamsHandler : IQueryHandler
         }
 
         bool temp_auth_key = false;
-        if(ctx.SessionData.TryGetValue("temp_auth_key", out var key)
+        if(ctx.SessionData.TryGetValue("temp_auth_key", out var key))
         {
             temp_auth_key = (bool)key;
         }
