@@ -35,18 +35,19 @@ public class UserService : IUsersService
         List<UserDTO> users = new();
         foreach (var u in id)
         {
-            if (u.UserId != 0)
+            if (u.UserId == 0) continue;
+            var user = GetUserInternal(u.UserId);
+            if (user != null)
             {
-                var user = _unitOfWork.UserRepository.GetUser(u.UserId);
-                if (user != null)
-                {
-                    user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
-                    users.Add(user);
-                }
+                users.Add(user);
             }
         }
 
         return new ServiceResult<ICollection<UserDTO>>(users, true, ErrorMessages.None);
+    }
+    public UserDTO? GetUser(long userId)
+    {
+        return GetUserInternal(userId);
     }
 
     public async Task<ServiceResult<UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id)
@@ -59,19 +60,54 @@ public class UserService : IUsersService
             userId = auth.UserId;
             self = true;
         }
-        var user = _unitOfWork.UserRepository.GetUser(userId);
-        user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
-        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
-        DeviceType deviceType = DeviceType.Other;
-        if (info.LangPack.ToLower().Contains("android"))
+        UserDTO? user = GetUserInternal(userId);
+        DeviceType deviceType = GetDeviceType(authKeyId);
+        PeerNotifySettingsDTO notifySettings = GetPeerNotifySettings(authKeyId, user, deviceType);
+
+        if (user != null)
         {
-            deviceType = DeviceType.Android;
-        }
-        else if (info.LangPack.ToLower().Contains("ios"))
-        {
-            deviceType = DeviceType.iOS;
+            Data.UserFullDTO fullUser = CreteFullUser(id, user, notifySettings);
+            return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
+                new List<UserDTO>(){user with{Self = self}}), true, ErrorMessages.None);
         }
 
+        return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);
+    }
+
+    private Data.UserFullDTO CreteFullUser(InputUserDTO id, UserDTO user, PeerNotifySettingsDTO notifySettings)
+    {
+        var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
+        PeerSettingsDTO settingsDto = GeneratePeerSettings(id);
+        var fullUser = new Ferrite.Data.UserFullDTO
+        {
+            About = user.About,
+            Blocked = false,
+            Id = user.Id,
+            Settings = settingsDto,
+            NotifySettings = notifySettings,
+            PhoneCallsAvailable = true,
+            PhoneCallsPrivate = true,
+            CommonChatsCount = 0,
+            ProfilePhoto = profilePhoto,
+        };
+        return fullUser;
+    }
+
+    private static PeerSettingsDTO GeneratePeerSettings(InputUserDTO id)
+    {
+        PeerSettingsDTO settingsDto = new PeerSettingsDTO(true, true, true, false, false,
+            false, false, false, false, null, null, null);
+        if (id.InputUserType == InputUserType.Self)
+        {
+            settingsDto = new PeerSettingsDTO(false, false, false, false, false,
+                false, false, false, false, null, null, null);
+        }
+
+        return settingsDto;
+    }
+
+    private PeerNotifySettingsDTO GetPeerNotifySettings(long authKeyId, UserDTO? user, DeviceType deviceType)
+    {
         var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
@@ -83,42 +119,49 @@ public class UserService : IUsersService
             }
         });
         PeerNotifySettingsDTO notifySettings = null;
-        if (settings.Count == 0)
+        notifySettings = settings.Count == 0
+            ? new PeerNotifySettingsDTO()
+            : settings.First(_ => _.DeviceType == deviceType);
+        return notifySettings;
+    }
+
+    private DeviceType GetDeviceType(long authKeyId)
+    {
+        DeviceType deviceType = DeviceType.Other;
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
+        if (info != null)
         {
-            notifySettings = new PeerNotifySettingsDTO();
-        }
-        else
-        {
-            notifySettings = settings.First(_ => _.DeviceType == deviceType);
+            if (info.LangPack.ToLower().Contains("android"))
+            {
+                deviceType = DeviceType.Android;
+            }
+            else if (info.LangPack.ToLower().Contains("ios"))
+            {
+                deviceType = DeviceType.iOS;
+            }
         }
 
+        return deviceType;
+    }
+
+    private UserDTO? GetUserInternal(long userId)
+    {
+        var user = _unitOfWork.UserRepository.GetUser(userId);
         if (user != null)
         {
+            user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
             var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
-            PeerSettingsDTO settingsDto = new PeerSettingsDTO(true, true, true, false, false,
-                false, false, false, false, null, null, null);
-            if (id.InputUserType == InputUserType.Self)
+            if (profilePhoto != null)
             {
-                settingsDto = new PeerSettingsDTO(false, false, false, false, false,
-                    false, false, false, false, null, null, null);
+                user.Photo = new UserProfilePhotoDTO()
+                {
+                    DcId = profilePhoto.DcId,
+                    PhotoId = profilePhoto.Id,
+                };
             }
-            var fullUser = new Ferrite.Data.UserFullDTO
-            {
-                About = user.About,
-                Blocked = false,
-                Id = user.Id,
-                Settings = settingsDto,
-                NotifySettings = notifySettings,
-                PhoneCallsAvailable = true,
-                PhoneCallsPrivate = true,
-                CommonChatsCount = 0,
-                ProfilePhoto = profilePhoto,
-            };
-            return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
-                new List<UserDTO>(){user with{Self = self}}), true, ErrorMessages.None);
         }
 
-        return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);
+        return user;
     }
 
     public async Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors)

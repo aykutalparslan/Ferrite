@@ -19,15 +19,21 @@
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
 using Ferrite.Data.Repositories;
+using Org.BouncyCastle.Utilities;
 
 namespace Ferrite.Services;
 
 public class ContactsService : IContactsService
 {
     private readonly IUnitOfWork _unitOfWork;
-    public ContactsService(IUnitOfWork unitOfWork)
+    private readonly ISearchEngine _search;
+    private readonly IUsersService _users;
+    public ContactsService(IUnitOfWork unitOfWork, ISearchEngine search,
+        IUsersService users)
     {
         _unitOfWork = unitOfWork;
+        _search = search;
+        _users = users;
     }
 
     public async Task<ICollection<long>> GetContactIds(long authKeyId, long hash)
@@ -56,7 +62,8 @@ public class ContactsService : IContactsService
         List<UserDTO> userList = new List<UserDTO>();
         foreach (var c in contactList)
         {
-            userList.Add(_unitOfWork.UserRepository.GetUser(c.UserId));
+            var user = _users.GetUser(c.UserId);
+            if(user != null) userList.Add(user);
         }
 
         return new ContactsDTO(contactList, contactList.Count, userList);
@@ -168,7 +175,21 @@ public class ContactsService : IContactsService
 
     public async Task<FoundDTO> Search(long authKeyId, string q, int limit)
     {
-        throw new NotImplementedException();
+        var searchResults = await _search.SearchUser(q, limit);
+        List<PeerDTO> peers = new();
+        List<UserDTO> users = new();
+        foreach (var u in searchResults)
+        {
+            var user = _users.GetUser(u.Id);
+            if (user != null)
+            {
+                peers.Add(new PeerDTO(PeerType.User, u.Id));
+                users.Add(user);
+            }
+        }
+
+        return new FoundDTO(Array.Empty<PeerDTO>(), peers,
+            Array.Empty<ChatDTO>(), users);
     }
 
     public async Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username)

@@ -24,7 +24,7 @@ public interface ISearchEngine
 {
     public ValueTask<bool> IndexUser(Search.UserSearchModel user);
     public ValueTask<bool> DeleteUser(long userId);
-    public ValueTask<List<UserSearchModel>> SearchByUsername(string q);
+    public ValueTask<List<UserSearchModel>> SearchUser(string q, int limit);
     public ValueTask<bool> IndexMessage(MessageSearchModel message);
     public ValueTask<bool> DeleteMessage(string id);
     public ValueTask<List<MessageSearchModel>> SearchMessages(string q);

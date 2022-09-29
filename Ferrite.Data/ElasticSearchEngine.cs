@@ -52,7 +52,7 @@ public class ElasticSearchEngine : ISearchEngine
         return true;
     }
 
-    public async ValueTask<List<UserSearchModel>> SearchByUsername(string q)
+    public async ValueTask<List<UserSearchModel>> SearchUser(string q, int limit)
     {
         /*var result = await _client.SearchAsync<Search.UserSearchModel>(s =>
             s.Query(q => q.Prefix(c => c

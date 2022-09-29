@@ -17,9 +17,13 @@
 // 
 
 using Ferrite.Data.Search;
+using Lucene.Net.Analysis.En;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Surround.Parser;
+using Lucene.Net.QueryParsers.Surround.Query;
 using Lucene.Net.Search;
+using Lucene.Net.Util;
 
 namespace Ferrite.Data;
 
@@ -57,10 +61,14 @@ public class LuceneSearchEngine : ISearchEngine
         return ValueTask.FromResult(true);
     }
 
-    public ValueTask<List<UserSearchModel>> SearchByUsername(string q)
+    public ValueTask<List<UserSearchModel>> SearchUser(string q, int limit)
     {
-        var query = new PrefixQuery(new Term("username", q));
-        var docs = _users.Search(query);
+        var query = new BooleanQuery();
+        query.Add(new BooleanClause(new PrefixQuery(new Term("username", q)), Occur.SHOULD));
+        query.Add(new BooleanClause(new PrefixQuery(new Term("firstname", q)), Occur.SHOULD));
+        query.Add(new BooleanClause(new PrefixQuery(new Term("lastname", q)), Occur.SHOULD));
+        //query.Add(new BooleanClause(new PrefixQuery(new Term("phone", q)), Occur.SHOULD));
+        var docs = _users.Search(query, int.Min(limit, 50));
         List<UserSearchModel> results = new();
         foreach (var d in docs)
         {

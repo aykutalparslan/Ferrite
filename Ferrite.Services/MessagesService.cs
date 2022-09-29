@@ -202,47 +202,11 @@ public class MessagesService : IMessagesService
         if (peerDto.PeerType == PeerType.User)
         {
             var messages = _unitOfWork.MessageRepository.GetMessages(auth.UserId, peerDto);
-            List<int> deletedIds = new();
-            int pts = await userCtx.Pts();
-            if (messages != null)
-            {
-                foreach (var m in messages)
-                {
-                    if (m.Id < maxId && (minDate == null || m.Date > minDate) &&
-                        (maxDate == null || m.Date < maxDate))
-                    {
-                        deletedIds.Add(m.Id);
-                        _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
-                    }
-                }
+            var pts = await DeleteMessagesInternal(maxId, minDate, maxDate, userCtx, messages, auth);
 
-                await _unitOfWork.SaveAsync();
-                pts = await userCtx.IncrementPts();
-                var deleteMessages = new UpdateDeleteMessagesDTO(deletedIds, pts, 1);
-                _updates.EnqueueUpdate(auth.UserId, deleteMessages);
-            }
-            
             if (!justClear)
             {
-                var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
-                var peerMessages =
-                    _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
-                List<int> peerDeletedIds = new();
-                if (peerMessages != null)
-                {
-                    foreach (var m in peerMessages)
-                    {
-                        if (m.Id < maxId && (minDate == null || m.Date > minDate) &&
-                            (maxDate == null || m.Date < maxDate))
-                        {
-                            peerDeletedIds.Add(m.Id);
-                            _unitOfWork.MessageRepository.DeleteMessage(peerDto.PeerId, m.Id);
-                        }
-                    }
-                    int peerPts = await userCtx.IncrementPts();
-                    var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
-                    _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
-                }
+                await DeletePeerMessagesInternal(maxId, minDate, maxDate, peerDto, auth, userCtx);
             }
 
             return new ServiceResult<AffectedHistoryDTO>(new AffectedHistoryDTO(pts, 
@@ -251,6 +215,57 @@ public class MessagesService : IMessagesService
         }
 
         throw new NotSupportedException();
+    }
+
+    private async Task DeletePeerMessagesInternal(int maxId, int? minDate, int? maxDate, PeerDTO peerDto, AuthInfoDTO auth,
+        IUpdatesContext userCtx)
+    {
+        var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
+        var peerMessages =
+            _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
+        List<int> peerDeletedIds = new();
+        if (peerMessages != null)
+        {
+            foreach (var m in peerMessages)
+            {
+                if (m.Id < maxId && (minDate == null || m.Date > minDate) &&
+                    (maxDate == null || m.Date < maxDate))
+                {
+                    peerDeletedIds.Add(m.Id);
+                    _unitOfWork.MessageRepository.DeleteMessage(peerDto.PeerId, m.Id);
+                }
+            }
+
+            int peerPts = await userCtx.IncrementPts();
+            var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
+            _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
+        }
+    }
+
+    private async Task<int> DeleteMessagesInternal(int maxId, int? minDate, int? maxDate, IUpdatesContext userCtx,
+        IReadOnlyCollection<MessageDTO> messages, AuthInfoDTO auth)
+    {
+        List<int> deletedIds = new();
+        int pts = await userCtx.Pts();
+        if (messages != null)
+        {
+            foreach (var m in messages)
+            {
+                if (m.Id < maxId && (minDate == null || m.Date > minDate) &&
+                    (maxDate == null || m.Date < maxDate))
+                {
+                    deletedIds.Add(m.Id);
+                    _unitOfWork.MessageRepository.DeleteMessage(auth.UserId, m.Id);
+                }
+            }
+
+            await _unitOfWork.SaveAsync();
+            pts = await userCtx.IncrementPts();
+            var deleteMessages = new UpdateDeleteMessagesDTO(deletedIds, pts, 1);
+            _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+        }
+
+        return pts;
     }
 
     public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
@@ -264,6 +279,8 @@ public class MessagesService : IMessagesService
         int pts = await userCtx.IncrementPts();
         var deleteMessages = new UpdateDeleteMessagesDTO(id.ToList(), pts, 1);
         _updates.EnqueueUpdate(auth.UserId, deleteMessages);
+        
+        //TODO: add support for revoke
         
         return new ServiceResult<AffectedMessagesDTO>(new AffectedMessagesDTO(pts, 1), true,
             ErrorMessages.None);

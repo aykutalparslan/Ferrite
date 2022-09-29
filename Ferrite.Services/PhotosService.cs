@@ -46,12 +46,27 @@ public class PhotosService : IPhotosService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+        if (auth == null)
+        {
+            return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.InvalidAuthKey);
+        }
+        if (user == null)
+        {
+            return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.UserIdInvalid);
+        }
         var date = DateTime.Now;
         _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
         await _unitOfWork.SaveAsync();
         var photoInner = new Data.PhotoDTO(false, id.Id, id.AccessHash, id.FileReference,
             (int)((DateTimeOffset)date).ToUnixTimeSeconds(), new List<PhotoSizeDTO>(), null, 1);
+        user.Photo = new UserProfilePhotoDTO()
+        {
+            DcId = photoInner.DcId,
+            PhotoId = photoInner.Id,
+        };
+        await _unitOfWork.SaveAsync();
         var photo = new PhotoDTO(photoInner, new[] { user });
+        
         return new ServiceResult<PhotoDTO>(photo, true, ErrorMessages.None);
     }
 

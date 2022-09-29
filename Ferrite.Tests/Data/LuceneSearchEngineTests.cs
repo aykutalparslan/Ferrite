@@ -35,8 +35,14 @@ public class LuceneSearchEngineTests
             "bbb",
             "555");
         await search.IndexUser(expected);
-        var result = await search.SearchByUsername("te");
+        var result = await search.SearchUser("te", 10);
         Assert.Equal(expected, result.FirstOrDefault());
+        result = await search.SearchUser("aa", 10);
+        Assert.Equal(expected, result.FirstOrDefault());
+        result = await search.SearchUser("bb", 10);
+        Assert.Equal(expected, result.FirstOrDefault());
+        result = await search.SearchUser("55", 10);
+        Assert.Equal(expected, null);
         DeleteDirectory(path);
     }
     [Theory]
