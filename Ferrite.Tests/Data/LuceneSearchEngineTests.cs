@@ -39,10 +39,12 @@ public class LuceneSearchEngineTests
         Assert.Equal(expected, result.FirstOrDefault());
         DeleteDirectory(path);
     }
-    [Fact]
-    public async Task LuceneSearchEngine_ShouldIndexAndSearchMessages()
+    [Theory]
+    [InlineData("test asdf hhg", "test")]
+    [InlineData("ccc", "ccc")]
+    public async Task LuceneSearchEngine_ShouldIndexAndSearchMessages(string message, string q)
     {
-        string path = "messages_test";
+        string path = "messages_test" + Random.Shared.Next();
         LuceneSearchEngine search = new(path);
         var expected = new MessageSearchModel(111+"-"+222,
             111,
@@ -52,10 +54,10 @@ public class LuceneSearchEngineTests
             111,
             5,
             3,
-            "test asdf hhg",
+            message,
             0);
         await search.IndexMessage(expected);
-        var result = await search.SearchMessages("test");
+        var result = await search.SearchMessages(q);
         Assert.Equal(expected, result.FirstOrDefault());
         DeleteDirectory(path);
     }
