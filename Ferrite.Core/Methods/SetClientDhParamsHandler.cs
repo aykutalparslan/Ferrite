@@ -101,8 +101,12 @@ public class SetClientDhParamsHandler : IQueryHandler
             return new EncodedObject(memory.Memory.Pin(), 0, dhGenFail.Length);
         }
 
-        bool temp_auth_key = ctx.SessionData.ContainsKey("temp_auth_key") &&
-                             (bool)ctx.SessionData["temp_auth_key"];
+        bool temp_auth_key = false;
+        if(ctx.SessionData.TryGetValue("temp_auth_key", out var key)
+        {
+            temp_auth_key = (bool)key;
+        }
+        
         var existingKey = temp_auth_key
             ? _mtproto.GetTempAuthKey(authKeyHash)
             : _mtproto.GetAuthKey(authKeyHash);
