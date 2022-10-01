@@ -112,6 +112,7 @@ public class Program
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
         builder.RegisterType<ServiceMessagesProcessor>();
+        builder.RegisterType<GZipProcessor>();
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();

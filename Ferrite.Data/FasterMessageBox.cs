@@ -68,10 +68,10 @@ public class FasterMessageBox : IMessageBox
     {
         FasterSortedSet<long> unreadForPeer = new FasterSortedSet<long>(_unreadContext,
             $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
-        unreadForPeer.RemoveEqualOrLess(maxId);
+        await unreadForPeer.RemoveEqualOrLess(maxId);
         if (unreadForPeer.Get().Count == 0)
         {
-            _dialogs.Remove($"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            await _dialogs.Remove($"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
         }
         var peerMaxReadCounter = new FasterCounter(_counterContext , 
             $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");

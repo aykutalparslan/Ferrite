@@ -50,7 +50,7 @@ public class FasterCounter : IAtomicCounter
         if (_disposed) throw new ObjectDisposedException(_name);
         long value = 0;
         _session.RMW(ref _name, ref _inc, ref value);
-        await _session.WaitForCommitAsync();
+        //await _session.WaitForCommitAsync();
         return value;
     }
 
@@ -59,7 +59,7 @@ public class FasterCounter : IAtomicCounter
         if (_disposed) throw new ObjectDisposedException(_name);
         long value = 0;
         _session.RMW(ref _name, ref inc, ref value);
-        await _session.WaitForCommitAsync();
+        //await _session.WaitForCommitAsync();
         return value;
     }
 
@@ -68,7 +68,7 @@ public class FasterCounter : IAtomicCounter
         var session = _context.Store.NewSession(new RMWSimpleFunctions<string, long>(
             (input, oldValue) => input > oldValue ? input : oldValue));
         session.RMW(_name, val, out var output);
-        await session.WaitForCommitAsync();
+        //await session.WaitForCommitAsync();
         return output;
     }
 
@@ -104,5 +104,6 @@ public class FasterCounter : IAtomicCounter
     public async ValueTask DisposeAsync()
     {
         _disposed = true;
+        await _session.WaitForCommitAsync();
     }
 }

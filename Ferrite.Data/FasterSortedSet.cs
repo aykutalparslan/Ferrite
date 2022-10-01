@@ -52,7 +52,7 @@ public class FasterSortedSet<T> where T: IComparable<T>
                 return set;
             }));
         session.RMW(_name, value);
-        await session.WaitForCommitAsync();
+        //await session.WaitForCommitAsync();
     }
     
     public async ValueTask Remove(T value)
@@ -68,7 +68,7 @@ public class FasterSortedSet<T> where T: IComparable<T>
                 return set;
             }));
         session.RMW(_name, value);
-        await session.WaitForCommitAsync();
+        //await session.WaitForCommitAsync();
     }
     
     public async ValueTask RemoveEqualOrLess(T value)
@@ -80,14 +80,14 @@ public class FasterSortedSet<T> where T: IComparable<T>
                 {
                     return null;
                 }
-                while (set.Min.CompareTo(l) <= 0)
+                while (set.Count > 0 && set.Min.CompareTo(l) <= 0)
                 {
                     set.Remove(set.Min);
                 }
                 return set;
             }));
         session.RMW(_name, value);
-        await session.WaitForCommitAsync();
+        //await session.WaitForCommitAsync();
     }
     class SortedSetFunctions<Key, Value, Input> : FunctionsBase<Key, Value, Input, Value, Empty>
     {

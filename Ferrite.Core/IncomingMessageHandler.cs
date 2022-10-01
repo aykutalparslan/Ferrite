@@ -39,6 +39,7 @@ public class IncomingMessageHandler: IProcessorManager
             .Add(_scope.Resolve<AuthKeyProcessor>())
             .Add(_scope.Resolve<MsgContainerProcessor>())
             .Add(_scope.Resolve<ServiceMessagesProcessor>())
+            .Add(_scope.Resolve<GZipProcessor>())
             .Add(_scope.Resolve<AuthorizationProcessor>())
             .Add(_scope.Resolve<MTProtoRequestProcessor>());
     }
