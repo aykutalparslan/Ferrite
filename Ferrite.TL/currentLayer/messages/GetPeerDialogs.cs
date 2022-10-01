@@ -20,19 +20,27 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data;
+using Ferrite.Data.Messages;
+using Ferrite.Services;
 using Ferrite.TL.currentLayer.updates;
 using Ferrite.TL.mtproto;
-using Ferrite.Utils;
+using Ferrite.TL.ObjectMapper;
 
 namespace Ferrite.TL.currentLayer.messages;
 public class GetPeerDialogs : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IMessagesService _messages;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public GetPeerDialogs(ITLObjectFactory objectFactory)
+    public GetPeerDialogs(ITLObjectFactory objectFactory, IMessagesService messages,
+        IMapperContext mapper)
     {
         factory = objectFactory;
+        _messages = messages;
+        _mapper = mapper;
     }
 
     public int Constructor => -462373635;
@@ -63,33 +71,24 @@ public class GetPeerDialogs : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var dialogs = factory.Resolve<PeerDialogsImpl>();
-        dialogs.Chats = factory.Resolve<Vector<Chat>>();
-        dialogs.Dialogs = factory.Resolve<Vector<Dialog>>();
-        foreach (InputDialogPeerImpl p in _peers)
+        List<InputDialogPeerDTO> peers = new();
+        foreach (var p in _peers)
         {
-            if (p.Peer is InputPeerUserImpl inputPeer)
-            {
-                var dialog = factory.Resolve<DialogImpl>();
-                var peerUser = factory.Resolve<PeerUserImpl>();
-                peerUser.UserId = inputPeer.UserId;
-                dialog.Peer = peerUser;
-                dialog.NotifySettings = factory.Resolve<PeerNotifySettingsImpl>();
-                dialogs.Dialogs.Add(dialog);
-            }
+            peers.Add(_mapper.MapToDTO<InputDialogPeer, InputDialogPeerDTO>(p));
         }
-        
-        dialogs.Messages = factory.Resolve<Vector<Message>>();
-        dialogs.Users = factory.Resolve<Vector<User>>();
-        var state = factory.Resolve<StateImpl>();
-        state.Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
-        state.Pts = 0;
-        state.Qts = 0;
-        state.Seq = 0;
-        state.UnreadCount = 0;
-        dialogs.State = state;
+
+        var serviceResult = await _messages.GetPeerDialogs(ctx.CurrentAuthKeyId, peers);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success || serviceResult.Result == null)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+        }
+
+        var dialogs = _mapper.MapToTLObject<PeerDialogs, PeerDialogsDTO>(serviceResult.Result!);
+        
         result.Result = dialogs;
         return result;
     }

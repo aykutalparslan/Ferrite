@@ -35,6 +35,7 @@ public interface IMessagesService
     Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false);
     Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, InputPeerDTO offsetPeer,
         int limit, long hash, bool? excludePinned = null, int? folderId = null);
+    Task<ServiceResult<PeerDialogsDTO>> GetPeerDialogs(long authKeyId, IEnumerable<InputDialogPeerDTO> peers);
     Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, int offsetDate,
         int addOffset, int limit, long maxId, long minId, long hash);
     Task<ServiceResult<MessagesDTO>> Search(long authKeyId, InputPeerDTO peer, string q, InputPeerDTO? fromId,

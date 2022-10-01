@@ -149,7 +149,7 @@ public class MessagesService : IMessagesService
                 Out = false,
                 PeerId = from
             };
-            int ptsPeer = await receiverCtx.IncrementPts();
+            int ptsPeer = await receiverCtx.IncrementPtsForMessage(from, receiverMessageId);
             _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
             UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
             await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
@@ -297,9 +297,50 @@ public class MessagesService : IMessagesService
         Dictionary<long, UserDTO> userList = new();
         Dictionary<long, PeerDTO> peerList = new();
         Dictionary<long, int> topMessages = new();
-        //TODO: investigate if we should use this PTS or a dialog specific one
-        int pts = await userCtx.Pts();
-        int unread = await userCtx.UnreadMessages();
+        await ProcessMessages(messages, auth, userList, peerList, topMessages);
+        await GenerateDialogs(authKeyId, peerList, userCtx, auth, topMessages, userDialogs);
+        
+        var dialogs = new DialogsDTO(DialogsType.Dialogs, userDialogs, 
+            messages, Array.Empty<ChatDTO>(),
+            userList.Values, null);
+        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
+    }
+
+    private async Task GenerateDialogs(long authKeyId, Dictionary<long, PeerDTO> peerList, IUpdatesContext userCtx, AuthInfoDTO auth,
+        Dictionary<long, int> topMessages, List<DialogDTO> userDialogs)
+    {
+        foreach (var p in peerList.Values)
+        {
+            if (p.PeerType == PeerType.User)
+            {
+                var peerContext = _updatesContextFactory.GetUpdatesContext(null, p.PeerId);
+                int unreadFromPeer = await peerContext.UnreadMessages(p);
+                int incomingReadMax = await userCtx.ReadMessagesMaxId(p);
+                int outgoingReadMax = await peerContext.ReadMessagesMaxId(new PeerDTO(PeerType.User, auth.UserId));
+                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
+                {
+                    NotifyPeerType = InputNotifyPeerType.Peer,
+                    Peer = new InputPeerDTO { InputPeerType = InputPeerType.User, UserId = p.PeerId }
+                };
+                var settings = (_unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer)).FirstOrDefault();
+                var dialog = new DialogDTO
+                {
+                    DialogType = DialogType.Dialog,
+                    Peer = p,
+                    TopMessage = topMessages[p.PeerId],
+                    UnreadCount = unreadFromPeer,
+                    ReadInboxMaxId = incomingReadMax,
+                    ReadOutboxMaxId = outgoingReadMax,
+                    NotifySettings = settings ?? new PeerNotifySettingsDTO()
+                };
+                userDialogs.Add(dialog);
+            }
+        }
+    }
+
+    private async Task ProcessMessages(IReadOnlyCollection<MessageDTO> messages, AuthInfoDTO auth, Dictionary<long, UserDTO> userList,
+        Dictionary<long, PeerDTO> peerList, Dictionary<long, int> topMessages)
+    {
         foreach (var m in messages)
         {
             if (m.Out)
@@ -321,39 +362,52 @@ public class MessagesService : IMessagesService
                 }
             }
         }
-        
-        foreach (var p in peerList.Values)
+    }
+
+    public async Task<ServiceResult<PeerDialogsDTO>> GetPeerDialogs(long authKeyId, IEnumerable<InputDialogPeerDTO> peers)
+    {
+        var auth = _unitOfWork.AuthorizationRepository.GetAuthorization(authKeyId);
+        if (auth == null) return new ServiceResult<PeerDialogsDTO>(null, 
+            false, ErrorMessages.InvalidAuthKey);
+        var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
+        List<DialogDTO> userDialogs = new();
+        Dictionary<long, UserDTO> userList = new();
+        Dictionary<long, PeerDTO> peerList = new();
+        Dictionary<long, int> topMessages = new();
+        List<MessageDTO> messageList = new();
+        foreach (var p in peers)
         {
-            if (p.PeerType == PeerType.User)
+            if(p.Peer == null) continue;
+            PeerDTO peer = null;
+            if (p.Peer.InputPeerType == InputPeerType.User)
             {
-                var peerContext = _updatesContextFactory.GetUpdatesContext(null, p.PeerId);
-                int unreadFromPeer = await peerContext.UnreadMessages(p);
-                int incomingReadMax = await userCtx.ReadMessagesMaxId(p);
-                int outgoingReadMax = await peerContext.ReadMessagesMaxId(new PeerDTO(PeerType.User, auth.UserId));
-                InputNotifyPeerDTO peer = new InputNotifyPeerDTO()
-                {
-                    NotifyPeerType = InputNotifyPeerType.Peer,
-                    Peer = new InputPeerDTO{InputPeerType = InputPeerType.User, UserId = p.PeerId}
-                };
-                var settings = (_unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer)).FirstOrDefault();
-                var dialog = new DialogDTO
-                {
-                    DialogType = DialogType.Dialog,
-                    Peer = p,
-                    TopMessage = topMessages[p.PeerId],
-                    UnreadCount = unreadFromPeer,
-                    ReadInboxMaxId = incomingReadMax,
-                    ReadOutboxMaxId = outgoingReadMax,
-                    NotifySettings = settings ?? new PeerNotifySettingsDTO()
-                };
-                userDialogs.Add(dialog);
+                peer = new PeerDTO(PeerType.User, p.Peer.UserId);
             }
-            
+            else if (p.Peer.InputPeerType == InputPeerType.Chat)
+            {
+                peer = new PeerDTO(PeerType.Chat, p.Peer.ChatId);
+            }
+            else if (p.Peer.InputPeerType == InputPeerType.Channel)
+            {
+                peer = new PeerDTO(PeerType.Channel, p.Peer.ChannelId);
+            }
+            else if (p.Peer.InputPeerType == InputPeerType.UserFromMessage)
+            {
+                peer = new PeerDTO(PeerType.User, p.Peer.UserId);
+            }
+            else if (p.Peer.InputPeerType == InputPeerType.ChannelFromMessage)
+            {
+                peer = new PeerDTO(PeerType.Channel, p.Peer.ChannelId);
+            }
+            var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, peer);
+            messageList.AddRange(messages);
+            await ProcessMessages(messages, auth, userList, peerList, topMessages);
         }
-        var dialogs = new DialogsDTO(DialogsType.Dialogs, userDialogs, 
-            messages, Array.Empty<ChatDTO>(),
-            userList.Values, null);
-        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
+        await GenerateDialogs(authKeyId, peerList, userCtx, auth, topMessages, userDialogs);
+        var dialogs = new PeerDialogsDTO(userDialogs, 
+            messageList, Array.Empty<ChatDTO>(),
+            userList.Values, await _updates.GetState(authKeyId));
+        return new ServiceResult<PeerDialogsDTO>(dialogs, true, ErrorMessages.None);
     }
 
     private async Task PopulateLists(Dictionary<long, UserDTO> userList, long userId, MessageDTO m, Dictionary<long, PeerDTO> peerList,
@@ -395,7 +449,8 @@ public class MessagesService : IMessagesService
                 (maxId <= 0 || m.Id <= maxId) && (minId <= 0 || m.Id >= minId))
             {
                 messagesList.Add(m);
-                if (!m.Out && m.FromId.PeerType == PeerType.User)
+                if (!m.Out && m.FromId.PeerType == PeerType.User &&
+                    !userList.ContainsKey(m.FromId.PeerId.ToString()))
                 {
                     userList.Add(m.FromId.PeerId.ToString(), _unitOfWork.UserRepository.GetUser(m.FromId.PeerId));
                 }

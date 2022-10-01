@@ -50,13 +50,21 @@ public class UpdatesService : IUpdatesService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
+        StateDTO state = await GetStateInternal(updatesCtx);
+        _log.Debug($"/// State is {state} ///");
+        return state;
+    }
+
+    private async Task<StateDTO> GetStateInternal(IUpdatesContext updatesCtx)
+    {
         var state = new StateDTO()
         {
             Date = (int)_time.GetUnixTimeInSeconds(),
             Pts = await updatesCtx.Pts(),
             Seq = await updatesCtx.Seq(),
+            Qts = await updatesCtx.Qts(),
+            UnreadCount = await updatesCtx.UnreadMessages(),
         };
-        _log.Debug($"/// State is {state} ///");
         return state;
     }
 
@@ -66,12 +74,7 @@ public class UpdatesService : IUpdatesService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int currentPts = await updatesCtx.Pts();
-        var state = new StateDTO()
-        {
-            Date = (int)_time.GetUnixTimeInSeconds(),
-            Pts = currentPts,
-            Seq = await updatesCtx.Seq(),
-        };
+        StateDTO state = await GetStateInternal(updatesCtx);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId,
             pts, currentPts, DateTimeOffset.FromUnixTimeSeconds(date));
         List<UserDTO> users = new List<UserDTO>();

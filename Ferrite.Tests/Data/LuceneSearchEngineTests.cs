@@ -27,7 +27,7 @@ public class LuceneSearchEngineTests
     [Fact]
     public async Task LuceneSearchEngine_ShouldIndexAndSearchUsers()
     {
-        string path = "users_test";
+        string path = "users_test" + Random.Shared.Next();
         LuceneSearchEngine search = new(path);
         var expected = new UserSearchModel(1,
             "test",
@@ -41,8 +41,23 @@ public class LuceneSearchEngineTests
         Assert.Equal(expected, result.FirstOrDefault());
         result = await search.SearchUser("bb", 10);
         Assert.Equal(expected, result.FirstOrDefault());
-        result = await search.SearchUser("55", 10);
-        Assert.Equal(expected, null);
+        DeleteDirectory(path);
+    }
+    [Fact]
+    public async Task LuceneSearchEngine_ShouldSearchUsersWithMissingFields()
+    {
+        string path = "users_test" + Random.Shared.Next();
+        LuceneSearchEngine search = new(path);
+        var expected = new UserSearchModel(1,
+            null,
+            "aaa",
+            "bbb",
+            "555");
+        await search.IndexUser(expected);
+        var result = await search.SearchUser("aa", 10);
+        Assert.Equal(expected, result.FirstOrDefault());
+        result = await search.SearchUser("bb", 10);
+        Assert.Equal(expected, result.FirstOrDefault());
         DeleteDirectory(path);
     }
     [Theory]

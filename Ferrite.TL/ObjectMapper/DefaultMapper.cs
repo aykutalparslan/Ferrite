@@ -20,6 +20,9 @@ using System.Collections.Concurrent;
 using Autofac;
 using Ferrite.Data;
 using Ferrite.TL.currentLayer;
+using Ferrite.TL.currentLayer.messages;
+using Ferrite.TL.currentLayer.updates;
+using PeerSettings = Ferrite.TL.currentLayer.PeerSettings;
 
 namespace Ferrite.TL.ObjectMapper;
 
@@ -53,6 +56,9 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(Dialog), new DialogMapper(factory, this));
         _mappers.TryAdd(typeof(SendMessageAction), new SendMessageActionMapper(factory, this));
         _mappers.TryAdd(typeof(InputPeerNotifySettings), new InputPeerNotifySettingsMapper(factory));
+        _mappers.TryAdd(typeof(InputDialogPeer), new InputDialogPeerMapper(factory, this));
+        _mappers.TryAdd(typeof(State), new StateMapper(factory));
+        _mappers.TryAdd(typeof(PeerDialogs), new PeerDialogsMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject
