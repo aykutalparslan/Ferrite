@@ -30,13 +30,5 @@ public class SessionState
     [Key(0)]
     public long SessionId { get; set; }
     [Key(1)]
-    public long AuthKeyId { get; set; }
-    [Key(2)]
-    public byte[] AuthKey { get; set; } = default!;
-    [Key(3)]
     public Guid NodeId { get; set; }
-    [Key(4)]
-    public ServerSaltDTO ServerSalt { get; set; }
-    [Key(5)]
-    public ServerSaltDTO ServerSaltOld { get; set; }
 }

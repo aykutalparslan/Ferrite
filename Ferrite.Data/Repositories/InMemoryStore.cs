@@ -54,7 +54,7 @@ public class InMemoryStore : IVolatileKVStore
                 continue;
             }
             
-            while (expiration <= now)
+            while (expiration <= now && _ttlQueue.Count > 0)
             {
                 _ttlQueue.TryDequeue(out currentKey, out var currentPriority);
                 if (currentPriority <= now)

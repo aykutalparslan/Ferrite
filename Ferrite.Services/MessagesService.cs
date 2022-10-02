@@ -456,7 +456,6 @@ public class MessagesService : IMessagesService
                 }
             }
         }
-        messagesList.Reverse();
 
         var messagesResult = new MessagesDTO(MessagesType.Messages,
             messagesList, Array.Empty<ChatDTO>(), userList.Values);

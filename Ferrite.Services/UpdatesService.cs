@@ -72,6 +72,7 @@ public class UpdatesService : IUpdatesService
         int qts, int? ptsTotalLimit = null)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null) return new ServiceResult<DifferenceDTO>(null, false, ErrorMessages.InvalidAuthKey);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int currentPts = await updatesCtx.Pts();
         StateDTO state = await GetStateInternal(updatesCtx);
@@ -84,13 +85,13 @@ public class UpdatesService : IUpdatesService
                             && message.PeerId.PeerId != auth.UserId)
             {
                 var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
-                users.Add(user);
+                if(user != null) users.Add(user);
             }
-            else if (!message.Out && message.FromId.PeerType == PeerType.User
+            else if (!message.Out && message.FromId is { PeerType: PeerType.User } 
                                   && message.FromId.PeerId != auth.UserId)
             {
                 var user = _unitOfWork.UserRepository.GetUser(message.FromId.PeerId);
-                users.Add(user);
+                if(user != null) users.Add(user);
             }
         }
 

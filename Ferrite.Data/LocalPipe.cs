@@ -53,11 +53,12 @@ public class LocalPipe : IMessagePipe
 
     public async ValueTask<byte[]> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
-        if (!_channels.TryGetValue(_channel, out var c))
+        if (_channels.TryGetValue(_channel, out var c))
         {
             return await c.Reader.ReadAsync(cancellationToken);
         }
 
+        await Task.Delay(100, cancellationToken);
         return null;
     }
 

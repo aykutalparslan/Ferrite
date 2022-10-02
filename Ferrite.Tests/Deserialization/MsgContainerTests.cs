@@ -158,7 +158,7 @@ public class MsgContainerTests
             _authKeySessionStates.Add((Ferrite.TL.Int128)nonce, stateBytes);
             return true;
         });
-        sessionManager.Setup(x => x.AddSessionAsync(It.IsAny<SessionState>(),
+        sessionManager.Setup(x => x.AddSessionAsync(It.IsAny<long>(), It.IsAny<long>(),
             It.IsAny<MTProtoSession>())).ReturnsAsync(() => true);
         sessionManager.Setup(x => x.GetAuthSessionStateAsync(It.IsAny<byte[]>())).ReturnsAsync((byte[] nonce) =>
         {

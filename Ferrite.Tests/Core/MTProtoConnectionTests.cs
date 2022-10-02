@@ -364,7 +364,7 @@ public class MTProtoConnectionTests
             _authKeySessionStates.Add((Ferrite.TL.Int128)nonce, stateBytes);
             return true;
         });
-        sessionManager.Setup(x => x.AddSessionAsync(It.IsAny<SessionState>(),
+        sessionManager.Setup(x => x.AddSessionAsync(It.IsAny<long>(), It.IsAny<long>(),
             It.IsAny<MTProtoSession>())).ReturnsAsync(() => true);
         sessionManager.Setup(x => x.GetAuthSessionStateAsync(It.IsAny<byte[]>())).ReturnsAsync((byte[] nonce) =>
         {
@@ -422,6 +422,7 @@ public class MTProtoConnectionTests
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
         builder.RegisterType<ServiceMessagesProcessor>();
+        builder.RegisterType<GZipProcessor>();
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();

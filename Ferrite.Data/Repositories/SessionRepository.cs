@@ -21,12 +21,17 @@ namespace Ferrite.Data.Repositories;
 public class SessionRepository : ISessionRepository
 {
     private readonly IVolatileKVStore _store;
-    public SessionRepository(IVolatileKVStore store)
+    private readonly IVolatileKVStore _storeByAuthKey;
+    public SessionRepository(IVolatileKVStore store, IVolatileKVStore storeByAuthKey)
     {
         _store = store;
-        store.SetSchema(new TableDefinition("ferrite", "sessions",
+        _store.SetSchema(new TableDefinition("ferrite", "sessions",
             new KeyDefinition("pk",
                 new DataColumn { Name = "session_id", Type = DataType.Long })));
+        _storeByAuthKey = storeByAuthKey;
+        _storeByAuthKey.SetSchema(new TableDefinition("ferrite", "sessions_by_auth_key",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "auth_key_id", Type = DataType.Long })));
     }
     public bool PutSession(long sessionId, byte[] sessionData, TimeSpan expire)
     {
@@ -53,19 +58,19 @@ public class SessionRepository : ISessionRepository
 
     public bool PutSessionForAuthKey(long authKeyId, long sessionId)
     {
-        return _store.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds(), 
+        return _storeByAuthKey.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds(), 
             BitConverter.GetBytes(sessionId), null, authKeyId);
     }
 
     public bool DeleteSessionForAuthKey(long authKeyId, long sessionId)
     {
-        return _store.ListDelete(BitConverter.GetBytes(sessionId), null, authKeyId);
+        return _storeByAuthKey.ListDelete(BitConverter.GetBytes(sessionId), authKeyId);
     }
 
     public ICollection<long> GetSessionsByAuthKey(long authKeyId, TimeSpan expire)
     {
         var time = DateTimeOffset.Now - expire;
-        _store.ListDeleteByScore(time.ToUnixTimeMilliseconds());
-        return _store.ListGet(authKeyId).Select(_ => BitConverter.ToInt64(_)).ToList();
+        _storeByAuthKey.ListDeleteByScore(time.ToUnixTimeMilliseconds());
+        return _storeByAuthKey.ListGet(authKeyId).Select(_ => BitConverter.ToInt64(_)).ToList();
     }
 }

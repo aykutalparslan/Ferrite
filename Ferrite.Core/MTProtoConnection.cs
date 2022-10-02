@@ -41,7 +41,6 @@ using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.ObjectMapper;
 using Ferrite.TL.slim;
 using MessagePack;
-using Org.BouncyCastle.Cms;
 using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
 
 namespace Ferrite.Core;
@@ -65,6 +64,7 @@ public class MTProtoConnection : IMTProtoConnection
     private byte[]? _authKey;
     private long _sessionId;
     private long _uniqueSessionId;
+    private ServerSaltDTO? _serverSalt;
     private int _seq = 0;
     private ITransportConnection socketConnection;
     private Task? receiveTask;
@@ -123,7 +123,7 @@ public class MTProtoConnection : IMTProtoConnection
         DelayDisconnect();
     }
 
-    private void DelayDisconnect(int delayInMiliseconds = 750000)
+    private void DelayDisconnect(int delayInMilliseconds = 750000)
     {
         lock (disconnectTimerState)
         {
@@ -132,12 +132,12 @@ public class MTProtoConnection : IMTProtoConnection
                 disconnectTimer = new Timer((state) =>
                 {
                     Abort(new Exception());
-                }, disconnectTimerState, delayInMiliseconds, delayInMiliseconds);
+                }, disconnectTimerState, delayInMilliseconds, delayInMilliseconds);
             }
             else
             {
                 disconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                disconnectTimer.Change(delayInMiliseconds, delayInMiliseconds);
+                disconnectTimer.Change(delayInMilliseconds, delayInMilliseconds);
             }
         }
     }
@@ -171,6 +171,8 @@ public class MTProtoConnection : IMTProtoConnection
     public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
     {
         DelayDisconnect(delayDisconnectInSeconds * 1000);
+        await _sessionManager.OnPing(_permAuthKeyId != 0 ? _permAuthKeyId : _authKeyId,
+            _sessionId);
         var pong = factory.Resolve<Pong>();
         pong.PingId = pingId;
         pong.MsgId = NextMessageId(true);
@@ -244,10 +246,8 @@ public class MTProtoConnection : IMTProtoConnection
             while (true)
             {
                 var msg = await _outgoing.Reader.ReadAsync();
-                //_log.Debug($"=>Sending {msg.MessageType} message for {msg.MessageId}.");
-                if (msg.MessageType == MTProtoMessageType.Updates &&
-                    await _sessionManager.GetSessionStateAsync(_sessionId)
-                    is { } sess)
+                //_log.Debug($"=>Sending {msg.MessageType} with Id: {msg.MessageId}.");
+                if (msg.MessageType == MTProtoMessageType.Updates)
                 {
                     var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
                     var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
@@ -256,7 +256,7 @@ public class MTProtoConnection : IMTProtoConnection
                     {
                         _log.Debug($"==> Sending Updates with Seq: {updt.Seq} ==<");
                     }
-                    SendEncrypted(msg, sess);
+                    SendEncrypted(msg);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
@@ -269,7 +269,7 @@ public class MTProtoConnection : IMTProtoConnection
                 else if (await _sessionManager.GetSessionStateAsync(_sessionId)
                          is { } state)
                 {
-                    SendEncrypted(msg, state);
+                    SendEncrypted(msg);
                 }
                 var result = await socketConnection.Transport.Output.FlushAsync();
                 if (result.IsCompleted ||
@@ -305,10 +305,9 @@ public class MTProtoConnection : IMTProtoConnection
                     _sendSemaphore.Release();
                     continue;
                 }
-                else if (await _sessionManager.GetSessionStateAsync(_sessionId)
-                         is { } state)
+                else
                 {
-                    await SendStream(msg, state);
+                    await SendStream(msg);
                 }
 
                 var result = await socketConnection.Transport.Output.FlushAsync();
@@ -332,9 +331,9 @@ public class MTProtoConnection : IMTProtoConnection
         }
     }
     
-    private async Task SendStream(IFileOwner message, SessionState state)
+    private async Task SendStream(IFileOwner message)
     {
-        if (message == null) return;
+        if (message == null || !_serverSalt.HasValue) return;
         var rpcResult = factory.Resolve<RpcResult>();
         rpcResult.ReqMsgId = message.ReqMsgId;
         var data = await message.GetFileStream();
@@ -362,8 +361,8 @@ public class MTProtoConnection : IMTProtoConnection
             pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
         }
         writer.Clear();
-        writer.WriteInt64(state.ServerSalt.Salt, true);
-        writer.WriteInt64(state.SessionId, true);
+        writer.WriteInt64(_serverSalt.Value.Salt, true);
+        writer.WriteInt64(_sessionId, true);
         writer.WriteInt64(NextMessageId(true), true);
         writer.WriteInt32(GenerateSeqNo(true), true);
         writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
@@ -388,7 +387,7 @@ public class MTProtoConnection : IMTProtoConnection
         AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
         //--
         writer.Clear();
-        writer.WriteInt64(state.AuthKeyId, true);
+        writer.WriteInt64(_authKeyId, true);
         writer.Write(messageKey);
         var frameHead = encoder.EncodeHead(24 + (int)stream.Length);
         var header = writer.ToReadOnlySequence();
@@ -459,11 +458,11 @@ public class MTProtoConnection : IMTProtoConnection
         socketConnection.Transport.Output.Write(encoded);
     }
 
-    private void SendEncrypted(MTProtoMessage message, SessionState state)
+    private void SendEncrypted(MTProtoMessage message)
     {
-        if (message.Data == null) { return; }
+        if (message.Data == null || !_serverSalt.HasValue) { return; }
         writer.Clear();
-        writer.WriteInt64(state.ServerSalt.Salt, true);
+        writer.WriteInt64(_serverSalt.Value.Salt, true);
         writer.WriteInt64(message.SessionId, true);
         writer.WriteInt64(message.MessageType == MTProtoMessageType.Pong ?
             message.MessageId :
@@ -485,7 +484,7 @@ public class MTProtoConnection : IMTProtoConnection
         AesIge aesIge = new AesIge(_authKey, messageKey, false);
         aesIge.Encrypt(messageSpan);
         writer.Clear();
-        writer.WriteInt64(state.AuthKeyId, true);
+        writer.WriteInt64(_authKeyId, true);
         writer.Write(messageKey);
         writer.Write(messageSpan);
         var msg = writer.ToReadOnlySequence();
@@ -593,6 +592,10 @@ public class MTProtoConnection : IMTProtoConnection
                 GetAuthKey();
             }
             TryGetPermAuthKey();
+            if (_permAuthKeyId != 0)
+            {
+                SaveCurrentSession(_permAuthKeyId);
+            }
             var incomingMessageKey = new byte[16];
             reader.Read(incomingMessageKey);
             var aesKey = new byte[32];
@@ -633,20 +636,12 @@ public class MTProtoConnection : IMTProtoConnection
         if (_sessionId == 0)
         {
             _sessionId = context.SessionId;
-            SessionState state = new SessionState();
-            var salt = new ServerSaltDTO();
-            state.SessionId = _sessionId;
-            state.ServerSalt = salt;
-            state.AuthKeyId = _authKeyId;
-            state.AuthKey = _authKey;
-            state.NodeId = _sessionManager.NodeId;
-            await _sessionManager.AddSessionAsync(state,
-                new MTProtoSession(this));
-
+            SaveCurrentSession(_permAuthKeyId != 0 ? _permAuthKeyId :
+                _authKeyId);
             _uniqueSessionId = _random.NextLong();
             var newSessionCreated = factory.Resolve<NewSessionCreated>();
             newSessionCreated.FirstMsgId = context.MessageId;
-            newSessionCreated.ServerSalt = salt.Salt;
+            newSessionCreated.ServerSalt = _serverSalt.Value.Salt;
             newSessionCreated.UniqueId = _uniqueSessionId;
             MTProtoMessage newSessionMessage = new MTProtoMessage();
             newSessionMessage.Data = newSessionCreated.TLBytes.ToArray();
@@ -767,7 +762,33 @@ public class MTProtoConnection : IMTProtoConnection
         if (_authKeyId == 0 || _permAuthKeyId != 0) return;
         var pKey = _mtproto.GetBoundAuthKey(_authKeyId);
         _permAuthKeyId = pKey ?? 0;
+        if (_permAuthKeyId == 0) return;
         _log.Information($"Retrieved the permAuthKey with Id: {_permAuthKeyId}");
+    }
+
+    private void SaveCurrentSession(long authKeyId)
+    {
+        if (_serverSalt == null || 
+            _serverSalt.Value.ValidSince + 1800 < DateTimeOffset.Now.ToUnixTimeSeconds())
+        {
+            var salts = _mtproto.GetServerSalts(_permAuthKeyId, 1);
+            if (salts != null)
+            {
+                foreach (var s in salts)
+                {
+                    if (s.ValidSince + 1800 <= _time.GetUnixTimeInSeconds()) continue;
+                    _serverSalt = s;
+                    break;
+                }
+            }
+            else
+            {
+                _serverSalt = new ServerSaltDTO();
+            }
+        }
+        if(authKeyId == 0) return;
+        _sessionManager.AddSession(authKeyId, _sessionId, 
+            new MTProtoSession(this));
     }
 
     private void DecryptAndRaiseEvent(in ReadOnlySequence<byte> bytes, bool requiresQuickAck)
@@ -809,20 +830,12 @@ public class MTProtoConnection : IMTProtoConnection
         if (_sessionId == 0)
         {
             _sessionId = _context.SessionId;
-            SessionState state = new SessionState();
-            var salt = new ServerSaltDTO();
-            state.SessionId = _sessionId;
-            state.ServerSalt = salt;
-            state.AuthKeyId = _authKeyId;
-            state.AuthKey = _authKey;
-            state.NodeId = _sessionManager.NodeId;
-            _sessionManager.AddSession(state,
-                new MTProtoSession(this));
-
+            SaveCurrentSession(_permAuthKeyId != 0 ? _permAuthKeyId:
+                _authKeyId);
             _uniqueSessionId = _random.NextLong();
             var newSessionCreated = factory.Resolve<NewSessionCreated>();
             newSessionCreated.FirstMsgId = _context.MessageId;
-            newSessionCreated.ServerSalt = salt.Salt;
+            newSessionCreated.ServerSalt = _serverSalt.Value.Salt;
             newSessionCreated.UniqueId = _uniqueSessionId;
             MTProtoMessage newSessionMessage = new MTProtoMessage();
             newSessionMessage.Data = newSessionCreated.TLBytes.ToArray();
@@ -831,18 +844,6 @@ public class MTProtoConnection : IMTProtoConnection
             newSessionMessage.SessionId = _sessionId;
             newSessionMessage.MessageType = MTProtoMessageType.NewSession;
             _ = SendAsync(newSessionMessage);
-        }
-        if (!_sessionManager.LocalSessionExists(_sessionId))
-        {
-            SessionState state = new SessionState();
-            var salt = new ServerSaltDTO();
-            state.SessionId = _sessionId;
-            state.ServerSalt = salt;
-            state.AuthKeyId = _authKeyId;
-            state.AuthKey = _authKey;
-            state.NodeId = _sessionManager.NodeId;
-            _sessionManager.AddSession(state,
-                new MTProtoSession(this));
         }
 
         if (_context.MessageId < _time.ThirtySecondsLater &&
@@ -858,8 +859,8 @@ public class MTProtoConnection : IMTProtoConnection
             try
             {
                 var msg = factory.Read(constructor, ref rd);
-                _processorManager.Process(this, msg, _context);
                 OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
+                _processorManager.Process(this, msg, _context);
             }
             catch (Exception ex)
             {
@@ -925,6 +926,10 @@ public class MTProtoConnection : IMTProtoConnection
             GetAuthKey();
         }
         TryGetPermAuthKey();
+        if (_permAuthKeyId != 0)
+        {
+            SaveCurrentSession(_permAuthKeyId);
+        }
         if (keyId == 0)
         {
             ProcessUnencryptedMessage(bytes.Slice(8));

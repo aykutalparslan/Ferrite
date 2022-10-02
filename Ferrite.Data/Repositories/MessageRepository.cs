@@ -118,7 +118,7 @@ public class MessageRepository : IMessageRepository
                 }
             }
         }
-
+        messages = messages.OrderByDescending(m => m.Date).ToList();
         return messages;
     }
 

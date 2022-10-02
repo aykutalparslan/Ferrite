@@ -20,6 +20,7 @@ using System;
 using System.Collections.Concurrent;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
+using Ferrite.Utils;
 using MessagePack;
 
 namespace Ferrite.Services;
@@ -30,6 +31,7 @@ public class SessionService : ISessionService
     private readonly ConcurrentDictionary<long, MTProtoSession> _localSessions = new();
     private readonly ConcurrentDictionary<Nonce, MTProtoSession> _localAuthSessions = new();
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger _log;
     private Guid GetNodeId()
     {
         if (File.Exists("node.guid"))
@@ -44,17 +46,23 @@ public class SessionService : ISessionService
             return guid;
         }
     }
-    public SessionService(IUnitOfWork unitOfWork)
+    public SessionService(IUnitOfWork unitOfWork, ILogger log)
     {
         NodeId = GetNodeId();
         _unitOfWork = unitOfWork;
+        _log = log;
     }
-    public async Task<bool> AddSessionAsync(SessionState state, MTProtoSession session)
+    public async Task<bool> AddSessionAsync(long authKeyId, long sessionId, MTProtoSession session)
     {
-        state.NodeId = NodeId;
+        var state = new SessionState
+        {
+            SessionId = sessionId,
+            NodeId = NodeId,
+        };
         var remoteAdd =  _unitOfWork.SessionRepository.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
             new TimeSpan(0,0, FerriteConfig.SessionTTL));
-        var authKeyAdd = _unitOfWork.SessionRepository.PutSessionForAuthKey(state.AuthKeyId, state.SessionId);
+        var authKeyAdd = _unitOfWork.SessionRepository.PutSessionForAuthKey(authKeyId, state.SessionId);
+        _log.Debug($"=== 1 = Put Session for Auth Key: {authKeyId} ===");
         await _unitOfWork.SaveAsync();
         if (_localSessions.ContainsKey(state.SessionId))
         {
@@ -63,12 +71,17 @@ public class SessionService : ISessionService
         return remoteAdd && authKeyAdd && _localSessions.TryAdd(state.SessionId, session);
     }
 
-    public bool AddSession(SessionState state, MTProtoSession session)
+    public bool AddSession(long authKeyId, long sessionId, MTProtoSession session)
     {
-        state.NodeId = NodeId;
+        var state = new SessionState
+        {
+            SessionId = sessionId,
+            NodeId = NodeId,
+        };
         var remoteAdd = _unitOfWork.SessionRepository.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
             new TimeSpan(0,0, FerriteConfig.SessionTTL));
-        var authKeyAdd = _unitOfWork.SessionRepository.PutSessionForAuthKey(state.AuthKeyId, state.SessionId);
+        var authKeyAdd = _unitOfWork.SessionRepository.PutSessionForAuthKey(authKeyId, state.SessionId);
+        _log.Debug($"=== 2 = Put Session for Auth Key: {authKeyId} ===");
         _unitOfWork.Save();
         if (_localSessions.ContainsKey(state.SessionId))
         {
@@ -98,15 +111,6 @@ public class SessionService : ISessionService
         if (rawSession != null)
         {
             var state = MessagePackSerializer.Deserialize<SessionState>(rawSession);
-            if (state.ServerSalt.ValidSince <= (DateTimeOffset.Now.ToUnixTimeSeconds() - 1800))
-            {
-                state.ServerSaltOld = state.ServerSalt;
-                var salt = new ServerSaltDTO();
-                state.ServerSalt = salt;
-                _unitOfWork.SessionRepository.PutSession(state.SessionId, MessagePackSerializer.Serialize(state),
-                    new TimeSpan(0, 0, FerriteConfig.SessionTTL));
-                await _unitOfWork.SaveAsync();
-            }
             return state;
         }
         return null;
@@ -181,6 +185,7 @@ public class SessionService : ISessionService
     {
         var ttlSet = _unitOfWork.SessionRepository.SetSessionTTL(sessionId, new TimeSpan(0, 0, FerriteConfig.SessionTTL));
         bool sessionSaved = _unitOfWork.SessionRepository.PutSessionForAuthKey(authKeyId, sessionId);
+        _log.Debug($"=== Put Session for Auth Key: {authKeyId} ===");
         await _unitOfWork.SaveAsync();
         return ttlSet && sessionSaved;
     }
@@ -188,8 +193,8 @@ public class SessionService : ISessionService
     public async Task<ICollection<SessionState>> GetSessionsAsync(long authKeyId)
     {
         var sessionIds = _unitOfWork.SessionRepository.GetSessionsByAuthKey(authKeyId,
-            new TimeSpan(0, 0, FerriteConfig.SessionTTL));
-
+            TimeSpan.FromSeconds(FerriteConfig.SessionTTL));
+        _log.Debug($"=== Got {sessionIds.Count} sessions for Auth Key: {authKeyId} ===");
         List<SessionState> result = new();
         foreach (var sessionId in sessionIds)
         {

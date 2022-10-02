@@ -23,8 +23,8 @@ public interface ISessionService
 {
     Guid NodeId { get; }
 
-    Task<bool> AddSessionAsync(SessionState state, MTProtoSession session);
-    bool AddSession(SessionState state, MTProtoSession session);
+    Task<bool> AddSessionAsync(long authKeyId, long sessionId, MTProtoSession session);
+    bool AddSession(long authKeyId, long sessionId, MTProtoSession session);
     Task<SessionState?> GetSessionStateAsync(long sessionId);
     Task<bool> DeleteSessionAsync(long sessionId);
     Task<ICollection<SessionState>> GetSessionsAsync(long authKeyId);

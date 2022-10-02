@@ -36,7 +36,7 @@ public class DistributedUnitOfWork : IUnitOfWork
             new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
         MessageRepository = new MessageRepository(new CassandraKVStore(_cassandra));
         UserStatusRepository = new UserStatusRepository(new CassandraKVStore(_cassandra));
-        SessionRepository = new SessionRepository(new RedisDataStore(redisConfig));
+        SessionRepository = new SessionRepository(new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
         AuthSessionRepository = new AuthSessionRepository(new RedisDataStore(redisConfig));
         PhoneCodeRepository = new PhoneCodeRepository(new RedisDataStore(redisConfig));
         SignInRepository = new SignInRepository(new RedisDataStore(redisConfig));

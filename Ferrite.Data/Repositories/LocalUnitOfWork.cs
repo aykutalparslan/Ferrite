@@ -33,7 +33,7 @@ public class LocalUnitOfWork : IUnitOfWork
             new InMemoryStore(), new InMemoryStore());
         MessageRepository = new MessageRepository(new RocksDBKVStore(_rocksdb));
         UserStatusRepository = new UserStatusRepository(new RocksDBKVStore(_rocksdb));
-        SessionRepository = new SessionRepository(new InMemoryStore());
+        SessionRepository = new SessionRepository(new InMemoryStore(), new InMemoryStore());
         AuthSessionRepository = new AuthSessionRepository(new InMemoryStore());
         PhoneCodeRepository = new PhoneCodeRepository(new InMemoryStore());
         SignInRepository = new SignInRepository(new InMemoryStore());

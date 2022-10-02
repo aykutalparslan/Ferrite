@@ -59,6 +59,7 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(InputDialogPeer), new InputDialogPeerMapper(factory, this));
         _mappers.TryAdd(typeof(State), new StateMapper(factory));
         _mappers.TryAdd(typeof(PeerDialogs), new PeerDialogsMapper(factory, this));
+        _mappers.TryAdd(typeof(Difference), new DifferenceMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject

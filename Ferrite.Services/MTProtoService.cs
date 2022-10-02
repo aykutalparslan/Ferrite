@@ -33,17 +33,27 @@ public class MTProtoService : IMTProtoService
         _unitOfWork = unitOfWork;
     }
 
+    public IReadOnlyCollection<ServerSaltDTO> GetServerSalts(long authKeyId, int count)
+    {
+        var serverSalts = _unitOfWork.ServerSaltRepository.GetServerSalts(authKeyId, count);
+        if (serverSalts.Count == 0)
+        {
+            GenerateSalts(authKeyId);
+        }
+        return _unitOfWork.ServerSaltRepository.GetServerSalts(authKeyId, count);
+    }
+
     public async Task<IReadOnlyCollection<ServerSaltDTO>> GetServerSaltsAsync(long authKeyId, int count)
     {
         var serverSalts = await _unitOfWork.ServerSaltRepository.GetServerSaltsAsync(authKeyId, count);
         if (serverSalts.Count == 0)
         {
-            await GenerateSalts(authKeyId);
+            await GenerateSaltsAsync(authKeyId);
         }
         return await _unitOfWork.ServerSaltRepository.GetServerSaltsAsync(authKeyId, count);
     }
-
-    private async Task GenerateSalts(long authKeyId)
+    
+    private void GenerateSalts(long authKeyId)
     {
         var time = _time.GetUnixTimeInSeconds();
         int offset = 0;
@@ -53,9 +63,24 @@ public class MTProtoService : IMTProtoService
             RandomNumberGenerator.Fill(saltBytes);
             long salt = BitConverter.ToInt64(saltBytes);
             _unitOfWork.ServerSaltRepository.PutServerSalt(authKeyId, new ServerSaltDTO(salt, time + offset), offset + 3600);
-            await _unitOfWork.SaveAsync();
             offset += 3600;
         }
+        _unitOfWork.Save();
+    }
+
+    private async Task GenerateSaltsAsync(long authKeyId)
+    {
+        var time = _time.GetUnixTimeInSeconds();
+        int offset = 0;
+        byte[] saltBytes = new byte[8];
+        for (int i = 0; i < 64; i++)
+        {
+            RandomNumberGenerator.Fill(saltBytes);
+            long salt = BitConverter.ToInt64(saltBytes);
+            _unitOfWork.ServerSaltRepository.PutServerSalt(authKeyId, new ServerSaltDTO(salt, time + offset), offset + 3600);
+            offset += 3600;
+        }
+        await _unitOfWork.SaveAsync();
     }
 
     public async Task<long> GetServerSaltValidityAsync(long authKeyId, long serverSalt)
@@ -66,7 +91,7 @@ public class MTProtoService : IMTProtoService
             var serverSalts = _unitOfWork.ServerSaltRepository.GetServerSaltsAsync(authKeyId, 64);
             if (serverSalts.Result.Count == 0)
             {
-                _ = GenerateSalts(authKeyId);
+                _ = GenerateSaltsAsync(authKeyId);
             }
         }
         return validSince;

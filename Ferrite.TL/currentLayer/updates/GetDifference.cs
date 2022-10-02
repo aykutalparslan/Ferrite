@@ -21,6 +21,7 @@ using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Data;
+using Ferrite.Data.Updates;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.ObjectMapper;
@@ -135,30 +136,7 @@ public class GetDifference : ITLObject, ITLMethod
         }
         else
         {
-            var diff = factory.Resolve<DifferenceImpl>();
-            diff.NewMessages = factory.Resolve<Vector<Message>>();
-            diff.NewEncryptedMessages = factory.Resolve<Vector<EncryptedMessage>>();
-            diff.OtherUpdates = factory.Resolve<Vector<Update>>();
-            diff.Chats = factory.Resolve<Vector<Chat>>();
-            diff.Users = factory.Resolve<Vector<User>>();
-            foreach (var c in serviceResult.Result.Chats)
-            {
-                diff.Chats.Add(_mapper.MapToTLObject<Chat, ChatDTO>(c));
-            }
-            foreach (var m in serviceResult.Result.NewMessages)
-            {
-                diff.NewMessages.Add(_mapper.MapToTLObject<Message, MessageDTO>(m));
-            }
-            foreach (var u in serviceResult.Result.Users)
-            {
-                diff.Users.Add(_mapper.MapToTLObject<User, UserDTO>(u));
-            }
-            var state = factory.Resolve<StateImpl>();
-            state.Date = state.Date;
-            state.Pts = state.Pts;
-            state.Qts = state.Qts;
-            state.Seq = state.Seq;
-            diff.State = state;
+            var diff = _mapper.MapToTLObject<Difference, DifferenceDTO>(serviceResult.Result);
             result.Result = diff;
         }
         return result;
