@@ -138,7 +138,6 @@ public class MessagesService : IMessagesService
             null, outgoingMessage.MessageText, 
             outgoingMessage.Date);
         await _search.IndexMessage(searchModelOutgoing);
-        
         if (to.PeerId != from.PeerId)
         {
             var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
@@ -179,14 +178,20 @@ public class MessagesService : IMessagesService
             var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peer.UserId);
             var unread = await userCtx.ReadMessages(peerDto, maxId);
             int userPts = await userCtx.IncrementPts();
-            var updateInbox = new UpdateReadHistoryInboxDTO(peerDto, maxId, unread, userPts, 1);
-            var updateOutbox = new UpdateReadHistoryOutboxDTO(new PeerDTO(PeerType.User, auth.UserId), maxId,
-                await peerCtx.Pts(), 1);
-            _updates.EnqueueUpdate(auth.UserId, updateInbox);
-            _updates.EnqueueUpdate(peerDto.PeerId, updateOutbox);
+            int ptsCount = 0;
+            if (auth.UserId != peerDto.PeerId)
+            {
+                ptsCount++;
+                var updateInbox = new UpdateReadHistoryInboxDTO(peerDto, maxId, unread, userPts, 1);
+                _ = _updates.EnqueueUpdate(auth.UserId, updateInbox);
+                var updateOutbox = new UpdateReadHistoryOutboxDTO(new PeerDTO(PeerType.User, auth.UserId), maxId,
+                    await peerCtx.Pts(), 1);
+                _ = _updates.EnqueueUpdate(peerDto.PeerId, updateOutbox);
+            }
+            
             return new ServiceResult<AffectedMessagesDTO>(
                 new AffectedMessagesDTO(userPts
-                    , 1), true, ErrorMessages.None);
+                    , ptsCount), true, ErrorMessages.None);
         }
 
         throw new NotSupportedException();
