@@ -1,4 +1,4 @@
-# Project Ferrite (Experimental Telegram Server)
+# Project Ferrite (Telegram Server)
 
 Project Ferrite is an implementation of the Telegram Server API in C# and this repo records it's work-in-progress. Development is focused on implementing must have features before the first release.
 
@@ -11,7 +11,7 @@ The following are the features that are implemented and working so far:
 - MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
 - TL Serialization/Deserialization
 - auth, account, users, contacts, photos, upload, help, langpack namespaces have been implemented to some extend
-- Saved Messages and Sending messages works with text messages only.
+- Saved Messages and Sending messages works with text messages and photos.
 
 ## Debugging the server
 Debugging previously required an infrastructure comprised of Redis, Cassandra, MinIO and ElasticSearch. Currently however Ferrite has a pluggable storage system and local data stores based on RocksDB, FASTER and Lucene are implemented as well as an in-memory cache so we won't need that infrastructure for debugging.
