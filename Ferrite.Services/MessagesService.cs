@@ -32,16 +32,20 @@ public class MessagesService : IMessagesService
     private readonly IUpdatesService _updates;
     private readonly IUpdatesContextFactory _updatesContextFactory;
     private readonly ILogger _log;
+    private readonly IUploadService _upload;
+    private readonly IPhotosService _photos;
 
     public MessagesService(IUnitOfWork unitOfWork,ISearchEngine search, 
         IUpdatesService updates, IUpdatesContextFactory updatesContextFactory,
-        ILogger log)
+        ILogger log, IUploadService upload, IPhotosService photos)
     {
         _unitOfWork = unitOfWork;
         _search = search;
         _updates = updates;
         _updatesContextFactory = updatesContextFactory;
         _log = log;
+        _upload = upload;
+        _photos = photos;
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
@@ -109,56 +113,61 @@ public class MessagesService : IMessagesService
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
         var to = PeerFromInputPeer(peer);
-        var outgoingMessage = new MessageDTO()
-        {
-            Id = senderMessageId,
-            Out = true,
-            Silent = silent,
-            FromId = from,
-            PeerId = to,
-            MessageText = message,
-            ReplyMarkup = replyMarkup,
-            Entities = entities,
-            Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds()
-        };
-        if (replyToMsgId != null)
-        {
-            outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
-        }
+        MessageDTO outgoingMessage = 
+            GenerateOutgoingMessage(silent, message, replyToMsgId, replyMarkup, entities, senderMessageId, from, to);
 
-        int previousPts = await senderCtx.Pts();
-        int pts = await senderCtx.IncrementPts();
-        _unitOfWork.MessageRepository.PutMessage(auth.UserId,
-            outgoingMessage, pts);
-        _log.Debug($"💬 Message was sent Sender: {auth.UserId} Previous PTS: {previousPts} PTS: {pts}");
-        var searchModelOutgoing = new MessageSearchModel(
-            from.PeerId + "_" + outgoingMessage.Id,
-            from.PeerId, (int)from.PeerType, from.PeerId,
-            (int)to.PeerType, to.PeerId,outgoingMessage.Id,
-            null, outgoingMessage.MessageText, 
-            outgoingMessage.Date);
-        await _search.IndexMessage(searchModelOutgoing);
+        var pts = await SaveMessage(senderCtx, auth, outgoingMessage, from, to);
+        
         if (to.PeerId != from.PeerId)
         {
-            var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
-            int receiverMessageId = await receiverCtx.NextMessageId();
-            var incomingMessage = outgoingMessage with
+            await SaveIncomingMessage(to, outgoingMessage, from);
+        }
+        
+        await _unitOfWork.SaveAsync();
+
+        return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
+                pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
+            true, ErrorMessages.None);
+    }
+
+    public async Task<ServiceResult<UpdateShortSentMessageDTO>> SendMedia(long authKeyId, bool silent, 
+        bool background, bool clearDraft, bool noForwards, InputPeerDTO peer,
+        int? replyToMsgId, InputMediaDTO media, string message, long randomId, ReplyMarkupDTO? replyMarkup,
+        IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
+    {
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var senderCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
+        int senderMessageId = (int)await senderCtx.NextMessageId();
+        var from = new PeerDTO(PeerType.User, auth.UserId);
+        var to = PeerFromInputPeer(peer);
+        MessageDTO outgoingMessage = 
+            GenerateOutgoingMessage(silent, message, replyToMsgId, replyMarkup, entities, senderMessageId, from, to);
+        if (media.InputMediaType == InputMediaType.UploadedPhoto)
+        {
+            var saveResult = await _upload.SaveFile(media.File);
+            if (!saveResult.Success)
             {
-                Id = receiverMessageId,
-                Out = false,
-                PeerId = from
-            };
-            int ptsPeer = await receiverCtx.IncrementPtsForMessage(from, receiverMessageId);
-            _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
-            UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
-            await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
-            var searchModelIncoming = new MessageSearchModel(
-                to.PeerId + "_" + incomingMessage.Id,
-                to.PeerId, (int)to.PeerType, to.PeerId,
-                (int)from.PeerType, from.PeerId,incomingMessage.Id,
-                null, incomingMessage.MessageText, 
-                incomingMessage.Date);
-            await _search.IndexMessage(searchModelIncoming);
+                return new ServiceResult<UpdateShortSentMessageDTO>(null, false, saveResult.ErrorMessage);
+            }
+            var photoResult = await _photos.ProcessPhoto(saveResult.Result, DateTime.Now);
+            if (!photoResult.Success)
+            {
+                return new ServiceResult<UpdateShortSentMessageDTO>(null, false, photoResult.ErrorMessage);
+            }
+
+            outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Photo,
+                photoResult.Result, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                false, false, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null);
+        }
+        var pts = await SaveMessage(senderCtx, auth, outgoingMessage, from, to);
+        
+        if (to.PeerId != from.PeerId)
+        {
+            await SaveIncomingMessage(to, outgoingMessage, from);
         }
         
         await _unitOfWork.SaveAsync();
@@ -221,7 +230,68 @@ public class MessagesService : IMessagesService
 
         throw new NotSupportedException();
     }
+    private async Task<int> SaveMessage(IUpdatesContext senderCtx, AuthInfoDTO auth, MessageDTO outgoingMessage, PeerDTO from,
+        PeerDTO to)
+    {
+        int previousPts = await senderCtx.Pts();
+        int pts = await senderCtx.IncrementPts();
+        _unitOfWork.MessageRepository.PutMessage(auth.UserId,
+            outgoingMessage, pts);
+        _log.Debug($"💬 Message was sent Sender: {auth.UserId} Previous PTS: {previousPts} PTS: {pts}");
+        var searchModelOutgoing = new MessageSearchModel(
+            from.PeerId + "_" + outgoingMessage.Id,
+            from.PeerId, (int)from.PeerType, from.PeerId,
+            (int)to.PeerType, to.PeerId, outgoingMessage.Id,
+            null, outgoingMessage.MessageText,
+            outgoingMessage.Date);
+        await _search.IndexMessage(searchModelOutgoing);
+        return pts;
+    }
 
+    private static MessageDTO GenerateOutgoingMessage(bool silent, string message, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
+        IReadOnlyCollection<MessageEntityDTO>? entities, int senderMessageId, PeerDTO from, PeerDTO to)
+    {
+        var outgoingMessage = new MessageDTO()
+        {
+            Id = senderMessageId,
+            Out = true,
+            Silent = silent,
+            FromId = from,
+            PeerId = to,
+            MessageText = message,
+            ReplyMarkup = replyMarkup,
+            Entities = entities,
+            Date = (int)DateTimeOffset.Now.ToUnixTimeSeconds()
+        };
+        if (replyToMsgId != null)
+        {
+            outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
+        }
+
+        return outgoingMessage;
+    }
+    private async Task SaveIncomingMessage(PeerDTO to, MessageDTO outgoingMessage, PeerDTO from)
+    {
+        var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
+        int receiverMessageId = await receiverCtx.NextMessageId();
+        var incomingMessage = outgoingMessage with
+        {
+            Id = receiverMessageId,
+            Out = false,
+            PeerId = from
+        };
+        int ptsPeer = await receiverCtx.IncrementPtsForMessage(from, receiverMessageId);
+        _unitOfWork.MessageRepository.PutMessage(to.PeerId, incomingMessage, ptsPeer);
+        UpdateNewMessageDTO updateNewMessage = new UpdateNewMessageDTO(incomingMessage, ptsPeer, 1);
+        await _updates.EnqueueUpdate(to.PeerId, updateNewMessage);
+        var searchModelIncoming = new MessageSearchModel(
+            to.PeerId + "_" + incomingMessage.Id,
+            to.PeerId, (int)to.PeerType, to.PeerId,
+            (int)from.PeerType, from.PeerId, incomingMessage.Id,
+            null, incomingMessage.MessageText,
+            incomingMessage.Date);
+        await _search.IndexMessage(searchModelIncoming);
+    }
     private async Task DeletePeerMessagesInternal(int maxId, int? minDate, int? maxDate, PeerDTO peerDto, AuthInfoDTO auth,
         IUpdatesContext userCtx)
     {

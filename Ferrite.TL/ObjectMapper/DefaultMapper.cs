@@ -36,13 +36,20 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(UserFull), new FullUserMapper(factory, this));
         _mappers.TryAdd(typeof(InputNotifyPeer), new InputNotifyPeerMapper(this));
         _mappers.TryAdd(typeof(InputUser), new InputUserMapper(factory, this));
+        _mappers.TryAdd(typeof(InputFile), new InputFileMapper());
+        _mappers.TryAdd(typeof(InputDocument), new InputDocumentMapper());
+        _mappers.TryAdd(typeof(InputPhoto), new InputPhotoMapper());
+        _mappers.TryAdd(typeof(InputPeerNotifySettings), new InputPeerNotifySettingsMapper(factory));
+        _mappers.TryAdd(typeof(InputDialogPeer), new InputDialogPeerMapper(factory, this));
+        _mappers.TryAdd(typeof(InputPrivacyRule), new InputPrivacyRuleMapper());
+        _mappers.TryAdd(typeof(InputMessage), new InputMessageMapper());
+        _mappers.TryAdd(typeof(InputMedia), new InputMediaMapper(this));
         _mappers.TryAdd(typeof(PeerNotifySettings), new PeerNotifySettingsMapper(factory));
         _mappers.TryAdd(typeof(PeerSettings), new PeerSettingsMapper(factory));
         _mappers.TryAdd(typeof(Photo), new PhotoMapper(factory));
         _mappers.TryAdd(typeof(User), new UserMapper(factory));
         _mappers.TryAdd(typeof(PrivacyRule), new PrivacyRuleMapper(factory, this));
         _mappers.TryAdd(typeof(Chat), new ChatMapper(factory,this));
-        _mappers.TryAdd(typeof(InputPrivacyRule), new InputPrivacyRuleMapper());
         _mappers.TryAdd(typeof(ReplyMarkup), new ReplyMarkupMapper(factory, this));
         _mappers.TryAdd(typeof(MessageEntity), new MessageEntityMapper(factory, this));
         _mappers.TryAdd(typeof(Update), new UpdateMapper(factory, this));
@@ -52,14 +59,12 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(MessageFwdHeader), new MessageFwdHeaderMapper(factory, this));
         _mappers.TryAdd(typeof(MessageReplyHeader), new MessageReplyHeaderMapper(factory, this));
         _mappers.TryAdd(typeof(MessageMedia), new MessageMediaMapper(factory, this));
-        _mappers.TryAdd(typeof(InputMessage), new InputMessageMapper());
         _mappers.TryAdd(typeof(Dialog), new DialogMapper(factory, this));
         _mappers.TryAdd(typeof(SendMessageAction), new SendMessageActionMapper(factory, this));
-        _mappers.TryAdd(typeof(InputPeerNotifySettings), new InputPeerNotifySettingsMapper(factory));
-        _mappers.TryAdd(typeof(InputDialogPeer), new InputDialogPeerMapper(factory, this));
         _mappers.TryAdd(typeof(State), new StateMapper(factory));
         _mappers.TryAdd(typeof(PeerDialogs), new PeerDialogsMapper(factory, this));
         _mappers.TryAdd(typeof(Difference), new DifferenceMapper(factory, this));
+        _mappers.TryAdd(typeof(GeoPoint), new GeoPointMapper(factory));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject

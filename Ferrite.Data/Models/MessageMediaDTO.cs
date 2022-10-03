@@ -22,9 +22,9 @@ namespace Ferrite.Data;
 
 [MessagePackObject(true)] public record MessageMediaDTO(MessageMediaType MessageMediaType, 
     PhotoDTO? Photo, int? TtlSeconds,
-    GeoPointDTO? Geo, string? PhoneNumber, string? FirstName, string? LastName, string? VCard, long UserId,
+    GeoPointDTO? Geo, string? PhoneNumber, string? FirstName, string? LastName, string? VCard, long? UserId,
     DocumentDTO? Document, WebPageDTO? WebPage, string? Title, string? Address, string? Provider, long? VenueId,
     string? VenueType, GameDTO? Game, bool ShippingAddressRequested, bool Test, string? Description,
     WebDocumentDTO? WebPhoto, int? ReceiptMessageId, string? Currency, long? TotalAmount, int? StartParam,
-    int? Heading, int? Period, int ProximityNotificationRadius, PollDTO? Poll, PollResultsDTO? Results,
+    int? Heading, int? Period, int? ProximityNotificationRadius, PollDTO? Poll, PollResultsDTO? Results,
     int? Value, string? Emoticon);

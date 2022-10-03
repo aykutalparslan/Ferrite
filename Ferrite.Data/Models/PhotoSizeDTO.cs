@@ -20,5 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record PhotoSizeDTO(PhotoSizeType PhotoSizeType, string Type, int W, 
-    int H, int Size, byte[]? Bytes, IReadOnlyCollection<int>? Sizes);
+[MessagePackObject(true)] public record PhotoSizeDTO(PhotoSizeType PhotoSizeType, string Type, int? W, 
+    int? H, int? Size, byte[]? Bytes, IReadOnlyCollection<int>? Sizes);

@@ -20,5 +20,6 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record PhotoDTO(bool HasStickers, long Id, long AccessHash, byte[] FileReference, 
-    int Date, ICollection<PhotoSizeDTO> Sizes, ICollection<VideoSizeDTO>? VideoSizes, int DcId);
+[MessagePackObject(true)] 
+public record PhotoDTO(bool Empty, bool HasStickers, long Id, long? AccessHash, byte[]? FileReference, 
+    int? Date, ICollection<PhotoSizeDTO>? Sizes, ICollection<VideoSizeDTO>? VideoSizes, int? DcId);

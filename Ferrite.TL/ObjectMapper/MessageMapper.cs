@@ -62,8 +62,10 @@ public class MessageMapper : ITLObjectMapper<Message, MessageDTO>
             }
             message.Date = obj.Date;
             message.Message = obj.MessageText;
-            //TODO: Implement message media mapping
-            //message.Media = _mapper.MapToTLObject<MessageMedia, MessageMediaDTO>(obj.Media);
+            if (obj.Media != null)
+            {
+                message.Media = _mapper.MapToTLObject<MessageMedia, MessageMediaDTO>(obj.Media);
+            }
             if(obj.ReplyMarkup != null)
             {
                 message.ReplyMarkup = _mapper.MapToTLObject<ReplyMarkup, ReplyMarkupDTO>(obj.ReplyMarkup);

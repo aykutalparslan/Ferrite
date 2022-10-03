@@ -39,7 +39,7 @@ public class SkiaPhotoProcessor : IPhotoProcessor
                 using var cropped = new SKBitmap(size, size);
                 bitmap.ExtractSubset(cropped, rect);
                 using var scaled = new SKBitmap(w, w);
-                cropped.ScalePixels(scaled, SKFilterQuality.Medium);
+                cropped.ScalePixels(scaled, SKFilterQuality.High);
                 using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
                 return data.ToArray();
             }

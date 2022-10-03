@@ -155,7 +155,7 @@ public class UserService : IUsersService
             {
                 user.Photo = new UserProfilePhotoDTO()
                 {
-                    DcId = profilePhoto.DcId,
+                    DcId = (int)profilePhoto.DcId,
                     PhotoId = profilePhoto.Id,
                 };
             }

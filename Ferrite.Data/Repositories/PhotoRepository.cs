@@ -40,7 +40,7 @@ public class PhotoRepository : IPhotoRepository
     }
     public bool PutProfilePhoto(long userId, long fileId, long accessHash, byte[] referenceBytes, DateTime date)
     {
-        PhotoDTO photo = new PhotoDTO(false, fileId, accessHash, referenceBytes,
+        PhotoDTO photo = new PhotoDTO(false, false, fileId, accessHash, referenceBytes,
             (int)DateTimeOffset.Now.ToUnixTimeSeconds(), 
             null, 
             null, 2);

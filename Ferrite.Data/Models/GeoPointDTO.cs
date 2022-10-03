@@ -20,4 +20,5 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record GeoPointDTO(bool Empty, double Latitude, double Longitude, int?AccuracyRaidus);
+[MessagePackObject(true)] 
+public record GeoPointDTO(bool Empty, double? Latitude, double? Longitude, long? AccessHash, int?AccuracyRadius);

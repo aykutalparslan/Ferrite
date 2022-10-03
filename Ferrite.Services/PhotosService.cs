@@ -33,35 +33,37 @@ public class PhotosService : IPhotosService
     private readonly IPhotoProcessor _photoProcessor;
     private readonly IRandomGenerator _random;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUploadService _upload;
     public PhotosService(IObjectStore objectStore, 
         IPhotoProcessor photoProcessor, IRandomGenerator random,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork, IUploadService upload)
     {
         _objectStore = objectStore;
         _photoProcessor = photoProcessor;
         _random = random;
         _unitOfWork = unitOfWork;
+        _upload = upload;
     }
     public async Task<ServiceResult<PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         if (auth == null)
         {
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.InvalidAuthKey);
         }
+        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         if (user == null)
         {
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.UserIdInvalid);
         }
         var date = DateTime.Now;
-        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, id.Id, id.AccessHash,id.FileReference, date);
+        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, (long)id.Id, (long)id.AccessHash,id.FileReference, date);
         await _unitOfWork.SaveAsync();
-        var photoInner = new Data.PhotoDTO(false, id.Id, id.AccessHash, id.FileReference,
+        var photoInner = new Data.PhotoDTO(false, false, (long)id.Id, id.AccessHash, id.FileReference,
             (int)((DateTimeOffset)date).ToUnixTimeSeconds(), new List<PhotoSizeDTO>(), null, 1);
         user.Photo = new UserProfilePhotoDTO()
         {
-            DcId = photoInner.DcId,
+            DcId = (int)photoInner.DcId,
             PhotoId = photoInner.Id,
         };
         await _unitOfWork.SaveAsync();
@@ -72,72 +74,51 @@ public class PhotosService : IPhotosService
 
     public async Task<ServiceResult<PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo, InputFileDTO? video, double? videoStartTimestamp)
     {
-        UploadedFileInfoDTO? file = null;
-        int size = 0;
-        IReadOnlyCollection<FilePartDTO> fileParts;
-        if (photo != null)
+        var saveResult = await _upload.SaveFile(photo);
+        if (!saveResult.Success)
         {
-            fileParts = _unitOfWork.FileInfoRepository.GetFileParts(photo.Id);
-            if (fileParts.Count != photo.Parts ||
-                fileParts.First().PartNum != 0 ||
-                fileParts.Last().PartNum != photo.Parts - 1)
-            {
-                return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.FilePartsInvalid);
-            }
-            foreach (var part in fileParts)
-            {
-                size += part.PartSize;
-            }
-            if (size > 5242880)
-            {
-                return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.PhotoFileTooBig);
-            }
-
-            var accessHash = _random.NextLong();
-            file = new UploadedFileInfoDTO(photo.Id, fileParts.First().PartSize, photo.Parts,
-                accessHash, photo.Name, photo.MD5Checksum, DateTimeOffset.Now, photo.IsBigfile);
-        } 
-        /*else if (video != null)
-        {
-            fileParts = await _store.GetFilePartsAsync(video.Id);
-            if (fileParts.Count != video.Parts ||
-                fileParts.First().PartNum != 0 ||
-                fileParts.Last().PartNum != video.Parts - 1)
-            {
-                return new ServiceResult<Photo>(null, false, ErrorMessages.FilePartsInvalid);
-            }
-            foreach (var part in fileParts)
-            {
-                size += part.PartSize;
-            }
-            if (size > 5242880)
-            {
-                return new ServiceResult<Photo>(null, false, ErrorMessages.PhotoFileTooBig);
-            }
-
-            var accessHash = _random.NextLong();
-            file = new UploadedFileInfo(video.Id, fileParts.First().PartSize, video.Parts,
-                accessHash, photo.Name, video.MD5Checksum, DateTimeOffset.Now, video.IsBigfile);
-        }*/
-        else
-        {
-            return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.PhotoFileMissing);
+            return new ServiceResult<PhotoDTO>(null, false, saveResult.ErrorMessage);
         }
+        var file = saveResult.Result;
+        
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.InvalidAuthKey);
+        }
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         
-        if (file.IsBigFile)
-        {
-            _unitOfWork.FileInfoRepository.PutBigFileInfo(file);
-        }
-        else
-        {
-            _unitOfWork.FileInfoRepository.PutFileInfo(file);
-        }
         var date = DateTime.Now;
-        byte[] reference = _random.GetRandomBytes(16);
-        _unitOfWork.FileInfoRepository.PutFileReference(new FileReferenceDTO(reference, file.Id, file.IsBigFile));
+        var processResult = await ProcessPhoto(file, date);
+        if (!processResult.Success || processResult.Result == null)
+        {
+            return new ServiceResult<PhotoDTO>(null, false, processResult.ErrorMessage);
+        } 
+        
+        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, file.Id, file.AccessHash, file.FileReference, date);
         await _unitOfWork.SaveAsync();
+        
+        var result = new PhotoDTO(processResult.Result, new[] { user });
+        return new ServiceResult<PhotoDTO>(result, true, ErrorMessages.None);
+    }
+
+    public async Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date)
+    {
+        Data.PhotoDTO result = await ProcessPhotoInternal(file, date);
+
+        return new ServiceResult<Data.PhotoDTO>(result, true, ErrorMessages.None);
+    }
+
+    private async Task<Data.PhotoDTO> ProcessPhotoInternal(UploadedFileInfoDTO? file, DateTime date)
+    {
+        Data.PhotoDTO? result = null;
+        var fileParts = _unitOfWork.FileInfoRepository.GetFileParts(file.Id);
+        int size = 0;
+        foreach (var part in fileParts)
+        {
+            size += part.PartSize;
+        }
+
         using var imageData = UnmanagedMemoryAllocator.Allocate<byte>(size);
         int offset = 0;
         if (!file.IsBigFile)
@@ -160,28 +141,30 @@ public class PhotosService : IPhotosService
                 offset += part.PartSize;
             }
         }
-        
+
         (int w, int h) = _photoProcessor.GetImageSize(imageData.Span);
-        if(w == 0 || h == 0)
+        if (w == 0 || h == 0)
         {
-            return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.PhotoFileInvalid);
+            result = new Data.PhotoDTO(true, false, file.Id,
+                null, null, null,
+                null, null, null);
+        }
+        else
+        {
+            List<ThumbnailDTO> thumbnails = new List<ThumbnailDTO>();
+            await GenerateThumbnails(w, h, imageData, file, thumbnails);
+            List<PhotoSizeDTO> photoSizes = new List<PhotoSizeDTO>();
+            foreach (var thumbnail in thumbnails)
+            {
+                photoSizes.Add(new PhotoSizeDTO(PhotoSizeType.Default, thumbnail.Type,
+                    thumbnail.Width, thumbnail.Height, thumbnail.Size, thumbnail.Bytes, thumbnail.Sizes));
+            }
+
+            result = new Data.PhotoDTO(false, false, file.Id, file.AccessHash, file.FileReference,
+                (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 2);
         }
 
-        List<ThumbnailDTO> thumbnails = new List<ThumbnailDTO>();
-        await GenerateThumbnails(w, h, imageData, file, thumbnails);
-        List<PhotoSizeDTO> photoSizes = new List<PhotoSizeDTO>();
-        foreach (var thumbnail in thumbnails)
-        {
-            photoSizes.Add(new PhotoSizeDTO(PhotoSizeType.Default, thumbnail.Type, 
-                thumbnail.Width, thumbnail.Height, thumbnail.Size, thumbnail.Bytes, thumbnail.Sizes));
-        }
-        
-        _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, file.Id, file.AccessHash, reference, date);
-        await _unitOfWork.SaveAsync();
-        var photoInner = new Data.PhotoDTO(false, file.Id, file.AccessHash, reference,
-            (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 2);
-        var result = new PhotoDTO(photoInner, new[] { user });
-        return new ServiceResult<PhotoDTO>(result, true, ErrorMessages.None);
+        return result;
     }
 
     private async Task GenerateThumbnails(int w, int h, IUnmanagedMemoryOwner<byte> imageData, 
@@ -267,7 +250,7 @@ public class PhotosService : IPhotosService
             if (file != null && photo.AccessHash == file.AccessHash &&
                 _unitOfWork.PhotoRepository.DeleteProfilePhoto(auth.UserId, reference.FileId))
             {
-                result.Add(photo.Id);
+                result.Add((long)photo.Id);
             }
         }
 

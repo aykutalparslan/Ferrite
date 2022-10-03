@@ -22,4 +22,4 @@ namespace Ferrite.Data;
 
 [MessagePackObject(true)]
 public record UploadedFileInfoDTO(long Id, int PartSize, int Parts, long AccessHash, 
-    string Name, string? MD5Checksum, DateTimeOffset SavedOn, bool IsBigFile);
+    string Name, string? MD5Checksum, DateTimeOffset SavedOn, bool IsBigFile, byte[]? FileReference = null);

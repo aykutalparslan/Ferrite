@@ -61,7 +61,7 @@ public class BufferUtils
     /// <param name="buffer">Source buffer.</param>
     /// <param name="offset">Offset in the source buffer.</param>
     /// <returns></returns>
-    public static unsafe int GetTLBytesLength(Span<byte> buffer, int offset)
+    public static int GetTLBytesLength(Span<byte> buffer, int offset)
     {
         if (buffer.Length - offset < 4) return 0;
         int len = buffer[offset];

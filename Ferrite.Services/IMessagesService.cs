@@ -29,6 +29,10 @@ public interface IMessagesService
         bool background, bool clearDraft, bool noForwards, InputPeerDTO peer, string message, long randomId,
         int? replyToMsgId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO> ? entities,
         int? scheduleDate, InputPeerDTO? sendAs);
+    Task<ServiceResult<UpdateShortSentMessageDTO>> SendMedia(long authKeyId, bool silent, bool background, 
+        bool clearDraft, bool noForwards, InputPeerDTO peer, int? replyToMsgId, InputMediaDTO media, 
+        string message, long randomId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO>? entities,
+        int? scheduleDate, InputPeerDTO? sendAs);
     Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId);
     Task<ServiceResult<AffectedHistoryDTO>> DeleteHistory(long authKeyId, InputPeerDTO peer, int maxId,
         int? minDate = null, int? maxDate = null, bool justClear = false, bool revoke = false);

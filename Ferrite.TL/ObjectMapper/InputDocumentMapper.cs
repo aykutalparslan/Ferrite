@@ -17,17 +17,29 @@
 // 
 
 using Ferrite.Data;
-using Ferrite.Data.Photos;
+using Ferrite.TL.currentLayer;
 
-namespace Ferrite.Services;
+namespace Ferrite.TL.ObjectMapper;
 
-public interface IPhotosService
+public class InputDocumentMapper : ITLObjectMapper<InputDocument, InputDocumentDTO>
 {
-    Task<ServiceResult<Data.Photos.PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id);
-    Task<ServiceResult<Data.Photos.PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo,
-        InputFileDTO? video, double? videoStartTimestamp);
+    public InputDocumentDTO MapToDTO(InputDocument obj)
+    {
+        if (obj is InputDocumentEmptyImpl)
+        {
+            return new InputDocumentDTO(true, null, null, null);
+        }
 
-    Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date);
-    Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
-    Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit);
+        if (obj is InputDocumentImpl doc)
+        {
+            return new InputDocumentDTO(false, doc.Id, doc.AccessHash, doc.FileReference);
+        }
+        
+        throw new NotSupportedException();
+    }
+
+    public InputDocument MapToTLObject(InputDocumentDTO obj)
+    {
+        throw new NotImplementedException();
+    }
 }

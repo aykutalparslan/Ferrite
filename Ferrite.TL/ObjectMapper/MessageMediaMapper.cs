@@ -21,6 +21,7 @@ using Ferrite.TL.currentLayer;
 
 namespace Ferrite.TL.ObjectMapper;
 
+//TODO: complete implementation
 public class MessageMediaMapper : ITLObjectMapper<MessageMedia, MessageMediaDTO>
 {
     private readonly ITLObjectFactory _factory;
@@ -32,15 +33,103 @@ public class MessageMediaMapper : ITLObjectMapper<MessageMedia, MessageMediaDTO>
     }
     public MessageMediaDTO MapToDTO(MessageMedia obj)
     {
-        throw new NotImplementedException();
+        if (obj is MessageMediaEmptyImpl)
+        {
+            return new MessageMediaDTO(MessageMediaType.Empty, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, false, false, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null,
+                null);
+        }
+        if (obj is MessageMediaPhotoImpl photo)
+        {
+            var p = _mapper.MapToDTO<Photo, PhotoDTO>(photo.Photo);
+            return new MessageMediaDTO(MessageMediaType.Photo, p, photo.TtlSeconds,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, false, false, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null,
+                null);
+        }
+        if (obj is MessageMediaGeoImpl geo)
+        {
+            var g = _mapper.MapToDTO<GeoPoint, GeoPointDTO>(geo.Geo);
+            return new MessageMediaDTO(MessageMediaType.Geo, null, null,
+                g, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, false, false, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null,
+                null);
+        }
+        if (obj is MessageMediaContactImpl contact)
+        {
+            return new MessageMediaDTO(MessageMediaType.Contact, null, null, null, 
+                contact.PhoneNumber, contact.FirstName, contact.LastName, contact.Vcard, contact.UserId,
+                null, null, null, null, null, null,
+                null, null, false, false, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null,
+                null);
+        }
+        if (obj is MessageMediaUnsupportedImpl)
+        {
+            return new MessageMediaDTO(MessageMediaType.Unsupported, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, false, false, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null,
+                null);
+        }
+        throw new NotSupportedException();
     }
 
     public MessageMedia MapToTLObject(MessageMediaDTO obj)
     {
         if (obj.MessageMediaType == MessageMediaType.Empty)
         {
-            
+            var media = _factory.Resolve<MessageMediaEmptyImpl>();
+            return media;
         }
-        throw new NotImplementedException();
+        if (obj.MessageMediaType == MessageMediaType.Photo)
+        {
+            var media = _factory.Resolve<MessageMediaPhotoImpl>();
+            if (obj.TtlSeconds != null)
+            {
+                media.TtlSeconds = (int)obj.TtlSeconds;
+            }
+            if (obj.Photo != null)
+            {
+                media.Photo = _mapper.MapToTLObject<Photo, PhotoDTO>(obj.Photo);
+            }
+
+            return media;
+        }
+        if (obj.MessageMediaType == MessageMediaType.Geo)
+        {
+            var media = _factory.Resolve<MessageMediaGeoImpl>();
+            media.Geo = _mapper.MapToTLObject<GeoPoint, GeoPointDTO>(obj.Geo);
+            return media;
+        }
+        if (obj.MessageMediaType == MessageMediaType.Contact)
+        {
+            var media = _factory.Resolve<MessageMediaContactImpl>();
+            media.PhoneNumber = obj.PhoneNumber;
+            media.FirstName = obj.FirstName;
+            media.LastName = obj.LastName;
+            media.Vcard = obj.VCard;
+            media.UserId = (long)obj.UserId;
+            return media;
+        }
+        if (obj.MessageMediaType == MessageMediaType.Unsupported)
+        {
+            return _factory.Resolve<MessageMediaUnsupportedImpl>();
+        }
+
+        throw new NotSupportedException();
     }
 }

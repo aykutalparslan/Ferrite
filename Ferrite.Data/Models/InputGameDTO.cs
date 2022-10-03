@@ -16,18 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
-using Ferrite.Data.Photos;
+namespace Ferrite.Data;
 
-namespace Ferrite.Services;
-
-public interface IPhotosService
+public record InputGameDTO
 {
-    Task<ServiceResult<Data.Photos.PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id);
-    Task<ServiceResult<Data.Photos.PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo,
-        InputFileDTO? video, double? videoStartTimestamp);
-
-    Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date);
-    Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
-    Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit);
+    public InputGameType InputGameType { get; set; }
+    public long? Id { get; set; }
+    public long? AccessHash { get; set; }
+    public InputUserDTO? BotId { get; set; }
+    public string? ShortName { get; set; }
 }
