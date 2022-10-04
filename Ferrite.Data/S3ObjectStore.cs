@@ -112,4 +112,9 @@ public class S3ObjectStore : IObjectStore
         var getObjectResponse = await _s3Client.GetObjectAsync(getObjectRequest);
         return getObjectResponse.ResponseStream;
     }
+
+    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, long reqMsgId)
+    {
+        return new S3FileOwner(fileInfo, this, offset, limit, reqMsgId);
+    }
 }

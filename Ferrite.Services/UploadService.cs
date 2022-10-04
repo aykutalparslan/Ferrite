@@ -113,7 +113,7 @@ public class UploadService : IUploadService
                 }
             }
             var file = _unitOfWork.FileInfoRepository.GetBigFileInfo(thumbFileId);
-            var owner = new LocalFileOwner(file, _objectStore, offset, limit, regMsgId);
+            var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId);
             return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
         else
@@ -129,7 +129,7 @@ public class UploadService : IUploadService
                 }
             }
             var file = _unitOfWork.FileInfoRepository.GetFileInfo(thumbFileId);
-            var owner = new LocalFileOwner(file, _objectStore, offset, limit, regMsgId);
+            var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId);
             return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
     }

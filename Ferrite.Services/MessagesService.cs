@@ -142,7 +142,17 @@ public class MessagesService : IMessagesService
         var to = PeerFromInputPeer(peer);
         MessageDTO outgoingMessage = 
             GenerateOutgoingMessage(silent, message, replyToMsgId, replyMarkup, entities, senderMessageId, from, to);
-        if (media.InputMediaType == InputMediaType.UploadedPhoto)
+        if (media.InputMediaType == InputMediaType.Empty)
+        {
+            outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Empty,
+                null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                false, false, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null);
+        }
+        else if (media.InputMediaType == InputMediaType.UploadedPhoto)
         {
             var saveResult = await _upload.SaveFile(media.File);
             if (!saveResult.Success)
@@ -163,6 +173,32 @@ public class MessagesService : IMessagesService
                 null, null, null, null, null, null,
                 null, null, null);
         }
+        else if (media.InputMediaType == InputMediaType.GeoPoint)
+        {
+            var location = new GeoPointDTO(false, media.GeoPoint.Latitude,
+                media.GeoPoint.Longitude, Random.Shared.NextInt64(), 
+                media.GeoPoint.AccuracyRaidus);
+            
+            outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Geo,
+                null, null, location, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                false, false, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null);
+        }
+        else if (media.InputMediaType == InputMediaType.Contact &&
+                 _unitOfWork.UserRepository.GetUserId(media.PhoneNumber) is long contactUserId)
+        {
+            outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Contact,
+                null, null, null, 
+                media.PhoneNumber, media.FirstName, media.LastName, media.VCard, contactUserId, 
+                null, null, null, null, null, null, null, null,
+                false, false, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null, null);
+        }
+        
         var pts = await SaveMessage(senderCtx, auth, outgoingMessage, from, to);
         
         if (to.PeerId != from.PeerId)

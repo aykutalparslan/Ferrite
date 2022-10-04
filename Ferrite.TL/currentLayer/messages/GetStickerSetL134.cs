@@ -62,9 +62,10 @@ public class GetStickerSetL134 : ITLObject, ITLMethod
     
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
+        var stickerSet = factory.Resolve<StickerSetNotModifiedImpl>();
         var resp = factory.Resolve<RpcResult>();
         resp.ReqMsgId = ctx.MessageId;
-        resp.Result = factory.Resolve<StickerSetNotModifiedImpl>();
+        resp.Result = stickerSet;
         return resp;
     }
 

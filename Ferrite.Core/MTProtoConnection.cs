@@ -240,18 +240,12 @@ public class MTProtoConnection : IMTProtoConnection
 
     private async Task DoSend()
     {
-        while (true)
+        while (await _outgoing.Reader.WaitToReadAsync())
         {
-            if (_outgoing.Reader.Count == 0)
-            {
-                await Task.Delay(100);
-                continue;
-            }
             try
             {
-                await _sendSemaphore.WaitAsync();
-
                 var msg = await _outgoing.Reader.ReadAsync();
+                await _sendSemaphore.WaitAsync();
                 //_log.Debug($"=>Sending {msg.MessageType} with Id: {msg.MessageId}.");
                 if (msg.MessageType == MTProtoMessageType.Updates)
                 {
@@ -297,19 +291,12 @@ public class MTProtoConnection : IMTProtoConnection
     }
     private async Task DoSendStreams()
     {
-        while (true)
+        while (await _outgoingStreams.Reader.WaitToReadAsync())
         {
-            if (_authKeyId == 0 || 
-                _outgoingStreams.Reader.Count == 0)
-            {
-                await Task.Delay(100);
-                continue;
-            }
             try
             {
-                await _sendSemaphore.WaitAsync();
-
                 var msg = await _outgoingStreams.Reader.ReadAsync();
+                await _sendSemaphore.WaitAsync();
                 _log.Debug($"=>Sending stream.");
                 
                 await SendStream(msg);

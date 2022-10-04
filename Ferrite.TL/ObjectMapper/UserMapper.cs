@@ -35,11 +35,23 @@ public class UserMapper : ITLObjectMapper<User, UserDTO>
     public User MapToTLObject(UserDTO obj)
     {
         var userImpl = _factory.Resolve<UserImpl>();
+        userImpl.Self = obj.Self;
+        userImpl.Contact = obj.Contact;
+        userImpl.MutualContact = obj.MutualContact;
+        userImpl.Bot = obj.Bot;
+        userImpl.BotChatHistory = obj.BotChatHistory;
+        userImpl.BotNochats = obj.BotNoChats;
+        userImpl.Verified = obj.Verified;
+        userImpl.Restricted = obj.Restricted;
+        userImpl.Min = obj.Min;
+        userImpl.BotInlineGeo = obj.BotInlineGeo;
+        userImpl.Support = obj.Scam;
+        userImpl.ApplyMinPhoto = obj.ApplyMinPhoto;
+        userImpl.Fake = obj.Fake;
         userImpl.Id = obj.Id;
         userImpl.FirstName = obj.FirstName;
         userImpl.LastName = obj.LastName;
         userImpl.Phone = obj.Phone;
-        userImpl.Self = obj.Self;
         if (obj.Username?.Length > 0)
         {
             userImpl.Username = obj.Username;

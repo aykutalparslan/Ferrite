@@ -68,7 +68,12 @@ public class UserService : IUsersService
         {
             Data.UserFullDTO fullUser = CreteFullUser(id, user, notifySettings);
             return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
-                new List<UserDTO>(){user with{Self = self}}), true, ErrorMessages.None);
+                new List<UserDTO>(){user with
+                {
+                    Self = self, 
+                    Min = true,
+                    ApplyMinPhoto = true,
+                }}), true, ErrorMessages.None);
         }
 
         return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);
@@ -77,6 +82,18 @@ public class UserService : IUsersService
     private Data.UserFullDTO CreteFullUser(InputUserDTO id, UserDTO user, PeerNotifySettingsDTO notifySettings)
     {
         var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
+        profilePhoto = profilePhoto with
+        {
+            Sizes = _unitOfWork.PhotoRepository
+                .GetThumbnails(profilePhoto.Id).Select(t =>
+                    new PhotoSizeDTO(PhotoSizeType.Default,
+                        t.Type,
+                        t.Width,
+                        t.Height,
+                        t.Size,
+                        t.Bytes,
+                        t.Sizes)).ToList()
+        };
         PeerSettingsDTO settingsDto = GeneratePeerSettings(id);
         var fullUser = new Ferrite.Data.UserFullDTO
         {
@@ -150,17 +167,7 @@ public class UserService : IUsersService
         if (user != null)
         {
             user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
-            var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
-            if (profilePhoto != null)
-            {
-                user.Photo = new UserProfilePhotoDTO()
-                {
-                    DcId = (int)profilePhoto.DcId,
-                    PhotoId = profilePhoto.Id,
-                };
-            }
         }
-
         return user;
     }
 

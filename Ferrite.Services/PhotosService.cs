@@ -66,6 +66,9 @@ public class PhotosService : IPhotosService
             DcId = (int)photoInner.DcId,
             PhotoId = photoInner.Id,
         };
+        user.ApplyMinPhoto = true;
+        user.Min = true;
+        user.Self = true;
         await _unitOfWork.SaveAsync();
         var photo = new PhotoDTO(photoInner, new[] { user });
         
@@ -87,7 +90,6 @@ public class PhotosService : IPhotosService
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.InvalidAuthKey);
         }
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
-        
         var date = DateTime.Now;
         var processResult = await ProcessPhoto(file, date);
         if (!processResult.Success || processResult.Result == null)
@@ -96,8 +98,17 @@ public class PhotosService : IPhotosService
         } 
         
         _unitOfWork.PhotoRepository.PutProfilePhoto(auth.UserId, file.Id, file.AccessHash, file.FileReference, date);
+       
+        user.Photo = new UserProfilePhotoDTO()
+        {
+            DcId = (int)processResult.Result.DcId,
+            PhotoId = processResult.Result.Id,
+        };
+        _unitOfWork.UserRepository.PutUser(user);
         await _unitOfWork.SaveAsync();
-        
+        user.ApplyMinPhoto = true;
+        user.Min = true;
+        user.Self = true;
         var result = new PhotoDTO(processResult.Result, new[] { user });
         return new ServiceResult<PhotoDTO>(result, true, ErrorMessages.None);
     }
@@ -261,11 +272,32 @@ public class PhotosService : IPhotosService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+        
+
+        var profilePhotos = _unitOfWork.PhotoRepository.GetProfilePhotos(auth.UserId);
         if (auth.UserId == user.Id)
         {
-            user = user with { Self = true };
+            user = user with
+            {
+                Self = true,
+                Min = true,
+                ApplyMinPhoto = true,
+            };
         }
-        var profilePhotos = _unitOfWork.PhotoRepository.GetProfilePhotos(auth.UserId);
-        return new PhotosDTO(profilePhotos, new List<UserDTO> { user });
+        List<Data.PhotoDTO> photos = new();
+        foreach (var p in profilePhotos)
+        {
+            var thumbs = _unitOfWork.PhotoRepository
+                .GetThumbnails(p.Id).Select(t => 
+                    new PhotoSizeDTO(PhotoSizeType.Default,
+                        t.Type,
+                        t.Width,
+                        t.Height,
+                        t.Size,
+                        t.Bytes,
+                        t.Sizes)).ToList();
+            photos.Add(p with{Sizes = thumbs});
+        }
+        return new PhotosDTO(photos, new List<UserDTO> { user });
     }
 }

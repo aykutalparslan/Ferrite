@@ -16,15 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-
 namespace Ferrite.Data;
 
-public interface IObjectStore
+public interface IFileOwnerFactory
 {
-    public ValueTask<bool> SaveFilePart(long fileId, int filePart, Stream data);
-    public ValueTask<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
-    public ValueTask<Stream> GetFilePart(long fileId, int filePart);
-    public ValueTask<Stream> GetBigFilePart(long fileId, int filePart);
-    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, long reqMsgId);
+    
 }

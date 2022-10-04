@@ -88,13 +88,17 @@ public class LocalObjectStore : IObjectStore
     {
         return ValueTask.FromResult(GetFileStream(fileId, filePart));
     }
-    
+
+    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, long reqMsgId)
+    {
+        return new LocalFileOwner(fileInfo, this, offset, limit, reqMsgId);
+    }
+
     private Stream GetFileStream(long fileId, int filePart)
     {
         ObjectId key = new(fileId, filePart);
-        ObjectMetadata metadata = new();
-        _session.Read(ref key, ref metadata);
+        _session.Read(key, out var metadata);
         var path = GetFilePath(metadata);
-        return File.Open(path, FileMode.Open);
+        return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
     }
 }

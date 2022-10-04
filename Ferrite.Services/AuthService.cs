@@ -34,18 +34,20 @@ public class AuthService : IAuthService
     private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IUsersService _users;
     private readonly ILogger _log;
 
     private const int PhoneCodeTimeout = 60;//seconds
 
     public AuthService(IRandomGenerator random, ISearchEngine search,
-        IUnitOfWork unitOfWork, ICounterFactory counterFactory,
-        ILogger log)
+        IUnitOfWork unitOfWork, ICounterFactory counterFactory, 
+        IUsersService users, ILogger log)
     {
         _random = random;
         _search = search;
         _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
+        _users = users;
         _log = log;
     }
 
@@ -144,7 +146,7 @@ public class AuthService : IAuthService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth!= null && auth.LoggedIn &&
-            _unitOfWork.UserRepository.GetUser(auth.UserId) is UserDTO user)
+            _users.GetUser(auth.UserId) is UserDTO user)
         {
             return new LoginTokenDTO()
             {
@@ -160,10 +162,7 @@ public class AuthService : IAuthService
                         Phone = user.Phone,
                         Status = UserStatusDTO.Empty,
                         Self = true,
-                        Photo = new UserProfilePhotoDTO()
-                        {
-                            Empty = true
-                        }
+                        Photo = user.Photo
                     }
                 }
         };
@@ -195,7 +194,7 @@ public class AuthService : IAuthService
         if (auth != null && exported != null &&
             auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
         {
-            var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+            var user = _users.GetUser(auth.UserId);
             if(user == null)
             {
                 return new AuthorizationDTO()
@@ -214,10 +213,7 @@ public class AuthService : IAuthService
                     Phone = user.Phone,
                     Status = UserStatusDTO.Empty,
                     Self = true,
-                    Photo = new UserProfilePhotoDTO()
-                    {
-                        Empty = true
-                    }
+                    Photo = user.Photo
                 }
             };
         }
@@ -359,7 +355,15 @@ public class AuthService : IAuthService
         }
         _unitOfWork.SignInRepository.PutSignIn(authKeyId, phoneNumber, phoneCodeHash);
         await _unitOfWork.SaveAsync();
-        var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
+        var userId = _unitOfWork.UserRepository.GetUserId(phoneNumber);
+        if(userId == null)
+        {
+            return new AuthorizationDTO()
+            {
+                AuthorizationType = AuthorizationType.SignUpRequired,
+            };
+        }
+        var user = _users.GetUser((long)userId);
         if(user == null)
         {
             return new AuthorizationDTO()
@@ -367,6 +371,9 @@ public class AuthService : IAuthService
                 AuthorizationType = AuthorizationType.SignUpRequired,
             };
         }
+        user.Self = true;
+        user.Min = true;
+        user.ApplyMinPhoto = true;
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
         {
@@ -380,19 +387,7 @@ public class AuthService : IAuthService
         return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.Authorization,
-            User = new UserDTO()
-            {
-                Id = user.Id,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Phone = user.Phone,
-                Status = UserStatusDTO.Empty,
-                Self = true,
-                Photo = new UserProfilePhotoDTO()
-                {
-                    Empty = true
-                }
-            }
+            User = user,
         };
     }
 

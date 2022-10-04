@@ -33,13 +33,9 @@ public class LocalPipe : IMessagePipe
     
     public ValueTask<bool> SubscribeAsync(string channel)
     {
-        if (!_channels.ContainsKey(channel))
-        {
-            _channels.TryAdd(channel, Channel.CreateUnbounded<byte[]>());
-        }
-
         _channel = channel;
-        return ValueTask.FromResult<bool>(true);
+        CreateChannelIfNotExists();
+        return ValueTask.FromResult(true);
     }
 
     public ValueTask<bool> UnSubscribeAsync()
@@ -53,22 +49,25 @@ public class LocalPipe : IMessagePipe
 
     public async ValueTask<byte[]> ReadMessageAsync(CancellationToken cancellationToken = default)
     {
-        if (_channels.TryGetValue(_channel, out var c))
-        {
-            return await c.Reader.ReadAsync(cancellationToken);
-        }
+        CreateChannelIfNotExists();
+        return await _channels[_channel].Reader.ReadAsync(cancellationToken);
+    }
 
-        await Task.Delay(100, cancellationToken);
-        return null;
+    private void CreateChannelIfNotExists()
+    {
+        if (_channel == null)
+        {
+            throw new Exception("Must be subscribed first.");
+        }
+        if (!_channels.ContainsKey(_channel))
+        {
+            _channels.TryAdd(_channel, Channel.CreateUnbounded<byte[]>());
+        }
     }
 
     public async ValueTask<bool> WriteMessageAsync(string channel, byte[] message)
     {
-        if (!_channels.ContainsKey(channel))
-        {
-            _channels.TryAdd(channel, Channel.CreateUnbounded<byte[]>());
-        }
-
+        CreateChannelIfNotExists();
         if (!_channels.TryGetValue(channel, out var c)) return false;
         await c.Writer.WriteAsync(message);
         return true;
