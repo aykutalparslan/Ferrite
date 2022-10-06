@@ -71,6 +71,7 @@ public class MTProtoConnection : IMTProtoConnection
     private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
     private Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
+    private readonly SemaphoreSlim _incomingSemaphore = new SemaphoreSlim(1, 1);
     private Task? sendTask;
     private Task? sendStreamTask;
     private Timer? disconnectTimer;
@@ -154,7 +155,7 @@ public class MTProtoConnection : IMTProtoConnection
             _connectionAborted = true;
             try
             {
-                _currentRequest.Dispose();
+                _ = _currentRequest.DisposeAsync();
                 _sessionManager.RemoveSession(_authKeyId, _sessionId);
                 _outgoing.Writer.Complete();
                 socketConnection.Abort(abortReason);
@@ -187,19 +188,14 @@ public class MTProtoConnection : IMTProtoConnection
         };
         await SendAsync(message);
     }
-
     private async Task DoReceive()
     {
         while (true)
         {
+            await _incomingSemaphore.WaitAsync();
             var result = await socketConnection.Transport.Input.ReadAsync();
             try
             {
-                if (result.IsCanceled)
-                {
-                    break;
-                }
-
                 if (result.Buffer.Length > 0)
                 {
                     if (webSocketHandler != null)
@@ -220,8 +216,14 @@ public class MTProtoConnection : IMTProtoConnection
                         socketConnection.Transport.Input.AdvanceTo(position);
                     }
                 }
+                else
+                {
+                    socketConnection.Transport.Input.AdvanceTo(result.Buffer.Start,
+                        result.Buffer.End);
+                }
 
-                if (result.IsCompleted)
+                if (result.IsCompleted ||
+                    result.IsCanceled)
                 {
                     break;
                 }
@@ -230,6 +232,8 @@ public class MTProtoConnection : IMTProtoConnection
             {
                 _log.Error(ex, ex.Message);
             }
+
+            _incomingSemaphore.Release();
         }
     }
 
@@ -552,9 +556,8 @@ public class MTProtoConnection : IMTProtoConnection
             if (isStream)
             {
                 ProcessStream(frame, hasMore).Wait();
-                return reader.Position;
             }
-            if (frame.Length > 0)
+            else if (frame.Length > 0)
             {
                 ProcessFrame(frame, requiresQuickAck);
             }
@@ -572,23 +575,26 @@ public class MTProtoConnection : IMTProtoConnection
             {
                 return;
             }
+
             long authKeyId = reader.ReadInt64(true);
-            if (authKeyId != 0 && _authKeyId != authKeyId)
+            if (authKeyId != 0 && _authKeyId == 0)
             {
                 _authKeyId = authKeyId;
                 _authKey = null;
                 GetAuthKey();
             }
+
             TryGetPermAuthKey();
             if (_permAuthKeyId != 0)
             {
                 SaveCurrentSession(_permAuthKeyId);
             }
+
             var incomingMessageKey = new byte[16];
             reader.Read(incomingMessageKey);
             var aesKey = new byte[32];
             var aesIV = new byte[32];
-            AesIge.GenerateAesKeyAndIV(_authKey,incomingMessageKey,true,aesKey,aesIV);
+            AesIge.GenerateAesKeyAndIV(_authKey, incomingMessageKey, true, aesKey, aesIV);
             _currentRequest = new MTProtoPipe(aesKey, aesIV, false);
             await _currentRequest.WriteAsync(reader);
             await ProcessPipe(_currentRequest);
@@ -600,7 +606,8 @@ public class MTProtoConnection : IMTProtoConnection
 
         if (!hasMore)
         {
-            _currentRequest.Complete();
+            await _currentRequest.CompleteAsync();
+            _ = _currentRequest.DisposeAsync();
             _currentRequest = null;
         }
     }

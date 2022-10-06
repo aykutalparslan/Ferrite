@@ -113,10 +113,10 @@ public class AbridgedFrameDecoder : IFrameDecoder
             _isStream = IsStream(reader.UnreadSequence.Slice(0, 72));
             isStream = _isStream;
         }
-
-        if (_isStream && reader.Remaining > 0)
+        
+        int toBeWritten = Math.Min(_remaining, StreamChunkSize);
+        if (_isStream && reader.Remaining >= toBeWritten)
         {
-            int toBeWritten = Math.Min(_remaining, StreamChunkSize);
             ReadOnlySequence<byte> chunk = reader.UnreadSequence.Slice(0, toBeWritten);
             reader.Advance(toBeWritten);
             _remaining -= toBeWritten;
@@ -159,7 +159,7 @@ public class AbridgedFrameDecoder : IFrameDecoder
         {
             frame = data;
         }
-        if (reader.Remaining != 0)
+        if (_remaining != 0)
         {
             return true;
         }
@@ -177,7 +177,8 @@ public class AbridgedFrameDecoder : IFrameDecoder
         }
         else
         {
-            reader = IAsyncBinaryReader.Create(header);
+            header.CopyTo(_headerBytes);
+            reader = IAsyncBinaryReader.Create(_headerBytes);
         }
         long authKeyId = reader.ReadInt64(true);
         var authKey = (_mtproto.GetAuthKey(authKeyId) ?? 

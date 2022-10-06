@@ -26,7 +26,7 @@ using Ferrite.Crypto;
 
 namespace Ferrite.TL;
 
-public class MTProtoPipe : IDisposable
+public class MTProtoPipe : IAsyncDisposable
 {
     private readonly Pipe _encryptedPipe;
     private readonly Pipe _pipe;
@@ -96,15 +96,15 @@ public class MTProtoPipe : IDisposable
                 _pipe.Writer.Advance(16);
             }
             await _pipe.Writer.FlushAsync();
-            _encryptedPipe.Reader.AdvanceTo(readResult.Buffer.Slice(0,pCount*16).End, 
-                readResult.Buffer.End);
+            _encryptedPipe.Reader.AdvanceTo(readResult.Buffer.Slice(0,pCount*16).End);
 
-            if (readResult.IsCompleted)
+            if (readResult.IsCompleted ||
+                readResult.IsCanceled)
             {
-                await _pipe.Writer.CompleteAsync();
                 break;
             }
         }
+        _ = _pipe.Writer.CompleteAsync();
     }
 
     public void Complete()
@@ -119,8 +119,9 @@ public class MTProtoPipe : IDisposable
 
     public PipeReader Input { get; }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
+        await _decryptTask;
         _buff.Dispose();
     }
 }

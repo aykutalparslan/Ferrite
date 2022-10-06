@@ -82,18 +82,22 @@ public class UserService : IUsersService
     private Data.UserFullDTO CreteFullUser(InputUserDTO id, UserDTO user, PeerNotifySettingsDTO notifySettings)
     {
         var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
-        profilePhoto = profilePhoto with
+        if (profilePhoto != null)
         {
-            Sizes = _unitOfWork.PhotoRepository
-                .GetThumbnails(profilePhoto.Id).Select(t =>
-                    new PhotoSizeDTO(PhotoSizeType.Default,
-                        t.Type,
-                        t.Width,
-                        t.Height,
-                        t.Size,
-                        t.Bytes,
-                        t.Sizes)).ToList()
-        };
+            profilePhoto = profilePhoto with
+            {
+                Sizes = _unitOfWork.PhotoRepository
+                    .GetThumbnails(profilePhoto.Id).Select(t =>
+                        new PhotoSizeDTO(PhotoSizeType.Default,
+                            t.Type,
+                            t.Width,
+                            t.Height,
+                            t.Size,
+                            t.Bytes,
+                            t.Sizes)).ToList()
+            };
+        }
+        
         PeerSettingsDTO settingsDto = GeneratePeerSettings(id);
         var fullUser = new Ferrite.Data.UserFullDTO
         {

@@ -26,6 +26,7 @@ using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
@@ -89,71 +90,24 @@ class StubTransportConnection : ITransportConnection
 public class StreamingRequestTests
 {
     [Theory]
-    [InlineData(64)]
-    [InlineData(128)]
-    [InlineData(256)]
-    [InlineData(4096)]
     [InlineData(8192)]
-    [InlineData(9000)]
-    public async void ReceivesDataFor_SaveFilePart(int partSize)
+    [InlineData(16384)]
+    [InlineData(32768)]
+    [InlineData(65536)]
+    public async void ReceivesDataFor_MultipleSaveFilePartOps(int partSize)
     {
-        byte[] fileData = RandomNumberGenerator.GetBytes(partSize);
-        SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>();
-        writer.WriteInt64(0, true);
-        writer.WriteInt64(0, true);
-        writer.WriteInt64(0, true);
-        writer.WriteInt32(0, true);
-        writer.WriteInt32(fileData.Length+16, true);
-        writer.WriteInt32(TLConstructor.Upload_SaveFilePart, true);
-        writer.WriteInt64(123, true);
-        writer.WriteInt32(5, true);
-        int length = fileData.Length;
-        int rem;
-        if (length < 254)
-        {
-            writer.Write((byte)length);
-            rem = (int)((4 - ((length + 1) % 4)) % 4);
-        }
-        else
-        {
-            writer.Write((byte)254);
-            writer.Write((byte)(length & 0xff));
-            writer.Write((byte)((length >> 8) & 0xff));
-            writer.Write((byte)((length >> 16) & 0xff));
-            rem = (int)((4 - ((length + 4) % 4)) % 4);
-        }
-        writer.Write(fileData);
-        writer.Write(RandomNumberGenerator.GetBytes(140));
-        byte[] plaintext = writer.ToReadOnlySequence().ToArray();
-        byte[] ciphertext = new byte[plaintext.Length];
-        writer.Clear();
-        byte[] authKey = RandomNumberGenerator.GetBytes(192);
-        byte[] messageKey = AesIge.GenerateMessageKey(authKey, plaintext, true).ToArray();
-        byte[] aesKey = new byte[32];
-        byte[] aesIV = new byte[32];
-        AesIge.GenerateAesKeyAndIV(authKey, messageKey, true, aesKey, aesIV);
-        Aes aes = Aes.Create();
-        aes.Key = aesKey;
-        aes.EncryptIge(plaintext, aesIV, ciphertext);
-        byte firstByte = 0xef;
-        writer.Write(firstByte);
-        int len = (plaintext.Length + 24) / 4;
-        if (len < 127)
-        {
-            writer.Write((byte)len);
-        }
-        else
-        {
-            writer.Write((byte)0x7f);
-            writer.Write((byte)(len & 0xff));
-            writer.Write((byte)((len >> 8) & 0xFF));
-            writer.Write((byte)((len >> 16) & 0xFF));
-        }
-        writer.WriteInt64(1, true);
-        writer.Write(messageKey);
-        writer.Write(ciphertext);
-        var finalMessage = writer.ToReadOnlySequence().ToArray();
-        writer.Clear();
+        var authKey = RandomNumberGenerator.GetBytes(192);
+        List<byte[]> ops = new();
+        List<byte[]> actual = new();
+        var fileData = GenerateSaveFilePart(partSize, authKey, out var finalMessage,123,0);
+        actual.Add(fileData);
+        ops.Add(finalMessage);
+        var fileData2 = GenerateSaveFilePart(partSize, authKey, out var finalMessage2,123,1);
+        actual.Add(fileData2);
+        ops.Add(finalMessage2);
+        var fileData3 = GenerateSaveFilePart(partSize, authKey, out var finalMessage3,123,2);
+        actual.Add(fileData3);
+        ops.Add(finalMessage3);
         var builder = GetContainerBuilder();
         Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
         Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
@@ -184,7 +138,94 @@ public class StreamingRequestTests
             return authKeys[a];
         });
         builder.RegisterMock(proto);
-        ConcurrentDictionary<string, byte[]> storedObjects = new ConcurrentDictionary<string, byte[]>();
+        Channel<(int, byte[])> saved = Channel.CreateUnbounded<(int, byte[])>();
+        var objectStore = new Mock<IUploadService>();
+        objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
+            It.IsAny<int>(), It.IsAny<Stream>())).Returns( async (long fileId, int filePart, Stream data) =>
+            {
+                var bytes = default(byte[]);
+                using (var memstream = new MemoryStream())
+                {
+                    await data.CopyToAsync(memstream);
+                    bytes = memstream.ToArray();
+                }
+                await saved.Writer.WriteAsync((filePart, bytes));
+                return true;
+            });
+        builder.RegisterMock(objectStore);
+        var processorManager = new Mock<IProcessorManager>();
+        processorManager.Setup(x => x.Process(It.IsAny<object?>(),
+            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback( 
+            (object? sender, ITLObject input, TLExecutionContext ctx) =>
+        {
+            ((ITLMethod)input).ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>()));
+        });
+        builder.RegisterMock(processorManager);
+        var container = builder.Build();
+        byte[] concat = new byte[finalMessage.Length * 3 + 1];
+        concat[0] = 0xef;
+        int offset = 1;
+        foreach (var op in ops)
+        {
+            op.AsSpan().CopyTo(concat.AsSpan(offset));
+            offset += op.Length;
+        }
+        ITransportConnection connection = new StubTransportConnection(concat);
+        connection.Start();
+        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
+        mtProtoConnection.Start();
+        
+        await Task.Run(async () =>
+        {
+            if(await saved.Reader.WaitToReadAsync())
+            {
+                var (id, data) = await saved.Reader.ReadAsync();
+                Assert.Equal(actual[id], data);
+            }
+        });
+    }
+    [Theory]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
+    [InlineData(4096)]
+    [InlineData(8192)]
+    [InlineData(9000)]
+    public async void ReceivesDataFor_SaveFilePart(int partSize)
+    {
+        var authKey = RandomNumberGenerator.GetBytes(192);
+        var fileData = GenerateSaveFilePart(partSize, authKey, out var finalMessage, 123, 5);
+        var builder = GetContainerBuilder();
+        Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
+        Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
+        authKeys.Add(1, authKey);
+        var proto = new Mock<IMTProtoService>();
+        proto.Setup(x => x.GetAuthKey(It.IsAny<long>())).Returns((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
+        proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                authKeys.Add(a, b);
+            }
+            return true;
+        });
+        proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
+        {
+            if (!authKeys.ContainsKey(a))
+            {
+                return new byte[0];
+            }
+            return authKeys[a];
+        });
+        builder.RegisterMock(proto);
+        Channel<byte[]> saved = Channel.CreateUnbounded<byte[]>();
         var objectStore = new Mock<IUploadService>();
         objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
             It.IsAny<int>(), It.IsAny<Stream>())).Returns(async (long fileId, int filePart, Stream data) =>
@@ -195,7 +236,7 @@ public class StreamingRequestTests
                     await data.CopyToAsync(memstream);
                     bytes = memstream.ToArray();
                 }
-                storedObjects.TryAdd(fileId+"-"+filePart, bytes);
+                await saved.Writer.WriteAsync(bytes);
                 return true;
             });
         builder.RegisterMock(objectStore);
@@ -209,21 +250,81 @@ public class StreamingRequestTests
         
         builder.RegisterMock(processorManager);
         var container = builder.Build();
-        ITransportConnection connection = new StubTransportConnection(finalMessage);
+        byte[] buff = new byte[finalMessage.Length + 1];
+        buff[0] = 0xef;
+        finalMessage.AsSpan().CopyTo(buff.AsSpan(1));
+        ITransportConnection connection = new StubTransportConnection(buff);
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
         List<ITLObject> received = new List<ITLObject>();
         var sess = new Dictionary<string, object>();
         mtProtoConnection.Start();
-        await Task.Run(() =>
-        {
-            while (!storedObjects.ContainsKey("123-5"))
-            {
-                Task.Delay(20);
-            }
-        });
-        Assert.Equal(fileData, storedObjects["123-5"]);
+        Assert.Equal(fileData, await saved.Reader.ReadAsync());
     }
+
+    private static byte[] GenerateSaveFilePart(int partSize, byte[] authKey, out byte[] finalMessage, long fileId, int partNum)
+    {
+        byte[] fileData = RandomNumberGenerator.GetBytes(partSize);
+        SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>();
+        writer.WriteInt64(0, true);
+        writer.WriteInt64(0, true);
+        writer.WriteInt64(Random.Shared.Next(1000)*2, true);
+        writer.WriteInt32(0, true);
+        writer.WriteInt32(fileData.Length + 16, true);
+        writer.WriteInt32(TLConstructor.Upload_SaveFilePart, true);
+        writer.WriteInt64(fileId, true);
+        writer.WriteInt32(partNum, true);
+        int length = fileData.Length;
+        int rem;
+        if (length < 254)
+        {
+            writer.Write((byte)length);
+            rem = (int)((4 - ((length + 1) % 4)) % 4);
+        }
+        else
+        {
+            writer.Write((byte)254);
+            writer.Write((byte)(length & 0xff));
+            writer.Write((byte)((length >> 8) & 0xff));
+            writer.Write((byte)((length >> 16) & 0xff));
+            rem = (int)((4 - ((length + 4) % 4)) % 4);
+        }
+
+        writer.Write(fileData);
+        writer.Write(RandomNumberGenerator.GetBytes(140));
+        byte[] plaintext = writer.ToReadOnlySequence().ToArray();
+        byte[] ciphertext = new byte[plaintext.Length];
+        writer.Clear();
+        byte[] messageKey = AesIge.GenerateMessageKey(authKey, plaintext, true).ToArray();
+        byte[] aesKey = new byte[32];
+        byte[] aesIV = new byte[32];
+        AesIge.GenerateAesKeyAndIV(authKey, messageKey, true, aesKey, aesIV);
+        Aes aes = Aes.Create();
+        aes.Key = aesKey;
+        aes.EncryptIge(plaintext, aesIV, ciphertext);
+        //byte firstByte = 0xef;
+        //writer.Write(firstByte);
+        int len = (plaintext.Length + 24) / 4;
+        if (len < 127)
+        {
+            writer.Write((byte)len);
+        }
+        else
+        {
+            writer.Write((byte)0x7f);
+            writer.Write((byte)(len & 0xff));
+            writer.Write((byte)((len >> 8) & 0xFF));
+            writer.Write((byte)((len >> 16) & 0xFF));
+        }
+
+        writer.WriteInt64(1, true);
+        writer.Write(messageKey);
+        writer.Write(ciphertext);
+        finalMessage = writer.ToReadOnlySequence().ToArray();
+        writer.Clear();
+        return fileData;
+    }
+
     private ContainerBuilder GetContainerBuilder()
     {
         ConcurrentQueue<byte[]> _channel = new();
