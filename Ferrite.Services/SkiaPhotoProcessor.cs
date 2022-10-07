@@ -40,7 +40,7 @@ public class SkiaPhotoProcessor : IPhotoProcessor
                 bitmap.ExtractSubset(cropped, rect);
                 using var scaled = new SKBitmap(w, w);
                 cropped.ScalePixels(scaled, SKFilterQuality.High);
-                using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
+                using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 65);
                 return data.ToArray();
             }
             else
@@ -54,7 +54,7 @@ public class SkiaPhotoProcessor : IPhotoProcessor
                 canvas.DrawBitmap(bitmap, x, y);
                 using var scaled = new SKBitmap(w, w);
                 box.ScalePixels(scaled, SKFilterQuality.High);
-                using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 100);
+                using var data = scaled.Encode(SKEncodedImageFormat.Jpeg, 65);
                 return data.ToArray();
             }
         }

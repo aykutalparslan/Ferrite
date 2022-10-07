@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using System.Runtime.InteropServices;
 using DotNext.Buffers;
 using DotNext.IO;
@@ -137,9 +138,7 @@ public class PhotosService : IPhotosService
             foreach (var part in fileParts)
             {
                 var partData = await _objectStore.GetFilePart(part.FileId, part.PartNum);
-                int read = partData.ReadAtLeast((int)partData.Length,
-                    imageData.Span.Slice(offset, part.PartSize));
-                offset += part.PartSize;
+                offset = ReadFromStream(partData, imageData, offset);
             }
         }
         else
@@ -147,9 +146,7 @@ public class PhotosService : IPhotosService
             foreach (var part in fileParts)
             {
                 var partData = await _objectStore.GetBigFilePart(part.FileId, part.PartNum);
-                int read = partData.ReadAtLeast((int)partData.Length,
-                    imageData.Span.Slice(offset, part.PartSize));
-                offset += part.PartSize;
+                offset = ReadFromStream(partData, imageData, offset);
             }
         }
 
@@ -176,6 +173,19 @@ public class PhotosService : IPhotosService
         }
 
         return result;
+    }
+
+    private static int ReadFromStream(Stream partData, IUnmanagedMemoryOwner<byte> imageData, int offset)
+    {
+        var remaining = (int)partData.Length;
+        while (remaining > 0)
+        {
+            var read = partData.Read(imageData.Span[offset..]);
+            offset += read;
+            remaining -= read;
+        }
+
+        return offset;
     }
 
     private async Task GenerateThumbnails(int w, int h, IUnmanagedMemoryOwner<byte> imageData, 

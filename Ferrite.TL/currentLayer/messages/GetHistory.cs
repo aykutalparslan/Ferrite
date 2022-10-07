@@ -166,6 +166,11 @@ public class GetHistory : ITLObject, ITLMethod
             err.ErrorMessage = serviceResult.ErrorMessage.Message;
             rpcResult.Result = err;
         }
+        else if (serviceResult.Result.Messages.Count == 0)
+        {
+            var messages = factory.Resolve<MessagesNotModifiedImpl>();
+            rpcResult.Result = messages;
+        }
         else
         {
             var messages = factory.Resolve<MessagesImpl>();
