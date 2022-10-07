@@ -77,6 +77,7 @@ public class MTProtoPipe : IAsyncDisposable
         while (true)
         {
             var readResult = await _encryptedPipe.Reader.ReadAsync();
+            
             var pCount = readResult.Buffer.Length / 16;
             for (int i = 0; i < pCount; i++)
             {
@@ -97,14 +98,14 @@ public class MTProtoPipe : IAsyncDisposable
             }
             await _pipe.Writer.FlushAsync();
             _encryptedPipe.Reader.AdvanceTo(readResult.Buffer.Slice(0,pCount*16).End);
-
+            
             if (readResult.IsCompleted ||
                 readResult.IsCanceled)
             {
                 break;
             }
         }
-        _ = _pipe.Writer.CompleteAsync();
+        await _pipe.Writer.CompleteAsync();
     }
 
     public void Complete()

@@ -79,7 +79,7 @@ class StubTransportConnection : ITransportConnection
 
     public void Abort(Exception abortReason)
     {
-        throw new NotImplementedException();
+        Input.Writer.Complete();
     }
 
     public ValueTask DisposeAsync()
@@ -90,27 +90,21 @@ class StubTransportConnection : ITransportConnection
 public class StreamingRequestTests
 {
     [Theory]
-    [InlineData(8192)]
-    [InlineData(16384)]
-    [InlineData(32768)]
-    [InlineData(65536)]
+    [InlineData(64)]
+    [InlineData(128)]
+    [InlineData(256)]
     public async void ReceivesDataFor_MultipleSaveFilePartOps(int partSize)
     {
         var authKey = RandomNumberGenerator.GetBytes(192);
         List<byte[]> ops = new();
-        List<byte[]> actual = new();
-        var fileData = GenerateSaveFilePart(partSize, authKey, out var finalMessage,123,0);
-        actual.Add(fileData);
-        ops.Add(finalMessage);
-        var fileData2 = GenerateSaveFilePart(partSize, authKey, out var finalMessage2,123,1);
-        actual.Add(fileData2);
-        ops.Add(finalMessage2);
-        var fileData3 = GenerateSaveFilePart(partSize, authKey, out var finalMessage3,123,2);
-        actual.Add(fileData3);
-        ops.Add(finalMessage3);
+        for (int i = 0; i < 20; i++)
+        {
+            GenerateSaveFilePart(partSize, authKey, out var finalMessage, 123, 0);
+            ops.Add(finalMessage);
+        }
+        
         var builder = GetContainerBuilder();
         Dictionary<long, byte[]> authKeys = new Dictionary<long, byte[]>();
-        Dictionary<long, byte[]> sessions = new Dictionary<long, byte[]>();
         authKeys.Add(1, authKey);
         var proto = new Mock<IMTProtoService>();
         proto.Setup(x => x.GetAuthKey(It.IsAny<long>())).Returns((long a) =>
@@ -119,6 +113,7 @@ public class StreamingRequestTests
             {
                 return new byte[0];
             }
+
             return authKeys[a];
         });
         proto.Setup(x => x.PutAuthKeyAsync(It.IsAny<long>(), It.IsAny<byte[]>())).ReturnsAsync((long a, byte[] b) =>
@@ -127,6 +122,7 @@ public class StreamingRequestTests
             {
                 authKeys.Add(a, b);
             }
+
             return true;
         });
         proto.Setup(x => x.GetAuthKeyAsync(It.IsAny<long>())).ReturnsAsync((long a) =>
@@ -135,34 +131,16 @@ public class StreamingRequestTests
             {
                 return new byte[0];
             }
+
             return authKeys[a];
         });
         builder.RegisterMock(proto);
-        Channel<(int, byte[])> saved = Channel.CreateUnbounded<(int, byte[])>();
         var objectStore = new Mock<IUploadService>();
-        objectStore.Setup(x => x.SaveFilePart(It.IsAny<long>(), 
-            It.IsAny<int>(), It.IsAny<Stream>())).Returns( async (long fileId, int filePart, Stream data) =>
-            {
-                var bytes = default(byte[]);
-                using (var memstream = new MemoryStream())
-                {
-                    await data.CopyToAsync(memstream);
-                    bytes = memstream.ToArray();
-                }
-                await saved.Writer.WriteAsync((filePart, bytes));
-                return true;
-            });
-        builder.RegisterMock(objectStore);
+        builder.RegisterMock(objectStore).SingleInstance();
         var processorManager = new Mock<IProcessorManager>();
-        processorManager.Setup(x => x.Process(It.IsAny<object?>(),
-            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback( 
-            (object? sender, ITLObject input, TLExecutionContext ctx) =>
-        {
-            ((ITLMethod)input).ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>()));
-        });
         builder.RegisterMock(processorManager);
         var container = builder.Build();
-        byte[] concat = new byte[finalMessage.Length * 3 + 1];
+        byte[] concat = new byte[ops[0].Length * ops.Count + 1];
         concat[0] = 0xef;
         int offset = 1;
         foreach (var op in ops)
@@ -170,20 +148,17 @@ public class StreamingRequestTests
             op.AsSpan().CopyTo(concat.AsSpan(offset));
             offset += op.Length;
         }
+
         ITransportConnection connection = new StubTransportConnection(concat);
         connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
+        MTProtoConnection mtProtoConnection =
+            container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
         mtProtoConnection.Start();
-        
-        await Task.Run(async () =>
-        {
-            if(await saved.Reader.WaitToReadAsync())
-            {
-                var (id, data) = await saved.Reader.ReadAsync();
-                Assert.Equal(actual[id], data);
-            }
-        });
+        await Task.Delay(200);
+        processorManager.Verify(x => x.Process(It.IsAny<object?>(),
+            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>()), Times.AtLeast(3));
     }
+
     [Theory]
     [InlineData(64)]
     [InlineData(128)]
@@ -291,7 +266,7 @@ public class StreamingRequestTests
         }
 
         writer.Write(fileData);
-        writer.Write(RandomNumberGenerator.GetBytes(140));
+        writer.Write(RandomNumberGenerator.GetBytes(128 + rem));
         byte[] plaintext = writer.ToReadOnlySequence().ToArray();
         byte[] ciphertext = new byte[plaintext.Length];
         writer.Clear();
@@ -302,8 +277,6 @@ public class StreamingRequestTests
         Aes aes = Aes.Create();
         aes.Key = aesKey;
         aes.EncryptIge(plaintext, aesIV, ciphertext);
-        //byte firstByte = 0xef;
-        //writer.Write(firstByte);
         int len = (plaintext.Length + 24) / 4;
         if (len < 127)
         {

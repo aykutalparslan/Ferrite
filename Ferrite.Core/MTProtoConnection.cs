@@ -606,8 +606,8 @@ public class MTProtoConnection : IMTProtoConnection
 
         if (!hasMore)
         {
-            await _currentRequest.CompleteAsync();
-            _ = _currentRequest.DisposeAsync();
+            _currentRequest.Complete();
+            await _currentRequest.DisposeAsync();
             _currentRequest = null;
         }
     }
