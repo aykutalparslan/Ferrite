@@ -67,4 +67,69 @@ public class InMemoryStoreTests
         store.Put(value, new TimeSpan(0, 0, 0, 0, 50), "test123");
         Assert.Equal(value, store.Get("test123"));
     }
+    [Fact]
+    async Task InMemoryStore_Should_AddToList()
+    {
+        InMemoryStore store = new InMemoryStore();
+        store.SetSchema(new TableDefinition("test", "keys",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "id", Type = DataType.String })));
+        for (int i = 0; i < 10; i++)
+        {
+            var value = RandomNumberGenerator.GetBytes(8);
+            store.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds(), 
+                value, null, "test123");
+        }
+
+        var l = store.ListGet("test123");
+        Assert.Equal(10, l.Count);
+    }
+    [Fact]
+    async Task InMemoryStore_Should_DeleteFromListByScore()
+    {
+        InMemoryStore store = new InMemoryStore();
+        store.SetSchema(new TableDefinition("test", "keys",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "id", Type = DataType.String })));
+        for (int i = 0; i < 5; i++)
+        {
+            var value = RandomNumberGenerator.GetBytes(8);
+            store.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds() - 10000, 
+                value, null, "test123");
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            var value = RandomNumberGenerator.GetBytes(8);
+            store.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds() + 10000, 
+                value, null, "test123");
+        }
+        store.ListDeleteByScore(DateTimeOffset.Now.ToUnixTimeMilliseconds());
+        var l = store.ListGet("test123");
+        Assert.Equal(10, l.Count);
+    }
+    [Fact]
+    async Task InMemoryStore_Should_DeleteFromList()
+    {
+        InMemoryStore store = new InMemoryStore();
+        store.SetSchema(new TableDefinition("test", "keys",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "id", Type = DataType.String })));
+        byte[] toBeDeleted = Array.Empty<byte>();
+        for (int i = 0; i < 5; i++)
+        {
+            var value = RandomNumberGenerator.GetBytes(8);
+            if (toBeDeleted.Length == 0)
+            {
+                toBeDeleted = value;
+            }
+            store.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds() - 10000, 
+                value, null, "test123");
+        }
+        store.ListDelete(toBeDeleted, "test123");
+        var l = store.ListGet("test123");
+        foreach (var v in l)
+        {
+            Assert.NotEqual(toBeDeleted, v);
+        }
+    }
 }

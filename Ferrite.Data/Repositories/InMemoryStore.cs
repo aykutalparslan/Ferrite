@@ -174,7 +174,6 @@ public class InMemoryStore : IVolatileKVStore
 
     public bool ListDelete(byte[] value, params object[] keys)
     {
-        
         SortedList<long, byte[]>? list;
         var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
         bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
@@ -186,13 +185,21 @@ public class InMemoryStore : IVolatileKVStore
             try
             {
                 list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                List<long> toBeRemoved = new();
                 foreach (var (k, v) in list)
                 {
                     if (v.SequenceEqual(value))
                     {
-                        list.Remove(k);
+                        toBeRemoved.Add(k);
                     }
                 }
+                foreach (var t in toBeRemoved)
+                {
+                    list.Remove(t);
+                }
+
+                var newData = MessagePackSerializer.Serialize(list);
+                _dictionary.TryUpdate(primaryKey.ArrayValue, (newData, expiry), existing);
             }
             catch (MessagePackSerializationException e)
             {
@@ -217,17 +224,24 @@ public class InMemoryStore : IVolatileKVStore
             try
             {
                 list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                List<long> toBeRemoved = new();
                 foreach (var k in list.Keys)
                 {
                     if (k < score)
                     {
-                        list.Remove(k);
+                        toBeRemoved.Add(k);
                     }
                     else
                     {
                         break;
                     }
                 }
+                foreach (var t in toBeRemoved)
+                {
+                    list.Remove(t);
+                }
+                var newData = MessagePackSerializer.Serialize(list);
+                _dictionary.TryUpdate(primaryKey.ArrayValue, (newData, expiry), existing);
             }
             catch (MessagePackSerializationException e)
             {
