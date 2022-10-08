@@ -21,6 +21,7 @@ using System.IO.Compression;
 using System.IO.Pipelines;
 using DotNext.IO;
 using Ferrite.TL;
+using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
 
 namespace Ferrite.Core;
@@ -39,12 +40,12 @@ public class GZipProcessor : IProcessor
         {
             if (input.Constructor == TLConstructor.GzipPacked)
             {
-                var pipe = PipeReader.Create(input.TLBytes);
-                var stream = new GZipStream(pipe.AsStream(), CompressionMode.Decompress);
+                var gzipped = new MemoryStream(((GzipPacked)input).PackedData);
+                var stream = new GZipStream(gzipped, CompressionMode.Decompress);
                 MemoryStream ms = new MemoryStream();
                 await stream.CopyToAsync(ms);
                 var decompressed = ms.ToArray();
-                var rd = new SequenceReader(new ReadOnlySequence<byte>());
+                var rd = new SequenceReader(new ReadOnlySequence<byte>(decompressed));
                 int constructor = rd.ReadInt32(true);
                 var obj = _factory.Read(constructor, ref rd);
                 output.Enqueue(obj);
