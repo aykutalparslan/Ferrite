@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
 using Ferrite.Core;
+using Ferrite.Core.Features;
 using Ferrite.Core.Methods;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -139,15 +140,23 @@ public class MTProtoConnectionTests
     [Fact]
     public void ReceivesMessagesFromWebSocket()
     {
-        var container = BuildIoCContainer();
+        var builder = GetContainerBuilder();
+        List<ITLObject> received = new List<ITLObject>();
+        var processor = new Mock<IProcessorManager>();
+        processor.Setup(p =>
+            p.Process(It.IsAny<object?>(),
+                It.IsAny<ITLObject>(), 
+                It.IsAny<TLExecutionContext>())).Callback((object? sender, 
+            ITLObject input, TLExecutionContext ctx) =>
+        {
+            received.Add(input);
+        });
+        builder.RegisterMock(processor);
+        var container = builder.Build();
         ITransportConnection connection = new FakeTransportConnection("testdata/websocketSession.bin");
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
+
         mtProtoConnection.Start();
 
         Assert.IsType<InvokeWithLayer>(received[0]);
@@ -158,15 +167,22 @@ public class MTProtoConnectionTests
     [Fact]
     public async Task SendsWebSocketHeader()
     {
-        var container = BuildIoCContainer();
+        var builder = GetContainerBuilder();
+        List<ITLObject> received = new List<ITLObject>();
+        var processor = new Mock<IProcessorManager>();
+        processor.Setup(p =>
+            p.Process(It.IsAny<object?>(),
+                It.IsAny<ITLObject>(), 
+                It.IsAny<TLExecutionContext>())).Callback((object? sender, 
+            ITLObject input, TLExecutionContext ctx) =>
+        {
+            received.Add(input);
+        });
+        builder.RegisterMock(processor);
+        var container = builder.Build();
         FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
         mtProtoConnection.Start();
         var webSocketResult = await connection.Application.Input.ReadAsync();
         string wsExpected = "HTTP/1.1 101 Switching Protocols\r\nConnection: upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Accept: AJivmihbVG1JSXhoiKaZkpv82+s=\r\nSec-WebSocket-Protocol: binary\r\n\r\n";
@@ -181,7 +197,19 @@ public class MTProtoConnectionTests
     [Fact]
     public async Task SendsUnencryptedMessages()
     {
-        var container = BuildIoCContainer();
+        var builder = GetContainerBuilder();
+        List<ITLObject> received = new List<ITLObject>();
+        var processor = new Mock<IProcessorManager>();
+        processor.Setup(p =>
+            p.Process(It.IsAny<object?>(),
+                It.IsAny<ITLObject>(), 
+                It.IsAny<TLExecutionContext>())).Callback((object? sender, 
+            ITLObject input, TLExecutionContext ctx) =>
+        {
+            received.Add(input);
+        });
+        builder.RegisterMock(processor);
+        var container = builder.Build();
         FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
@@ -195,7 +223,8 @@ public class MTProtoConnectionTests
         var message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
         await mtProtoConnection.SendAsync(message);
         var result = await connection.Application.Input.ReadAsync();
-        Assert.Equal(expected, result.Buffer.ToSpan().Slice(2).ToArray());
+        var actual = result.Buffer.ToSpan().Slice(2).ToArray();
+        Assert.Equal(expected, actual);
         connection.Application.Input.AdvanceTo(result.Buffer.End);
 
         data = File.ReadAllBytes("testdata/message_1");
@@ -218,15 +247,23 @@ public class MTProtoConnectionTests
     [Fact]
     public async Task SendsEncryptedMessage()
     {
-        var container = BuildIoCContainer();
+        var builder = GetContainerBuilder();
+        List<ITLObject> received = new List<ITLObject>();
+        var processor = new Mock<IProcessorManager>();
+        processor.Setup(p =>
+            p.Process(It.IsAny<object?>(),
+                It.IsAny<ITLObject>(), 
+                It.IsAny<TLExecutionContext>())).Callback((object? sender, 
+            ITLObject input, TLExecutionContext ctx) =>
+        {
+            received.Add(input);
+        });
+        builder.RegisterMock(processor);
+        var container = builder.Build();
         FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
         connection.Start();
         MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        List<ITLObject> received = new List<ITLObject>();
-        var sess = new Dictionary<string, object>();
-        mtProtoConnection.MessageReceived += async (s, e) => {
-            received.Add(e.Message);
-        };
+        
         mtProtoConnection.Start();
         var webSocketResult = await connection.Application.Input.ReadAsync();
         string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
@@ -272,7 +309,7 @@ public class MTProtoConnectionTests
         }
     }
 
-    private IContainer BuildIoCContainer()
+    private ContainerBuilder GetContainerBuilder()
     {
         ConcurrentQueue<byte[]> _channel = new();
         var pipe = new Mock<IMessagePipe>();
@@ -352,12 +389,12 @@ public class MTProtoConnectionTests
         random.Setup(x => x.GetRandomPrime())
             .Returns(()=> rnd.GetRandomPrime());
         Dictionary<Ferrite.TL.Int128, byte[]> _authKeySessionStates = new(); 
-        Dictionary<Ferrite.TL.Int128, MTProtoSession> _authKeySessions = new();
+        Dictionary<Ferrite.TL.Int128, ActiveSession> _authKeySessions = new();
         var sessionManager = new Mock<ISessionService>();
         sessionManager.SetupGet(x => x.NodeId).Returns(Guid.NewGuid());
         sessionManager.Setup(x => x.AddAuthSessionAsync(It.IsAny<byte[]>(),
-            It.IsAny<AuthSessionState>(), It.IsAny<MTProtoSession>())).ReturnsAsync(
-            (byte[] nonce, AuthSessionState state, MTProtoSession session) =>
+            It.IsAny<AuthSessionState>(), It.IsAny<ActiveSession>())).ReturnsAsync(
+            (byte[] nonce, AuthSessionState state, ActiveSession session) =>
         {
             var stateBytes = MessagePackSerializer.Serialize(state);
             _authKeySessions.Add((Ferrite.TL.Int128)nonce, session);
@@ -365,7 +402,7 @@ public class MTProtoConnectionTests
             return true;
         });
         sessionManager.Setup(x => x.AddSessionAsync(It.IsAny<long>(), It.IsAny<long>(),
-            It.IsAny<MTProtoSession>())).ReturnsAsync(() => true);
+            It.IsAny<ActiveSession>())).ReturnsAsync(() => true);
         sessionManager.Setup(x => x.GetAuthSessionStateAsync(It.IsAny<byte[]>())).ReturnsAsync((byte[] nonce) =>
         {
             var rawSession = _authKeySessionStates[(Ferrite.TL.Int128)nonce];
@@ -380,7 +417,7 @@ public class MTProtoConnectionTests
         sessionManager.Setup(x => x.GetSessionStateAsync(It.IsAny<long>())).ReturnsAsync((long sessionId) =>
         {
             var data = File.ReadAllBytes("testdata/sessionState");
-            return MessagePackSerializer.Deserialize<SessionState>(data);
+            return MessagePackSerializer.Deserialize<RemoteSession>(data);
         });
         sessionManager.Setup(x => x.UpdateAuthSessionAsync(It.IsAny<byte[]>(), It.IsAny<AuthSessionState>()))
             .ReturnsAsync(
@@ -419,19 +456,16 @@ public class MTProtoConnectionTests
         builder.RegisterMock(logger);
         builder.RegisterMock(apiLayer);
         builder.RegisterMock(sessionManager);
-        builder.RegisterType<AuthKeyProcessor>();
-        builder.RegisterType<MsgContainerProcessor>();
-        builder.RegisterType<ServiceMessagesProcessor>();
-        builder.RegisterType<GZipProcessor>();
-        builder.RegisterType<AuthorizationProcessor>();
-        builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
+        builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
+        builder.RegisterType<MessageHandler>().As<IMessageHandler>();
+        builder.RegisterType<StreamHandler>().As<IStreamHandler>();
+        builder.RegisterType<NotifySessionCreatedFeature>().As<INotifySessionCreatedFeature>().SingleInstance();
+        builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
+        builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
+        builder.RegisterType<MTProtoSession>().AsSelf();
         builder.RegisterMock(pipe);
         builder.RegisterMock(new Mock<IAuthService>());
-
-        var container = builder.Build();
-
-        return container;
+        return builder;
     }
 
 }

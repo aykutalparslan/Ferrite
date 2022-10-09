@@ -27,6 +27,6 @@ public interface IMTProtoConnection
     void Abort(Exception abortReason);
     ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75);
     ValueTask SendAsync(MTProtoMessage message);
-    ValueTask SendAsync(IFileOwner message);
+    ValueTask SendAsync(IFileOwner? message);
     void Start();
 }

@@ -79,7 +79,7 @@ public class MTProtoRequestProcessor : IProcessor
                         await ((MTProtoConnection)sender).SendAsync(message);
                     }
                     else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                             is SessionState session)
+                             is RemoteSession session)
                     {
                         var bytes = MessagePackSerializer.Serialize(message);
                         _ = _pipe.WriteMessageAsync(session.NodeId.ToString(), bytes);
@@ -125,7 +125,7 @@ public class MTProtoRequestProcessor : IProcessor
                         await ((MTProtoConnection)sender).SendAsync(message);
                     }
                     else if (await _sessionManager.GetSessionStateAsync(ctx.SessionId)
-                             is SessionState session)
+                             is RemoteSession session)
                     {
                         var bytes = MessagePackSerializer.Serialize(message);
                         _ = _pipe.WriteMessageAsync(session.NodeId.ToString(), bytes);

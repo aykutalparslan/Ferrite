@@ -50,10 +50,9 @@ public class DetectTransportTests
             var detector = mock.Create<MTProtoTransportDetector>();
             byte[] data = File.ReadAllBytes("testdata/obfuscatedIntermediate.bin");
             var seq = new ReadOnlySequence<byte>(data);
-            var reader = new SequenceReader<byte>(seq);
-            var actual = detector.DetectTransport(ref reader, out var decoder, out var encoder);
+            var actual = detector.DetectTransport(seq, out var decoder, out var encoder, out var position);
             Assert.Equal(MTProtoTransport.Intermediate, actual);
-            Assert.Equal(64, reader.Consumed);
+            Assert.Equal(64, seq.Slice(0, position).Length);
             Assert.NotNull(decoder);
             Assert.NotNull(encoder);
         }

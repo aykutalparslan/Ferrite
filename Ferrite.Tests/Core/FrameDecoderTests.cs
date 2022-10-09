@@ -51,14 +51,14 @@ namespace Ferrite.Tests.Core
                 var detector = mock.Create<MTProtoTransportDetector>();
                 byte[] data = File.ReadAllBytes("testdata/obfuscatedAbridgedSession.bin");
                 var seq = new ReadOnlySequence<byte>(data);
-                var reader = new SequenceReader<byte>(seq);
-                _ = detector.DetectTransport(ref reader, out var decoder, out var encoder);
+                SequencePosition pos = seq.Start;
+                _ = detector.DetectTransport(seq, out var decoder, out var encoder, out pos);
                 List<byte[]> frames = new();
                 bool hasMore = false;
                 do
                 {
-                    hasMore = decoder.Decode(ref reader, out var frame, 
-                        out var isStream, out var requiresQuickAck);
+                    hasMore = decoder.Decode(seq.Slice(pos), out var frame, 
+                        out var isStream, out var requiresQuickAck, out pos);
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);
@@ -111,14 +111,14 @@ namespace Ferrite.Tests.Core
 
                 byte[] data = File.ReadAllBytes("testdata/obfuscatedIntermediateSession.bin");
                 var seq = new ReadOnlySequence<byte>(data);
-                var reader = new SequenceReader<byte>(seq);
-                detector.DetectTransport(ref reader, out var decoder, out var encoder);
+                SequencePosition pos = seq.Start;
+                _ = detector.DetectTransport(seq, out var decoder, out var encoder, out pos);
                 List<byte[]> frames = new();
                 bool hasMore = false;
                 do
                 {
-                    hasMore = decoder.Decode(ref reader, out var frame, 
-                        out var isStream, out var requiresQuickAck);
+                    hasMore = decoder.Decode(seq.Slice(pos), out var frame, 
+                        out var isStream, out var requiresQuickAck, out pos);
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);

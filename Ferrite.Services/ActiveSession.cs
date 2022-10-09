@@ -21,10 +21,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Ferrite.Services;
 
-public class MTProtoSession
+public class ActiveSession
 {
     private readonly WeakReference<IMTProtoConnection> _ref;
-    public MTProtoSession(IMTProtoConnection connection)
+    public ActiveSession(IMTProtoConnection connection)
     {
         _ref = new(connection);
     }

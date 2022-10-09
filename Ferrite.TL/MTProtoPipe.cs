@@ -60,6 +60,13 @@ public class MTProtoPipe : IAsyncDisposable
         _encryptedPipe.Writer.Advance(count);
         return await _encryptedPipe.Writer.FlushAsync();
     }
+    public void Write(SequenceReader reader)
+    {
+        int count = (int)reader.RemainingSequence.Length;
+        var encBuff = _encryptedPipe.Writer.GetMemory(count);
+        reader.Read(encBuff.Span[..count]);
+        _encryptedPipe.Writer.Advance(count);
+    }
     public async ValueTask<FlushResult> WriteAsync(byte[] data)
     {
         return await _encryptedPipe.Writer.WriteAsync(data);
@@ -122,7 +129,7 @@ public class MTProtoPipe : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await _decryptTask;
+        if (_decryptTask != null) await _decryptTask;
         _buff.Dispose();
     }
 }

@@ -73,7 +73,7 @@ public class AuthKeyProcessor : IProcessor
             message.Data = result.TLBytes.ToArray();
             await _sessionManager.AddAuthSessionAsync(reqPq.Nonce,
                 new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
-                new MTProtoSession(connection));
+                new ActiveSession(connection));
             message.Nonce = reqPq.Nonce;
             message.MessageType = MTProtoMessageType.Unencrypted;
             var bytes = MessagePackSerializer.Serialize(message);
@@ -155,7 +155,7 @@ public class AuthKeyProcessor : IProcessor
                 var nonce = new req_pq_multi(input.AsSpan()).nonce.ToArray();
                 await _sessionManager.AddAuthSessionAsync(nonce,
                     new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
-                    new MTProtoSession(connection));
+                    new ActiveSession(connection));
                 message.Nonce = nonce;
                 message.MessageType = MTProtoMessageType.Unencrypted;
                 var bytes = MessagePackSerializer.Serialize(message);

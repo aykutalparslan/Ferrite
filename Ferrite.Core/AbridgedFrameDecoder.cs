@@ -50,9 +50,10 @@ public class AbridgedFrameDecoder : IFrameDecoder
         _mtproto = mtproto;
     }
 
-    public bool Decode(ref SequenceReader<byte> reader, out ReadOnlySequence<byte> frame, 
-        out bool isStream, out bool requiresQuickAck)
+    public bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, 
+        out bool isStream, out bool requiresQuickAck, out SequencePosition position)
     {
+        var reader = new SequenceReader<byte>(bytes);
         isStream = _isStream;
         requiresQuickAck = false;
         if (_length == 0)
@@ -60,6 +61,7 @@ public class AbridgedFrameDecoder : IFrameDecoder
             if (reader.Remaining == 0)
             {
                 frame = new ReadOnlySequence<byte>();
+                position = reader.Position;
                 return false;
             }
 
@@ -87,6 +89,7 @@ public class AbridgedFrameDecoder : IFrameDecoder
                 if (reader.Remaining < 3)
                 {
                     frame = new ReadOnlySequence<byte>();
+                    position = reader.Position;
                     return false;
                 }
                 reader.TryCopyTo(_lengthBytes.AsSpan().Slice(1, 3));
@@ -135,14 +138,16 @@ public class AbridgedFrameDecoder : IFrameDecoder
                 _length = 0;
                 _isStream = false;
                 Array.Clear(_lengthBytes);
+                position = reader.Position;
                 return false;
             }
-            
+            position = reader.Position;
             return true;
         }
         if (reader.Remaining < _length)
         {
             frame = new ReadOnlySequence<byte>();
+            position = reader.Position;
             return false;
         }
         ReadOnlySequence<byte> data = reader.UnreadSequence.Slice(0, _length);
@@ -161,9 +166,10 @@ public class AbridgedFrameDecoder : IFrameDecoder
         }
         if (_remaining != 0)
         {
+            position = reader.Position;
             return true;
         }
-
+        position = reader.Position;
         return false;
     }
 

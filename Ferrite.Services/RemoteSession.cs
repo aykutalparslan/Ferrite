@@ -25,7 +25,7 @@ using MessagePack;
 namespace Ferrite.Services;
 
 [MessagePackObject]
-public class SessionState
+public class RemoteSession
 {
     [Key(0)]
     public long SessionId { get; set; }

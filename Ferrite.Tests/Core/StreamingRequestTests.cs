@@ -32,6 +32,7 @@ using Autofac;
 using Autofac.Extras.Moq;
 using DotNext.Buffers;
 using Ferrite.Core;
+using Ferrite.Core.Features;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
@@ -366,12 +367,12 @@ public class StreamingRequestTests
         random.Setup(x => x.GetRandomPrime())
             .Returns(()=> rnd.GetRandomPrime());
         Dictionary<Ferrite.TL.Int128, byte[]> _authKeySessionStates = new(); 
-        Dictionary<Ferrite.TL.Int128, MTProtoSession> _authKeySessions = new();
+        Dictionary<Ferrite.TL.Int128, ActiveSession> _authKeySessions = new();
         var sessionManager = new Mock<ISessionService>();
         sessionManager.SetupGet(x => x.NodeId).Returns(Guid.NewGuid());
         sessionManager.Setup(x => x.AddAuthSessionAsync(It.IsAny<byte[]>(),
-            It.IsAny<AuthSessionState>(), It.IsAny<MTProtoSession>())).ReturnsAsync(
-            (byte[] nonce, AuthSessionState state, MTProtoSession session) =>
+            It.IsAny<AuthSessionState>(), It.IsAny<ActiveSession>())).ReturnsAsync(
+            (byte[] nonce, AuthSessionState state, ActiveSession session) =>
         {
             var stateBytes = MessagePackSerializer.Serialize(state);
             _authKeySessions.Add((Ferrite.TL.Int128)nonce, session);
@@ -379,7 +380,7 @@ public class StreamingRequestTests
             return true;
         });
         sessionManager.Setup(x => x.AddSessionAsync(It.IsAny<long>(), It.IsAny<long>(),
-            It.IsAny<MTProtoSession>())).ReturnsAsync(() => true);
+            It.IsAny<ActiveSession>())).ReturnsAsync(() => true);
         sessionManager.Setup(x => x.GetAuthSessionStateAsync(It.IsAny<byte[]>())).ReturnsAsync((byte[] nonce) =>
         {
             var rawSession = _authKeySessionStates[(Ferrite.TL.Int128)nonce];
@@ -394,7 +395,7 @@ public class StreamingRequestTests
         sessionManager.Setup(x => x.GetSessionStateAsync(It.IsAny<long>())).ReturnsAsync((long sessionId) =>
         {
             var data = File.ReadAllBytes("testdata/sessionState");
-            return MessagePackSerializer.Deserialize<SessionState>(data);
+            return MessagePackSerializer.Deserialize<RemoteSession>(data);
         });
         sessionManager.Setup(x => x.UpdateAuthSessionAsync(It.IsAny<byte[]>(), It.IsAny<AuthSessionState>()))
             .ReturnsAsync(
@@ -430,6 +431,13 @@ public class StreamingRequestTests
         builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
+        builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
+        builder.RegisterType<MessageHandler>().As<IMessageHandler>();
+        builder.RegisterType<StreamHandler>().As<IStreamHandler>();
+        builder.RegisterType<NotifySessionCreatedFeature>().As<INotifySessionCreatedFeature>().SingleInstance();
+        builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
+        builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
+        builder.RegisterType<MTProtoSession>().AsSelf();
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
         builder.RegisterMock(pipe);

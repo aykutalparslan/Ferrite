@@ -24,8 +24,9 @@ namespace Ferrite.Core
 {
     public interface ITransportDetector
     {
-        MTProtoTransport DetectTransport(ref SequenceReader<byte> reader,
-            out IFrameDecoder decoder, out IFrameEncoder encoder);
+        MTProtoTransport DetectTransport(ReadOnlySequence<byte> bytes,
+            out IFrameDecoder decoder, out IFrameEncoder encoder, 
+            out SequencePosition sequencePosition);
     }
 }
 

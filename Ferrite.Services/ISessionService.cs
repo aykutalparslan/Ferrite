@@ -23,12 +23,12 @@ public interface ISessionService
 {
     Guid NodeId { get; }
 
-    Task<bool> AddSessionAsync(long authKeyId, long sessionId, MTProtoSession session);
-    bool AddSession(long authKeyId, long sessionId, MTProtoSession session);
-    Task<SessionState?> GetSessionStateAsync(long sessionId);
+    Task<bool> AddSessionAsync(long authKeyId, long sessionId, ActiveSession session);
+    bool AddSession(long authKeyId, long sessionId, ActiveSession session);
+    Task<RemoteSession?> GetSessionStateAsync(long sessionId);
     Task<bool> DeleteSessionAsync(long sessionId);
-    Task<ICollection<SessionState>> GetSessionsAsync(long authKeyId);
-    Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, MTProtoSession session);
+    Task<ICollection<RemoteSession>> GetSessionsAsync(long authKeyId);
+    Task<bool> AddAuthSessionAsync(byte[] nonce, AuthSessionState state, ActiveSession session);
     public Task<bool> UpdateAuthSessionAsync(byte[] nonce, AuthSessionState state);
     Task<AuthSessionState?> GetAuthSessionStateAsync(byte[] nonce);
     bool LocalSessionExists(long sessionId);
@@ -36,6 +36,6 @@ public interface ISessionService
     Task<bool> RemoveSession(long authKeyId, long sessionId);
     Task<bool> OnPing(long authKeyId, long sessionId);
     bool RemoveAuthSession(byte[] nonce);
-    bool TryGetLocalSession(long sessionId, out MTProtoSession session);
-    bool TryGetLocalAuthSession(byte[] nonce, out MTProtoSession session);
+    bool TryGetLocalSession(long sessionId, out ActiveSession session);
+    bool TryGetLocalAuthSession(byte[] nonce, out ActiveSession session);
 }

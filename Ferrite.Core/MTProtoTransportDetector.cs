@@ -20,6 +20,7 @@ using System;
 using System.Buffers;
 using Autofac;
 using DotNext.Buffers;
+using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
@@ -41,9 +42,11 @@ public class MTProtoTransportDetector : ITransportDetector
         _scope = scope;
     }
 
-    public MTProtoTransport DetectTransport(ref SequenceReader<byte> reader,
-        out IFrameDecoder decoder, out IFrameEncoder encoder)
+    public MTProtoTransport DetectTransport(ReadOnlySequence<byte> bytes,
+        out IFrameDecoder decoder, out IFrameEncoder encoder, 
+        out SequencePosition sequencePosition)
     {
+        var reader = new SequenceReader<byte>(bytes);
         MTProtoTransport transport = MTProtoTransport.Unknown;
         decoder = null;
         encoder = null;
@@ -56,6 +59,7 @@ public class MTProtoTransportDetector : ITransportDetector
                 reader.Advance(1);
                 decoder = new AbridgedFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new AbridgedFrameEncoder();
+                sequencePosition = reader.Position;
                 return transport;
             }
         }
@@ -68,6 +72,7 @@ public class MTProtoTransportDetector : ITransportDetector
                 transport = MTProtoTransport.Intermediate;
                 decoder = new IntermediateFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new IntermediateFrameEncoder();
+                sequencePosition = reader.Position;
                 return transport;
             }
             else if (firstint == PaddedIntermediate)
@@ -75,6 +80,7 @@ public class MTProtoTransportDetector : ITransportDetector
                 transport = MTProtoTransport.PaddedIntermediate;
                 decoder = new PaddedIntermediateFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new PaddedIntermediateFrameEncoder();
+                sequencePosition = reader.Position;
                 return transport;
             }
         }
@@ -88,12 +94,14 @@ public class MTProtoTransportDetector : ITransportDetector
                 reader.Rewind(8);
                 decoder = new FullFrameDecoder(_scope.Resolve<IMTProtoService>());
                 encoder = new FullFrameEncoder();
+                sequencePosition = reader.Position;
                 return transport;
             }
         }
         else
         {
             reader.Rewind(4);
+            sequencePosition = reader.Position;
             return transport;
         }
 
@@ -141,11 +149,13 @@ public class MTProtoTransportDetector : ITransportDetector
             }
 
             reader.Advance(56);
+            sequencePosition = reader.Position;
             return transport;
         }
         else
         {
             reader.Rewind(8);
+            sequencePosition = reader.Position;
             return transport;
         }
     }

@@ -17,208 +17,132 @@
  */
 
 using System.Buffers;
-using System.Buffers.Binary;
 using DotNext.IO;
 using DotNext.Buffers;
 using Ferrite.TL;
 using System.Threading.Channels;
 using Ferrite.Transport;
 using System.IO.Pipelines;
+using Ferrite.Core.Features;
 using Ferrite.Data;
-using Ferrite.Crypto;
 using Ferrite.Utils;
-using Ferrite.Core.Exceptions;
 using Ferrite.TL.mtproto;
-using System.Net;
-using System.Security.Cryptography;
-using DotNext;
-using DotNext.Collections.Generic;
-using DotNext.IO.Pipelines;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer;
-using Ferrite.TL.currentLayer.storage;
-using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.ObjectMapper;
-using Ferrite.TL.slim;
 using MessagePack;
-using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
 
 namespace Ferrite.Core;
 
-public class MTProtoConnection : IMTProtoConnection
+public sealed class MTProtoConnection : IMTProtoConnection
 {
     public MTProtoTransport TransportType { get; private set; }
-    public bool IsEncrypted => _authKeyId != 0;
-    private readonly ITransportDetector transportDetector;
-    private readonly IMTProtoService _mtproto;
+    public bool IsEncrypted => _session.AuthKeyId != 0;
+    private readonly ITransportDetector _transportDetector;
     private readonly ILogger _log;
-    private readonly IRandomGenerator _random;
     private readonly ISessionService _sessionManager;
-    private readonly IMTProtoTime _time;
     private readonly IMapperContext _mapper;
-    private IFrameDecoder decoder;
-    private IFrameEncoder encoder;
-    private IProcessorManager _processorManager;
-    private long _authKeyId;
-    private long _permAuthKeyId;
-    private byte[]? _authKey;
-    private long _sessionId;
-    private long _uniqueSessionId;
-    private ServerSaltDTO? _serverSalt;
-    private int _seq = 0;
-    private ITransportConnection socketConnection;
-    private Task? receiveTask;
-    private Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
-    private Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
+    private readonly MTProtoSession _session;
+    private IFrameDecoder _decoder;
+    private IFrameEncoder _encoder;
+    private readonly IUnencryptedMessageHandler _unencryptedMessageHandler;
+    private readonly IMessageHandler _messageHandler;
+    private readonly IStreamHandler _streamHandler;
+    private readonly ITransportConnection _socketConnection;
+    private Task? _receiveTask;
+    private readonly Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
+    private readonly Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private readonly SemaphoreSlim _incomingSemaphore = new SemaphoreSlim(1, 1);
-    private Task? sendTask;
-    private Task? sendStreamTask;
-    private Timer? disconnectTimer;
-    private object disconnectTimerState = new object();
-    private readonly ITLObjectFactory factory;
-    private long _lastMessageId;
-    private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
-    private SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-    private WebSocketHandler? webSocketHandler;
-    private Pipe webSocketPipe;
-    private MTProtoPipe? _currentRequest = null;
-    public Dictionary<string, object> SessionData { get; private set; } = new();
+    private Task? _sendTask;
+    private Task? _sendStreamTask;
+    private Timer? _disconnectTimer;
+    private readonly object _disconnectTimerState = new object();
+    private readonly ITLObjectFactory _factory;
+    private readonly SparseBufferWriter<byte> _writer = new(UnmanagedMemoryPool<byte>.Shared);
+    private WebSocketHandler? _webSocketHandler;
+    private Pipe _webSocketPipe;
+    private readonly IQuickAckFeature _quickAck;
+    private readonly ITransportErrorFeature _transportError;
+    private readonly INotifySessionCreatedFeature _notifySessionCreated;
+    internal ITransportConnection TransportConnection => _socketConnection;
 
     private readonly object _abortLock = new object();
     private bool _connectionAborted = false;
 
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
-        IMTProtoService mtproto,
-        ILogger logger, IRandomGenerator random, ISessionService sessionManager,
-        IMTProtoTime protoTime, IProcessorManager processorManager,
-        IMapperContext mapper)
+        ILogger logger, ISessionService sessionManager, IMapperContext mapper, 
+        IUnencryptedMessageHandler unencryptedMessageHandler,
+        IMessageHandler messageHandler, MTProtoSession session,
+        IStreamHandler streamHandler, IQuickAckFeature quickAck,
+        ITransportErrorFeature transportError,
+        INotifySessionCreatedFeature notifySessionCreated)
     {
-        socketConnection = connection;
+        _socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
-        factory = objectFactory;
-        transportDetector = detector;
-        _mtproto = mtproto;
+        _factory = objectFactory;
+        _transportDetector = detector;
         _log = logger;
-        _random = random;
         _sessionManager = sessionManager;
-        _time = protoTime;
-        _processorManager = processorManager;
+        _unencryptedMessageHandler = unencryptedMessageHandler;
+        _streamHandler = streamHandler;
+        _messageHandler = messageHandler;
         _mapper = mapper;
+        _session = session;
+        _quickAck = quickAck;
+        _transportError = transportError;
+        _notifySessionCreated = notifySessionCreated;
     }
-
-    public async ValueTask SendAsync(IFileOwner message)
+    public void Start()
+    {
+        _receiveTask = DoReceive();
+        _sendTask = DoSend();
+        _sendStreamTask = DoSendStreams();
+        DelayDisconnect();
+    }
+    public async ValueTask SendAsync(IFileOwner? message)
     {
         if (message != null)
         {
             await _outgoingStreams.Writer.WriteAsync(message);
         }
     }
-
-    public void Start()
+    public async ValueTask SendAsync(MTProtoMessage message)
     {
-        receiveTask = DoReceive();
-        sendTask = DoSend();
-        sendStreamTask = DoSendStreams();
-        DelayDisconnect();
-    }
-
-    private void DelayDisconnect(int delayInMilliseconds = 750000)
-    {
-        lock (disconnectTimerState)
-        {
-            if (disconnectTimer == null)
-            {
-                disconnectTimer = new Timer((state) =>
-                {
-                    Abort(new Exception());
-                }, disconnectTimerState, delayInMilliseconds, delayInMilliseconds);
-            }
-            else
-            {
-                disconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
-                disconnectTimer.Change(delayInMilliseconds, delayInMilliseconds);
-            }
-        }
-    }
-
-    public void Abort(Exception abortReason)
-    {
-        lock (_abortLock)
-        {
-            if (_connectionAborted)
-            {
-                return;
-            }
-
-            _connectionAborted = true;
-            try
-            {
-                _ = _currentRequest.DisposeAsync();
-                _sessionManager.RemoveSession(_authKeyId, _sessionId);
-                _outgoing.Writer.Complete();
-                socketConnection.Abort(abortReason);
-                socketConnection.DisposeAsync();
-                writer.Dispose();
-                disconnectTimer?.Dispose();
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-    }
-    public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
-    {
-        DelayDisconnect(delayDisconnectInSeconds * 1000);
-        await _sessionManager.OnPing(_permAuthKeyId != 0 ? _permAuthKeyId : _authKeyId,
-            _sessionId);
-        var pong = factory.Resolve<Pong>();
-        pong.PingId = pingId;
-        pong.MsgId = NextMessageId(true);
-        MTProtoMessage message = new MTProtoMessage()
-        {
-            Data = pong.TLBytes.ToArray(),
-            IsContentRelated = false,
-            IsResponse = true,
-            MessageType = MTProtoMessageType.Pong,
-            SessionId = _sessionId,
-            MessageId = pong.MsgId
-        };
-        await SendAsync(message);
+        await _outgoing.Writer.WriteAsync(message);
     }
     private async Task DoReceive()
     {
         while (true)
         {
             await _incomingSemaphore.WaitAsync();
-            var result = await socketConnection.Transport.Input.ReadAsync();
+            var result = await _socketConnection.Transport.Input.ReadAsync();
             try
             {
                 if (result.Buffer.Length > 0)
                 {
-                    if (webSocketHandler != null)
+                    if (_webSocketHandler != null)
                     {
-                        webSocketPipe ??= new Pipe();
+                        _webSocketPipe ??= new Pipe();
 
-                        var position = webSocketHandler.DecodeTo(result.Buffer, webSocketPipe.Writer);
-                        _ = await webSocketPipe.Writer.FlushAsync();
-                        socketConnection.Transport.Input.AdvanceTo(position);
-
-                        var wsResult = await webSocketPipe.Reader.ReadAsync();
-                        var wsPosition = Process(wsResult.Buffer);
-                        webSocketPipe.Reader.AdvanceTo(wsPosition);
+                        var position = _webSocketHandler.DecodeTo(result.Buffer, _webSocketPipe.Writer);
+                        _socketConnection.Transport.Input.AdvanceTo(position);
+                        await _webSocketPipe.Writer.FlushAsync();
+                        
+                        var wsResult = await _webSocketPipe.Reader.ReadAsync();
+                        var wsPosition = await Process(wsResult.Buffer);
+                        _webSocketPipe.Reader.AdvanceTo(wsPosition);
                     }
                     else
                     {
-                        var position = Process(result.Buffer);
-                        socketConnection.Transport.Input.AdvanceTo(position);
+                        var position = await Process(result.Buffer);
+                        _socketConnection.Transport.Input.AdvanceTo(position);
                     }
                 }
                 else
                 {
-                    socketConnection.Transport.Input.AdvanceTo(result.Buffer.Start,
+                    _socketConnection.Transport.Input.AdvanceTo(result.Buffer.Start,
                         result.Buffer.End);
                 }
 
@@ -236,12 +160,6 @@ public class MTProtoConnection : IMTProtoConnection
             _incomingSemaphore.Release();
         }
     }
-
-    public async ValueTask SendAsync(MTProtoMessage message)
-    {
-        await _outgoing.Writer.WriteAsync(message);
-    }
-
     private async Task DoSend()
     {
         while (await _outgoing.Reader.WaitToReadAsync())
@@ -254,29 +172,35 @@ public class MTProtoConnection : IMTProtoConnection
                 if (msg.MessageType == MTProtoMessageType.Updates)
                 {
                     var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
-                    var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
-                    msg.Data = tlObj.TLBytes.ToArray();
-                    if (tlObj is UpdatesImpl updt)
+                    if (updates != null)
                     {
-                        _log.Debug($"==> Sending Updates with Seq: {updt.Seq} ==<");
+                        var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
+                        msg.Data = tlObj.TLBytes.ToArray();
+                        if (tlObj is UpdatesImpl update)
+                        {
+                            _log.Debug($"==> Sending Updates with Seq: {update.Seq} ==<");
+                        }
+                        _messageHandler.HandleOutgoingMessage(msg, this, 
+                            _session, _encoder, _webSocketHandler);
                     }
-
-                    SendEncrypted(msg);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    SendQuickAck(msg.QuickAck);
+                    _quickAck.Send(msg.QuickAck, _writer, _encoder, _webSocketHandler, this);
                 }
-                else if (_authKeyId == 0)
+                else if (_session.AuthKeyId == 0)
                 {
-                    SendUnencrypted(msg.Data, NextMessageId(msg.IsResponse));
+                    _unencryptedMessageHandler.HandleOutgoingMessage(msg, this, 
+                        _session, _encoder, _webSocketHandler);
                 }
-                else
+                else if (_session.AuthKey != null &&
+                         _session.AuthKey.Length == 192)
                 {
-                    SendEncrypted(msg);
+                    _messageHandler.HandleOutgoingMessage(msg, this, 
+                        _session, _encoder, _webSocketHandler);
                 }
 
-                var result = await socketConnection.Transport.Output.FlushAsync();
+                var result = await _socketConnection.Transport.Output.FlushAsync();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -302,10 +226,11 @@ public class MTProtoConnection : IMTProtoConnection
                 var msg = await _outgoingStreams.Reader.ReadAsync();
                 await _sendSemaphore.WaitAsync();
                 _log.Debug($"=>Sending stream.");
-                
-                await SendStream(msg);
 
-                var result = await socketConnection.Transport.Output.FlushAsync();
+                await _streamHandler.HandleOutgoingStream(msg, this, _session,
+                    _encoder, _webSocketHandler);
+
+                var result = await _socketConnection.Transport.Output.FlushAsync();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -322,240 +247,34 @@ public class MTProtoConnection : IMTProtoConnection
             }
         }
     }
-    
-    private async Task SendStream(IFileOwner message)
+    private async Task<SequencePosition> Process(ReadOnlySequence<byte> buffer)
     {
-        if (message == null || !_serverSalt.HasValue) return;
-        var rpcResult = factory.Resolve<RpcResult>();
-        rpcResult.ReqMsgId = message.ReqMsgId;
-        var data = await message.GetFileStream();
-        if (data.Length < 0) return;
-        _log.Debug($"=>Stream data length is {data.Length}.");
-        var fileImpl = factory.Resolve<FileImpl>();
-        fileImpl.Type = factory.Resolve<FileJpegImpl>();
-        fileImpl.Mtime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
-        fileImpl.Bytes = Array.Empty<byte>();
-        rpcResult.Result = fileImpl;
-        byte[] resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
-        rpcResult.TLBytes.Slice(0, 24).CopyTo(resultHeader);
-        int pad = 0;
-        if (data.Length < 254)
-        {
-            resultHeader[24] = (byte)data.Length;
-            pad = (int)((4 - ((data.Length + 1) % 4)) % 4);
-        }
-        else
-        {
-            resultHeader[24] = 254;
-            resultHeader[25] = (byte)(data.Length & 0xff);
-            resultHeader[26] = (byte)((data.Length >> 8) & 0xff);
-            resultHeader[27] = (byte)((data.Length >> 16) & 0xff);
-            pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
-        }
-        writer.Clear();
-        writer.WriteInt64(_serverSalt.Value.Salt, true);
-        writer.WriteInt64(_sessionId, true);
-        writer.WriteInt64(NextMessageId(true), true);
-        writer.WriteInt32(GenerateSeqNo(true), true);
-        writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
-        var cryptographicHeader = writer.ToReadOnlySequence().ToArray();
-        int paddingLength = _random.GetNext(12, 512);
-        while ((resultHeader.Length + data.Length + pad + paddingLength) % 16 != 0)
-        {
-            paddingLength++;
-        }
-        var paddingBytes = _random.GetRandomBytes(paddingLength);
-        Queue<Stream> streams = new Queue<Stream>();
-        streams.Enqueue(new MemoryStream(cryptographicHeader));
-        streams.Enqueue(new MemoryStream(resultHeader));
-        streams.Enqueue(data);
-        streams.Enqueue(new MemoryStream(new byte[pad]));
-        streams.Enqueue(new MemoryStream(paddingBytes));
-        var stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
-
-        var messageKey = AesIge.GenerateMessageKey(_authKey, stream).ToArray();
-        byte[] aesKey = new byte[32];
-        byte[] aesIV = new byte[32];
-        AesIge.GenerateAesKeyAndIV(_authKey, messageKey, false, aesKey, aesIV);
-        //--
-        writer.Clear();
-        writer.WriteInt64(_authKeyId, true);
-        writer.Write(messageKey);
-        var frameHead = encoder.EncodeHead(24 + (int)stream.Length);
-        var header = writer.ToReadOnlySequence();
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 
-                frameHead.Length + 24 + (int)stream.Length);
-        }
-        socketConnection.Transport.Output.Write(encoder.EncodeBlock(frameHead));
-        socketConnection.Transport.Output.Write(encoder.EncodeBlock(header));
-        //--
-        MTProtoPipe pipe = new MTProtoPipe(aesKey, aesIV, true);
-        await pipe.WriteAsync(cryptographicHeader);
-        await pipe.WriteAsync(resultHeader);
-        var dataStream = await message.GetFileStream();
-        int remaining = (int)dataStream.Length;;
-        var buffer = new byte[1024];
-        while (remaining > 0)
-        {
-            var read = await dataStream.ReadAsync(buffer.AsMemory(0, Math.Min(remaining, 1024)));
-            await pipe.WriteAsync(new ReadOnlySequence<byte>(buffer, 0, read));
-            remaining -= read;
-            var encrypted = await pipe.Input.ReadAsync();
-            socketConnection.Transport.Output.Write(encoder.EncodeBlock(encrypted.Buffer));
-            pipe.Input.AdvanceTo(encrypted.Buffer.End);
-            await socketConnection.Transport.Output.FlushAsync();
-        }
-        if (pad > 0)
-        {
-            await pipe.WriteAsync(new byte[pad]);
-        }
-        if (paddingLength > 0)
-        {
-            await pipe.WriteAsync(paddingBytes);
-        }
-
-        await pipe.CompleteAsync();
-
-        var readResult = await pipe.Input.ReadAsync();
-        socketConnection.Transport.Output.Write(encoder.EncodeBlock(readResult.Buffer));
-        pipe.Input.AdvanceTo(readResult.Buffer.End);
-        while (!readResult.IsCompleted)
-        {
-            readResult = await pipe.Input.ReadAsync();
-            socketConnection.Transport.Output.Write(encoder.EncodeBlock(readResult.Buffer));
-            pipe.Input.AdvanceTo(readResult.Buffer.End);
-        }
-
-        var frameTail = encoder.EncodeTail();
-        if (frameTail.Length > 0)
-        {
-            socketConnection.Transport.Output.Write(frameTail);
-        }
-    }
-    private void SendUnencrypted(Span<byte> data, long messageId)
-    {
-        writer.Clear();
-        writer.WriteInt64(0, true);
-        writer.WriteInt64(messageId, true);
-        writer.WriteInt32(data.Length, true);
-        writer.Write(data);
-        var message = writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(message);
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
-        }
-        socketConnection.Transport.Output.Write(encoded);
-    }
-
-    private void SendEncrypted(MTProtoMessage message)
-    {
-        if (message.Data == null || !_serverSalt.HasValue) { return; }
-        writer.Clear();
-        writer.WriteInt64(_serverSalt.Value.Salt, true);
-        writer.WriteInt64(message.SessionId, true);
-        writer.WriteInt64(message.MessageType == MTProtoMessageType.Pong ?
-            message.MessageId :
-            NextMessageId(message.IsResponse), true);
-        writer.WriteInt32(GenerateSeqNo(message.IsContentRelated), true);
-        writer.WriteInt32(message.Data.Length, true);
-        writer.Write(message.Data);
-        int paddingLength = _random.GetNext(12, 512);
-        while ((message.Data.Length + paddingLength) % 16 != 0)
-        {
-            paddingLength++;
-        }
-        writer.Write(_random.GetRandomBytes(paddingLength), false);
-
-        using var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)writer.WrittenCount);
-        var messageSpan = messageData.Memory.Slice(0, (int)writer.WrittenCount).Span;
-        writer.ToReadOnlySequence().CopyTo(messageSpan);
-        Span<byte> messageKey = AesIge.GenerateMessageKey(_authKey, messageSpan);
-        AesIge aesIge = new AesIge(_authKey, messageKey, false);
-        aesIge.Encrypt(messageSpan);
-        writer.Clear();
-        writer.WriteInt64(_authKeyId, true);
-        writer.Write(messageKey);
-        writer.Write(messageSpan);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(msg);
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
-        }
-        socketConnection.Transport.Output.Write(encoded);
-    }
-
-    private void SendQuickAck(int ack)
-    {
-        writer.Clear();
-        ack |= 1 << 31;
-        if (encoder is AbridgedFrameEncoder)
-        {
-            ack = BinaryPrimitives.ReverseEndianness(ack);
-        }
-        writer.WriteInt32(ack, true);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.EncodeBlock(msg);
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, 4);
-        }
-
-        socketConnection.Transport.Output.Write(encoded);
-    }
-    
-    private void SendTransportError(int errorCode)
-    {
-        writer.Clear();
-        writer.WriteInt32(-1*errorCode, true);
-        var message = writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(message);
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(socketConnection.Transport.Output, encoded.Length);
-        }
-        socketConnection.Transport.Output.Write(encoded);
-        socketConnection.Transport.Output.FlushAsync();
-    }
-
-    public delegate Task AsyncEventHandler<in MTProtoAsyncEventArgs>(object? sender, MTProtoAsyncEventArgs e);
-    public event AsyncEventHandler<MTProtoAsyncEventArgs>? MessageReceived;
-
-    protected virtual void OnMessageReceived(MTProtoAsyncEventArgs e)
-    {
-        MessageReceived?.Invoke(this, e);
-    }
-
-    private SequencePosition Process(in ReadOnlySequence<byte> buffer)
-    {
-        SequenceReader<byte> reader = new SequenceReader<byte>(buffer);
+        if (buffer.Length < 4) return buffer.Start;
+        SequencePosition position = buffer.Start;
         if (TransportType == MTProtoTransport.Unknown)
         {
-            if (reader.TryReadLittleEndian(out int firstInt))
+            var rd = IAsyncBinaryReader.Create(buffer);
+            int firstInt = rd.ReadInt32(true);
+            if (firstInt == WebSocketHandler.Get)
             {
-                reader.Rewind(4);
-                if (firstInt == WebSocketHandler.Get)
-                {
-                    ProcessWebSocketHandshake(ref reader);
-                    return reader.Position;
-                }
+                var pos = ProcessWebSocketHandshake(buffer);
+                return pos;
             }
 
-            TransportType = transportDetector.DetectTransport(ref reader,
-            out decoder, out encoder);
+            TransportType = _transportDetector.DetectTransport(buffer,
+            out _decoder, out _encoder, out position);
         }
 
         bool hasMore;
         do
         {
-            hasMore = decoder.Decode(ref reader, out var frame, 
-                out var isStream, out var requiresQuickAck);
+            hasMore = _decoder.Decode(buffer.Slice(position), out var frame, 
+                out var isStream, out var requiresQuickAck, out position);
             if (isStream)
             {
-                ProcessStream(frame, hasMore).Wait();
+                await _streamHandler.HandleIncomingStreamAsync(frame, this, 
+                    _socketConnection.RemoteEndPoint, _session,
+                    hasMore);
             }
             else if (frame.Length > 0)
             {
@@ -563,413 +282,130 @@ public class MTProtoConnection : IMTProtoConnection
             }
         } while (hasMore);
 
-        return reader.Position;
+        return position;
     }
-
-    private async Task ProcessStream(ReadOnlySequence<byte> frame, bool hasMore)
+    private SequencePosition ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
     {
-        SequenceReader reader = IAsyncBinaryReader.Create(frame);
-        if (_currentRequest == null)
+        var reader = new SequenceReader<byte>(data);
+        if (_webSocketHandler == null)
         {
-            if (frame.Length < 24)
-            {
-                return;
-            }
-
-            long authKeyId = reader.ReadInt64(true);
-            if (authKeyId != 0 && _authKeyId == 0)
-            {
-                _authKeyId = authKeyId;
-                _authKey = null;
-                GetAuthKey();
-            }
-
-            TryGetPermAuthKey();
-            if (_permAuthKeyId != 0)
-            {
-                SaveCurrentSession(_permAuthKeyId);
-            }
-
-            var incomingMessageKey = new byte[16];
-            reader.Read(incomingMessageKey);
-            var aesKey = new byte[32];
-            var aesIV = new byte[32];
-            AesIge.GenerateAesKeyAndIV(_authKey, incomingMessageKey, true, aesKey, aesIV);
-            _currentRequest = new MTProtoPipe(aesKey, aesIV, false);
-            await _currentRequest.WriteAsync(reader);
-            await ProcessPipe(_currentRequest);
-        }
-        else
-        { 
-            await _currentRequest.WriteAsync(reader);
-        }
-
-        if (!hasMore)
-        {
-            _currentRequest.Complete();
-            await _currentRequest.DisposeAsync();
-            _currentRequest = null;
-        }
-    }
-
-    private async Task ProcessPipe(MTProtoPipe pipe)
-    {
-        TLExecutionContext context = new TLExecutionContext(SessionData);
-        context.Salt = await pipe.Input.ReadInt64Async(true);
-        context.SessionId = await pipe.Input.ReadInt64Async(true);
-        context.AuthKeyId = _authKeyId;
-        context.PermAuthKeyId = _permAuthKeyId;
-        context.MessageId = await pipe.Input.ReadInt64Async(true);
-        context.SequenceNo = await pipe.Input.ReadInt32Async(true);
-        if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
-        {
-            context.IP = endpoint.Address.ToString();
-        }
-
-        int messageDataLength = await pipe.Input.ReadInt32Async(true);
-        int constructor = await pipe.Input.ReadInt32Async(true);
-        if (_sessionId == 0)
-        {
-            _sessionId = context.SessionId;
-            SaveCurrentSession(_permAuthKeyId != 0 ? _permAuthKeyId :
-                _authKeyId);
-            _uniqueSessionId = _random.NextLong();
-            var newSessionCreated = factory.Resolve<NewSessionCreated>();
-            newSessionCreated.FirstMsgId = context.MessageId;
-            newSessionCreated.ServerSalt = _serverSalt.Value.Salt;
-            newSessionCreated.UniqueId = _uniqueSessionId;
-            MTProtoMessage newSessionMessage = new MTProtoMessage();
-            newSessionMessage.Data = newSessionCreated.TLBytes.ToArray();
-            newSessionMessage.IsContentRelated = false;
-            newSessionMessage.IsResponse = false;
-            newSessionMessage.SessionId = _sessionId;
-            newSessionMessage.MessageType = MTProtoMessageType.NewSession;
-            _ = SendAsync(newSessionMessage);
-        }
-
-        if (context.MessageId < _time.ThirtySecondsLater &&
-            //msg_id values that belong over 30 seconds in the future
-            context.MessageId > _time.FiveMinutesAgo &&
-            //or over 300 seconds in the past are to be ignored
-            context.MessageId % 2 == 0 && //must have even parity
-            (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(context.MessageId) && //must not be equal to any
-                                            context.MessageId > _lastMessageIds.Min()))) //must not be lower than all
-        {
-            _lastMessageIds.Enqueue(context.MessageId);
-
-            try
-            {
-                if (constructor == TLConstructor.Upload_SaveFilePart)
-                {
-                    var msg = factory.Resolve<SaveFilePart>();
-                    await msg.SetPipe(pipe);
-                    _ = _processorManager.Process(this, msg, context);
-                    OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
-                }
-                else if (constructor == TLConstructor.Upload_SaveBigFilePart)
-                {
-                    var msg = factory.Resolve<SaveBigFilePart>();
-                    await msg.SetPipe(pipe);
-                    _ = _processorManager.Process(this, msg, context);
-                    OnMessageReceived(new MTProtoAsyncEventArgs(msg, context));
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, ex.Message);
-            }
-        }
-    }
-
-    private void ProcessWebSocketHandshake(ref SequenceReader<byte> reader)
-    {
-        if (webSocketHandler == null)
-        {
-            webSocketHandler = new();
+            _webSocketHandler = new();
         }
         HttpParser<WebSocketHandler> parser = new HttpParser<WebSocketHandler>();
-        if (!webSocketHandler.RequestLineComplete)
+        if (!_webSocketHandler.RequestLineComplete)
         {
-            parser.ParseRequestLine(webSocketHandler, ref reader);
+            parser.ParseRequestLine(_webSocketHandler, ref reader);
         }
-        parser.ParseHeaders(webSocketHandler, ref reader);
-        if (webSocketHandler.HeadersComplete)
+        parser.ParseHeaders(_webSocketHandler, ref reader);
+        if (_webSocketHandler.HeadersComplete)
         {
-            webSocketHandler.WriteHandshakeResponseTo(socketConnection.Transport.Output);
-            socketConnection.Transport.Output.FlushAsync();
+            _webSocketHandler.WriteHandshakeResponseTo(_socketConnection.Transport.Output);
+            _socketConnection.Transport.Output.FlushAsync();
         }
+
+        return reader.Position;
     }
-
-    private void ProcessEncryptedMessageAsync(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
-    {
-        if (bytes.Length < 16)
-        {
-            return;
-        }
-
-        try
-        {
-            DecryptAndRaiseEvent(in bytes, requiresQuickAck);
-        }
-        catch (Exception ex)
-        {
-            _log.Error(ex, ex.Message);
-        }
-    }
-
-    private void GetAuthKey()
-    {
-        if (_authKey == null)
-        {
-            var authKey = _mtproto.GetAuthKey(_authKeyId);
-            if (authKey != null)
-            {
-                Interlocked.CompareExchange(ref _authKey, authKey, null);
-                _permAuthKeyId = _authKeyId;
-                _log.Information($"Retrieved the authKey with Id: {_authKeyId}");
-            }
-        }
-        if (_authKey == null)
-        {
-            var authKey = _mtproto.GetTempAuthKey(_authKeyId);
-            if (authKey != null)
-            {
-                Interlocked.CompareExchange(ref _authKey, authKey, null);
-                _log.Information($"Retrieved the tempAuthKey  with Id: {_authKeyId}");
-            }
-        }
-        if (_authKey == null)
-        {
-            _sendSemaphore.Wait();
-            try
-            {
-                SendTransportError(404);
-            }
-            finally
-            {
-                _sendSemaphore.Release();
-            }
-        }
-    }
-
-    private void TryGetPermAuthKey()
-    {
-        if (_authKeyId == 0 || _permAuthKeyId != 0) return;
-        var pKey = _mtproto.GetBoundAuthKey(_authKeyId);
-        _permAuthKeyId = pKey ?? 0;
-        if (_permAuthKeyId == 0) return;
-        _log.Information($"Retrieved the permAuthKey with Id: {_permAuthKeyId}");
-    }
-
-    private void SaveCurrentSession(long authKeyId)
-    {
-        if (_serverSalt == null || 
-            _serverSalt.Value.ValidSince + 1800 < DateTimeOffset.Now.ToUnixTimeSeconds())
-        {
-            var salts = _mtproto.GetServerSalts(_permAuthKeyId, 1);
-            if (salts != null)
-            {
-                foreach (var s in salts)
-                {
-                    if (s.ValidSince + 1800 <= _time.GetUnixTimeInSeconds()) continue;
-                    _serverSalt = s;
-                    break;
-                }
-            }
-            else
-            {
-                _serverSalt = new ServerSaltDTO();
-            }
-        }
-        if(authKeyId == 0) return;
-        _sessionManager.AddSession(authKeyId, _sessionId, 
-            new MTProtoSession(this));
-    }
-
-    private void DecryptAndRaiseEvent(in ReadOnlySequence<byte> bytes, bool requiresQuickAck)
-    {
-        SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        Span<byte> messageKey = stackalloc byte[16];
-        reader.Read(messageKey);
-        AesIge aesIge = new AesIge(_authKey, messageKey);
-        using var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)reader.RemainingSequence.Length);
-        var messageSpan = messageData.Memory.Span.Slice(0, (int)reader.RemainingSequence.Length);
-        reader.Read(messageSpan);
-        aesIge.Decrypt(messageSpan);
-
-        var messageKeyActual = AesIge.GenerateMessageKey(_authKey, messageSpan, true);
-        if (!messageKey.SequenceEqual(messageKeyActual))
-        {
-            var ex = new MTProtoSecurityException("The security check for the 'msg_key' failed.");
-            _log.Fatal(ex, ex.Message);
-            throw ex;
-        }
-        SequenceReader rd = IAsyncBinaryReader.Create(messageData.Memory);
-        TLExecutionContext _context = new TLExecutionContext(SessionData);
-        _context.Salt = rd.ReadInt64(true);
-        _context.SessionId = rd.ReadInt64(true);
-        _context.AuthKeyId = _authKeyId;
-        _context.PermAuthKeyId = _permAuthKeyId;
-        _context.MessageId = rd.ReadInt64(true);
-        _context.SequenceNo = rd.ReadInt32(true);
-        if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
-        {
-            _context.IP = endpoint.Address.ToString();
-        }
-        if (requiresQuickAck)
-        {
-            _context.QuickAck = GenerateQuickAck(messageSpan);
-        }
-        int messageDataLength = rd.ReadInt32(true);
-        int constructor = rd.ReadInt32(true);
-        if (_sessionId == 0)
-        {
-            _sessionId = _context.SessionId;
-            SaveCurrentSession(_permAuthKeyId != 0 ? _permAuthKeyId:
-                _authKeyId);
-            _uniqueSessionId = _random.NextLong();
-            var newSessionCreated = factory.Resolve<NewSessionCreated>();
-            newSessionCreated.FirstMsgId = _context.MessageId;
-            newSessionCreated.ServerSalt = _serverSalt.Value.Salt;
-            newSessionCreated.UniqueId = _uniqueSessionId;
-            MTProtoMessage newSessionMessage = new MTProtoMessage();
-            newSessionMessage.Data = newSessionCreated.TLBytes.ToArray();
-            newSessionMessage.IsContentRelated = false;
-            newSessionMessage.IsResponse = false;
-            newSessionMessage.SessionId = _sessionId;
-            newSessionMessage.MessageType = MTProtoMessageType.NewSession;
-            _ = SendAsync(newSessionMessage);
-        }
-
-        if (_context.MessageId < _time.ThirtySecondsLater &&
-            //msg_id values that belong over 30 seconds in the future
-            _context.MessageId > _time.FiveMinutesAgo &&
-            //or over 300 seconds in the past are to be ignored
-            _context.MessageId % 2 == 0 && //must have even parity
-            (_lastMessageIds.Count == 0 || (!_lastMessageIds.Contains(_context.MessageId) && //must not be equal to any
-                                            _context.MessageId > _lastMessageIds.Min()))) //must not be lower than all
-        {
-            _lastMessageIds.Enqueue(_context.MessageId);
-
-            try
-            {
-                var msg = factory.Read(constructor, ref rd);
-                OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
-                _processorManager.Process(this, msg, _context);
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, ex.Message);
-            }
-        }
-    }
-
-    private int GenerateQuickAck(Span<byte> messageSpan)
-    {
-        var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        sha256.AppendData(_authKey.AsSpan().Slice(88, 32));
-        sha256.AppendData(messageSpan);
-        var ack = sha256.GetCurrentHash();
-        return BitConverter.ToInt32(ack, 0);
-    }
-
-    private void ProcessUnencryptedMessage(in ReadOnlySequence<byte> bytes)
-    {
-        if (bytes.Length < 16)
-        {
-            return;
-        }
-        SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        long msgId = reader.ReadInt64(true);
-        int messageDataLength = reader.ReadInt32(true);
-        if (messageDataLength > reader.RemainingSequence.Length)
-        {
-            return;
-        }
-
-        var messageData = UnmanagedMemoryAllocator.Allocate<byte>(messageDataLength, false);
-        reader.Read(messageData.Span);
-        //int constructor = reader.ReadInt32(true);
-        //var msg = factory.Read(constructor, ref reader);
-        //TODO: We should probably use a pool for the MTProtoAsyncEventArgs
-        TLExecutionContext _context = new TLExecutionContext(SessionData);
-        if (socketConnection.RemoteEndPoint is IPEndPoint endpoint)
-        {
-            _context.IP = endpoint.Address.ToString();
-        }
-        _context.MessageId = msgId;
-        _context.AuthKeyId = _authKeyId;
-        _context.PermAuthKeyId = _permAuthKeyId;
-        _processorManager.Process(this, new EncodedObject(
-            messageData.Memory.Pin(), 0, messageDataLength), _context);
-        //_processorManager.Process(this, msg, _context);
-        //OnMessageReceived(new MTProtoAsyncEventArgs(msg, _context));
-    }
-
     private void ProcessFrame(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 8)
         {
             return;
         }
-        SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        long keyId = reader.ReadInt64(true);
-        if (keyId != 0 && keyId != _authKeyId)
+        var reader = new SequenceReader(bytes);
+        long authKeyId = reader.ReadInt64(true);
+        if (authKeyId != 0)
         {
-            _authKey = null;
-            _authKeyId = keyId;
-            GetAuthKey();
-        }
-        TryGetPermAuthKey();
-        if (_permAuthKeyId != 0)
-        {
-            SaveCurrentSession(_permAuthKeyId);
-        }
-        if (keyId == 0)
-        {
-            ProcessUnencryptedMessage(bytes.Slice(8));
-        }
-        else if(_authKey != null)
-        {
-            ProcessEncryptedMessageAsync(bytes.Slice(8), requiresQuickAck);
-        }
-    }
-    private int GenerateSeqNo(bool isContentRelated)
-    {
-        return isContentRelated ? (2 * _seq++) + 1 : 2 * _seq;
-    }
-    /// <summary>
-    /// Gets the next Message Identifier (msg_id) for this session.
-    /// </summary>
-    /// <param name="response">If the message is a response to a client message.</param>
-    /// <returns></returns>
-    private long NextMessageId(bool response)
-    {
-        long id = _time.GetUnixTimeInSeconds();
-        id *= 4294967296L;
-        long r1 = (4 - id % 4) % 4;
-        id += (response ? r1 + 1 : r1 + 3);
-        long last = _lastMessageId;
-        long r2 = 4 - (last + 1) % 4;
-        if (id <= last)
-        {
-            id = Interlocked.Add(ref _lastMessageId,
-                response ? r2 + 2 : r2 + 4);
-            if ((response && id % 4 == 1) || (!response && id % 4 == 3))
+            if (!_session.TryFetchAuthKey(authKeyId) &&
+                _session.AuthKeyId == 0)
             {
-                return id;
+                _transportError.SendTransportError(404, _writer, _encoder, _webSocketHandler, this);
             }
         }
-        else if (Interlocked.CompareExchange(ref _lastMessageId, id, last) == last)
+        if (_session.PermAuthKeyId != 0)
         {
-            return id;
+            _session.SaveCurrentSession(_session.PermAuthKeyId, this);
         }
-        do
+        if (authKeyId == 0)
         {
-            r2 = 4 - (_lastMessageId + 1) % 4;
-            id = Interlocked.Add(ref _lastMessageId, response ? r2 + 2 : r2 + 4);
-        } while (!((response && id % 4 != 1) || (!response && id % 4 != 3)));
-        return id;
+            _unencryptedMessageHandler.HandleIncomingMessage(bytes.Slice(8), this, _session);
+        }
+        else if(_session.AuthKey != null)
+        {
+            _messageHandler.HandleIncomingMessage(bytes.Slice(8), this,
+                _socketConnection.RemoteEndPoint, _session, requiresQuickAck);
+        }
+    }
+    public void SendNewSessionCreatedMessage(long firstMessageId, long serverSalt)
+    {
+       _notifySessionCreated.Notify(_factory, this, _session, firstMessageId, serverSalt);
+    }
+    internal void SendTransportError(int errorCode)
+    {
+        _transportError.SendTransportError(errorCode, _writer, _encoder, _webSocketHandler, this);
+    }
+    public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
+    {
+        DelayDisconnect(delayDisconnectInSeconds * 1000);
+        await _sessionManager.OnPing(_session.AuthKeyId != 0 ? 
+                _session.PermAuthKeyId : _session.AuthKeyId,
+            _session.SessionId);
+        var pong = _factory.Resolve<Pong>();
+        pong.PingId = pingId;
+        pong.MsgId = _session.NextMessageId(true);
+        MTProtoMessage message = new MTProtoMessage()
+        {
+            Data = pong.TLBytes.ToArray(),
+            IsContentRelated = false,
+            IsResponse = true,
+            MessageType = MTProtoMessageType.Pong,
+            SessionId = _session.SessionId,
+            MessageId = pong.MsgId
+        };
+        await SendAsync(message);
+    }
+    private void DelayDisconnect(int delayInMilliseconds = 750000)
+    {
+        lock (_disconnectTimerState)
+        {
+            if (_disconnectTimer == null)
+            {
+                _disconnectTimer = new Timer((state) =>
+                {
+                    Abort(new Exception());
+                }, _disconnectTimerState, delayInMilliseconds, delayInMilliseconds);
+            }
+            else
+            {
+                _disconnectTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                _disconnectTimer.Change(delayInMilliseconds, delayInMilliseconds);
+            }
+        }
+    }
+    public void Abort(Exception abortReason)
+    {
+        lock (_abortLock)
+        {
+            if (_connectionAborted)
+            {
+                return;
+            }
+
+            _connectionAborted = true;
+            try
+            {
+                _ = _streamHandler.DisposeAsync();
+                _sessionManager.RemoveSession(_session.AuthKeyId, _session.SessionId);
+                _outgoing.Writer.Complete();
+                _socketConnection.Abort(abortReason);
+                _socketConnection.DisposeAsync();
+                _writer.Dispose();
+                _disconnectTimer?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _log.Verbose(ex, $"Connection closed for authKeyId{_session.AuthKeyId}");
+            }
+        }
     }
 }
 
