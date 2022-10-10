@@ -177,7 +177,7 @@ public class MessagesService : IMessagesService
         {
             var location = new GeoPointDTO(false, media.GeoPoint.Latitude,
                 media.GeoPoint.Longitude, Random.Shared.NextInt64(), 
-                media.GeoPoint.AccuracyRaidus);
+                media.GeoPoint.AccuracyRadius);
             
             outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Geo,
                 null, null, location, null,
