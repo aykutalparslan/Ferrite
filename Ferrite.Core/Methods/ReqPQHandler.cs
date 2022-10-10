@@ -35,7 +35,7 @@ public class ReqPQHandler : IQueryHandler
         _randomGenerator = generator;
         _keyPairProvider = provider;
     }
-    public async Task<EncodedObject?> Process(EncodedObject q, TLExecutionContext ctx)
+    public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
         byte[] serverNonce;
         if (!ctx.SessionData.ContainsKey("nonce"))
@@ -56,7 +56,7 @@ public class ReqPQHandler : IQueryHandler
         return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
     }
 
-    private EncodedObject? ProcessInternal(byte[] serverNonce, req_pq_multi query, TLExecutionContext ctx)
+    private TLBytes? ProcessInternal(byte[] serverNonce, req_pq_multi query, TLExecutionContext ctx)
     {
         byte[] nonce = (byte[])ctx.SessionData["nonce"];
         if (ctx.SessionData.ContainsKey("p"))
@@ -91,6 +91,6 @@ public class ReqPQHandler : IQueryHandler
         }
         var resPq = resPQ.Create(nonce, 
             serverNonce, Pq, fingerprints, out var memory);
-        return new EncodedObject(memory, 0, resPq.Length);
+        return new TLBytes(memory, 0, resPq.Length);
     }
 }

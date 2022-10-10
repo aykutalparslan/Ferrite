@@ -25,6 +25,6 @@ namespace Ferrite.Core;
 public interface IProcessor
 {
     public Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx);
-    public Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx);
+    public Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx);
 }
 

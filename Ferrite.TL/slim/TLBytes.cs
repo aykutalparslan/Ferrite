@@ -20,12 +20,12 @@ using System.Buffers;
 
 namespace Ferrite.TL.slim;
 
-public readonly struct EncodedObject: IDisposable
+public readonly struct TLBytes: IDisposable
 {
     private readonly IMemoryOwner<byte> _memory;
     private readonly int _offset;
     private readonly int _length;
-    public EncodedObject(IMemoryOwner<byte> memory, int offset, int length)
+    public TLBytes(IMemoryOwner<byte> memory, int offset, int length)
     {
         _memory = memory;
         _offset = offset;

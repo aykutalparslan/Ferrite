@@ -43,12 +43,12 @@ public class SetClientDhParamsHandler : IQueryHandler
     {
         _mtproto = mtproto;
     }
-    public async Task<EncodedObject?> Process(EncodedObject q, TLExecutionContext ctx)
+    public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
         return ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx);
     }
 
-    private EncodedObject? ProcessInternal(set_client_DH_params query, TLExecutionContext ctx)
+    private TLBytes? ProcessInternal(set_client_DH_params query, TLExecutionContext ctx)
     {
         bool failed = false;
         var sessionNonce = (byte[])ctx.SessionData["nonce"];
@@ -98,7 +98,7 @@ public class SetClientDhParamsHandler : IQueryHandler
         {
             var dhGenFail = dh_gen_fail.Create(sessionNonce, sessionServerNonce, newNonceHash3, out var memory);
             encryptedData.Dispose();
-            return new EncodedObject(memory, 0, dhGenFail.Length);
+            return new TLBytes(memory, 0, dhGenFail.Length);
         }
 
         bool temp_auth_key = false;
@@ -126,7 +126,7 @@ public class SetClientDhParamsHandler : IQueryHandler
             var dhGenOk = dh_gen_ok.Create(sessionNonce, sessionServerNonce, newNonceHash1, out var memory);
             ctx.SessionData.Clear();
             encryptedData.Dispose();
-            return new EncodedObject(memory, 0, dhGenOk.Length);
+            return new TLBytes(memory, 0, dhGenOk.Length);
         }
         else
         {
@@ -135,7 +135,7 @@ public class SetClientDhParamsHandler : IQueryHandler
                 .Skip(4).ToArray();
             var dhGenRetry = dh_gen_retry.Create(sessionNonce, sessionServerNonce, newNonceHash2, out var memory);
             encryptedData.Dispose();
-            return new EncodedObject(memory, 0, dhGenRetry.Length);
+            return new TLBytes(memory, 0, dhGenRetry.Length);
         }
     }
 }

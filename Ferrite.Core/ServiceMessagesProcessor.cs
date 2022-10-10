@@ -91,7 +91,7 @@ public class ServiceMessagesProcessor : IProcessor
         }
     }
 
-    public async Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx)
+    public async Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

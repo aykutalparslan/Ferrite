@@ -24,5 +24,5 @@ namespace Ferrite.Core.Methods;
 
 public interface IQueryHandler
 {
-    public Task<EncodedObject?> Process(EncodedObject q, TLExecutionContext ctx);
+    public Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx);
 }

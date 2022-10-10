@@ -76,13 +76,13 @@ public class IncomingMessageHandler: IProcessorManager
         } while (tobeProcessed.Count > 0 && processor != null);
     }
 
-    public async Task Process(object? sender, EncodedObject input, TLExecutionContext ctx)
+    public async Task Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         if (_processors.Count == 0)
         {
             return;
         }
-        Queue<EncodedObject> tobeProcessed = new();
+        Queue<TLBytes> tobeProcessed = new();
         tobeProcessed.Enqueue(input);
         int idx = 0;
         var processor = _processors[idx];

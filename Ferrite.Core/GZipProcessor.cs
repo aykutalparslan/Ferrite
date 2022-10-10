@@ -61,7 +61,7 @@ public class GZipProcessor : IProcessor
         }
     }
 
-    public Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx)
+    public Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

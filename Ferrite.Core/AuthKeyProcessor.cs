@@ -132,7 +132,7 @@ public class AuthKeyProcessor : IProcessor
         }
     }
 
-    public async Task Process(object? sender, EncodedObject input, Queue<EncodedObject> output, TLExecutionContext ctx)
+    public async Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
     {
         var constructor = MemoryMarshal.Read<int>(input.AsSpan());
         if (constructor == Constructors.req_pq_multi &&
