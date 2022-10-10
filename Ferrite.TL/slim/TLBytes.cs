@@ -20,6 +20,10 @@ using System.Buffers;
 
 namespace Ferrite.TL.slim;
 
+/// <summary>
+/// This is a wrapper around an IMemoryOwner that contains
+/// the serialized form of a TLObject
+/// </summary>
 public readonly struct TLBytes: IDisposable
 {
     private readonly IMemoryOwner<byte> _memory;
