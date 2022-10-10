@@ -22,26 +22,22 @@ namespace Ferrite.TL.slim;
 
 public readonly struct EncodedObject: IDisposable
 {
-    private readonly MemoryHandle? _handle;
+    private readonly IMemoryOwner<byte> _memory;
     private readonly int _offset;
     private readonly int _length;
-    public EncodedObject(MemoryHandle handle, int offset, int length)
+    public EncodedObject(IMemoryOwner<byte> memory, int offset, int length)
     {
-        _handle = handle;
+        _memory = memory;
         _offset = offset;
         _length = length;
     }
 
-    public unsafe Span<byte> AsSpan()
+    public Span<byte> AsSpan()
     {
-        if (_handle != null)
-        {
-            return new Span<byte>((int*)_handle.Value.Pointer + _offset, _length);
-        }
-        return new Span<byte>();
+        return _memory.Memory.Span.Slice(_offset, _length);
     }
     public void Dispose()
     {
-        _handle?.Dispose();
+        _memory.Dispose();
     }
 }

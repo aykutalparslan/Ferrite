@@ -98,7 +98,7 @@ public class SetClientDhParamsHandler : IQueryHandler
         {
             var dhGenFail = dh_gen_fail.Create(sessionNonce, sessionServerNonce, newNonceHash3, out var memory);
             encryptedData.Dispose();
-            return new EncodedObject(memory.Memory.Pin(), 0, dhGenFail.Length);
+            return new EncodedObject(memory, 0, dhGenFail.Length);
         }
 
         bool temp_auth_key = false;
@@ -126,7 +126,7 @@ public class SetClientDhParamsHandler : IQueryHandler
             var dhGenOk = dh_gen_ok.Create(sessionNonce, sessionServerNonce, newNonceHash1, out var memory);
             ctx.SessionData.Clear();
             encryptedData.Dispose();
-            return new EncodedObject(memory.Memory.Pin(), 0, dhGenOk.Length);
+            return new EncodedObject(memory, 0, dhGenOk.Length);
         }
         else
         {
@@ -135,7 +135,7 @@ public class SetClientDhParamsHandler : IQueryHandler
                 .Skip(4).ToArray();
             var dhGenRetry = dh_gen_retry.Create(sessionNonce, sessionServerNonce, newNonceHash2, out var memory);
             encryptedData.Dispose();
-            return new EncodedObject(memory.Memory.Pin(), 0, dhGenRetry.Length);
+            return new EncodedObject(memory, 0, dhGenRetry.Length);
         }
     }
 }

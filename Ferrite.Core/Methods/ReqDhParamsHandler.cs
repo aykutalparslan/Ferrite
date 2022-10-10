@@ -58,14 +58,14 @@ public class ReqDhParamsHandler : IQueryHandler
         {
             var rpcError = rpc_error.Create(-404, ""u8, out var memory);
             log.Debug("Could not obtain the RSA Key.");
-            return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+            return new EncodedObject(memory, 0, rpcError.Length);
         }
         if(!ctx.SessionData.ContainsKey("nonce") || 
                 !ctx.SessionData.ContainsKey("server_nonce"))
         {
             var rpcError = rpc_error.Create(-404, ""u8, out var memory);
             log.Debug("Session is empty.");
-            return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+            return new EncodedObject(memory, 0, rpcError.Length);
         }
         Memory<byte> data;
         byte[] sha256;
@@ -75,7 +75,7 @@ public class ReqDhParamsHandler : IQueryHandler
         {
             log.Debug("SHA256 did not match.");
             var rpcError = rpc_error.Create(-404, ""u8, out var memory);
-            return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+            return new EncodedObject(memory, 0, rpcError.Length);
         }
 
         var constructor = MemoryMarshal.Read<int>(data.Span[32..]);
@@ -93,7 +93,7 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
                 var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+                return new EncodedObject(memory, 0, rpcError.Length);
             }
             var inner_new_nonce = pQInnerData.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -112,7 +112,7 @@ public class ReqDhParamsHandler : IQueryHandler
             var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
                 out var dhParamsMemory);
             answer.Dispose();
-            return new EncodedObject(dhParamsMemory.Memory.Pin(), 0, serverDhParamsOk.Length);
+            return new EncodedObject(dhParamsMemory, 0, serverDhParamsOk.Length);
         }
         else if (constructor == Constructors.p_q_inner_data_dc)
         {
@@ -125,7 +125,7 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
                 var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+                return new EncodedObject(memory, 0, rpcError.Length);
             }
             var inner_new_nonce = pQInnerDataDc.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -144,7 +144,7 @@ public class ReqDhParamsHandler : IQueryHandler
             var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
                 out var dhParamsMemory);
             answer.Dispose();
-            return new EncodedObject(dhParamsMemory.Memory.Pin(), 0, serverDhParamsOk.Length);
+            return new EncodedObject(dhParamsMemory, 0, serverDhParamsOk.Length);
         }
         else if (constructor == Constructors.p_q_inner_data_temp_dc)
         {
@@ -159,7 +159,7 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
                 var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+                return new EncodedObject(memory, 0, rpcError.Length);
             }
             var inner_new_nonce = pQInnerDataTempDc.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -179,7 +179,7 @@ public class ReqDhParamsHandler : IQueryHandler
             var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
                 out var dhParamsMemory);
             answer.Dispose();
-            return new EncodedObject(dhParamsMemory.Memory.Pin(), 0, serverDhParamsOk.Length);
+            return new EncodedObject(dhParamsMemory, 0, serverDhParamsOk.Length);
         }
         else if (constructor == Constructors.p_q_inner_data_temp)
         {
@@ -194,7 +194,7 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
                 var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new EncodedObject(memory.Memory.Pin(), 0, rpcError.Length);
+                return new EncodedObject(memory, 0, rpcError.Length);
             }
             var inner_new_nonce = pQInnerDataTemp.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -214,7 +214,7 @@ public class ReqDhParamsHandler : IQueryHandler
             var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
                 out var dhParamsMemory);
             answer.Dispose();
-            return new EncodedObject(dhParamsMemory.Memory.Pin(), 0, serverDhParamsOk.Length);
+            return new EncodedObject(dhParamsMemory, 0, serverDhParamsOk.Length);
         }
         return null;
     }

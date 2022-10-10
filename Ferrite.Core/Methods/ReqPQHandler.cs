@@ -91,6 +91,6 @@ public class ReqPQHandler : IQueryHandler
         }
         var resPq = resPQ.Create(nonce, 
             serverNonce, Pq, fingerprints, out var memory);
-        return new EncodedObject(memory.Memory.Pin(), 0, resPq.Length);
+        return new EncodedObject(memory, 0, resPq.Length);
     }
 }

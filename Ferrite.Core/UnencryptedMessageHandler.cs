@@ -64,7 +64,7 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
         context.AuthKeyId = session.AuthKeyId;
         context.PermAuthKeyId = session.PermAuthKeyId;
         _processorManager.Process(connection, new EncodedObject(
-            messageData.Memory.Pin(), 0, messageDataLength), context);
+            messageData, 0, messageDataLength), context);
     }
     
     public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection, 
