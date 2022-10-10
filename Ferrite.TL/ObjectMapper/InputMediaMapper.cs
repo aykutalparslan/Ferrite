@@ -84,7 +84,59 @@ public class InputMediaMapper : ITLObjectMapper<InputMedia, InputMediaDTO>
                 VCard = c.Vcard,
             };
         }
-        //TODO: implement mapping for the remaining media types
+        if (obj is InputMediaUploadedDocumentImpl uploaded)
+        {
+            List<DocumentAttributeDTO> attributes = new();
+            foreach (var a in uploaded.Attributes)
+            {
+                var attribute = _mapper.MapToDTO<DocumentAttribute, DocumentAttributeDTO>(a);
+                attributes.Add(attribute);
+            }
+            List<InputDocumentDTO> stickers = new();
+            if (uploaded.Flags[0])
+            {
+                foreach (var s in uploaded.Stickers)
+                {
+                    var sticker = _mapper.MapToDTO<InputDocument, InputDocumentDTO>(s);
+                    stickers.Add(sticker);
+                }
+            }
+            return new InputMediaDTO
+            {
+                InputMediaType = InputMediaType.UploadedDocument,
+                NoSoundVideo = uploaded.NosoundVideo,
+                ForceFile = uploaded.ForceFile,
+                File = _mapper.MapToDTO<InputFile, InputFileDTO>(uploaded.File),
+                Thumb = uploaded.Flags[2] ? _mapper.MapToDTO<InputFile, InputFileDTO>(uploaded.Thumb) : null,
+                MimeType = uploaded.MimeType,
+                Attributes = attributes,
+                Stickers = uploaded.Flags[0] ? stickers : null,
+                TtlSeconds = uploaded.Flags[1] ? uploaded.TtlSeconds : null,
+            };
+        }
+        if (obj is InputMediaDocumentImpl document)
+        {
+            return new InputMediaDTO
+            {
+                InputMediaType = InputMediaType.Document,
+                Document = _mapper.MapToDTO<InputDocument, InputDocumentDTO>(document.Id),
+                TtlSeconds = document.Flags[0] ? document.TtlSeconds : null,
+                Query = document.Flags[1] ? document.Query : null,
+            };
+        }
+        if (obj is InputMediaGeoLiveImpl geoLive)
+        {
+            return new InputMediaDTO
+            {
+                InputMediaType = InputMediaType.GeoLive,
+                Stopped = geoLive.Stopped,
+                GeoPoint = _mapper.MapToDTO<InputGeoPoint, InputGeoPointDTO>(geoLive.GeoPoint),
+                Heading = geoLive.Flags[2] ? geoLive.Heading : null,
+                Period = geoLive.Flags[1] ? geoLive.Period : null,
+                ProximityNotificationRadius = geoLive.Flags[3] ? geoLive.ProximityNotificationRadius : null,
+            };
+        }
+        //TODO: implement mappings for the remaining media types
         throw new NotSupportedException();
     }
 

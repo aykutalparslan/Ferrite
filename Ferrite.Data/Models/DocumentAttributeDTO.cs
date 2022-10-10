@@ -20,6 +20,7 @@ using MessagePack;
 
 namespace Ferrite.Data;
 
-[MessagePackObject(true)] public record DocumentAttributeDTO(int? W, int? H, bool Mask, string? Alt,
+[MessagePackObject(true)] public record DocumentAttributeDTO(DocumentAttributeType DocumentAttributeType,
+    int? W, int? H, bool Mask, string? Alt,
     InputStickerSetDTO? StickerSet, MaskCoordsDTO? MaskCoords, bool RoundMessage, bool SupportsStreaming,
     int? Duration, bool Voice, string? Title, string? Performer, byte[]? Waveform, string? FileName);

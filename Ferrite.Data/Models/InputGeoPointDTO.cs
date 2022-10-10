@@ -18,4 +18,4 @@
 
 namespace Ferrite.Data;
 
-public record InputGeoPointDTO(bool Empty, double Latitude, double Longitude, int?AccuracyRaidus);
+public record InputGeoPointDTO(bool Empty, double? Latitude, double? Longitude, int?AccuracyRadius);

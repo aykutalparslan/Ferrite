@@ -21,35 +21,33 @@ using Ferrite.TL.currentLayer;
 
 namespace Ferrite.TL.ObjectMapper;
 
-public class GeoPointMapper : ITLObjectMapper<GeoPoint, GeoPointDTO>
+public class InputGeoPointMapper : ITLObjectMapper<InputGeoPoint, InputGeoPointDTO>
 {
     private readonly ITLObjectFactory _factory;
-    public GeoPointMapper(ITLObjectFactory factory)
+    public InputGeoPointMapper(ITLObjectFactory factory)
     {
         _factory = factory;
     }
-    public GeoPointDTO MapToDTO(GeoPoint obj)
+    public InputGeoPointDTO MapToDTO(InputGeoPoint obj)
     {
-        if(obj is GeoPointEmptyImpl)
+        if(obj is InputGeoPointEmptyImpl)
         {
-            return new GeoPointDTO(true, null, null, 
-                null, null);
+            return new InputGeoPointDTO(true, null, null, 
+                null);
         }
-        if (obj is GeoPointImpl geo)
+        if (obj is InputGeoPointImpl geo)
         {
-            return new GeoPointDTO(false, geo.Lat, geo.Long, 
-                geo.AccessHash, geo.AccuracyRadius);
+            return new InputGeoPointDTO(false, geo.Lat, geo.Long, geo.AccuracyRadius);
         }
         throw new NotSupportedException();
     }
 
-    public GeoPoint MapToTLObject(GeoPointDTO obj)
+    public InputGeoPoint MapToTLObject(InputGeoPointDTO obj)
     {
-        if (obj.Empty) return _factory.Resolve<GeoPointEmptyImpl>();
-        var geo = _factory.Resolve<GeoPointImpl>();
+        if (obj.Empty) return _factory.Resolve<InputGeoPointEmptyImpl>();
+        var geo = _factory.Resolve<InputGeoPointImpl>();
         geo.Lat = (double)obj.Latitude!;
         geo.Long = (double)obj.Longitude!;
-        geo.AccessHash = (long)obj.AccessHash!;
         if (obj.AccuracyRadius != null)
         {
             geo.AccuracyRadius = (int)obj.AccuracyRadius;

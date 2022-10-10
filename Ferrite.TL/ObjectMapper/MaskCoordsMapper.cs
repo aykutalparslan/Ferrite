@@ -21,39 +21,31 @@ using Ferrite.TL.currentLayer;
 
 namespace Ferrite.TL.ObjectMapper;
 
-public class GeoPointMapper : ITLObjectMapper<GeoPoint, GeoPointDTO>
+public class MaskCoordsMapper : ITLObjectMapper<MaskCoords, MaskCoordsDTO>
 {
     private readonly ITLObjectFactory _factory;
-    public GeoPointMapper(ITLObjectFactory factory)
+
+    public MaskCoordsMapper(ITLObjectFactory factory)
     {
         _factory = factory;
     }
-    public GeoPointDTO MapToDTO(GeoPoint obj)
+    public MaskCoordsDTO MapToDTO(MaskCoords obj)
     {
-        if(obj is GeoPointEmptyImpl)
+        if (obj is MaskCoordsImpl coords)
         {
-            return new GeoPointDTO(true, null, null, 
-                null, null);
+            return new MaskCoordsDTO(coords.N, coords.X, coords.Y, coords.Zoom);
         }
-        if (obj is GeoPointImpl geo)
-        {
-            return new GeoPointDTO(false, geo.Lat, geo.Long, 
-                geo.AccessHash, geo.AccuracyRadius);
-        }
+
         throw new NotSupportedException();
     }
 
-    public GeoPoint MapToTLObject(GeoPointDTO obj)
+    public MaskCoords MapToTLObject(MaskCoordsDTO obj)
     {
-        if (obj.Empty) return _factory.Resolve<GeoPointEmptyImpl>();
-        var geo = _factory.Resolve<GeoPointImpl>();
-        geo.Lat = (double)obj.Latitude!;
-        geo.Long = (double)obj.Longitude!;
-        geo.AccessHash = (long)obj.AccessHash!;
-        if (obj.AccuracyRadius != null)
-        {
-            geo.AccuracyRadius = (int)obj.AccuracyRadius;
-        }
-        return geo;
+        var coords = _factory.Resolve<MaskCoordsImpl>();
+        coords.X = obj.X;
+        coords.Y = obj.Y;
+        coords.N = obj.N;
+        coords.Zoom = obj.Zoom;
+        throw new NotImplementedException();
     }
 }

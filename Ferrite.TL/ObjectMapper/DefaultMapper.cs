@@ -44,6 +44,8 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(InputPrivacyRule), new InputPrivacyRuleMapper());
         _mappers.TryAdd(typeof(InputMessage), new InputMessageMapper());
         _mappers.TryAdd(typeof(InputMedia), new InputMediaMapper(this));
+        _mappers.TryAdd(typeof(InputStickerSet), new InputStickerSetMapper(factory));
+        _mappers.TryAdd(typeof(InputGeoPoint), new InputGeoPointMapper(factory));
         _mappers.TryAdd(typeof(PeerNotifySettings), new PeerNotifySettingsMapper(factory));
         _mappers.TryAdd(typeof(PeerSettings), new PeerSettingsMapper(factory));
         _mappers.TryAdd(typeof(Photo), new PhotoMapper(factory));
@@ -65,6 +67,8 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(PeerDialogs), new PeerDialogsMapper(factory, this));
         _mappers.TryAdd(typeof(Difference), new DifferenceMapper(factory, this));
         _mappers.TryAdd(typeof(GeoPoint), new GeoPointMapper(factory));
+        _mappers.TryAdd(typeof(MaskCoords), new MaskCoordsMapper(factory));
+        _mappers.TryAdd(typeof(DocumentAttribute), new DocumentAttributeMapper(factory, this));
     }
     
     public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject
