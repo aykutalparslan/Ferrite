@@ -24,7 +24,8 @@ public readonly ref struct rpc_drop_answer
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x58e4a740));
         Set_req_msg_id(req_msg_id);
-    }public rpc_drop_answer(Span<byte> buff)
+    }
+    public rpc_drop_answer(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -67,6 +68,20 @@ public readonly ref struct rpc_drop_answer
         if(index >= 2) offset += 8;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private long _req_msg_id;
+        public TLObjectBuilder with_req_msg_id(long value)
+        {
+            _req_msg_id = value;
+            return this;
+        }
+        public rpc_drop_answer Build()
+        {
+            return new rpc_drop_answer(_req_msg_id);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

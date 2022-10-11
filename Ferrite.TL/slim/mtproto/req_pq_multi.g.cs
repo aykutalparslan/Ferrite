@@ -24,7 +24,8 @@ public readonly ref struct req_pq_multi
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xbe7e8ef1));
         Set_nonce(nonce);
-    }public req_pq_multi(Span<byte> buff)
+    }
+    public req_pq_multi(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -71,6 +72,20 @@ public readonly ref struct req_pq_multi
         if(index >= 2) offset += 16;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        public req_pq_multi Build()
+        {
+            return new req_pq_multi(_nonce);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

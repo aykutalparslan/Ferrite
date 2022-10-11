@@ -24,7 +24,8 @@ public readonly ref struct gzip_packed
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x3072cfa1));
         Set_packed_data(packed_data);
-    }public gzip_packed(Span<byte> buff)
+    }
+    public gzip_packed(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -73,6 +74,24 @@ public readonly ref struct gzip_packed
         int offset = 4;
         if(index >= 2) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _packed_data;
+        public TLObjectBuilder with_packed_data(ReadOnlySpan<byte> value)
+        {
+            _packed_data = value;
+            return this;
+        }
+        public gzip_packed Build()
+        {
+            return new gzip_packed(_packed_data);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

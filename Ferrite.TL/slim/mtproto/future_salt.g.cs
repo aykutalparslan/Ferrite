@@ -26,7 +26,8 @@ public readonly ref struct future_salt
         Set_valid_since(valid_since);
         Set_valid_until(valid_until);
         Set_salt(salt);
-    }public future_salt(Span<byte> buff)
+    }
+    public future_salt(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,36 @@ public readonly ref struct future_salt
         if(index >= 3) offset += 4;
         if(index >= 4) offset += 8;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private int _valid_since;
+        public TLObjectBuilder with_valid_since(int value)
+        {
+            _valid_since = value;
+            return this;
+        }
+        private int _valid_until;
+        public TLObjectBuilder with_valid_until(int value)
+        {
+            _valid_until = value;
+            return this;
+        }
+        private long _salt;
+        public TLObjectBuilder with_salt(long value)
+        {
+            _salt = value;
+            return this;
+        }
+        public future_salt Build()
+        {
+            return new future_salt(_valid_since, _valid_until, _salt);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

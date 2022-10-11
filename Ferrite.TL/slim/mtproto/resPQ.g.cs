@@ -27,7 +27,8 @@ public readonly ref struct resPQ
         Set_server_nonce(server_nonce);
         Set_pq(pq);
         Set_server_public_key_fingerprints(server_public_key_fingerprints.ToReadOnlySpan());
-    }public resPQ(Span<byte> buff)
+    }
+    public resPQ(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -102,6 +103,42 @@ public readonly ref struct resPQ
         if(index >= 4) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         if(index >= 5) offset += VectorOfLong.ReadSize(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _pq;
+        public TLObjectBuilder with_pq(ReadOnlySpan<byte> value)
+        {
+            _pq = value;
+            return this;
+        }
+        private VectorOfLong _server_public_key_fingerprints;
+        public TLObjectBuilder with_server_public_key_fingerprints(VectorOfLong value)
+        {
+            _server_public_key_fingerprints = value;
+            return this;
+        }
+        public resPQ Build()
+        {
+            return new resPQ(_nonce, _server_nonce, _pq, _server_public_key_fingerprints);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

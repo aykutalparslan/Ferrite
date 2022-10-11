@@ -23,7 +23,8 @@ public readonly ref struct destroy_auth_key
         _memory.Memory.Span.Clear();
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xd1435160));
-    }public destroy_auth_key(Span<byte> buff)
+    }
+    public destroy_auth_key(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -60,6 +61,14 @@ public readonly ref struct destroy_auth_key
         int offset = 4;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        public destroy_auth_key Build()
+        {
+            return new destroy_auth_key();
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

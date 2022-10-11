@@ -30,7 +30,8 @@ public readonly ref struct p_q_inner_data_dc
         Set_server_nonce(server_nonce);
         Set_new_nonce(new_nonce);
         Set_dc(dc);
-    }public p_q_inner_data_dc(Span<byte> buff)
+    }
+    public p_q_inner_data_dc(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -141,6 +142,60 @@ public readonly ref struct p_q_inner_data_dc
         if(index >= 7) offset += 32;
         if(index >= 8) offset += 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _pq;
+        public TLObjectBuilder with_pq(ReadOnlySpan<byte> value)
+        {
+            _pq = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _p;
+        public TLObjectBuilder with_p(ReadOnlySpan<byte> value)
+        {
+            _p = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _q;
+        public TLObjectBuilder with_q(ReadOnlySpan<byte> value)
+        {
+            _q = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _new_nonce;
+        public TLObjectBuilder with_new_nonce(ReadOnlySpan<byte> value)
+        {
+            _new_nonce = value;
+            return this;
+        }
+        private int _dc;
+        public TLObjectBuilder with_dc(int value)
+        {
+            _dc = value;
+            return this;
+        }
+        public p_q_inner_data_dc Build()
+        {
+            return new p_q_inner_data_dc(_pq, _p, _q, _nonce, _server_nonce, _new_nonce, _dc);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -24,7 +24,8 @@ public readonly ref struct ping
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x7abe77ec));
         Set_ping_id(ping_id);
-    }public ping(Span<byte> buff)
+    }
+    public ping(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -67,6 +68,20 @@ public readonly ref struct ping
         if(index >= 2) offset += 8;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private long _ping_id;
+        public TLObjectBuilder with_ping_id(long value)
+        {
+            _ping_id = value;
+            return this;
+        }
+        public ping Build()
+        {
+            return new ping(_ping_id);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

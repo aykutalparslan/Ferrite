@@ -24,7 +24,8 @@ public readonly ref struct msg_resend_req
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x7d861a08));
         Set_msg_ids(msg_ids.ToReadOnlySpan());
-    }public msg_resend_req(Span<byte> buff)
+    }
+    public msg_resend_req(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -66,6 +67,24 @@ public readonly ref struct msg_resend_req
         int offset = 4;
         if(index >= 2) offset += VectorOfLong.ReadSize(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private VectorOfLong _msg_ids;
+        public TLObjectBuilder with_msg_ids(VectorOfLong value)
+        {
+            _msg_ids = value;
+            return this;
+        }
+        public msg_resend_req Build()
+        {
+            return new msg_resend_req(_msg_ids);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -23,7 +23,8 @@ public readonly ref struct rpc_answer_dropped_running
         _memory.Memory.Span.Clear();
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xcd78e586));
-    }public rpc_answer_dropped_running(Span<byte> buff)
+    }
+    public rpc_answer_dropped_running(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -59,6 +60,18 @@ public readonly ref struct rpc_answer_dropped_running
     {
         int offset = 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        public rpc_answer_dropped_running Build()
+        {
+            return new rpc_answer_dropped_running();
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -312,7 +312,8 @@ public readonly ref struct " + typeName + @"
     private readonly IMemoryOwner<byte>? _memory;");
         GenerateCreate(sourceBuilder, combinator);
         sourceBuilder.Append(
-            @"public " + typeName + @"(Span<byte> buff)
+            @"
+    public " + typeName + @"(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -350,6 +351,7 @@ public readonly ref struct " + typeName + @"
     }");
         GenerateProperties(sourceBuilder, combinator);
         GenerateGetOffset(sourceBuilder, combinator);
+        GenerateBuilder(sourceBuilder, combinator);
         var str = @"
     public void Dispose()
     {
@@ -389,7 +391,8 @@ public readonly ref struct " + typeName + @"
     private readonly IMemoryOwner<byte>? _memory;");
         GenerateCreate(sourceBuilder, combinator);
     sourceBuilder.Append(
-    @"public " + typeName + @"(Span<byte> buff)
+    @"
+    public " + typeName + @"(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -427,7 +430,12 @@ public readonly ref struct " + typeName + @"
     }");
         GenerateProperties(sourceBuilder, combinator);
         GenerateGetOffset(sourceBuilder, combinator);
+        GenerateBuilder(sourceBuilder, combinator);
         var str = @"
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
+    }
     public void Dispose()
     {
         _memory?.Dispose();
@@ -915,6 +923,115 @@ public readonly ref struct " + typeName + @"
                 index++;
             }
         }
+    }
+    private static void GenerateBuilder(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    {
+        sb.Append(@"
+    public ref struct TLObjectBuilder
+    {");
+        foreach (var arg in combinator.Arguments)
+        {
+            if (arg.TypeTerm.Identifier == "#")
+            {
+                sb.Append(@"
+        private Flags _flags;
+        public TLObjectBuilder with_flags(Flags value)
+        {
+            _flags = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "true" && 
+                     arg.ConditionalDefinition != null)
+            {
+                sb.Append(@"
+        public TLObjectBuilder with_"+arg.Identifier+@"(bool value)
+        {
+            _flags["+arg.ConditionalDefinition.ConditionalArgumentBit+@"] = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "int")
+            {
+                sb.Append(@"
+        private int _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(int value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "long")
+            {
+                sb.Append(@"
+        private long _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(long value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "double")
+            {
+                sb.Append(@"
+        private double _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(double value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256"||
+                     arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
+            {
+                sb.Append(@"
+        private ReadOnlySpan<byte> _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else
+            {
+                string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
+                sb.Append(@"
+        private " + typeIdent + " _" + arg.Identifier + @";
+        public TLObjectBuilder with_" + arg.Identifier + "(" + typeIdent + @" value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+        }
+        var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
+        sb.Append(@"
+        public " + typeName + @" Build()
+        {
+            return new " + typeName);
+        
+        sb.Append(@"(");
+        int count = combinator.Arguments.Count;
+        foreach (var arg in combinator.Arguments)
+        {
+            bool comma = --count != 0;
+            if (arg.Identifier == "long")
+            {
+                arg.Identifier = "longitude";
+            }
+            if (arg.TypeTerm.Identifier == "#")
+            {
+                
+            }
+            else
+            {
+                sb.Append("_" + arg.Identifier + (comma ? ", ": ""));
+            }
+        }
+        sb.Append(@");
+        }
+    }
+");
     }
     private static void GenerateGetOffset(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {

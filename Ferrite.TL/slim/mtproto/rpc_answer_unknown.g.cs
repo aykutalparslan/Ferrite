@@ -23,7 +23,8 @@ public readonly ref struct rpc_answer_unknown
         _memory.Memory.Span.Clear();
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x5e2ad36e));
-    }public rpc_answer_unknown(Span<byte> buff)
+    }
+    public rpc_answer_unknown(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -59,6 +60,18 @@ public readonly ref struct rpc_answer_unknown
     {
         int offset = 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        public rpc_answer_unknown Build()
+        {
+            return new rpc_answer_unknown();
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -25,7 +25,8 @@ public readonly ref struct ping_delay_disconnect
         SetConstructor(unchecked((int)0xf3427b8c));
         Set_ping_id(ping_id);
         Set_disconnect_delay(disconnect_delay);
-    }public ping_delay_disconnect(Span<byte> buff)
+    }
+    public ping_delay_disconnect(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -74,6 +75,26 @@ public readonly ref struct ping_delay_disconnect
         if(index >= 3) offset += 4;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private long _ping_id;
+        public TLObjectBuilder with_ping_id(long value)
+        {
+            _ping_id = value;
+            return this;
+        }
+        private int _disconnect_delay;
+        public TLObjectBuilder with_disconnect_delay(int value)
+        {
+            _disconnect_delay = value;
+            return this;
+        }
+        public ping_delay_disconnect Build()
+        {
+            return new ping_delay_disconnect(_ping_id, _disconnect_delay);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

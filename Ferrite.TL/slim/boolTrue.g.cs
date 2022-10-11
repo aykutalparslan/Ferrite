@@ -23,7 +23,8 @@ public readonly ref struct boolTrue
         _memory.Memory.Span.Clear();
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x997275b5));
-    }public boolTrue(Span<byte> buff)
+    }
+    public boolTrue(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -59,6 +60,18 @@ public readonly ref struct boolTrue
     {
         int offset = 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        public boolTrue Build()
+        {
+            return new boolTrue();
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

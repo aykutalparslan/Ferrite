@@ -26,7 +26,8 @@ public readonly ref struct Message
         Set_seqno(seqno);
         Set_bytes(bytes);
         Set_body(body);
-    }public Message(Span<byte> buff)
+    }
+    public Message(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,42 @@ public readonly ref struct Message
         if(index >= 4) offset += 4;
         if(index >= 5) offset += ObjectReader.ReadSize(buffer[offset..]);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _msg_id;
+        public TLObjectBuilder with_msg_id(long value)
+        {
+            _msg_id = value;
+            return this;
+        }
+        private int _seqno;
+        public TLObjectBuilder with_seqno(int value)
+        {
+            _seqno = value;
+            return this;
+        }
+        private int _bytes;
+        public TLObjectBuilder with_bytes(int value)
+        {
+            _bytes = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _body;
+        public TLObjectBuilder with_body(ReadOnlySpan<byte> value)
+        {
+            _body = value;
+            return this;
+        }
+        public Message Build()
+        {
+            return new Message(_msg_id, _seqno, _bytes, _body);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

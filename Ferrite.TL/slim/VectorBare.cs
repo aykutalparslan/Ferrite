@@ -48,7 +48,7 @@ public ref struct VectorBare
     {
         MemoryMarshal.Write(_buff[..4], ref constructor);
     }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff[.._offset];
     public readonly int Count => MemoryMarshal.Read<int>(_buff.Slice(4, 4));
     public readonly int Length => _offset;
     private void SetCount(int count)

@@ -30,12 +30,16 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using Moq;
 using Xunit;
 using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
 using ResPQ = Ferrite.TL.mtproto.ResPQ;
+using VectorOfDouble = Ferrite.TL.VectorOfDouble;
+using VectorOfInt = Ferrite.TL.VectorOfInt;
+using VectorOfLong = Ferrite.TL.VectorOfLong;
 
 namespace Ferrite.Tests.Serialization;
 
@@ -182,6 +186,100 @@ public class AllocationFreeSerializationTests
         
         var actual = vec.ToReadOnlySpan().ToArray();
         Assert.Equal(data, actual);
+    }
+    [Fact]
+    public void FluentAPI_Should_Build_server_DH_inner_data()
+    {
+        var nonce = RandomNumberGenerator.GetBytes(16);
+        var serverNonce = RandomNumberGenerator.GetBytes(16);
+        int g = 3;
+        var dhPrime = RandomNumberGenerator.GetBytes(256);
+        var ga = RandomNumberGenerator.GetBytes(8);
+        int serverTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+
+        using var actual = server_DH_inner_data.Builder()
+            .with_nonce(nonce)
+            .with_server_nonce(serverNonce)
+            .with_g(g)
+            .with_dh_prime(dhPrime)
+            .with_g_a(ga)
+            .with_server_time(serverTime)
+            .Build();
+        
+        using var expected = new server_DH_inner_data(
+            nonce, 
+            serverNonce, 
+            g, 
+            dhPrime, 
+            ga, 
+            serverTime);
+        
+        Assert.Equal(nonce, actual.nonce.ToArray());
+        Assert.Equal(serverNonce, actual.server_nonce.ToArray());
+        Assert.Equal(g, actual.g);
+        Assert.Equal(dhPrime, actual.dh_prime.ToArray());
+        Assert.Equal(ga, actual.g_a.ToArray());
+        Assert.Equal(serverTime, actual.server_time);
+        
+        Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
+            actual.ToReadOnlySpan().ToArray());
+        
+        Assert.Equal(expected.TLBytes!.Value.AsSpan().ToArray(), 
+            actual.TLBytes!.Value.AsSpan().ToArray());
+    }
+    [Fact]
+    public void FluentAPI_Should_Build_future_salts()
+    {
+        long reqMsgId = 13579;
+        int now = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
+        VectorBare salts = new VectorBare();
+        int validSince = now;
+        int validUntil = now + 1800;
+        long saltValue = Random.Shared.NextInt64();
+        using future_salt salt1 = new future_salt(validSince, validUntil, saltValue);
+        salts.Append(salt1.ToReadOnlySpan());
+        using future_salt salt2 = new future_salt(validSince+7200, 
+            validUntil+7200, saltValue + 7200);
+        salts.Append(salt2.ToReadOnlySpan());
+
+        using var actual = future_salts.Builder()
+            .with_req_msg_id(reqMsgId)
+            .with_now(now)
+            .with_salts(salts)
+            .Build();
+
+        using var expected = new future_salts(reqMsgId, now, salts);
+
+        Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
+            actual.ToReadOnlySpan().ToArray());
+        
+        Assert.Equal(expected.TLBytes!.Value.AsSpan().ToArray(), 
+            actual.TLBytes!.Value.AsSpan().ToArray());
+    }
+    [Fact]
+    public void FluentAPI_Should_Build_resPQ()
+    {
+        var nonce = RandomNumberGenerator.GetBytes(16);
+        var serverNonce = RandomNumberGenerator.GetBytes(16);
+        var pq = RandomNumberGenerator.GetBytes(8);
+        Ferrite.TL.slim.VectorOfLong fingerprints = new Ferrite.TL.slim.VectorOfLong();
+        fingerprints.Append(135790L);
+        fingerprints.Append(246810L);
+
+        using var actual = resPQ.Builder()
+            .with_nonce(nonce)
+            .with_server_nonce(serverNonce)
+            .with_pq(pq)
+            .with_server_public_key_fingerprints(fingerprints)
+            .Build();
+
+        using var expected = new resPQ(nonce, serverNonce, pq, fingerprints);
+
+        Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
+            actual.ToReadOnlySpan().ToArray());
+        
+        Assert.Equal(expected.TLBytes!.Value.AsSpan().ToArray(), 
+            actual.TLBytes!.Value.AsSpan().ToArray());
     }
     private static IContainer BuildContainer()
     {

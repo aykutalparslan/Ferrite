@@ -24,7 +24,8 @@ public readonly ref struct msg_container
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0x73f1f8dc));
         Set_messages(messages.ToReadOnlySpan());
-    }public msg_container(Span<byte> buff)
+    }
+    public msg_container(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -66,6 +67,24 @@ public readonly ref struct msg_container
         int offset = 4;
         if(index >= 2) offset += VectorBare.ReadSize(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private VectorBare _messages;
+        public TLObjectBuilder with_messages(VectorBare value)
+        {
+            _messages = value;
+            return this;
+        }
+        public msg_container Build()
+        {
+            return new msg_container(_messages);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

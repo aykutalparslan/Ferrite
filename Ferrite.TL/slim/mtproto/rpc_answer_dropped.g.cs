@@ -26,7 +26,8 @@ public readonly ref struct rpc_answer_dropped
         Set_msg_id(msg_id);
         Set_seq_no(seq_no);
         Set_bytes(bytes);
-    }public rpc_answer_dropped(Span<byte> buff)
+    }
+    public rpc_answer_dropped(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,36 @@ public readonly ref struct rpc_answer_dropped
         if(index >= 3) offset += 4;
         if(index >= 4) offset += 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _msg_id;
+        public TLObjectBuilder with_msg_id(long value)
+        {
+            _msg_id = value;
+            return this;
+        }
+        private int _seq_no;
+        public TLObjectBuilder with_seq_no(int value)
+        {
+            _seq_no = value;
+            return this;
+        }
+        private int _bytes;
+        public TLObjectBuilder with_bytes(int value)
+        {
+            _bytes = value;
+            return this;
+        }
+        public rpc_answer_dropped Build()
+        {
+            return new rpc_answer_dropped(_msg_id, _seq_no, _bytes);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

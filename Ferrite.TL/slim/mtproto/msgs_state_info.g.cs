@@ -25,7 +25,8 @@ public readonly ref struct msgs_state_info
         SetConstructor(unchecked((int)0x04deb57d));
         Set_req_msg_id(req_msg_id);
         Set_info(info);
-    }public msgs_state_info(Span<byte> buff)
+    }
+    public msgs_state_info(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,30 @@ public readonly ref struct msgs_state_info
         if(index >= 2) offset += 8;
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _req_msg_id;
+        public TLObjectBuilder with_req_msg_id(long value)
+        {
+            _req_msg_id = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _info;
+        public TLObjectBuilder with_info(ReadOnlySpan<byte> value)
+        {
+            _info = value;
+            return this;
+        }
+        public msgs_state_info Build()
+        {
+            return new msgs_state_info(_req_msg_id, _info);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

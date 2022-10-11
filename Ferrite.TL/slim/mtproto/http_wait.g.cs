@@ -26,7 +26,8 @@ public readonly ref struct http_wait
         Set_max_delay(max_delay);
         Set_wait_after(wait_after);
         Set_max_wait(max_wait);
-    }public http_wait(Span<byte> buff)
+    }
+    public http_wait(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -81,6 +82,32 @@ public readonly ref struct http_wait
         if(index >= 4) offset += 4;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private int _max_delay;
+        public TLObjectBuilder with_max_delay(int value)
+        {
+            _max_delay = value;
+            return this;
+        }
+        private int _wait_after;
+        public TLObjectBuilder with_wait_after(int value)
+        {
+            _wait_after = value;
+            return this;
+        }
+        private int _max_wait;
+        public TLObjectBuilder with_max_wait(int value)
+        {
+            _max_wait = value;
+            return this;
+        }
+        public http_wait Build()
+        {
+            return new http_wait(_max_delay, _wait_after, _max_wait);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

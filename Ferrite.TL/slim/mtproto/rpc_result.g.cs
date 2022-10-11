@@ -25,7 +25,8 @@ public readonly ref struct rpc_result
         SetConstructor(unchecked((int)0xf35c6d01));
         Set_req_msg_id(req_msg_id);
         Set_result(result);
-    }public rpc_result(Span<byte> buff)
+    }
+    public rpc_result(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -73,6 +74,30 @@ public readonly ref struct rpc_result
         if(index >= 2) offset += 8;
         if(index >= 3) offset += ObjectReader.ReadSize(buffer[offset..], unchecked((int)0xf35c6d01));
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _req_msg_id;
+        public TLObjectBuilder with_req_msg_id(long value)
+        {
+            _req_msg_id = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _result;
+        public TLObjectBuilder with_result(ReadOnlySpan<byte> value)
+        {
+            _result = value;
+            return this;
+        }
+        public rpc_result Build()
+        {
+            return new rpc_result(_req_msg_id, _result);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

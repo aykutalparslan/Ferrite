@@ -25,7 +25,8 @@ public readonly ref struct error
         SetConstructor(unchecked((int)0xc4b9f9bb));
         Set_code(code);
         Set_text(text);
-    }public error(Span<byte> buff)
+    }
+    public error(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,30 @@ public readonly ref struct error
         if(index >= 2) offset += 4;
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private int _code;
+        public TLObjectBuilder with_code(int value)
+        {
+            _code = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _text;
+        public TLObjectBuilder with_text(ReadOnlySpan<byte> value)
+        {
+            _text = value;
+            return this;
+        }
+        public error Build()
+        {
+            return new error(_code, _text);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -24,7 +24,8 @@ public readonly ref struct msg_copy
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xe06046b2));
         Set_orig_message(orig_message.ToReadOnlySpan());
-    }public msg_copy(Span<byte> buff)
+    }
+    public msg_copy(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -66,6 +67,24 @@ public readonly ref struct msg_copy
         int offset = 4;
         if(index >= 2) offset += Message.ReadSize(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private Message _orig_message;
+        public TLObjectBuilder with_orig_message(Message value)
+        {
+            _orig_message = value;
+            return this;
+        }
+        public msg_copy Build()
+        {
+            return new msg_copy(_orig_message);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

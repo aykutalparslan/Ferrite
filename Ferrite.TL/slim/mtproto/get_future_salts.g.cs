@@ -24,7 +24,8 @@ public readonly ref struct get_future_salts
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xb921bd04));
         Set_num(num);
-    }public get_future_salts(Span<byte> buff)
+    }
+    public get_future_salts(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -67,6 +68,20 @@ public readonly ref struct get_future_salts
         if(index >= 2) offset += 4;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private int _num;
+        public TLObjectBuilder with_num(int value)
+        {
+            _num = value;
+            return this;
+        }
+        public get_future_salts Build()
+        {
+            return new get_future_salts(_num);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

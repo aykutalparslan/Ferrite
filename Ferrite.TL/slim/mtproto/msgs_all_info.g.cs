@@ -25,7 +25,8 @@ public readonly ref struct msgs_all_info
         SetConstructor(unchecked((int)0x8cc0d131));
         Set_msg_ids(msg_ids.ToReadOnlySpan());
         Set_info(info);
-    }public msgs_all_info(Span<byte> buff)
+    }
+    public msgs_all_info(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,30 @@ public readonly ref struct msgs_all_info
         if(index >= 2) offset += VectorOfLong.ReadSize(buffer, offset);
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private VectorOfLong _msg_ids;
+        public TLObjectBuilder with_msg_ids(VectorOfLong value)
+        {
+            _msg_ids = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _info;
+        public TLObjectBuilder with_info(ReadOnlySpan<byte> value)
+        {
+            _info = value;
+            return this;
+        }
+        public msgs_all_info Build()
+        {
+            return new msgs_all_info(_msg_ids, _info);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -25,7 +25,8 @@ public readonly ref struct rpc_error
         SetConstructor(unchecked((int)0x2144ca19));
         Set_error_code(error_code);
         Set_error_message(error_message);
-    }public rpc_error(Span<byte> buff)
+    }
+    public rpc_error(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,30 @@ public readonly ref struct rpc_error
         if(index >= 2) offset += 4;
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private int _error_code;
+        public TLObjectBuilder with_error_code(int value)
+        {
+            _error_code = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _error_message;
+        public TLObjectBuilder with_error_message(ReadOnlySpan<byte> value)
+        {
+            _error_message = value;
+            return this;
+        }
+        public rpc_error Build()
+        {
+            return new rpc_error(_error_code, _error_message);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

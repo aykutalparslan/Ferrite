@@ -27,7 +27,8 @@ public readonly ref struct msg_detailed_info
         Set_answer_msg_id(answer_msg_id);
         Set_bytes(bytes);
         Set_status(status);
-    }public msg_detailed_info(Span<byte> buff)
+    }
+    public msg_detailed_info(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -87,6 +88,42 @@ public readonly ref struct msg_detailed_info
         if(index >= 4) offset += 4;
         if(index >= 5) offset += 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _msg_id;
+        public TLObjectBuilder with_msg_id(long value)
+        {
+            _msg_id = value;
+            return this;
+        }
+        private long _answer_msg_id;
+        public TLObjectBuilder with_answer_msg_id(long value)
+        {
+            _answer_msg_id = value;
+            return this;
+        }
+        private int _bytes;
+        public TLObjectBuilder with_bytes(int value)
+        {
+            _bytes = value;
+            return this;
+        }
+        private int _status;
+        public TLObjectBuilder with_status(int value)
+        {
+            _status = value;
+            return this;
+        }
+        public msg_detailed_info Build()
+        {
+            return new msg_detailed_info(_msg_id, _answer_msg_id, _bytes, _status);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

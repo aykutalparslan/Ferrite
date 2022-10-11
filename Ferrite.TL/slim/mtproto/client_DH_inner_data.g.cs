@@ -27,7 +27,8 @@ public readonly ref struct client_DH_inner_data
         Set_server_nonce(server_nonce);
         Set_retry_id(retry_id);
         Set_g_b(g_b);
-    }public client_DH_inner_data(Span<byte> buff)
+    }
+    public client_DH_inner_data(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -102,6 +103,42 @@ public readonly ref struct client_DH_inner_data
         if(index >= 4) offset += 8;
         if(index >= 5) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private long _retry_id;
+        public TLObjectBuilder with_retry_id(long value)
+        {
+            _retry_id = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _g_b;
+        public TLObjectBuilder with_g_b(ReadOnlySpan<byte> value)
+        {
+            _g_b = value;
+            return this;
+        }
+        public client_DH_inner_data Build()
+        {
+            return new client_DH_inner_data(_nonce, _server_nonce, _retry_id, _g_b);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -25,7 +25,8 @@ public readonly ref struct pong
         SetConstructor(unchecked((int)0x347773c5));
         Set_msg_id(msg_id);
         Set_ping_id(ping_id);
-    }public pong(Span<byte> buff)
+    }
+    public pong(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -73,6 +74,30 @@ public readonly ref struct pong
         if(index >= 2) offset += 8;
         if(index >= 3) offset += 8;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _msg_id;
+        public TLObjectBuilder with_msg_id(long value)
+        {
+            _msg_id = value;
+            return this;
+        }
+        private long _ping_id;
+        public TLObjectBuilder with_ping_id(long value)
+        {
+            _ping_id = value;
+            return this;
+        }
+        public pong Build()
+        {
+            return new pong(_msg_id, _ping_id);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -28,7 +28,8 @@ public readonly ref struct bind_auth_key_inner
         Set_perm_auth_key_id(perm_auth_key_id);
         Set_temp_session_id(temp_session_id);
         Set_expires_at(expires_at);
-    }public bind_auth_key_inner(Span<byte> buff)
+    }
+    public bind_auth_key_inner(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -94,6 +95,48 @@ public readonly ref struct bind_auth_key_inner
         if(index >= 5) offset += 8;
         if(index >= 6) offset += 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _nonce;
+        public TLObjectBuilder with_nonce(long value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private long _temp_auth_key_id;
+        public TLObjectBuilder with_temp_auth_key_id(long value)
+        {
+            _temp_auth_key_id = value;
+            return this;
+        }
+        private long _perm_auth_key_id;
+        public TLObjectBuilder with_perm_auth_key_id(long value)
+        {
+            _perm_auth_key_id = value;
+            return this;
+        }
+        private long _temp_session_id;
+        public TLObjectBuilder with_temp_session_id(long value)
+        {
+            _temp_session_id = value;
+            return this;
+        }
+        private int _expires_at;
+        public TLObjectBuilder with_expires_at(int value)
+        {
+            _expires_at = value;
+            return this;
+        }
+        public bind_auth_key_inner Build()
+        {
+            return new bind_auth_key_inner(_nonce, _temp_auth_key_id, _perm_auth_key_id, _temp_session_id, _expires_at);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

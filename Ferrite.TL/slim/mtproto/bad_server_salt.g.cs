@@ -27,7 +27,8 @@ public readonly ref struct bad_server_salt
         Set_bad_msg_seqno(bad_msg_seqno);
         Set_error_code(error_code);
         Set_new_server_salt(new_server_salt);
-    }public bad_server_salt(Span<byte> buff)
+    }
+    public bad_server_salt(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -87,6 +88,42 @@ public readonly ref struct bad_server_salt
         if(index >= 4) offset += 4;
         if(index >= 5) offset += 8;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _bad_msg_id;
+        public TLObjectBuilder with_bad_msg_id(long value)
+        {
+            _bad_msg_id = value;
+            return this;
+        }
+        private int _bad_msg_seqno;
+        public TLObjectBuilder with_bad_msg_seqno(int value)
+        {
+            _bad_msg_seqno = value;
+            return this;
+        }
+        private int _error_code;
+        public TLObjectBuilder with_error_code(int value)
+        {
+            _error_code = value;
+            return this;
+        }
+        private long _new_server_salt;
+        public TLObjectBuilder with_new_server_salt(long value)
+        {
+            _new_server_salt = value;
+            return this;
+        }
+        public bad_server_salt Build()
+        {
+            return new bad_server_salt(_bad_msg_id, _bad_msg_seqno, _error_code, _new_server_salt);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

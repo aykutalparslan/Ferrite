@@ -23,7 +23,8 @@ public readonly ref struct destroy_auth_key_fail
         _memory.Memory.Span.Clear();
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xea109b13));
-    }public destroy_auth_key_fail(Span<byte> buff)
+    }
+    public destroy_auth_key_fail(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -59,6 +60,18 @@ public readonly ref struct destroy_auth_key_fail
     {
         int offset = 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        public destroy_auth_key_fail Build()
+        {
+            return new destroy_auth_key_fail();
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

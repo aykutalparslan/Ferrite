@@ -26,7 +26,8 @@ public readonly ref struct new_session_created
         Set_first_msg_id(first_msg_id);
         Set_unique_id(unique_id);
         Set_server_salt(server_salt);
-    }public new_session_created(Span<byte> buff)
+    }
+    public new_session_created(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,36 @@ public readonly ref struct new_session_created
         if(index >= 3) offset += 8;
         if(index >= 4) offset += 8;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _first_msg_id;
+        public TLObjectBuilder with_first_msg_id(long value)
+        {
+            _first_msg_id = value;
+            return this;
+        }
+        private long _unique_id;
+        public TLObjectBuilder with_unique_id(long value)
+        {
+            _unique_id = value;
+            return this;
+        }
+        private long _server_salt;
+        public TLObjectBuilder with_server_salt(long value)
+        {
+            _server_salt = value;
+            return this;
+        }
+        public new_session_created Build()
+        {
+            return new new_session_created(_first_msg_id, _unique_id, _server_salt);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

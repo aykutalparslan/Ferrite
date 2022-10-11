@@ -24,7 +24,8 @@ public readonly ref struct destroy_session
         _buff = _memory.Memory.Span[..length];
         SetConstructor(unchecked((int)0xe7512126));
         Set_session_id(session_id);
-    }public destroy_session(Span<byte> buff)
+    }
+    public destroy_session(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -67,6 +68,20 @@ public readonly ref struct destroy_session
         if(index >= 2) offset += 8;
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private long _session_id;
+        public TLObjectBuilder with_session_id(long value)
+        {
+            _session_id = value;
+            return this;
+        }
+        public destroy_session Build()
+        {
+            return new destroy_session(_session_id);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

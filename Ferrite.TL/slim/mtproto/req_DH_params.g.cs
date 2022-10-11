@@ -29,7 +29,8 @@ public readonly ref struct req_DH_params
         Set_q(q);
         Set_public_key_fingerprint(public_key_fingerprint);
         Set_encrypted_data(encrypted_data);
-    }public req_DH_params(Span<byte> buff)
+    }
+    public req_DH_params(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -131,6 +132,50 @@ public readonly ref struct req_DH_params
         if(index >= 7) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _p;
+        public TLObjectBuilder with_p(ReadOnlySpan<byte> value)
+        {
+            _p = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _q;
+        public TLObjectBuilder with_q(ReadOnlySpan<byte> value)
+        {
+            _q = value;
+            return this;
+        }
+        private long _public_key_fingerprint;
+        public TLObjectBuilder with_public_key_fingerprint(long value)
+        {
+            _public_key_fingerprint = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _encrypted_data;
+        public TLObjectBuilder with_encrypted_data(ReadOnlySpan<byte> value)
+        {
+            _encrypted_data = value;
+            return this;
+        }
+        public req_DH_params Build()
+        {
+            return new req_DH_params(_nonce, _server_nonce, _p, _q, _public_key_fingerprint, _encrypted_data);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();

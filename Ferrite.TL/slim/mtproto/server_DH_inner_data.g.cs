@@ -29,7 +29,8 @@ public readonly ref struct server_DH_inner_data
         Set_dh_prime(dh_prime);
         Set_g_a(g_a);
         Set_server_time(server_time);
-    }public server_DH_inner_data(Span<byte> buff)
+    }
+    public server_DH_inner_data(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -123,6 +124,54 @@ public readonly ref struct server_DH_inner_data
         if(index >= 6) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         if(index >= 7) offset += 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private int _g;
+        public TLObjectBuilder with_g(int value)
+        {
+            _g = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _dh_prime;
+        public TLObjectBuilder with_dh_prime(ReadOnlySpan<byte> value)
+        {
+            _dh_prime = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _g_a;
+        public TLObjectBuilder with_g_a(ReadOnlySpan<byte> value)
+        {
+            _g_a = value;
+            return this;
+        }
+        private int _server_time;
+        public TLObjectBuilder with_server_time(int value)
+        {
+            _server_time = value;
+            return this;
+        }
+        public server_DH_inner_data Build()
+        {
+            return new server_DH_inner_data(_nonce, _server_nonce, _g, _dh_prime, _g_a, _server_time);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

@@ -31,7 +31,8 @@ public readonly ref struct p_q_inner_data_temp_dc
         Set_new_nonce(new_nonce);
         Set_dc(dc);
         Set_expires_in(expires_in);
-    }public p_q_inner_data_temp_dc(Span<byte> buff)
+    }
+    public p_q_inner_data_temp_dc(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -148,6 +149,66 @@ public readonly ref struct p_q_inner_data_temp_dc
         if(index >= 8) offset += 4;
         if(index >= 9) offset += 4;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _pq;
+        public TLObjectBuilder with_pq(ReadOnlySpan<byte> value)
+        {
+            _pq = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _p;
+        public TLObjectBuilder with_p(ReadOnlySpan<byte> value)
+        {
+            _p = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _q;
+        public TLObjectBuilder with_q(ReadOnlySpan<byte> value)
+        {
+            _q = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _new_nonce;
+        public TLObjectBuilder with_new_nonce(ReadOnlySpan<byte> value)
+        {
+            _new_nonce = value;
+            return this;
+        }
+        private int _dc;
+        public TLObjectBuilder with_dc(int value)
+        {
+            _dc = value;
+            return this;
+        }
+        private int _expires_in;
+        public TLObjectBuilder with_expires_in(int value)
+        {
+            _expires_in = value;
+            return this;
+        }
+        public p_q_inner_data_temp_dc Build()
+        {
+            return new p_q_inner_data_temp_dc(_pq, _p, _q, _nonce, _server_nonce, _new_nonce, _dc, _expires_in);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

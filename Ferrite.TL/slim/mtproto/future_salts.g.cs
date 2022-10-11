@@ -26,7 +26,8 @@ public readonly ref struct future_salts
         Set_req_msg_id(req_msg_id);
         Set_now(now);
         Set_salts(salts.ToReadOnlySpan());
-    }public future_salts(Span<byte> buff)
+    }
+    public future_salts(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -80,6 +81,36 @@ public readonly ref struct future_salts
         if(index >= 3) offset += 4;
         if(index >= 4) offset += VectorBare.ReadSize(buffer, offset);
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private long _req_msg_id;
+        public TLObjectBuilder with_req_msg_id(long value)
+        {
+            _req_msg_id = value;
+            return this;
+        }
+        private int _now;
+        public TLObjectBuilder with_now(int value)
+        {
+            _now = value;
+            return this;
+        }
+        private VectorBare _salts;
+        public TLObjectBuilder with_salts(VectorBare value)
+        {
+            _salts = value;
+            return this;
+        }
+        public future_salts Build()
+        {
+            return new future_salts(_req_msg_id, _now, _salts);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

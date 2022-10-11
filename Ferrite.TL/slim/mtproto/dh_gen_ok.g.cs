@@ -26,7 +26,8 @@ public readonly ref struct dh_gen_ok
         Set_nonce(nonce);
         Set_server_nonce(server_nonce);
         Set_new_nonce_hash1(new_nonce_hash1);
-    }public dh_gen_ok(Span<byte> buff)
+    }
+    public dh_gen_ok(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -92,6 +93,36 @@ public readonly ref struct dh_gen_ok
         if(index >= 3) offset += 16;
         if(index >= 4) offset += 16;
         return offset;
+    }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _new_nonce_hash1;
+        public TLObjectBuilder with_new_nonce_hash1(ReadOnlySpan<byte> value)
+        {
+            _new_nonce_hash1 = value;
+            return this;
+        }
+        public dh_gen_ok Build()
+        {
+            return new dh_gen_ok(_nonce, _server_nonce, _new_nonce_hash1);
+        }
+    }
+
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
     public void Dispose()
     {

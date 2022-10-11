@@ -26,7 +26,8 @@ public readonly ref struct set_client_DH_params
         Set_nonce(nonce);
         Set_server_nonce(server_nonce);
         Set_encrypted_data(encrypted_data);
-    }public set_client_DH_params(Span<byte> buff)
+    }
+    public set_client_DH_params(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -96,6 +97,32 @@ public readonly ref struct set_client_DH_params
         if(index >= 4) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
     }
+    public ref struct TLObjectBuilder
+    {
+        private ReadOnlySpan<byte> _nonce;
+        public TLObjectBuilder with_nonce(ReadOnlySpan<byte> value)
+        {
+            _nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _server_nonce;
+        public TLObjectBuilder with_server_nonce(ReadOnlySpan<byte> value)
+        {
+            _server_nonce = value;
+            return this;
+        }
+        private ReadOnlySpan<byte> _encrypted_data;
+        public TLObjectBuilder with_encrypted_data(ReadOnlySpan<byte> value)
+        {
+            _encrypted_data = value;
+            return this;
+        }
+        public set_client_DH_params Build()
+        {
+            return new set_client_DH_params(_nonce, _server_nonce, _encrypted_data);
+        }
+    }
+
     public void Dispose()
     {
         _memory?.Dispose();
