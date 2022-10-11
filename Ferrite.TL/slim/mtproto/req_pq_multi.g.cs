@@ -8,13 +8,23 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct req_pq_multi
 {
     private readonly Span<byte> _buff;
-    public req_pq_multi(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public req_pq_multi(ReadOnlySpan<byte> nonce)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xbe7e8ef1));
+        Set_nonce(nonce);
+    }public req_pq_multi(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +37,7 @@ public readonly ref struct req_pq_multi
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(2, data[offset..]);
@@ -40,16 +51,6 @@ public readonly ref struct req_pq_multi
     public static int GetRequiredBufferSize()
     {
         return 4 + 16;
-    }
-    public static req_pq_multi Create(ReadOnlySpan<byte> nonce, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new req_pq_multi(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xbe7e8ef1));
-        obj.Set_nonce(nonce);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -69,5 +70,9 @@ public readonly ref struct req_pq_multi
         int offset = 4;
         if(index >= 2) offset += 16;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

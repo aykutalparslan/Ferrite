@@ -8,13 +8,24 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct rpc_error
 {
     private readonly Span<byte> _buff;
-    public rpc_error(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public rpc_error(int error_code, ReadOnlySpan<byte> error_message)
+    {
+        var length = GetRequiredBufferSize(error_message.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x2144ca19));
+        Set_error_code(error_code);
+        Set_error_message(error_message);
+    }public rpc_error(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +38,7 @@ public readonly ref struct rpc_error
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(3, data[offset..]);
@@ -40,17 +52,6 @@ public readonly ref struct rpc_error
     public static int GetRequiredBufferSize(int len_error_message)
     {
         return 4 + 4 + BufferUtils.CalculateTLBytesLength(len_error_message);
-    }
-    public static rpc_error Create(int error_code, ReadOnlySpan<byte> error_message, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(error_message.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new rpc_error(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x2144ca19));
-        obj.Set_error_code(error_code);
-        obj.Set_error_message(error_message);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct rpc_error
         if(index >= 2) offset += 4;
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

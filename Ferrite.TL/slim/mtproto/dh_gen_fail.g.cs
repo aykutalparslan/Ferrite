@@ -8,13 +8,25 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct dh_gen_fail
 {
     private readonly Span<byte> _buff;
-    public dh_gen_fail(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public dh_gen_fail(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> new_nonce_hash3)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xa69dae02));
+        Set_nonce(nonce);
+        Set_server_nonce(server_nonce);
+        Set_new_nonce_hash3(new_nonce_hash3);
+    }public dh_gen_fail(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +39,7 @@ public readonly ref struct dh_gen_fail
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(4, data[offset..]);
@@ -40,18 +53,6 @@ public readonly ref struct dh_gen_fail
     public static int GetRequiredBufferSize()
     {
         return 4 + 16 + 16 + 16;
-    }
-    public static dh_gen_fail Create(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> new_nonce_hash3, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new dh_gen_fail(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xa69dae02));
-        obj.Set_nonce(nonce);
-        obj.Set_server_nonce(server_nonce);
-        obj.Set_new_nonce_hash3(new_nonce_hash3);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -91,5 +92,9 @@ public readonly ref struct dh_gen_fail
         if(index >= 3) offset += 16;
         if(index >= 4) offset += 16;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

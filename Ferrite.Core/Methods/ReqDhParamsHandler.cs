@@ -48,7 +48,10 @@ public class ReqDhParamsHandler : IQueryHandler
     }
     public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        return ProcessInternal(new req_DH_params(q.AsSpan()), ctx);
+        using (q)
+        {
+            return ProcessInternal(new req_DH_params(q.AsSpan()), ctx);
+        }
     }
 
     private TLBytes? ProcessInternal(req_DH_params query, TLExecutionContext ctx)
@@ -56,16 +59,16 @@ public class ReqDhParamsHandler : IQueryHandler
         var rsaKey = keyProvider.GetKey(query.public_key_fingerprint);
         if (rsaKey == null)
         {
-            var rpcError = rpc_error.Create(-404, ""u8, out var memory);
+            var rpcError = new rpc_error(-404, ""u8);
             log.Debug("Could not obtain the RSA Key.");
-            return new TLBytes(memory, 0, rpcError.Length);
+            return rpcError.TLBytes;
         }
         if(!ctx.SessionData.ContainsKey("nonce") || 
                 !ctx.SessionData.ContainsKey("server_nonce"))
         {
-            var rpcError = rpc_error.Create(-404, ""u8, out var memory);
+            var rpcError = new rpc_error(-404, ""u8);
             log.Debug("Session is empty.");
-            return new TLBytes(memory, 0, rpcError.Length);
+            return rpcError.TLBytes;
         }
         Memory<byte> data;
         byte[] sha256;
@@ -74,8 +77,8 @@ public class ReqDhParamsHandler : IQueryHandler
         if (!sha256.AsSpan().SequenceEqual(data.Span.Slice(224)))
         {
             log.Debug("SHA256 did not match.");
-            var rpcError = rpc_error.Create(-404, ""u8, out var memory);
-            return new TLBytes(memory, 0, rpcError.Length);
+            var rpcError = new rpc_error(-404, ""u8);
+            return rpcError.TLBytes;
         }
 
         var constructor = MemoryMarshal.Read<int>(data.Span[32..]);
@@ -92,8 +95,8 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(pQInnerData.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new TLBytes(memory, 0, rpcError.Length);
+                var rpcError = new rpc_error(-404, "Nonce values did not match."u8);
+                return rpcError.TLBytes;
             }
             var inner_new_nonce = pQInnerData.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -108,11 +111,10 @@ public class ReqDhParamsHandler : IQueryHandler
                 .Concat(newNonceNewNonce).Concat((inner_new_nonce).SkipLast(28)).ToArray();
             ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
             ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
-            var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
-            var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
-                out var dhParamsMemory);
-            answer.Dispose();
-            return new TLBytes(dhParamsMemory, 0, serverDhParamsOk.Length);
+            using var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
+            var serverDhParamsOk = new server_DH_params_ok(query.nonce, query.server_nonce,answer.Memory.Span);
+            
+            return serverDhParamsOk.TLBytes;
         }
         else if (constructor == Constructors.p_q_inner_data_dc)
         {
@@ -124,8 +126,8 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(pQInnerDataDc.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new TLBytes(memory, 0, rpcError.Length);
+                var rpcError = new rpc_error(-404, "Nonce values did not match."u8);
+                return rpcError.TLBytes;
             }
             var inner_new_nonce = pQInnerDataDc.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -140,11 +142,9 @@ public class ReqDhParamsHandler : IQueryHandler
                 .Concat(newNonceNewNonce).Concat((inner_new_nonce).SkipLast(28)).ToArray();
             ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
             ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
-            var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
-            var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
-                out var dhParamsMemory);
-            answer.Dispose();
-            return new TLBytes(dhParamsMemory, 0, serverDhParamsOk.Length);
+            using var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
+            var serverDhParamsOk = new server_DH_params_ok(query.nonce, query.server_nonce,answer.Memory.Span);
+            return serverDhParamsOk.TLBytes;
         }
         else if (constructor == Constructors.p_q_inner_data_temp_dc)
         {
@@ -158,8 +158,8 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(pQInnerDataTempDc.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new TLBytes(memory, 0, rpcError.Length);
+                var rpcError = new rpc_error(-404, "Nonce values did not match."u8);
+                return rpcError.TLBytes;
             }
             var inner_new_nonce = pQInnerDataTempDc.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -174,12 +174,10 @@ public class ReqDhParamsHandler : IQueryHandler
                 .Concat(newNonceNewNonce).Concat((inner_new_nonce).SkipLast(28)).ToArray();
             ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
             ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
-            var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
+            using var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             ctx.SessionData.Add("valid_until", DateTime.Now.AddSeconds(pQInnerDataTempDc.expires_in));
-            var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
-                out var dhParamsMemory);
-            answer.Dispose();
-            return new TLBytes(dhParamsMemory, 0, serverDhParamsOk.Length);
+            var serverDhParamsOk = new server_DH_params_ok(query.nonce, query.server_nonce,answer.Memory.Span);
+            return serverDhParamsOk.TLBytes;
         }
         else if (constructor == Constructors.p_q_inner_data_temp)
         {
@@ -193,8 +191,8 @@ public class ReqDhParamsHandler : IQueryHandler
                 !query.server_nonce.SequenceEqual(pQInnerDataTemp.server_nonce) ||
                 !query.server_nonce.SequenceEqual(sessionServerNonce))
             {
-                var rpcError = rpc_error.Create(-404, "Nonce values did not match."u8, out var memory);
-                return new TLBytes(memory, 0, rpcError.Length);
+                var rpcError = new rpc_error(-404, "Nonce values did not match."u8);
+                return rpcError.TLBytes;
             }
             var inner_new_nonce = pQInnerDataTemp.new_nonce.ToArray();
             var newNonceServerNonce = SHA1.HashData((inner_new_nonce)
@@ -209,12 +207,10 @@ public class ReqDhParamsHandler : IQueryHandler
                 .Concat(newNonceNewNonce).Concat((inner_new_nonce).SkipLast(28)).ToArray();
             ctx.SessionData.Add("temp_aes_key", tmpAesKey.ToArray());
             ctx.SessionData.Add("temp_aes_iv", tmpAesIV.ToArray());
-            var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
+            using var answer = GenerateEncryptedAnswer(ctx, sessionNonce, sessionServerNonce, tmpAesKey, tmpAesIV);
             ctx.SessionData.Add("valid_until", DateTime.Now.AddSeconds(pQInnerDataTemp.expires_in));
-            var serverDhParamsOk = server_DH_params_ok.Create(query.nonce, query.server_nonce,answer.Memory.Span,
-                out var dhParamsMemory);
-            answer.Dispose();
-            return new TLBytes(dhParamsMemory, 0, serverDhParamsOk.Length);
+            var serverDhParamsOk = new server_DH_params_ok(query.nonce, query.server_nonce,answer.Memory.Span);
+            return serverDhParamsOk.TLBytes;
         }
         return null;
     }
@@ -239,8 +235,8 @@ public class ReqDhParamsHandler : IQueryHandler
         var innerGA = g_a.ToByteArray(true, true);
         var innerServerTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
 
-        var serverDhInnerData = server_DH_inner_data.Create(innerNonce, innerServerNonce, innerG,
-            innerDhPrime, innerGA, innerServerTime, out var dhInnerMemory);
+        using var serverDhInnerData = new server_DH_inner_data(innerNonce, innerServerNonce, innerG,
+            innerDhPrime, innerGA, innerServerTime);
         
         ctx.SessionData.Add("g", innerG);
         ctx.SessionData.Add("a", a.ToByteArray(true,true));
@@ -259,7 +255,6 @@ public class ReqDhParamsHandler : IQueryHandler
         Aes aes = Aes.Create();
         aes.Key = tmpAesKey;
         aes.EncryptIge(answerWithHash.Span, tmpAesIV);
-        dhInnerMemory.Dispose();
         return answerWithHash;
     }
 

@@ -8,13 +8,25 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct rpc_answer_dropped
 {
     private readonly Span<byte> _buff;
-    public rpc_answer_dropped(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public rpc_answer_dropped(long msg_id, int seq_no, int bytes)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xa43ad8b7));
+        Set_msg_id(msg_id);
+        Set_seq_no(seq_no);
+        Set_bytes(bytes);
+    }public rpc_answer_dropped(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +39,7 @@ public readonly ref struct rpc_answer_dropped
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(4, data[offset..]);
@@ -40,18 +53,6 @@ public readonly ref struct rpc_answer_dropped
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 4 + 4;
-    }
-    public static rpc_answer_dropped Create(long msg_id, int seq_no, int bytes, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new rpc_answer_dropped(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xa43ad8b7));
-        obj.Set_msg_id(msg_id);
-        obj.Set_seq_no(seq_no);
-        obj.Set_bytes(bytes);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct rpc_answer_dropped
         if(index >= 3) offset += 4;
         if(index >= 4) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

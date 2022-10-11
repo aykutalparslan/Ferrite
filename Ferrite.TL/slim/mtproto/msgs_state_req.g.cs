@@ -8,13 +8,23 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct msgs_state_req
 {
     private readonly Span<byte> _buff;
-    public msgs_state_req(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public msgs_state_req(VectorOfLong msg_ids)
+    {
+        var length = GetRequiredBufferSize(msg_ids.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xda69fb52));
+        Set_msg_ids(msg_ids.ToReadOnlySpan());
+    }public msgs_state_req(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +37,7 @@ public readonly ref struct msgs_state_req
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(2, data[offset..]);
@@ -40,16 +51,6 @@ public readonly ref struct msgs_state_req
     public static int GetRequiredBufferSize(int len_msg_ids)
     {
         return 4 + len_msg_ids;
-    }
-    public static msgs_state_req Create(VectorOfLong msg_ids, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(msg_ids.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new msgs_state_req(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xda69fb52));
-        obj.Set_msg_ids(msg_ids.ToReadOnlySpan());
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -65,5 +66,9 @@ public readonly ref struct msgs_state_req
         int offset = 4;
         if(index >= 2) offset += VectorOfLong.ReadSize(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

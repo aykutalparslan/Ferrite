@@ -8,13 +8,24 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct pong
 {
     private readonly Span<byte> _buff;
-    public pong(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public pong(long msg_id, long ping_id)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x347773c5));
+        Set_msg_id(msg_id);
+        Set_ping_id(ping_id);
+    }public pong(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +38,7 @@ public readonly ref struct pong
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(3, data[offset..]);
@@ -40,17 +52,6 @@ public readonly ref struct pong
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 8;
-    }
-    public static pong Create(long msg_id, long ping_id, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new pong(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x347773c5));
-        obj.Set_msg_id(msg_id);
-        obj.Set_ping_id(ping_id);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -72,5 +73,9 @@ public readonly ref struct pong
         if(index >= 2) offset += 8;
         if(index >= 3) offset += 8;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

@@ -8,19 +8,32 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct Message
 {
     private readonly Span<byte> _buff;
-    public Message(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public Message(long msg_id, int seqno, int bytes, ReadOnlySpan<byte> body)
+    {
+        var length = GetRequiredBufferSize(body.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        Set_msg_id(msg_id);
+        Set_seqno(seqno);
+        Set_bytes(bytes);
+        Set_body(body);
+    }public Message(Span<byte> buff)
     {
         _buff = buff;
     }
     
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(5, data[offset..]);
@@ -34,18 +47,6 @@ public readonly ref struct Message
     public static int GetRequiredBufferSize(int len_body)
     {
         return 8 + 4 + 4 + len_body;
-    }
-    public static Message Create(long msg_id, int seqno, int bytes, ReadOnlySpan<byte> body, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(body.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new Message(memory.Memory.Span[..length]);
-        obj.Set_msg_id(msg_id);
-        obj.Set_seqno(seqno);
-        obj.Set_bytes(bytes);
-        obj.Set_body(body);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct Message
         if(index >= 4) offset += 4;
         if(index >= 5) offset += ObjectReader.ReadSize(buffer[offset..]);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

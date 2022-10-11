@@ -52,9 +52,9 @@ public class AllocationFreeSerializationTests
         tmp.Q = RandomNumberGenerator.GetBytes(4);
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(278);
         tmp.PublicKeyFingerprint = 123741692374192L;
-        byte[] data = tmp.TLBytes.ToArray();req_DH_params reqDhParams = req_DH_params.Create((byte[])tmp.Nonce,
-                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData,
-                out var memory);
+        byte[] data = tmp.TLBytes.ToArray();
+        using req_DH_params reqDhParams = new req_DH_params((byte[])tmp.Nonce,
+                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
         Assert.Equal(data.Length, reqDhParams.Length);
         Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());
     }
@@ -77,9 +77,8 @@ public class AllocationFreeSerializationTests
         {
             fingerprints2.Append(f);
         }
-        resPQ value = resPQ.Create((byte[])tmp.Nonce,
-                (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2,
-                out var memory);
+        using resPQ value = new resPQ((byte[])tmp.Nonce,
+                (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2);
         Assert.Equal(data.Length, value.Length);
         Assert.Equal(data, value.ToReadOnlySpan().ToArray());
     }
@@ -103,9 +102,9 @@ public class AllocationFreeSerializationTests
         var vec = new Ferrite.TL.slim.Vector();
         foreach (var tmp in vecTmp)
         {
-            vec.AppendTLObject(req_DH_params.Create((byte[])tmp.Nonce,
-                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData, 
-                out var mem).ToReadOnlySpan());
+            using var reqDhParams = new req_DH_params((byte[])tmp.Nonce,
+                (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
+            vec.AppendTLObject(reqDhParams.ToReadOnlySpan());
             
         }
         var actual = vec.ToReadOnlySpan().ToArray();

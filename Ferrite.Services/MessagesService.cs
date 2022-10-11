@@ -154,12 +154,12 @@ public class MessagesService : IMessagesService
         }
         else if (media.InputMediaType == InputMediaType.UploadedPhoto)
         {
-            var saveResult = await _upload.SaveFile(media.File);
+            var saveResult = await _upload.SaveFile(media.File!);
             if (!saveResult.Success)
             {
                 return new ServiceResult<UpdateShortSentMessageDTO>(null, false, saveResult.ErrorMessage);
             }
-            var photoResult = await _photos.ProcessPhoto(saveResult.Result, DateTime.Now);
+            var photoResult = await _photos.ProcessPhoto(saveResult.Result!, DateTime.Now);
             if (!photoResult.Success)
             {
                 return new ServiceResult<UpdateShortSentMessageDTO>(null, false, photoResult.ErrorMessage);
@@ -188,7 +188,7 @@ public class MessagesService : IMessagesService
                 null, null, null);
         }
         else if (media.InputMediaType == InputMediaType.Contact &&
-                 _unitOfWork.UserRepository.GetUserId(media.PhoneNumber) is long contactUserId)
+                 _unitOfWork.UserRepository.GetUserId(media.PhoneNumber!) is { } contactUserId)
         {
             outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Contact,
                 null, null, null, 

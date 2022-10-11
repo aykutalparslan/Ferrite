@@ -8,13 +8,25 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct set_client_DH_params
 {
     private readonly Span<byte> _buff;
-    public set_client_DH_params(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public set_client_DH_params(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> encrypted_data)
+    {
+        var length = GetRequiredBufferSize(encrypted_data.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xf5045f1f));
+        Set_nonce(nonce);
+        Set_server_nonce(server_nonce);
+        Set_encrypted_data(encrypted_data);
+    }public set_client_DH_params(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +39,7 @@ public readonly ref struct set_client_DH_params
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(4, data[offset..]);
@@ -40,18 +53,6 @@ public readonly ref struct set_client_DH_params
     public static int GetRequiredBufferSize(int len_encrypted_data)
     {
         return 4 + 16 + 16 + BufferUtils.CalculateTLBytesLength(len_encrypted_data);
-    }
-    public static set_client_DH_params Create(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> encrypted_data, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(encrypted_data.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new set_client_DH_params(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xf5045f1f));
-        obj.Set_nonce(nonce);
-        obj.Set_server_nonce(server_nonce);
-        obj.Set_encrypted_data(encrypted_data);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -94,5 +95,9 @@ public readonly ref struct set_client_DH_params
         if(index >= 3) offset += 16;
         if(index >= 4) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

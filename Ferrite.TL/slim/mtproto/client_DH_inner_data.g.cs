@@ -8,13 +8,26 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct client_DH_inner_data
 {
     private readonly Span<byte> _buff;
-    public client_DH_inner_data(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public client_DH_inner_data(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, long retry_id, ReadOnlySpan<byte> g_b)
+    {
+        var length = GetRequiredBufferSize(g_b.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x6643b654));
+        Set_nonce(nonce);
+        Set_server_nonce(server_nonce);
+        Set_retry_id(retry_id);
+        Set_g_b(g_b);
+    }public client_DH_inner_data(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +40,7 @@ public readonly ref struct client_DH_inner_data
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(5, data[offset..]);
@@ -40,19 +54,6 @@ public readonly ref struct client_DH_inner_data
     public static int GetRequiredBufferSize(int len_g_b)
     {
         return 4 + 16 + 16 + 8 + BufferUtils.CalculateTLBytesLength(len_g_b);
-    }
-    public static client_DH_inner_data Create(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, long retry_id, ReadOnlySpan<byte> g_b, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(g_b.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new client_DH_inner_data(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x6643b654));
-        obj.Set_nonce(nonce);
-        obj.Set_server_nonce(server_nonce);
-        obj.Set_retry_id(retry_id);
-        obj.Set_g_b(g_b);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -101,5 +102,9 @@ public readonly ref struct client_DH_inner_data
         if(index >= 4) offset += 8;
         if(index >= 5) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

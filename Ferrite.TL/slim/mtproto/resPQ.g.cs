@@ -8,13 +8,26 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct resPQ
 {
     private readonly Span<byte> _buff;
-    public resPQ(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public resPQ(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> pq, VectorOfLong server_public_key_fingerprints)
+    {
+        var length = GetRequiredBufferSize(pq.Length, server_public_key_fingerprints.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x05162463));
+        Set_nonce(nonce);
+        Set_server_nonce(server_nonce);
+        Set_pq(pq);
+        Set_server_public_key_fingerprints(server_public_key_fingerprints.ToReadOnlySpan());
+    }public resPQ(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +40,7 @@ public readonly ref struct resPQ
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(5, data[offset..]);
@@ -40,19 +54,6 @@ public readonly ref struct resPQ
     public static int GetRequiredBufferSize(int len_pq, int len_server_public_key_fingerprints)
     {
         return 4 + 16 + 16 + BufferUtils.CalculateTLBytesLength(len_pq) + len_server_public_key_fingerprints;
-    }
-    public static resPQ Create(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> pq, VectorOfLong server_public_key_fingerprints, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(pq.Length, server_public_key_fingerprints.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new resPQ(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x05162463));
-        obj.Set_nonce(nonce);
-        obj.Set_server_nonce(server_nonce);
-        obj.Set_pq(pq);
-        obj.Set_server_public_key_fingerprints(server_public_key_fingerprints.ToReadOnlySpan());
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -101,5 +102,9 @@ public readonly ref struct resPQ
         if(index >= 4) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         if(index >= 5) offset += VectorOfLong.ReadSize(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

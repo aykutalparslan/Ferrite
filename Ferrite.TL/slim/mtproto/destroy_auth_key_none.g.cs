@@ -8,13 +8,22 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct destroy_auth_key_none
 {
     private readonly Span<byte> _buff;
-    public destroy_auth_key_none(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public destroy_auth_key_none()
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x0a9f2259));
+    }public destroy_auth_key_none(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +36,7 @@ public readonly ref struct destroy_auth_key_none
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(1, data[offset..]);
@@ -41,15 +51,6 @@ public readonly ref struct destroy_auth_key_none
     {
         return 4;
     }
-    public static destroy_auth_key_none Create(out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new destroy_auth_key_none(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x0a9f2259));
-        return obj;
-    }
     public static int ReadSize(Span<byte> data, int offset)
     {
         return GetOffset(1, data[offset..]);
@@ -58,5 +59,9 @@ public readonly ref struct destroy_auth_key_none
     {
         int offset = 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

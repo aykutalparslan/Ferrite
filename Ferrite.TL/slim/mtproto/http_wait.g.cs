@@ -8,13 +8,25 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct http_wait
 {
     private readonly Span<byte> _buff;
-    public http_wait(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public http_wait(int max_delay, int wait_after, int max_wait)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x9299359f));
+        Set_max_delay(max_delay);
+        Set_wait_after(wait_after);
+        Set_max_wait(max_wait);
+    }public http_wait(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +39,7 @@ public readonly ref struct http_wait
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(4, data[offset..]);
@@ -40,18 +53,6 @@ public readonly ref struct http_wait
     public static int GetRequiredBufferSize()
     {
         return 4 + 4 + 4 + 4;
-    }
-    public static http_wait Create(int max_delay, int wait_after, int max_wait, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new http_wait(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x9299359f));
-        obj.Set_max_delay(max_delay);
-        obj.Set_wait_after(wait_after);
-        obj.Set_max_wait(max_wait);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct http_wait
         if(index >= 3) offset += 4;
         if(index >= 4) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

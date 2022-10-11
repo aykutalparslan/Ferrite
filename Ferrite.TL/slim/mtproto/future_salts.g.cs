@@ -8,13 +8,25 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct future_salts
 {
     private readonly Span<byte> _buff;
-    public future_salts(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public future_salts(long req_msg_id, int now, VectorBare salts)
+    {
+        var length = GetRequiredBufferSize(salts.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xae500895));
+        Set_req_msg_id(req_msg_id);
+        Set_now(now);
+        Set_salts(salts.ToReadOnlySpan());
+    }public future_salts(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +39,7 @@ public readonly ref struct future_salts
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(4, data[offset..]);
@@ -40,18 +53,6 @@ public readonly ref struct future_salts
     public static int GetRequiredBufferSize(int len_salts)
     {
         return 4 + 8 + 4 + len_salts;
-    }
-    public static future_salts Create(long req_msg_id, int now, VectorBare salts, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(salts.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new future_salts(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xae500895));
-        obj.Set_req_msg_id(req_msg_id);
-        obj.Set_now(now);
-        obj.Set_salts(salts.ToReadOnlySpan());
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct future_salts
         if(index >= 3) offset += 4;
         if(index >= 4) offset += VectorBare.ReadSize(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

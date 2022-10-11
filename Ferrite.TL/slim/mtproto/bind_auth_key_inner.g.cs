@@ -8,13 +8,27 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct bind_auth_key_inner
 {
     private readonly Span<byte> _buff;
-    public bind_auth_key_inner(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public bind_auth_key_inner(long nonce, long temp_auth_key_id, long perm_auth_key_id, long temp_session_id, int expires_at)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x75a3f765));
+        Set_nonce(nonce);
+        Set_temp_auth_key_id(temp_auth_key_id);
+        Set_perm_auth_key_id(perm_auth_key_id);
+        Set_temp_session_id(temp_session_id);
+        Set_expires_at(expires_at);
+    }public bind_auth_key_inner(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +41,7 @@ public readonly ref struct bind_auth_key_inner
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(6, data[offset..]);
@@ -40,20 +55,6 @@ public readonly ref struct bind_auth_key_inner
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 8 + 8 + 8 + 4;
-    }
-    public static bind_auth_key_inner Create(long nonce, long temp_auth_key_id, long perm_auth_key_id, long temp_session_id, int expires_at, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new bind_auth_key_inner(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x75a3f765));
-        obj.Set_nonce(nonce);
-        obj.Set_temp_auth_key_id(temp_auth_key_id);
-        obj.Set_perm_auth_key_id(perm_auth_key_id);
-        obj.Set_temp_session_id(temp_session_id);
-        obj.Set_expires_at(expires_at);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -93,5 +94,9 @@ public readonly ref struct bind_auth_key_inner
         if(index >= 5) offset += 8;
         if(index >= 6) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

@@ -8,13 +8,24 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct ping_delay_disconnect
 {
     private readonly Span<byte> _buff;
-    public ping_delay_disconnect(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public ping_delay_disconnect(long ping_id, int disconnect_delay)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xf3427b8c));
+        Set_ping_id(ping_id);
+        Set_disconnect_delay(disconnect_delay);
+    }public ping_delay_disconnect(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +38,7 @@ public readonly ref struct ping_delay_disconnect
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(3, data[offset..]);
@@ -40,17 +52,6 @@ public readonly ref struct ping_delay_disconnect
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 4;
-    }
-    public static ping_delay_disconnect Create(long ping_id, int disconnect_delay, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new ping_delay_disconnect(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xf3427b8c));
-        obj.Set_ping_id(ping_id);
-        obj.Set_disconnect_delay(disconnect_delay);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -72,5 +73,9 @@ public readonly ref struct ping_delay_disconnect
         if(index >= 2) offset += 8;
         if(index >= 3) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

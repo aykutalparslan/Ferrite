@@ -8,13 +8,25 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct new_session_created
 {
     private readonly Span<byte> _buff;
-    public new_session_created(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public new_session_created(long first_msg_id, long unique_id, long server_salt)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x9ec20908));
+        Set_first_msg_id(first_msg_id);
+        Set_unique_id(unique_id);
+        Set_server_salt(server_salt);
+    }public new_session_created(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +39,7 @@ public readonly ref struct new_session_created
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(4, data[offset..]);
@@ -40,18 +53,6 @@ public readonly ref struct new_session_created
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 8 + 8;
-    }
-    public static new_session_created Create(long first_msg_id, long unique_id, long server_salt, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new new_session_created(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x9ec20908));
-        obj.Set_first_msg_id(first_msg_id);
-        obj.Set_unique_id(unique_id);
-        obj.Set_server_salt(server_salt);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct new_session_created
         if(index >= 3) offset += 8;
         if(index >= 4) offset += 8;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

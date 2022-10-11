@@ -8,13 +8,24 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct msgs_state_info
 {
     private readonly Span<byte> _buff;
-    public msgs_state_info(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public msgs_state_info(long req_msg_id, ReadOnlySpan<byte> info)
+    {
+        var length = GetRequiredBufferSize(info.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x04deb57d));
+        Set_req_msg_id(req_msg_id);
+        Set_info(info);
+    }public msgs_state_info(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +38,7 @@ public readonly ref struct msgs_state_info
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(3, data[offset..]);
@@ -40,17 +52,6 @@ public readonly ref struct msgs_state_info
     public static int GetRequiredBufferSize(int len_info)
     {
         return 4 + 8 + BufferUtils.CalculateTLBytesLength(len_info);
-    }
-    public static msgs_state_info Create(long req_msg_id, ReadOnlySpan<byte> info, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(info.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new msgs_state_info(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x04deb57d));
-        obj.Set_req_msg_id(req_msg_id);
-        obj.Set_info(info);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct msgs_state_info
         if(index >= 2) offset += 8;
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

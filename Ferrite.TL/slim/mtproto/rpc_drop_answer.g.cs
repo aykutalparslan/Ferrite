@@ -8,13 +8,23 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct rpc_drop_answer
 {
     private readonly Span<byte> _buff;
-    public rpc_drop_answer(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public rpc_drop_answer(long req_msg_id)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x58e4a740));
+        Set_req_msg_id(req_msg_id);
+    }public rpc_drop_answer(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +37,7 @@ public readonly ref struct rpc_drop_answer
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(2, data[offset..]);
@@ -40,16 +51,6 @@ public readonly ref struct rpc_drop_answer
     public static int GetRequiredBufferSize()
     {
         return 4 + 8;
-    }
-    public static rpc_drop_answer Create(long req_msg_id, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new rpc_drop_answer(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x58e4a740));
-        obj.Set_req_msg_id(req_msg_id);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -65,5 +66,9 @@ public readonly ref struct rpc_drop_answer
         int offset = 4;
         if(index >= 2) offset += 8;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

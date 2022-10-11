@@ -8,13 +8,23 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct gzip_packed
 {
     private readonly Span<byte> _buff;
-    public gzip_packed(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public gzip_packed(ReadOnlySpan<byte> packed_data)
+    {
+        var length = GetRequiredBufferSize(packed_data.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x3072cfa1));
+        Set_packed_data(packed_data);
+    }public gzip_packed(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +37,7 @@ public readonly ref struct gzip_packed
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(2, data[offset..]);
@@ -40,16 +51,6 @@ public readonly ref struct gzip_packed
     public static int GetRequiredBufferSize(int len_packed_data)
     {
         return 4 + BufferUtils.CalculateTLBytesLength(len_packed_data);
-    }
-    public static gzip_packed Create(ReadOnlySpan<byte> packed_data, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(packed_data.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new gzip_packed(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x3072cfa1));
-        obj.Set_packed_data(packed_data);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -72,5 +73,9 @@ public readonly ref struct gzip_packed
         int offset = 4;
         if(index >= 2) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

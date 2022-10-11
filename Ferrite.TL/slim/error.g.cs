@@ -8,13 +8,24 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim;
 
 public readonly ref struct error
 {
     private readonly Span<byte> _buff;
-    public error(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public error(int code, ReadOnlySpan<byte> text)
+    {
+        var length = GetRequiredBufferSize(text.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xc4b9f9bb));
+        Set_code(code);
+        Set_text(text);
+    }public error(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +38,7 @@ public readonly ref struct error
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(3, data[offset..]);
@@ -40,17 +52,6 @@ public readonly ref struct error
     public static int GetRequiredBufferSize(int len_text)
     {
         return 4 + 4 + BufferUtils.CalculateTLBytesLength(len_text);
-    }
-    public static error Create(int code, ReadOnlySpan<byte> text, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(text.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new error(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xc4b9f9bb));
-        obj.Set_code(code);
-        obj.Set_text(text);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -79,5 +80,9 @@ public readonly ref struct error
         if(index >= 2) offset += 4;
         if(index >= 3) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

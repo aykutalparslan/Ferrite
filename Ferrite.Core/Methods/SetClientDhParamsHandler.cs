@@ -45,7 +45,10 @@ public class SetClientDhParamsHandler : IQueryHandler
     }
     public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        return ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx);
+        using (q)
+        {
+            return ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx);
+        }
     }
 
     private TLBytes? ProcessInternal(set_client_DH_params query, TLExecutionContext ctx)
@@ -61,7 +64,7 @@ public class SetClientDhParamsHandler : IQueryHandler
 
         Aes aes = Aes.Create();
         aes.Key = (byte[])ctx.SessionData["temp_aes_key"];
-        var encryptedData = UnmanagedMemoryAllocator.Allocate<byte>(query.encrypted_data.Length);
+        using var encryptedData = UnmanagedMemoryAllocator.Allocate<byte>(query.encrypted_data.Length);
         aes.DecryptIge(query.encrypted_data, ((byte[])ctx.SessionData["temp_aes_iv"]).ToArray(),
             encryptedData.Span);
         var sha1Received = encryptedData.Span[..20].ToArray();
@@ -96,9 +99,8 @@ public class SetClientDhParamsHandler : IQueryHandler
         BigInteger max = prime - min;
         if (g_b <= min || g_b >= max || failed)
         {
-            var dhGenFail = dh_gen_fail.Create(sessionNonce, sessionServerNonce, newNonceHash3, out var memory);
-            encryptedData.Dispose();
-            return new TLBytes(memory, 0, dhGenFail.Length);
+            var dhGenFail = new dh_gen_fail(sessionNonce, sessionServerNonce, newNonceHash3);
+            return dhGenFail.TLBytes;
         }
 
         bool temp_auth_key = false;
@@ -123,19 +125,17 @@ public class SetClientDhParamsHandler : IQueryHandler
                 _mtproto.PutAuthKey(authKeyHash, authKeyTrimmed);
             }
 
-            var dhGenOk = dh_gen_ok.Create(sessionNonce, sessionServerNonce, newNonceHash1, out var memory);
+            var dhGenOk = new dh_gen_ok(sessionNonce, sessionServerNonce, newNonceHash1);
             ctx.SessionData.Clear();
-            encryptedData.Dispose();
-            return new TLBytes(memory, 0, dhGenOk.Length);
+            return dhGenOk.TLBytes;
         }
         else
         {
             var newNonceHash2 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
                     .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
                 .Skip(4).ToArray();
-            var dhGenRetry = dh_gen_retry.Create(sessionNonce, sessionServerNonce, newNonceHash2, out var memory);
-            encryptedData.Dispose();
-            return new TLBytes(memory, 0, dhGenRetry.Length);
+            var dhGenRetry = new dh_gen_retry(sessionNonce, sessionServerNonce, newNonceHash2);
+            return dhGenRetry.TLBytes;
         }
     }
 }

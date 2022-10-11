@@ -8,13 +8,24 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct rpc_result
 {
     private readonly Span<byte> _buff;
-    public rpc_result(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public rpc_result(long req_msg_id, ReadOnlySpan<byte> result)
+    {
+        var length = GetRequiredBufferSize(result.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xf35c6d01));
+        Set_req_msg_id(req_msg_id);
+        Set_result(result);
+    }public rpc_result(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +38,7 @@ public readonly ref struct rpc_result
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(3, data[offset..]);
@@ -40,17 +52,6 @@ public readonly ref struct rpc_result
     public static int GetRequiredBufferSize(int len_result)
     {
         return 4 + 8 + len_result;
-    }
-    public static rpc_result Create(long req_msg_id, ReadOnlySpan<byte> result, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(result.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new rpc_result(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xf35c6d01));
-        obj.Set_req_msg_id(req_msg_id);
-        obj.Set_result(result);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -72,5 +73,9 @@ public readonly ref struct rpc_result
         if(index >= 2) offset += 8;
         if(index >= 3) offset += ObjectReader.ReadSize(buffer[offset..], unchecked((int)0xf35c6d01));
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

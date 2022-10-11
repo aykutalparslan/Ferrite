@@ -8,13 +8,30 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct p_q_inner_data_temp_dc
 {
     private readonly Span<byte> _buff;
-    public p_q_inner_data_temp_dc(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public p_q_inner_data_temp_dc(ReadOnlySpan<byte> pq, ReadOnlySpan<byte> p, ReadOnlySpan<byte> q, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> new_nonce, int dc, int expires_in)
+    {
+        var length = GetRequiredBufferSize(pq.Length, p.Length, q.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x56fddf88));
+        Set_pq(pq);
+        Set_p(p);
+        Set_q(q);
+        Set_nonce(nonce);
+        Set_server_nonce(server_nonce);
+        Set_new_nonce(new_nonce);
+        Set_dc(dc);
+        Set_expires_in(expires_in);
+    }public p_q_inner_data_temp_dc(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +44,7 @@ public readonly ref struct p_q_inner_data_temp_dc
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(9, data[offset..]);
@@ -40,23 +58,6 @@ public readonly ref struct p_q_inner_data_temp_dc
     public static int GetRequiredBufferSize(int len_pq, int len_p, int len_q)
     {
         return 4 + BufferUtils.CalculateTLBytesLength(len_pq) + BufferUtils.CalculateTLBytesLength(len_p) + BufferUtils.CalculateTLBytesLength(len_q) + 16 + 16 + 32 + 4 + 4;
-    }
-    public static p_q_inner_data_temp_dc Create(ReadOnlySpan<byte> pq, ReadOnlySpan<byte> p, ReadOnlySpan<byte> q, ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, ReadOnlySpan<byte> new_nonce, int dc, int expires_in, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(pq.Length, p.Length, q.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new p_q_inner_data_temp_dc(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x56fddf88));
-        obj.Set_pq(pq);
-        obj.Set_p(p);
-        obj.Set_q(q);
-        obj.Set_nonce(nonce);
-        obj.Set_server_nonce(server_nonce);
-        obj.Set_new_nonce(new_nonce);
-        obj.Set_dc(dc);
-        obj.Set_expires_in(expires_in);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -147,5 +148,9 @@ public readonly ref struct p_q_inner_data_temp_dc
         if(index >= 8) offset += 4;
         if(index >= 9) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

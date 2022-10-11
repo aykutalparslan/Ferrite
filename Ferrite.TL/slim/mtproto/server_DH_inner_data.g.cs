@@ -8,13 +8,28 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct server_DH_inner_data
 {
     private readonly Span<byte> _buff;
-    public server_DH_inner_data(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public server_DH_inner_data(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, int g, ReadOnlySpan<byte> dh_prime, ReadOnlySpan<byte> g_a, int server_time)
+    {
+        var length = GetRequiredBufferSize(dh_prime.Length, g_a.Length);
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0xb5890dba));
+        Set_nonce(nonce);
+        Set_server_nonce(server_nonce);
+        Set_g(g);
+        Set_dh_prime(dh_prime);
+        Set_g_a(g_a);
+        Set_server_time(server_time);
+    }public server_DH_inner_data(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +42,7 @@ public readonly ref struct server_DH_inner_data
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(7, data[offset..]);
@@ -40,21 +56,6 @@ public readonly ref struct server_DH_inner_data
     public static int GetRequiredBufferSize(int len_dh_prime, int len_g_a)
     {
         return 4 + 16 + 16 + 4 + BufferUtils.CalculateTLBytesLength(len_dh_prime) + BufferUtils.CalculateTLBytesLength(len_g_a) + 4;
-    }
-    public static server_DH_inner_data Create(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> server_nonce, int g, ReadOnlySpan<byte> dh_prime, ReadOnlySpan<byte> g_a, int server_time, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize(dh_prime.Length, g_a.Length);
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new server_DH_inner_data(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0xb5890dba));
-        obj.Set_nonce(nonce);
-        obj.Set_server_nonce(server_nonce);
-        obj.Set_g(g);
-        obj.Set_dh_prime(dh_prime);
-        obj.Set_g_a(g_a);
-        obj.Set_server_time(server_time);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -122,5 +123,9 @@ public readonly ref struct server_DH_inner_data
         if(index >= 6) offset += BufferUtils.GetTLBytesLength(buffer, offset);
         if(index >= 7) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }

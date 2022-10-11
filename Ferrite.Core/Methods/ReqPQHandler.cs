@@ -37,23 +37,26 @@ public class ReqPQHandler : IQueryHandler
     }
     public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        byte[] serverNonce;
-        if (!ctx.SessionData.ContainsKey("nonce"))
+        using (q)
         {
-            ctx.SessionData.Add("nonce", new req_pq_multi(q.AsSpan()).nonce.ToArray());
-            serverNonce = _randomGenerator.GetRandomBytes(16);
-            ctx.SessionData.Add("server_nonce", serverNonce);
-            await Task.Delay(100);
+            byte[] serverNonce;
+            if (!ctx.SessionData.ContainsKey("nonce"))
+            {
+                ctx.SessionData.Add("nonce", new req_pq_multi(q.AsSpan()).nonce.ToArray());
+                serverNonce = _randomGenerator.GetRandomBytes(16);
+                ctx.SessionData.Add("server_nonce", serverNonce);
+                await Task.Delay(100);
+            }
+            else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new req_pq_multi(q.AsSpan()).nonce))
+            {
+                ctx.SessionData["nonce"] = new req_pq_multi(q.AsSpan()).nonce.ToArray();
+                serverNonce = _randomGenerator.GetRandomBytes(16);
+                ctx.SessionData["server_nonce"] = serverNonce;
+                return null;
+            }
+            serverNonce = (byte[])ctx.SessionData["server_nonce"];
+            return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
         }
-        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new req_pq_multi(q.AsSpan()).nonce))
-        {
-            ctx.SessionData["nonce"] = new req_pq_multi(q.AsSpan()).nonce.ToArray();
-            serverNonce = _randomGenerator.GetRandomBytes(16);
-            ctx.SessionData["server_nonce"] = serverNonce;
-            return null;
-        }
-        serverNonce = (byte[])ctx.SessionData["server_nonce"];
-        return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
     }
 
     private TLBytes? ProcessInternal(byte[] serverNonce, req_pq_multi query, TLExecutionContext ctx)
@@ -89,8 +92,8 @@ public class ReqPQHandler : IQueryHandler
         {
             fingerprints.Append(f);
         }
-        var resPq = resPQ.Create(nonce, 
-            serverNonce, Pq, fingerprints, out var memory);
-        return new TLBytes(memory, 0, resPq.Length);
+        var resPq = new resPQ(nonce, 
+            serverNonce, Pq, fingerprints);
+        return resPq.TLBytes;
     }
 }

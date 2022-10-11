@@ -8,13 +8,26 @@
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim.mtproto;
 
 public readonly ref struct msg_detailed_info
 {
     private readonly Span<byte> _buff;
-    public msg_detailed_info(Span<byte> buff)
+    private readonly IMemoryOwner<byte>? _memory;
+    public msg_detailed_info(long msg_id, long answer_msg_id, int bytes, int status)
+    {
+        var length = GetRequiredBufferSize();
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];
+        SetConstructor(unchecked((int)0x276d3ec6));
+        Set_msg_id(msg_id);
+        Set_answer_msg_id(answer_msg_id);
+        Set_bytes(bytes);
+        Set_status(status);
+    }public msg_detailed_info(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -27,6 +40,7 @@ public readonly ref struct msg_detailed_info
     }
     public int Length => _buff.Length;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
     public static Span<byte> Read(Span<byte> data, int offset)
     {
         var bytesRead = GetOffset(5, data[offset..]);
@@ -40,19 +54,6 @@ public readonly ref struct msg_detailed_info
     public static int GetRequiredBufferSize()
     {
         return 4 + 8 + 8 + 4 + 4;
-    }
-    public static msg_detailed_info Create(long msg_id, long answer_msg_id, int bytes, int status, out IMemoryOwner<byte> memory, MemoryPool<byte>? pool = null)
-    {
-        var length = GetRequiredBufferSize();
-        memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        memory.Memory.Span.Clear();
-        var obj = new msg_detailed_info(memory.Memory.Span[..length]);
-        obj.SetConstructor(unchecked((int)0x276d3ec6));
-        obj.Set_msg_id(msg_id);
-        obj.Set_answer_msg_id(answer_msg_id);
-        obj.Set_bytes(bytes);
-        obj.Set_status(status);
-        return obj;
     }
     public static int ReadSize(Span<byte> data, int offset)
     {
@@ -86,5 +87,9 @@ public readonly ref struct msg_detailed_info
         if(index >= 4) offset += 4;
         if(index >= 5) offset += 4;
         return offset;
+    }
+    public void Dispose()
+    {
+        _memory?.Dispose();
     }
 }
