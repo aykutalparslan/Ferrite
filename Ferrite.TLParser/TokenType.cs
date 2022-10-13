@@ -57,6 +57,7 @@ namespace Ferrite.TLParser
         CloseParen,
         BackTick,
         Plus,
-        Minus
+        Minus,
+        Slash
     }
 }
