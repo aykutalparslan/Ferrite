@@ -15,63 +15,40 @@ public class TLGenerator : ISourceGenerator
 {
     public void Execute(GeneratorExecutionContext context)
     {
+        foreach (AdditionalText t in context.AdditionalFiles)
+        {
+            if (Path.GetExtension(t.Path).Equals(".tl", StringComparison.OrdinalIgnoreCase))
+            {
+                var name = Path.GetFileNameWithoutExtension(t.Path);
+                context.ReportDiagnostic(Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "TLGenerator001",
+                        "Generation started.",
+                        $"Generating code for TL Schema: {name}",
+                        "CodeGen",
+                        DiagnosticSeverity.Info,
+                        true),null,default(object),null));
+                Generate(context, name, t.Path);
+            }
+        }
+    }
+    public void Initialize(GeneratorInitializationContext context)
+    {
+        
+    }
+    public void Generate(GeneratorExecutionContext context, string nameSpace, string path)
+    {
         Dictionary<string, List<CombinatorDeclarationSyntax>> types = new();
-        Dictionary<string, List<CombinatorDeclarationSyntax>> typesL142 = new();
         SortedSet<string> nameSpaces = new SortedSet<string>();
-        nameSpaces.Add("mtproto");
+        nameSpaces.Add(nameSpace);
         List<CombinatorDeclarationSyntax> combinators = new();
         List<Token> tokens = new List<Token>();
-        Lexer lexer = new Lexer(MTProtoSchema.Schema);
-        Parser parser = new Parser(lexer);
+        var lexer =  new Lexer(File.ReadAllText(path));
+        var parser = new Parser(lexer);
         var combinator = parser.ParseCombinator();
         while (combinator != null)
         {
-            var ns = "";
-            if (combinator.Type.NamespaceIdentifier != null)
-            {
-                ns += combinator.Namespace;
-            }
-
-            var id = ns + "." + combinator.Type.Identifier;
-            if ((combinator.CombinatorType == CombinatorType.Constructor || 
-                combinator.CombinatorType == CombinatorType.Builtin) &&
-                !types.ContainsKey(id))
-            {
-                types.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
-                if (combinator.Name != null)
-                {
-                    combinators.Add(combinator);
-                }
-                GenerateSourceFile(context, combinator, "mtproto");
-            }
-            else if((combinator.CombinatorType == CombinatorType.Constructor || 
-                     combinator.CombinatorType == CombinatorType.Builtin))
-            {
-                types[id].Add(combinator);
-                if (combinator.Name != null)
-                {
-                    combinators.Add(combinator);
-                }
-                GenerateSourceFile(context, combinator, "mtproto");
-            }
-            else if(combinator.CombinatorType == CombinatorType.Function)
-            {
-                if (combinator.Name != null)
-                {
-                    combinators.Add(combinator);
-                }
-                GenerateFunctionSource(context, combinator, "mtproto");
-            }
-
-            combinator = parser.ParseCombinator();
-        }
-        
-        lexer = new Lexer(Layer142Schema.Schema);
-        parser = new Parser(lexer);
-        combinator = parser.ParseCombinator();
-        while (combinator != null)
-        {
-            var ns = "";
+            var ns = nameSpace;
             if (combinator.Type.NamespaceIdentifier != null)
             {
                 ns += combinator.Namespace;
@@ -80,9 +57,9 @@ public class TLGenerator : ISourceGenerator
 
             var id = ns  + "." + combinator.Type.Identifier;
             if (combinator.CombinatorType == CombinatorType.Constructor &&
-                !typesL142.ContainsKey(id))
+                !types.ContainsKey(id))
             {
-                typesL142.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
+                types.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -91,7 +68,7 @@ public class TLGenerator : ISourceGenerator
             }
             else if(combinator.CombinatorType == CombinatorType.Constructor)
             {
-                typesL142[id].Add(combinator);
+                types[id].Add(combinator);
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -110,147 +87,19 @@ public class TLGenerator : ISourceGenerator
             combinator = parser.ParseCombinator();
         }
         
-        foreach (var item in types)
-        {
-            if (item.Value[0].Name != null)
-            {
-                GenerateBaseType(context, item.Value, "mtproto");
-            }
-        }
-        foreach (var item in typesL142)
-        {
-            if (item.Value[0].Name != null)
-            {
-                GenerateBaseType(context, item.Value, item.Value[0].Namespace ?? "");
-            }
-        }
-        
-        GenerateBoxedObject(context, combinators, nameSpaces);
+        GenerateObjectReader(context, nameSpace, combinators, nameSpaces);
+        GenerateConstructors(context, nameSpace, combinators, nameSpaces);
     }
-    private void GenerateBaseType(GeneratorExecutionContext context, 
-        IReadOnlyList<CombinatorDeclarationSyntax> combinators, string nameSpace)
+    private void GenerateObjectReader(GeneratorExecutionContext context, string nameSpace, IReadOnlyList<CombinatorDeclarationSyntax> combinators,ICollection<string> nameSpaces)
     {
         StringBuilder sb = new StringBuilder(@"//  <auto-generated>
 //  This file was auto-generated by the Ferrite TL Generator.
 //  Please do not modify as all changes will be lost.
 //  <auto-generated/>
 
-using System.Buffers;
-using System.Runtime.CompilerServices;
-using Ferrite.Utils;
+#nullable enable
 
-namespace Ferrite.TL.slim"+(nameSpace.Length > 0? "."+nameSpace:"")+@";
-
-public readonly unsafe struct " + combinators[0].Type.Identifier + @" : ITLObjectReader, ITLSerializable
-{
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private " + combinators[0].Type.Identifier + @"(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    internal " + combinators[0].Type.Identifier + @"(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
-    }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public ref readonly int Constructor => ref *(int*)_buff;
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
-    {
-        var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-");
-        bool first = true;
-        foreach (var combinator in combinators)
-        {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)ptr == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".Read(data, offset, out bytesRead);
-        }");
-            first = false;
-        }
-        sb.Append(@"
-        bytesRead = 0;
-        return null;
-    }
-
-    public static unsafe ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-");
-        first = true;
-        foreach (var combinator in combinators)
-        {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)buffer == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".Read(buffer, length, offset, out bytesRead);
-        }");
-            first = false;
-        }
-        sb.Append(@"
-        bytesRead = 0;
-        return null;
-    }
-
-    public static int ReadSize(Span<byte> data, in int offset)
-    {
-        var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-");
-        first = true;
-        foreach (var combinator in combinators)
-        {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)ptr == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".ReadSize(data, offset);
-        }");
-            first = false;
-        }
-        sb.Append(@"
-        return 0;
-    }
-
-    public static unsafe int ReadSize(byte* buffer, in int length, in int offset)
-    {
-");
-        first = true;
-        foreach (var combinator in combinators)
-        {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)buffer == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".ReadSize(buffer, length, offset);
-        }");
-            first = false;
-        }
-        sb.Append(@"
-        return 0;
-    }
-    public void Dispose()
-    {
-        _memoryOwner?.Dispose();
-    }
-}
-");
-        context.AddSource(combinators[0].Type.Identifier + "_Wrapper.g.cs",
-            SourceText.From(sb.ToString(), Encoding.UTF8));
-    }
-    private void GenerateBoxedObject(GeneratorExecutionContext context, 
-        IReadOnlyList<CombinatorDeclarationSyntax> combinators,ICollection<string> nameSpaces)
-    {
-        StringBuilder sb = new StringBuilder(@"//  <auto-generated>
-//  This file was auto-generated by the Ferrite TL Generator.
-//  Please do not modify as all changes will be lost.
-//  <auto-generated/>
-
-using System.Buffers;
-using System.Runtime.CompilerServices;
-using Ferrite.Utils;");
+using System.Runtime.InteropServices;");
         foreach (var ns in nameSpaces)
         {
             sb.Append(@"
@@ -259,109 +108,126 @@ using Ferrite.TL.slim"+(ns.Length>0?"."+ns:"")+@";
         }
         
 sb.Append(@"
-namespace Ferrite.TL.slim;
+namespace Ferrite.TL.slim"+(nameSpace.Length>0?".":"")+nameSpace +@";
 
-public readonly unsafe struct BoxedObject : ITLObjectReader, ITLSerializable
+public static class ObjectReader
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private BoxedObject(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    internal BoxedObject(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
-    }
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public ref readonly int Constructor => ref *(int*)_buff;
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
-    {
-        var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-");
-        bool first = true;
-        foreach (var combinator in combinators)
+    private static readonly Dictionary<int, ObjectReaderDelegate> _objectReaders = new();
+    private static readonly Dictionary<int, ObjectSizeReaderDelegate> _sizeReaders = new();
+    static ObjectReader()
+    {");
+         foreach (var combinator in combinators)
         {
             sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)ptr == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".Read(data, offset, out bytesRead);
-        }");
-            first = false;
+        _objectReaders.Add(unchecked((int)0x"+combinator.Name+@"), "+combinator.Identifier+@".Read);
+        _sizeReaders.Add(unchecked((int)0x"+combinator.Name+@"), "+combinator.Identifier+@".ReadSize);");
         }
         sb.Append(@"
-        bytesRead = 0;
-        return null;
     }
-
-    public static unsafe ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
 ");
-        first = true;
-        foreach (var combinator in combinators)
-        {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)buffer == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".Read(buffer, length, offset, out bytesRead);
-        }");
-            first = false;
-        }
         sb.Append(@"
-        bytesRead = 0;
-        return null;
+    public static Span<byte> Read(Span<byte> buff)
+    {
+        if (buff.Length < 4)
+        {
+            return Span<byte>.Empty;
+        }
+        int constructor = MemoryMarshal.Read<int>(buff);
+        if (_objectReaders.ContainsKey(constructor))
+        {
+            var reader = _objectReaders[constructor];
+            return reader(buff, 0);
+        }
+        return Span<byte>.Empty;
     }
-
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static Span<byte> Read(Span<byte> buff, int constructor)
     {
-        var ptr = (byte*)Unsafe.AsPointer(ref data[offset..][0]);
-");
-        first = true;
-        foreach (var combinator in combinators)
+        if (buff.Length < 4)
         {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)ptr == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".ReadSize(data, offset);
-        }");
-            first = false;
+            return Span<byte>.Empty;
         }
-        sb.Append(@"
+        if (_objectReaders.ContainsKey(constructor))
+        {
+            var reader = _objectReaders[constructor];
+            return reader(buff, 0);
+        }
+        return Span<byte>.Empty;
+    }
+    public static int ReadSize(Span<byte> buff)
+    {
+        if (buff.Length < 4)
+        {
+            return 0;
+        }
+        int constructor = MemoryMarshal.Read<int>(buff);
+        if (_sizeReaders.ContainsKey(constructor))
+        {
+            var reader = _sizeReaders[constructor];
+            return reader(buff, 0);
+        }
         return 0;
     }
-
-    public static unsafe int ReadSize(byte* buffer, in int length, in int offset)
+    public static int ReadSize(Span<byte> buff, int constructor)
     {
-");
-        first = true;
-        foreach (var combinator in combinators)
+        if (buff.Length < 4)
         {
-            sb.Append(@"
-        "+(!first?"else ":"")+@"if(*(int*)buffer == unchecked((int)0x"+combinator.Name+@"))
-        {
-            return "+combinator.Identifier+@".ReadSize(buffer, length, offset);
-        }");
-            first = false;
+            return 0;
         }
-        sb.Append(@"
+        if (_sizeReaders.ContainsKey(constructor))
+        {
+            var reader = _sizeReaders[constructor];
+            return reader.Invoke(buff, 0);
+        }
         return 0;
     }
-    public void Dispose()
+    public static ObjectReaderDelegate? GetObjectReader(int constructor)
     {
-        _memoryOwner?.Dispose();
+        if (_objectReaders.ContainsKey(constructor))
+        {
+            return _objectReaders[constructor];
+        }
+
+        return null;
+    }
+    public static ObjectSizeReaderDelegate? GetObjectSizeReader(int constructor)
+    {
+        if (_sizeReaders.ContainsKey(constructor))
+        {
+            return _sizeReaders[constructor];
+        }
+
+        return null;
     }
 }
 ");
-        context.AddSource("BoxedObject.g.cs",
-            SourceText.From(sb.ToString(), Encoding.UTF8));
+        context.AddSource((nameSpace.Length>0? nameSpace +"_":"")+"ObjectReader.g.cs", sb.ToString());
     }
-    private void GenerateFunctionSource(GeneratorExecutionContext context, 
-        CombinatorDeclarationSyntax? combinator, string nameSpace)
+    private void GenerateConstructors(GeneratorExecutionContext context, string nameSpace, IReadOnlyList<CombinatorDeclarationSyntax> combinators,ICollection<string> nameSpaces)
+    {
+        StringBuilder sb = new StringBuilder(@"//  <auto-generated>
+//  This file was auto-generated by the Ferrite TL Generator.
+//  Please do not modify as all changes will be lost.
+//  <auto-generated/>
+
+#nullable enable
+
+namespace Ferrite.TL.slim"+(nameSpace.Length>0?".":"")+nameSpace +@";
+
+public static class Constructors
+{
+    ");
+        foreach (var combinator in combinators)
+        {
+            sb.Append(@"
+    public const int " + combinator.Identifier + " = unchecked((int)0x" + combinator.Name + @");");
+        }
+        sb.Append(@"
+}
+");
+        context.AddSource((nameSpace.Length>0? nameSpace +"_":"")+"Constructors.g.cs",
+            sb.ToString());
+    }
+    private void GenerateFunctionSource(GeneratorExecutionContext context, CombinatorDeclarationSyntax? combinator, string nameSpace)
     {
         var typeName = combinator.Identifier;
         StringBuilder sourceBuilder = new StringBuilder(@"//  <auto-generated>
@@ -369,87 +235,74 @@ public readonly unsafe struct BoxedObject : ITLObjectReader, ITLSerializable
 //  Please do not modify as all changes will be lost.
 //  <auto-generated/>
 
+#nullable enable
+
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
 namespace Ferrite.TL.slim"+(nameSpace.Length > 0? "."+nameSpace:"")+@";
 
-public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
+public readonly ref struct " + typeName + @"
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private " + typeName + @"(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    private readonly IMemoryOwner<byte>? _memory;");
+        GenerateCreate(sourceBuilder, combinator);
+        sourceBuilder.Append(
+            @"
+    public " + typeName + @"(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private " + typeName + @"(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     "+
     (combinator.Name != null ?                                                    
-    @"
-    public ref readonly int Constructor => ref *(int*)_buff;
+        @"
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }": "")+
     
     @"
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
-                                                        @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new " + typeName + @"(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
-                                                        @", buffer + offset, length);
-        var obj = new " + typeName + @"(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
+    @", data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 ");
         GenerateGetRequiredBufferSize(sourceBuilder, combinator);
-        GenerateCreate(sourceBuilder, combinator);
         sourceBuilder.Append(@"
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
         return GetOffset(" + (combinator.Arguments.Count + 1) +
-                             @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-    }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
-    {
-        return GetOffset(" + (combinator.Arguments.Count + 1) +
-                             @", buffer + offset, length);
+                             @", data[offset..]);
     }");
         GenerateProperties(sourceBuilder, combinator);
         GenerateGetOffset(sourceBuilder, combinator);
+        GenerateBuilder(sourceBuilder, combinator);
         var str = @"
     public void Dispose()
     {
-        _memoryOwner?.Dispose();
+        _memory?.Dispose();
     }
 }
 ";
         sourceBuilder.Append(str);
-        // inject the created source into the users compilation
-        context.AddSource(combinator.Identifier + ".g.cs",
-            SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
+        context.AddSource((nameSpace.Length>0?nameSpace+"_":"") + 
+                          combinator.Identifier + ".g.cs",
+            sourceBuilder.ToString());
     }
-    private void GenerateSourceFile(GeneratorExecutionContext context, 
-        CombinatorDeclarationSyntax? combinator, string nameSpace)
+    private void GenerateSourceFile(GeneratorExecutionContext context, CombinatorDeclarationSyntax? combinator, string nameSpace)
     {
         var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
         StringBuilder sourceBuilder = new StringBuilder(@"//  <auto-generated>
@@ -457,95 +310,77 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
 //  Please do not modify as all changes will be lost.
 //  <auto-generated/>
 
+#nullable enable
+
 using System.Buffers;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using DotNext.Buffers;
 
-namespace Ferrite.TL.slim"+(nameSpace.Length > 0? "."+nameSpace:"")+@";
+namespace Ferrite.TL.slim" + (nameSpace.Length > 0 ? "." + nameSpace : "") + @";
 
-public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializable
+public readonly ref struct " + typeName + @"
 {
-    private readonly byte* _buff;
-    private readonly IMemoryOwner<byte>? _memoryOwner;
-    private " + typeName + @"(Span<byte> buffer, IMemoryOwner<byte> memoryOwner)
+    private readonly Span<byte> _buff;
+    private readonly IMemoryOwner<byte>? _memory;");
+        GenerateCreate(sourceBuilder, combinator);
+    sourceBuilder.Append(
+    @"
+    public " + typeName + @"(Span<byte> buff)
     {
-        _buff = (byte*)Unsafe.AsPointer(ref buffer[0]);
-        Length = buffer.Length;
-        _memoryOwner = memoryOwner;
-    }
-    private " + typeName + @"(byte* buffer, in int length, IMemoryOwner<byte> memoryOwner)
-    {
-        _buff = buffer;
-        Length = length;
-        _memoryOwner = memoryOwner;
+        _buff = buff;
     }
     "+
-    (combinator.Name != null ?                                                    
-    @"
-    public " + combinator.Type.Identifier + @" GetAs" + combinator.Type.Identifier + @"()
-    {
-        return new " + combinator.Type.Identifier + @"(_buff, Length, _memoryOwner);
-    }
-    public ref readonly int Constructor => ref *(int*)_buff;
+                         (combinator.Name != null ?                                                    
+                             @"
+    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
 
     private void SetConstructor(int constructor)
     {
-        var p = (int*)_buff;
-        *p = constructor;
+        MemoryMarshal.Write(_buff.Slice(0, 4), ref constructor);
     }": "")+
     
-    @"
-    public int Length { get; }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => new (_buff, Length);
-    public static ITLSerializable? Read(Span<byte> data, in int offset, out int bytesRead)
+                         @"
+    public int Length => _buff.Length;
+    public ReadOnlySpan<byte> ToReadOnlySpan() => _buff;
+    public TLBytes? TLBytes => _memory != null ? new TLBytes(_memory, 0, _buff.Length) : null;
+    public static Span<byte> Read(Span<byte> data, int offset)
     {
-        bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
-                                                        @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-        var obj = new " + typeName + @"(data.Slice(offset, bytesRead), null);
-        return obj;
-    }
-    public static ITLSerializable? Read(byte* buffer, in int length, in int offset, out int bytesRead)
-    {
-        bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
-                                                        @", buffer + offset, length);
-        var obj = new " + typeName + @"(buffer + offset, bytesRead, null);
-        return obj;
+        var bytesRead = GetOffset(" + (combinator.Arguments.Count + 1) +
+                         @", data[offset..]);
+        if (bytesRead > data.Length + offset)
+        {
+            return Span<byte>.Empty;
+        }
+        return data.Slice(offset, bytesRead);
     }
 ");
         GenerateGetRequiredBufferSize(sourceBuilder, combinator);
-        GenerateCreate(sourceBuilder, combinator);
         sourceBuilder.Append(@"
-    public static int ReadSize(Span<byte> data, in int offset)
+    public static int ReadSize(Span<byte> data, int offset)
     {
         return GetOffset(" + (combinator.Arguments.Count + 1) +
-                             @", (byte*)Unsafe.AsPointer(ref data[offset..][0]), data.Length);
-    }
-
-    public static int ReadSize(byte* buffer, in int length, in int offset)
-    {
-        return GetOffset(" + (combinator.Arguments.Count + 1) +
-                             @", buffer + offset, length);
+                             @", data[offset..]);
     }");
         GenerateProperties(sourceBuilder, combinator);
         GenerateGetOffset(sourceBuilder, combinator);
+        GenerateBuilder(sourceBuilder, combinator);
         var str = @"
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
+    }
     public void Dispose()
     {
-        _memoryOwner?.Dispose();
+        _memory?.Dispose();
     }
 }
 ";
         sourceBuilder.Append(str);
-        // inject the created source into the users compilation
-        context.AddSource(combinator.Identifier + ".g.cs",
-            SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
+        context.AddSource((nameSpace.Length>0?nameSpace+"_":"") + 
+                          combinator.Identifier + ".g.cs",
+            sourceBuilder.ToString());
     }
-
-    public void Initialize(GeneratorInitializationContext context)
-    {
-        
-    }
-
     private void GenerateGetRequiredBufferSize(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
         sb.Append(@"
@@ -711,15 +546,16 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         sb.Append(@";
     }");
     }
-
     private void GenerateCreate(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
         var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
         sb.Append(@"
-    public static " + typeName +
-                  @" Create(");
+    public " + typeName +
+                  @"(");
+        int count = combinator.Arguments.Count;
         foreach (var arg in combinator.Arguments)
         {
+            bool comma = --count != 0;
             if (arg.Identifier == "long")
             {
                 arg.Identifier = "longitude";
@@ -730,24 +566,24 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             }
             else if (arg.TypeTerm.Identifier == "true")
             {
-                sb.Append("bool " + arg.Identifier + ", ");
+                sb.Append("bool " + arg.Identifier + (comma ? ", ": ""));
             }
             else if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256")
             {
-                sb.Append("ReadOnlySpan<byte> " + arg.Identifier + ", ");
+                sb.Append("ReadOnlySpan<byte> " + arg.Identifier + (comma ? ", ": ""));
             }
             else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
-                sb.Append("ITLSerializable " + (arg.ConditionalDefinition!=null?"?":"")+ arg.Identifier+ ", ");
+                sb.Append("ReadOnlySpan<byte> " + (arg.ConditionalDefinition!=null?"?":"")+ arg.Identifier+ (comma ? ", ": ""));
             }
             else if (arg.TypeTerm.Identifier != "true")
             {
                 string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
-                sb.Append(typeIdent + (arg.ConditionalDefinition!=null?"?":"") + " " + arg.Identifier +", ");
+                sb.Append(typeIdent + (arg.ConditionalDefinition!=null?"?":"") + " " + arg.Identifier +(comma ? ", ": ""));
             }
         }
 
-        sb.Append(@"MemoryPool<byte>? pool = null)
+        sb.Append(@")
     {
         var length = GetRequiredBufferSize(");
         bool first = true;
@@ -789,12 +625,13 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         }
 
         sb.Append(@");
-        var memory = pool != null ? pool.Rent(length) : MemoryPool<byte>.Shared.Rent(length);
-        var obj = new " + typeName + @"(memory.Memory.Span[..length], memory);");
+        _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
+        _memory.Memory.Span.Clear();
+        _buff = _memory.Memory.Span[..length];");
         if (combinator.Name != null)
         {
             sb.Append(@"
-        obj.SetConstructor(unchecked((int)0x"+combinator.Name+"));");
+        SetConstructor(unchecked((int)0x"+combinator.Name+"));");
         }
 
         foreach (var arg in combinator.Arguments)
@@ -817,7 +654,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
                     }
                 }
                 sb.Append(@"
-        obj.Set_"+arg.Identifier+@"(tempFlags);");            
+        Set_"+arg.Identifier+@"(tempFlags);");            
             
             }
             else if (arg.TypeTerm.Identifier == "true")
@@ -833,7 +670,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
                     sb.Append(@"
         if(" + arg.Identifier + @" != null)"+ @"
         {
-            obj.Set_"+arg.Identifier+"(("+ arg.TypeTerm.Identifier +")"+arg.Identifier+@");
+            Set_"+arg.Identifier+"(("+ arg.TypeTerm.Identifier +")"+arg.Identifier+@");
         }");
                 }
                 else if (arg.ConditionalDefinition != null)
@@ -841,15 +678,31 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
                     sb.Append(@"
         if(" + arg.Identifier + @" != null)"+ @"
         {
-            obj.Set_"+arg.Identifier+"("+arg.Identifier+@");
+            Set_"+arg.Identifier+"("+arg.Identifier+@");
         }");
                 }
                 else
                 {
                     sb.Append(@"
-        obj.Set_"+arg.Identifier+"("+arg.Identifier+@");");         
+        Set_"+arg.Identifier+"("+arg.Identifier+@");");         
                 }
                     
+            }
+            else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
+            {
+                if (arg.ConditionalDefinition != null)
+                {
+                    sb.Append(@"
+        if(" + arg.Identifier + @" != null)
+        {
+            Set_"+arg.Identifier+"((("+ arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+arg.Identifier+@"));
+        }");
+                }
+                else
+                {
+                    sb.Append(@"
+        Set_"+arg.Identifier+"("+arg.Identifier+@");");
+                }
             }
             else
             {
@@ -858,22 +711,20 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
                     sb.Append(@"
         if(" + arg.Identifier + @" != null)
         {
-            obj.Set_"+arg.Identifier+"((("+ arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+arg.Identifier+@").ToReadOnlySpan());
+            Set_"+arg.Identifier+"((("+ arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+arg.Identifier+@").ToReadOnlySpan());
         }");
                 }
                 else
                 {
                     sb.Append(@"
-        obj.Set_"+arg.Identifier+"("+arg.Identifier+@".ToReadOnlySpan());");
+        Set_"+arg.Identifier+"("+arg.Identifier+@".ToReadOnlySpan());");
                 }
                 
             }
         }
         sb.Append(@"
-        return obj;
     }");
     }
-
     private void GenerateProperties(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
         int index = 1;
@@ -882,12 +733,12 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             if (arg.TypeTerm.Identifier == "#")
             {
                 sb.Append(@"
-    public ref readonly Flags " + arg.Identifier + @" => ref *(Flags*)(_buff + GetOffset("+index+", _buff, Length));");
+    public ref readonly Flags " + arg.Identifier + @" => MemoryMarshal.Read<double>(_buff[GetOffset(" + index +
+                          ", _buff)..]);");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(in Flags value)
     {
-        var p = (Flags*)(_buff + GetOffset("+index+@", _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset("+index+@", _buff)..], ref value);
     }");
             }
             else if (arg.TypeTerm.Identifier == "true" && 
@@ -899,40 +750,40 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             else if (arg.TypeTerm.Identifier == "int")
             {
                 sb.Append(@"
-    public ref readonly int " + arg.Identifier + @" => ref *(int*)(_buff + GetOffset("+index+", _buff, Length));");
+    public readonly int " + arg.Identifier + @" => MemoryMarshal.Read<int>(_buff[GetOffset(" + index +
+                          ", _buff)..]);");
                 sb.Append(@"
-    private void Set_"+arg.Identifier+@"(in int value)
+    private void Set_"+arg.Identifier+@"(int value)
     {
-        var p = (int*)(_buff + GetOffset("+index+@", _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset("+index+@", _buff)..], ref value);
     }");
             }
             else if (arg.TypeTerm.Identifier == "long")
             {
                 sb.Append(@"
-    public ref readonly long "+arg.Identifier+@" => ref *(long*)(_buff + GetOffset("+index+", _buff, Length));");
+    public readonly long " + arg.Identifier + @" => MemoryMarshal.Read<long>(_buff[GetOffset(" + index +
+                          ", _buff)..]);");
                 sb.Append(@"
-    private void Set_"+arg.Identifier+@"(in long value)
+    private void Set_"+arg.Identifier+@"(long value)
     {
-        var p = (long*)(_buff + GetOffset("+index+@", _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset("+index+@", _buff)..], ref value);
     }");
             }
             else if (arg.TypeTerm.Identifier == "double")
             {
                 sb.Append(@"
-    public ref readonly double "+arg.Identifier+@" => ref *(double*)(_buff + GetOffset("+index+", _buff, Length));");
+    public readonly double " + arg.Identifier + @" => MemoryMarshal.Read<double>(_buff[GetOffset(" + index +
+                          ", _buff)..]);");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(in double value)
     {
-        var p = (double*)(_buff + GetOffset("+index+@", _buff, Length));
-        *p = value;
+        MemoryMarshal.Write(_buff[GetOffset("+index+@", _buff)..], ref value);
     }");
             }
             else if (arg.TypeTerm.Identifier == "int128")
             {
                 sb.Append(@"
-    public ReadOnlySpan<byte> "+arg.Identifier+@" => new (_buff + GetOffset("+index+@", _buff, Length), 16);");
+    public ReadOnlySpan<byte> "+arg.Identifier+@" => _buff.Slice(GetOffset("+index+@", _buff), 16);");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
     {
@@ -940,18 +791,13 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         {
             return;
         }
-        fixed (byte* p = value)
-        {
-            int offset = GetOffset("+index+@", _buff, Length);
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset, 16);
-        }
+        value.CopyTo(_buff.Slice(GetOffset("+index+@", _buff), 16));
     }");
             }
             else if (arg.TypeTerm.Identifier == "int256")
             {
                 sb.Append(@"
-    public ReadOnlySpan<byte> "+arg.Identifier+@" => new (_buff + GetOffset("+index+@", _buff, Length), 32);");
+    public ReadOnlySpan<byte> "+arg.Identifier+@" => _buff.Slice(GetOffset("+index+@", _buff), 32);");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
     {
@@ -959,18 +805,13 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         {
             return;
         }
-        fixed (byte* p = value)
-        {
-            int offset = GetOffset("+index+@", _buff, Length);
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset, 32);
-        }
+        value.CopyTo(_buff.Slice(GetOffset("+index+@", _buff), 32));
     }");
             }
             else if (arg.TypeTerm.Identifier is "bytes" or "string")
             {
                 sb.Append(@"
-    public ReadOnlySpan<byte> "+arg.Identifier+@" => BufferUtils.GetTLBytes(_buff, GetOffset("+index+@", _buff, Length), Length);");
+    public ReadOnlySpan<byte> "+arg.Identifier+@" => BufferUtils.GetTLBytes(_buff, GetOffset("+index+@", _buff));");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
     {
@@ -978,47 +819,32 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         {
             return;
         }
-        var offset = GetOffset("+index+@", _buff, Length);
-        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset, Length);
-        fixed (byte* p = value)
-        {
-            Buffer.MemoryCopy(p, _buff + offset + lenBytes,
-                Length - offset, value.Length);
-        }
+        var offset = GetOffset("+index+@", _buff);
+        var lenBytes = BufferUtils.WriteLenBytes(_buff, value, offset);
+        if(_buff.Length < offset + lenBytes + value.Length) return;
+        value.CopyTo(_buff[(offset + lenBytes)..]);
     }");
             }
             else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
                 sb.Append(@"
-    public ITLSerializable "+arg.Identifier+@" => "+
-                          arg.TypeTerm.GetFullyQualifiedIdentifier() 
-                          +@".Read(_buff, Length, GetOffset("+index+@", _buff, Length), out var bytesRead);");
+    public Span<byte> " + arg.Identifier + @" => ObjectReader.Read(_buff);");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
     {
-        fixed (byte* p = value)
-        {
-            int offset = GetOffset("+index+@", _buff, Length);
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset, value.Length);
-        }
+        value.CopyTo(_buff[GetOffset("+index+@", _buff)..]);
     }");
             }
             else 
             {
                 sb.Append(@"
-    public "+ arg.TypeTerm.GetFullyQualifiedIdentifier() +" "+arg.Identifier+@" => ("+arg.TypeTerm.GetFullyQualifiedIdentifier() +")"+ 
+    public "+ arg.TypeTerm.GetFullyQualifiedIdentifier() +" "+arg.Identifier+@" => new "+ 
                           arg.TypeTerm.GetFullyQualifiedIdentifier() 
-                          +@".Read(_buff, Length, GetOffset("+index+@", _buff, Length), out var bytesRead);");
+                          +@"(_buff.Slice(GetOffset("+index+@", _buff)));");
                 sb.Append(@"
     private void Set_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
     {
-        fixed (byte* p = value)
-        {
-            int offset = GetOffset("+index+@", _buff, Length);
-            Buffer.MemoryCopy(p, _buff + offset,
-                Length - offset, value.Length);
-        }
+        value.CopyTo(_buff[GetOffset("+index+@", _buff)..]);
     }");
             }
 
@@ -1028,11 +854,119 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             }
         }
     }
-    
+    private void GenerateBuilder(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    {
+        sb.Append(@"
+    public ref struct TLObjectBuilder
+    {");
+        foreach (var arg in combinator.Arguments)
+        {
+            if (arg.TypeTerm.Identifier == "#")
+            {
+                sb.Append(@"
+        private Flags _flags;
+        public TLObjectBuilder with_flags(Flags value)
+        {
+            _flags = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "true" && 
+                     arg.ConditionalDefinition != null)
+            {
+                sb.Append(@"
+        public TLObjectBuilder with_"+arg.Identifier+@"(bool value)
+        {
+            _flags["+arg.ConditionalDefinition.ConditionalArgumentBit+@"] = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "int")
+            {
+                sb.Append(@"
+        private int _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(int value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "long")
+            {
+                sb.Append(@"
+        private long _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(long value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier == "double")
+            {
+                sb.Append(@"
+        private double _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(double value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256"||
+                     arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
+            {
+                sb.Append(@"
+        private ReadOnlySpan<byte> _" + arg.Identifier + @";
+        public TLObjectBuilder with_"+arg.Identifier+@"(ReadOnlySpan<byte> value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+            else
+            {
+                string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
+                sb.Append(@"
+        private " + typeIdent + " _" + arg.Identifier + @";
+        public TLObjectBuilder with_" + arg.Identifier + "(" + typeIdent + @" value)
+        {
+            _" + arg.Identifier + @" = value;
+            return this;
+        }");
+            }
+        }
+        var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
+        sb.Append(@"
+        public " + typeName + @" Build()
+        {
+            return new " + typeName);
+        
+        sb.Append(@"(");
+        int count = combinator.Arguments.Count;
+        foreach (var arg in combinator.Arguments)
+        {
+            bool comma = --count != 0;
+            if (arg.Identifier == "long")
+            {
+                arg.Identifier = "longitude";
+            }
+            if (arg.TypeTerm.Identifier == "#")
+            {
+                
+            }
+            else
+            {
+                sb.Append("_" + arg.Identifier + (comma ? ", ": ""));
+            }
+        }
+        sb.Append(@");
+        }
+    }
+");
+    }
     private void GenerateGetOffset(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
         sb.Append(@"
-    private static int GetOffset(int index, byte* buffer, int length)
+    private static int GetOffset(int index, Span<byte> buffer)
     {
         int offset = "+(combinator.Name != null?"4":"0")+@";");
         bool hasFlags = false;
@@ -1047,7 +981,7 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
         if (hasFlags)
         {
             sb.Append(@"
-        Flags f = *(Flags*)(buffer + offset);");
+        Flags f = MemoryMarshal.Read<double>(_buff[offset..]);");
         }
         int index = 2;
         foreach (var arg in combinator.Arguments)
@@ -1089,12 +1023,18 @@ public readonly unsafe struct " + typeName + @" : ITLObjectReader, ITLSerializab
             else if (arg.TypeTerm.Identifier is "bytes" or "string")
             {
                 sb.Append(@"
-        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += BufferUtils.GetTLBytesLength(buffer, offset, length);");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += BufferUtils.GetTLBytesLength(buffer, offset);");
+            }
+            else if (arg.TypeTerm.GetFullyQualifiedIdentifier() is "BoxedObject")
+            {
+                sb.Append(@"
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += ObjectReader.ReadSize(buffer[offset..]"+
+                          (combinator.Name == null ? "": ", unchecked((int)0x"+combinator.Name+")")+");");
             }
             else
             {
                 sb.Append(@"
-        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += "+arg.TypeTerm.GetFullyQualifiedIdentifier()+".ReadSize(buffer, length, offset);");
+        if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += "+arg.TypeTerm.GetFullyQualifiedIdentifier()+".ReadSize(buffer, offset);");
             }
             if (arg.TypeTerm.Identifier != "true")
             {

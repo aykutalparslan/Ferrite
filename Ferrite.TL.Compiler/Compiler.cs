@@ -31,7 +31,7 @@ public class Compiler
     static void Generate()
     {
         Dictionary<string, List<CombinatorDeclarationSyntax>> types = new();
-        Dictionary<string, List<CombinatorDeclarationSyntax>> typesL142 = new();
+        Dictionary<string, List<CombinatorDeclarationSyntax>> typesL146 = new();
         SortedSet<string> nameSpaces = new SortedSet<string>();
         nameSpaces.Add("mtproto");
         List<CombinatorDeclarationSyntax> combinators = new();
@@ -81,7 +81,7 @@ public class Compiler
             combinator = parser.ParseCombinator();
         }
         
-        lexer = new Lexer(Layer142Schema.Schema);
+        lexer = new Lexer(Layer146Schema.Schema);
         parser = new Parser(lexer);
         combinator = parser.ParseCombinator();
         while (combinator != null)
@@ -95,9 +95,9 @@ public class Compiler
 
             var id = ns  + "." + combinator.Type.Identifier;
             if (combinator.CombinatorType == CombinatorType.Constructor &&
-                !typesL142.ContainsKey(id))
+                !typesL146.ContainsKey(id))
             {
-                typesL142.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
+                typesL146.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -106,7 +106,7 @@ public class Compiler
             }
             else if(combinator.CombinatorType == CombinatorType.Constructor)
             {
-                typesL142[id].Add(combinator);
+                typesL146[id].Add(combinator);
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -123,21 +123,6 @@ public class Compiler
             }
             
             combinator = parser.ParseCombinator();
-        }
-        
-        foreach (var item in types)
-        {
-            if (item.Value[0].Name != null)
-            {
-                //GenerateBaseType(item.Value, "mtproto");
-            }
-        }
-        foreach (var item in typesL142)
-        {
-            if (item.Value[0].Name != null)
-            {
-                //GenerateBaseType(item.Value, item.Value[0].Namespace ?? "");
-            }
         }
         
         GenerateObjectReader(combinators, nameSpaces);

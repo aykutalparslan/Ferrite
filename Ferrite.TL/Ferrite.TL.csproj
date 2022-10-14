@@ -40,4 +40,7 @@
     <ProjectReference Include="..\Ferrite.Data\Ferrite.Data.csproj" />
     <ProjectReference Include="..\Ferrite.Services\Ferrite.Services.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="mtproto.tl" />
+  </ItemGroup>
 </Project>

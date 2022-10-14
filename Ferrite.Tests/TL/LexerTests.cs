@@ -42,6 +42,21 @@ public class LexerTests
         Assert.Equal(1014, tokens.Count);
     }
     [Fact]
+    public void Lexer_Should_LexTLSchema()
+    {
+        List<Token> tokens = new List<Token>();
+        Lexer lexer = new Lexer(File.ReadAllText("testdata/schema.tl"));
+        var token = lexer.Lex();
+        tokens.Add(token);
+        while (token.Type != TokenType.EOF)
+        {
+            token = lexer.Lex();
+            tokens.Add(token);
+        }
+        
+        Assert.Equal(24443, tokens.Count);
+    }
+    [Fact]
     public void Lexer_Should_LexComments()
     {
         List<Token> tokens = new List<Token>();
