@@ -35,28 +35,28 @@ public class ReqPQHandler : IQueryHandler
         _randomGenerator = generator;
         _keyPairProvider = provider;
     }
+
     public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using (q)
+
+        byte[] serverNonce;
+        if (!ctx.SessionData.ContainsKey("nonce"))
         {
-            byte[] serverNonce;
-            if (!ctx.SessionData.ContainsKey("nonce"))
-            {
-                ctx.SessionData.Add("nonce", new req_pq_multi(q.AsSpan()).nonce.ToArray());
-                serverNonce = _randomGenerator.GetRandomBytes(16);
-                ctx.SessionData.Add("server_nonce", serverNonce);
-                await Task.Delay(100);
-            }
-            else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new req_pq_multi(q.AsSpan()).nonce))
-            {
-                ctx.SessionData["nonce"] = new req_pq_multi(q.AsSpan()).nonce.ToArray();
-                serverNonce = _randomGenerator.GetRandomBytes(16);
-                ctx.SessionData["server_nonce"] = serverNonce;
-                return null;
-            }
-            serverNonce = (byte[])ctx.SessionData["server_nonce"];
-            return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
+            ctx.SessionData.Add("nonce", new req_pq_multi(q.AsSpan()).nonce.ToArray());
+            serverNonce = _randomGenerator.GetRandomBytes(16);
+            ctx.SessionData.Add("server_nonce", serverNonce);
+            await Task.Delay(100);
         }
+        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new req_pq_multi(q.AsSpan()).nonce))
+        {
+            ctx.SessionData["nonce"] = new req_pq_multi(q.AsSpan()).nonce.ToArray();
+            serverNonce = _randomGenerator.GetRandomBytes(16);
+            ctx.SessionData["server_nonce"] = serverNonce;
+            return null;
+        }
+
+        serverNonce = (byte[])ctx.SessionData["server_nonce"];
+        return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
     }
 
     private TLBytes? ProcessInternal(byte[] serverNonce, req_pq_multi query, TLExecutionContext ctx)

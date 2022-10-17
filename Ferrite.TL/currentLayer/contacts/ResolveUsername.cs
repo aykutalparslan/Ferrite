@@ -20,6 +20,10 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Data.Contacts;
+using Ferrite.Services;
+using Ferrite.TL.mtproto;
+using Ferrite.TL.ObjectMapper;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.contacts;
@@ -27,10 +31,15 @@ public class ResolveUsername : ITLObject, ITLMethod
 {
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
+    private readonly IContactsService _contacts;
+    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public ResolveUsername(ITLObjectFactory objectFactory)
+    public ResolveUsername(ITLObjectFactory objectFactory, IContactsService contacts,
+        IMapperContext mapper)
     {
         factory = objectFactory;
+        _contacts = contacts;
+        _mapper = mapper;
     }
 
     public int Constructor => -113456221;
@@ -61,7 +70,23 @@ public class ResolveUsername : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        var serviceResult = await _contacts.ResolveUsername(ctx.CurrentAuthKeyId, _username);
+        var result = factory.Resolve<RpcResult>();
+        result.ReqMsgId = ctx.MessageId;
+        if (!serviceResult.Success)
+        {
+            var err = factory.Resolve<RpcError>();
+            err.ErrorMessage = serviceResult.ErrorMessage.Message;
+            err.ErrorCode = serviceResult.ErrorMessage.Code;
+            result.Result = err;
+        }
+        else
+        {
+            var resolved = _mapper.MapToTLObject<ResolvedPeer, ResolvedPeerDTO>(serviceResult.Result!);
+            result.Result = resolved;
+        }
+
+        return result;
     }
 
     public void Parse(ref SequenceReader buff)

@@ -77,8 +77,12 @@ public class ContactsService : IContactsService
         foreach (var c in contacts)
         {
             var user = _unitOfWork.UserRepository.GetUser(c.Phone);
+            if (user == null || auth == null) continue;
             var imported = _unitOfWork.ContactsRepository.PutContact(auth.UserId, user.Id, c);
-            users.Add(_unitOfWork.UserRepository.GetUser(imported.UserId));
+            if(imported == null) continue;
+            var contactUser = _unitOfWork.UserRepository.GetUser(imported.UserId);
+            if(contactUser == null) continue;
+            users.Add(contactUser);
             importedContacts.Add(imported);
         }
 
@@ -194,7 +198,21 @@ public class ContactsService : IContactsService
 
     public async Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username)
     {
-        throw new NotImplementedException();
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return new ServiceResult<ResolvedPeerDTO>(null, false, ErrorMessages.InvalidAuthKey);
+        }
+        var peerUser = _unitOfWork.UserRepository.GetUserByUsername(username);
+        if (peerUser == null)
+        {
+            return new ServiceResult<ResolvedPeerDTO>(null, false, ErrorMessages.UsernameInvalid);
+        }
+
+        var peer = new PeerDTO(PeerType.User, peerUser.Id);
+        var resolved = new ResolvedPeerDTO(peer, Array.Empty<ChatDTO>(), 
+            new List<UserDTO>() { peerUser });
+        return new ServiceResult<ResolvedPeerDTO>(resolved, true, ErrorMessages.None);
     }
 
     public async Task<TopPeersDTO> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls, bool forwardUsers,

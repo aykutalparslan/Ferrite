@@ -45,10 +45,7 @@ public class SetClientDhParamsHandler : IQueryHandler
     }
     public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using (q)
-        {
-            return ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx);
-        }
+        return ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx);
     }
 
     private TLBytes? ProcessInternal(set_client_DH_params query, TLExecutionContext ctx)

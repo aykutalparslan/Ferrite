@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using Autofac;
 using Ferrite.Data;
 using Ferrite.TL.currentLayer;
+using Ferrite.TL.currentLayer.contacts;
 using Ferrite.TL.currentLayer.messages;
 using Ferrite.TL.currentLayer.updates;
 using PeerSettings = Ferrite.TL.currentLayer.PeerSettings;
@@ -58,6 +59,7 @@ public class DefaultMapper : IMapperContext
         _mappers.TryAdd(typeof(Updates), new UpdatesMapper(factory, this));
         _mappers.TryAdd(typeof(Message), new MessageMapper(factory, this));
         _mappers.TryAdd(typeof(Peer), new PeerMapper(factory, this));
+        _mappers.TryAdd(typeof(ResolvedPeer), new ResolvedPeerMapper(factory, this));
         _mappers.TryAdd(typeof(MessageFwdHeader), new MessageFwdHeaderMapper(factory, this));
         _mappers.TryAdd(typeof(MessageReplyHeader), new MessageReplyHeaderMapper(factory, this));
         _mappers.TryAdd(typeof(MessageMedia), new MessageMediaMapper(factory, this));

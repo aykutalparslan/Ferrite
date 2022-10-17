@@ -38,7 +38,16 @@ public readonly struct TLBytes: IDisposable
 
     public Span<byte> AsSpan()
     {
-        return _memory.Memory.Span.Slice(_offset, _length);
+        if (_offset == 0 && _length == _memory.Memory.Span.Length)
+        {
+            return _memory.Memory.Span;
+        }
+        if (_memory.Memory.Span.Length < _offset + _length)
+        {
+            return new Span<byte>();
+        }
+        var slice = _memory.Memory.Span.Slice(_offset, _length);
+        return slice;
     }
     public void Dispose()
     {
