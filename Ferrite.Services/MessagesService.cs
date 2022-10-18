@@ -174,7 +174,7 @@ public class MessagesService : IMessagesService
         }
         else if (media.InputMediaType == InputMediaType.PhotoExternal)
         {
-            
+            // download and save photo?
         }
         else if (media.InputMediaType == InputMediaType.GeoPoint)
         {
@@ -192,7 +192,17 @@ public class MessagesService : IMessagesService
         }
         else if (media.InputMediaType == InputMediaType.GeoLive)
         {
+            var location = new GeoPointDTO(false, media.GeoPoint.Latitude,
+                media.GeoPoint.Longitude, Random.Shared.NextInt64(), 
+                media.GeoPoint.AccuracyRadius);
             
+            outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.GeoLive,
+                null, null, location, null,
+                null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                false, false, null, null, null, null,
+                null, null, media.Heading, media.Period, media.ProximityNotificationRadius, null,
+                null, null, null);
         }
         else if (media.InputMediaType == InputMediaType.Contact &&
                  _unitOfWork.UserRepository.GetUserId(media.PhoneNumber!) is { } contactUserId)
@@ -215,7 +225,7 @@ public class MessagesService : IMessagesService
         }
         else if(media.InputMediaType == InputMediaType.Document)
         {
-            
+            var saveResult = await _upload.SaveFile(media.File!);
         }
         else if(media.InputMediaType == InputMediaType.DocumentExternal)
         {
