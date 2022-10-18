@@ -30,4 +30,5 @@ public interface IPhotosService
     Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date);
     Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
     Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit);
+    Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto);
 }

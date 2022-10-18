@@ -310,4 +310,45 @@ public class PhotosService : IPhotosService
         }
         return new PhotosDTO(photos, new List<UserDTO> { user });
     }
+
+    public async Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto)
+    {
+        if (inputPhoto.Empty)
+        {
+            return new Data.PhotoDTO(true, false, (long)inputPhoto.Id!,
+                null, null, null, null, 
+                null, null);
+        }
+        var thumbs = _unitOfWork.PhotoRepository
+            .GetThumbnails((long)inputPhoto.Id!).Select(t => 
+                new PhotoSizeDTO(PhotoSizeType.Default,
+                    t.Type,
+                    t.Width,
+                    t.Height,
+                    t.Size,
+                    t.Bytes,
+                    t.Sizes)).ToList();
+        var reference = _unitOfWork.FileInfoRepository.GetFileReference(inputPhoto.FileReference!);
+        if (reference == null)
+        {
+            return new Data.PhotoDTO(true, false, (long)inputPhoto.Id!,
+                null, null, null, null, 
+                null, null);
+        }
+        var file = reference.IsBigfile
+            ? _unitOfWork.FileInfoRepository.GetBigFileInfo(reference.FileId)
+            : _unitOfWork.FileInfoRepository.GetFileInfo(reference.FileId);
+        
+        if (file == null || file.AccessHash != inputPhoto.AccessHash)
+        {
+            return new Data.PhotoDTO(true, false, (long)inputPhoto.Id!,
+                null, null, null, null, 
+                null, null);
+        }
+        
+        return new Data.PhotoDTO(false, false, (long)inputPhoto.Id!,
+            file.AccessHash, reference.ReferenceBytes, 
+            (int)file.SavedOn.ToUnixTimeSeconds(), thumbs, 
+            null, 2);
+    }
 }

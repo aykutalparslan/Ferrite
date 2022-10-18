@@ -165,13 +165,16 @@ public class MessagesService : IMessagesService
                 return new ServiceResult<UpdateShortSentMessageDTO>(null, false, photoResult.ErrorMessage);
             }
 
-            outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Photo,
-                photoResult.Result, null, null, null,
-                null, null, null, null, null, null,
-                null, null, null, null, null, null,
-                false, false, null, null, null, null,
-                null, null, null, null, null, null,
-                null, null, null);
+            SetMediaPhoto(outgoingMessage, photoResult.Result!);
+        }
+        else if (media.InputMediaType == InputMediaType.Photo)
+        {
+            var photo = await _photos.GetPhoto(authKeyId, media.Photo!);
+            SetMediaPhoto(outgoingMessage, photo);
+        }
+        else if (media.InputMediaType == InputMediaType.PhotoExternal)
+        {
+            
         }
         else if (media.InputMediaType == InputMediaType.GeoPoint)
         {
@@ -187,6 +190,10 @@ public class MessagesService : IMessagesService
                 null, null, null, null, null, null,
                 null, null, null);
         }
+        else if (media.InputMediaType == InputMediaType.GeoLive)
+        {
+            
+        }
         else if (media.InputMediaType == InputMediaType.Contact &&
                  _unitOfWork.UserRepository.GetUserId(media.PhoneNumber!) is { } contactUserId)
         {
@@ -197,6 +204,22 @@ public class MessagesService : IMessagesService
                 false, false, null, null, null, null,
                 null, null, null, null, null, null,
                 null, null, null);
+        }
+        else if(media.InputMediaType == InputMediaType.UploadedDocument)
+        {
+            var saveResult = await _upload.SaveFile(media.File!);
+            if (media.Thumb != null)
+            {
+                var thumbSaveResult = await _upload.SaveFile(media.Thumb!);
+            }
+        }
+        else if(media.InputMediaType == InputMediaType.Document)
+        {
+            
+        }
+        else if(media.InputMediaType == InputMediaType.DocumentExternal)
+        {
+            
         }
         
         var pts = await SaveMessage(senderCtx, auth, outgoingMessage, from, to);
@@ -211,6 +234,17 @@ public class MessagesService : IMessagesService
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
             true, ErrorMessages.None);
+    }
+
+    private static void SetMediaPhoto(MessageDTO outgoingMessage, PhotoDTO photo)
+    {
+        outgoingMessage.Media = new MessageMediaDTO(MessageMediaType.Photo,
+            photo, null, null, null,
+            null, null, null, null, null, null,
+            null, null, null, null, null, null,
+            false, false, null, null, null, null,
+            null, null, null, null, null, null,
+            null, null, null);
     }
 
     public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
