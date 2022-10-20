@@ -35,6 +35,7 @@ public class TypeTermSyntaxTests
         Lexer lexer = new Lexer(tl);
         Parser parser = new Parser(lexer);
         var c = parser.ParseCombinator();
-        Assert.Equal(name, c.Arguments[argOffset].TypeTerm.GetFullyQualifiedIdentifier());
+        var actual = c.Arguments[argOffset].TypeTerm.GetFullyQualifiedIdentifier();
+        Assert.Equal(name, actual);
     }
 }

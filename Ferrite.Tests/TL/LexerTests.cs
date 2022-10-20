@@ -54,7 +54,7 @@ public class LexerTests
             tokens.Add(token);
         }
         
-        Assert.Equal(24443, tokens.Count);
+        Assert.Equal(24451, tokens.Count);
     }
     [Fact]
     public void Lexer_Should_LexComments()
@@ -329,6 +329,22 @@ string ? = String;", 36)]
     [InlineData(@"vector {t:Type} # [ t ] = Vector t;
 int128 4*[ int ] = Int128;", 38)]
     public void Lexer_Should_LexMTProtoTypes(string source, int count)
+    {
+        List<Token> tokens = new List<Token>();
+        Lexer lexer = new Lexer(source);
+        var token = lexer.Lex();
+        tokens.Add(token);
+        while (token.Type != TokenType.EOF)
+        {
+            token = lexer.Lex();
+            tokens.Add(token);
+        }
+
+        Assert.Equal(count, tokens.Count);
+    }
+    [Theory]
+    [InlineData(@"test#aabbccdd arg:vector<testns.TestType> = Test;", 18)]
+    public void Lexer_Should_LexTypes(string source, int count)
     {
         List<Token> tokens = new List<Token>();
         Lexer lexer = new Lexer(source);

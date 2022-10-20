@@ -540,7 +540,8 @@ namespace Ferrite.TLParser
             bool found = false;
             while (_textWindow.Peek(++count) != TextWindow.InvalidChar)
             {
-                if(char.IsWhiteSpace(_textWindow.Peek(count))) break;
+                if(char.IsWhiteSpace(_textWindow.Peek(count)) ||
+                   _textWindow.Peek(count) == '<') break;
                 if ((char.IsLetterOrDigit(_textWindow.Peek(count)) ||
                      _textWindow.Peek(count) == '_') &&
                     _textWindow.Peek(count + 1) == '.' &&
