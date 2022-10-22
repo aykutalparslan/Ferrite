@@ -31,7 +31,7 @@ public class Compiler
     static void Generate()
     {
         Dictionary<string, List<CombinatorDeclarationSyntax>> types = new();
-        Dictionary<string, List<CombinatorDeclarationSyntax>> typesL146 = new();
+        Dictionary<string, List<CombinatorDeclarationSyntax>> typesCurrentLayer = new();
         SortedSet<string> nameSpaces = new SortedSet<string>();
         nameSpaces.Add("mtproto");
         List<CombinatorDeclarationSyntax> combinators = new();
@@ -95,9 +95,9 @@ public class Compiler
 
             var id = ns  + "." + combinator.Type.Identifier;
             if (combinator.CombinatorType == CombinatorType.Constructor &&
-                !typesL146.ContainsKey(id))
+                !typesCurrentLayer.ContainsKey(id))
             {
-                typesL146.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
+                typesCurrentLayer.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -106,7 +106,7 @@ public class Compiler
             }
             else if(combinator.CombinatorType == CombinatorType.Constructor)
             {
-                typesL146[id].Add(combinator);
+                typesCurrentLayer[id].Add(combinator);
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
