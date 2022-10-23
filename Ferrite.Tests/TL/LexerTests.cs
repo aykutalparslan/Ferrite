@@ -54,7 +54,7 @@ public class LexerTests
             tokens.Add(token);
         }
         
-        Assert.Equal(24451, tokens.Count);
+        Assert.Equal(24481, tokens.Count);
     }
     [Fact]
     public void Lexer_Should_LexComments()
@@ -344,6 +344,7 @@ int128 4*[ int ] = Int128;", 38)]
     }
     [Theory]
     [InlineData(@"test#aabbccdd arg:vector<testns.TestType> = Test;", 18)]
+    [InlineData("auth.sentCode#5e002502 flags:# type:auth.SentCodeType phone_code_hash:string next_type:flags.1?auth.CodeType timeout:flags.2?int = auth.SentCode;", 45)]
     public void Lexer_Should_LexTypes(string source, int count)
     {
         List<Token> tokens = new List<Token>();

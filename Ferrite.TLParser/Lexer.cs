@@ -67,7 +67,6 @@ namespace Ferrite.TLParser
                         Line = _textWindow.CurrentLine,
                         Column = _textWindow.CurrentColumn,
                     };
-                    break;
                 case '-':
                     if (ScanFunctions(out token)) return token;
                     if (ScanTypes(out token)) return token;
@@ -79,7 +78,6 @@ namespace Ferrite.TLParser
                         Line = _textWindow.CurrentLine,
                         Column = _textWindow.CurrentColumn,
                     };
-                    break;
                 case ' ':
                     int count = 0;
                     while (_textWindow.Peek(++count) == ' '){}
@@ -91,7 +89,6 @@ namespace Ferrite.TLParser
                         Line = _textWindow.CurrentLine,
                         Column = _textWindow.CurrentColumn,
                     };
-                        break;
                 case '[':
                     _textWindow.Advance(1);
                     previousTokenType = TokenType.OpenBracket;
@@ -541,7 +538,10 @@ namespace Ferrite.TLParser
             while (_textWindow.Peek(++count) != TextWindow.InvalidChar)
             {
                 if(char.IsWhiteSpace(_textWindow.Peek(count)) ||
-                   _textWindow.Peek(count) == '<') break;
+                   _textWindow.Peek(count) == '<' ||
+                   _textWindow.Peek(count) == ':') break;
+                if (_textWindow.Peek(count) == '.' &&
+                    !char.IsLetter(_textWindow.Peek(count + 1))) break;
                 if ((char.IsLetterOrDigit(_textWindow.Peek(count)) ||
                      _textWindow.Peek(count) == '_') &&
                     _textWindow.Peek(count + 1) == '.' &&

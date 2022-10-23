@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Tests", "Ferrite.Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TL", "Ferrite.TL\Ferrite.TL.csproj", "{6E7F8291-C798-4A08-A993-1EE002D0B104}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TL.Compiler", "Ferrite.TL.Compiler\Ferrite.TL.Compiler.csproj", "{86AFBB6B-232E-4201-A3DE-6A5A50F06945}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Crypto", "Ferrite.Crypto\Ferrite.Crypto.csproj", "{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Core", "Ferrite.Core\Ferrite.Core.csproj", "{18258047-DFF7-4162-A431-95128BDC7B11}"
@@ -52,10 +50,6 @@ Global
 		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E7F8291-C798-4A08-A993-1EE002D0B104}.Release|Any CPU.Build.0 = Release|Any CPU
-		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{86AFBB6B-232E-4201-A3DE-6A5A50F06945}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CCB9093F-DC1F-424C-A829-0AFB4F1BEE65}.Release|Any CPU.ActiveCfg = Release|Any CPU

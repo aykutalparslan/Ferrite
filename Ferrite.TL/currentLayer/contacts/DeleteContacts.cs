@@ -23,7 +23,6 @@ using DotNext.IO;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.ObjectMapper;
-using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.contacts;
