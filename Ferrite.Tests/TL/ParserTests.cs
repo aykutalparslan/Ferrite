@@ -34,7 +34,26 @@ public class ParserTests
         Parser parser = new Parser(lexer);
         var combinator = parser.ParseCombinator();
         
+        Assert.Equal(CombinatorType.Constructor, combinator.CombinatorType);
         Assert.Equal("inputMediaUploadedDocument", combinator.Identifier);
         Assert.Equal(9, combinator.Arguments.Count);
+    }
+    
+    [Fact]
+    public void Parser_Should_ParseFunction()
+    {
+        Lexer lexer = new Lexer(
+            @"
+---functions---
+account.getAllSecureValues#b288bc7d = Vector<SecureValue>;
+");
+        Parser parser = new Parser(lexer);
+        var combinator = parser.ParseCombinator();
+        
+        Assert.Equal(CombinatorType.Function, combinator.CombinatorType);
+        Assert.Equal("getAllSecureValues", combinator.Identifier);
+        Assert.Equal("Vector", combinator.Type.Identifier);
+        Assert.Equal("SecureValue", combinator.Type.OptionalType.Identifier);
+        Assert.Equal(0, combinator.Arguments.Count);
     }
 }

@@ -232,4 +232,84 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
             return this;
         }",generated.SourceText);
     }
+    [Fact]
+    public void TLSourceGenerator_Should_Generate_auth_sendCode()
+    {
+        string source = @"
+---functions---
+auth.sendCode#a677244f phone_number:string api_id:int api_hash:string settings:CodeSettings = auth.SentCode;
+";
+        TLSourceGenerator generator = new();
+        var generated = generator.Generate("layer146", source).First();
+        Assert.Contains("public sendCode(ReadOnlySpan<byte> phone_number, int api_id, ReadOnlySpan<byte> api_hash, ReadOnlySpan<byte> settings)",generated.SourceText);
+    }
+    [Fact]
+    public void TLSourceGenerator_Should_Generate_auth_initConnection()
+    {
+        string source = @"
+---functions---
+initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_version:string app_version:string system_lang_code:string lang_pack:string lang_code:string proxy:flags.0?InputClientProxy params:flags.1?JSONValue query:!X = X;
+";
+        TLSourceGenerator generator = new();
+        var generated = generator.Generate("layer146", source).First();
+        Assert.Contains("public Span<byte> query => ObjectReader.Read(_buff);",generated.SourceText);
+        Assert.Contains("if(index >= 12) offset += ObjectReader.ReadSize(buffer, offset);",generated.SourceText);
+    }
+    [Fact]
+    public void TLSourceGenerator_Should_Generate_Functions()
+    {
+        string source = @"
+
+messageExtendedMediaPreview#ad628cc8 flags:# w:flags.0?int h:flags.0?int thumb:flags.1?PhotoSize video_duration:flags.2?int = MessageExtendedMedia;
+messageExtendedMedia#ee479c64 media:MessageMedia = MessageExtendedMedia;
+
+---functions---
+invokeAfterMsg#cb9f372d {X:Type} msg_id:long query:!X = X;
+invokeAfterMsgs#3dc4b4f0 {X:Type} msg_ids:Vector<long> query:!X = X;
+initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_version:string app_version:string system_lang_code:string lang_pack:string lang_code:string proxy:flags.0?InputClientProxy params:flags.1?JSONValue query:!X = X;
+invokeWithLayer#da9b0d0d {X:Type} layer:int query:!X = X;
+invokeWithoutUpdates#bf9459b7 {X:Type} query:!X = X;
+invokeWithMessagesRange#365275f2 {X:Type} range:MessageRange query:!X = X;
+invokeWithTakeout#aca9fd2e {X:Type} takeout_id:long query:!X = X;
+auth.sendCode#a677244f phone_number:string api_id:int api_hash:string settings:CodeSettings = auth.SentCode;
+auth.signUp#80eee427 phone_number:string phone_code_hash:string first_name:string last_name:string = auth.Authorization;
+auth.signIn#8d52a951 flags:# phone_number:string phone_code_hash:string phone_code:flags.0?string email_verification:flags.1?EmailVerification = auth.Authorization;
+auth.logOut#3e72ba19 = auth.LoggedOut;
+";
+        TLSourceGenerator generator = new();
+        var generated = generator.Generate("layer146", source).ToList();
+        Assert.Equal(14, generated.Count);
+    }
+
+    [Fact]
+    public void TLSourceGenerator_Should_Generate_account_getAllSecureValues()
+    {
+        string source = @"
+---functions---
+account.getAllSecureValues#b288bc7d = Vector<SecureValue>;
+";
+        TLSourceGenerator generator = new();
+        var generated = generator.Generate("layer146", source).First();
+        Assert.Contains("public readonly ref struct getAllSecureValues", generated.SourceText);
+    }
+    [Fact]
+        public void TLSourceGenerator_Should_Generate_messages_setInlineBotResults()
+        {
+            string source = @"
+messages.setInlineBotResults#eb5ea206 flags:# gallery:flags.0?true private:flags.1?true query_id:long results:Vector<InputBotInlineResult> cache_time:int next_offset:flags.2?string switch_pm:flags.3?InlineBotSwitchPM = Bool;
+    ";
+            TLSourceGenerator generator = new();
+            var generated = generator.Generate("layer146", source).First();
+            Assert.Contains("public setInlineBotResults(Flags flags, bool gallery, bool private_, long query_id,", generated.SourceText);
+        }
+    [Fact]
+    public void TLSourceGenerator_Should_Generate_inputCheckPasswordSRP()
+    {
+        string source = @"
+inputCheckPasswordSRP#d27ff082 srp_id:long A:bytes M1:bytes = InputCheckPasswordSRP;
+";
+        TLSourceGenerator generator = new();
+        var generated = generator.Generate("layer146", source).First();
+        Assert.Contains("public inputCheckPasswordSRP(long srp_id, ReadOnlySpan<byte> A, ReadOnlySpan<byte> M1)", generated.SourceText);
+    }
 }

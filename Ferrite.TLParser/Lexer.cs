@@ -46,7 +46,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.EOL,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '\n':
                     _textWindow.AdvancePastNewLine();
@@ -55,7 +55,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.EOL,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '/':
                     if (ScanComment(out Token token)) return token;
@@ -65,7 +65,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Slash,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '-':
                     if (ScanFunctions(out token)) return token;
@@ -76,7 +76,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Minus,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case ' ':
                     int count = 0;
@@ -87,7 +87,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Spaces,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-count,
                     };
                 case '[':
                     _textWindow.Advance(1);
@@ -96,7 +96,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.OpenBracket,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case ']':
                     _textWindow.Advance(1);
@@ -105,7 +105,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.CloseBracket,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '{':
                     _textWindow.Advance(1);
@@ -114,7 +114,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.OpenBrace,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '}':
                     _textWindow.Advance(1);
@@ -123,7 +123,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.CloseBrace,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '(':
                     _textWindow.Advance(1);
@@ -132,7 +132,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.OpenParen,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case ')':
                     _textWindow.Advance(1);
@@ -141,7 +141,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.CloseParen,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '=':
                     _textWindow.Advance(1);
@@ -150,7 +150,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Equal,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '.':
                     _textWindow.Advance(1);
@@ -159,7 +159,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Dot,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case ':':
                     _textWindow.Advance(1);
@@ -177,7 +177,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Semicolon,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '?':
                     _textWindow.Advance(1);
@@ -195,7 +195,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.ExclamationMark,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '#':
                     _textWindow.Advance(1);
@@ -204,7 +204,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Hash,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '%':
                     _textWindow.Advance(1);
@@ -213,7 +213,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Percent,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '<':
                     _textWindow.Advance(1);
@@ -222,7 +222,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Langle,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '>':
                     _textWindow.Advance(1);
@@ -231,7 +231,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Rangle,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '*':
                     _textWindow.Advance(1);
@@ -240,7 +240,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Multiply,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '`':
                     _textWindow.Advance(1);
@@ -249,7 +249,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.BackTick,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case '+':
                     _textWindow.Advance(1);
@@ -258,7 +258,7 @@ namespace Ferrite.TLParser
                     {
                         Type = TokenType.Plus,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = _textWindow.CurrentColumn-1,
                     };
                 case 'a':
                 case 'b':
@@ -319,6 +319,8 @@ namespace Ferrite.TLParser
                     };
                 default:
                     if (ScanHexConstant(out token)) return token;
+                    if (previousTokenType == TokenType.Spaces && 
+                        ScanVariableIdentifier(out token)) return token;
                     if (ScanTypeIdentifier(out token)) return token;
                     previousTokenType = TokenType.EOF;
                     return new Token()
@@ -341,6 +343,7 @@ namespace Ferrite.TLParser
                     }
                 }
 
+                int column = _textWindow.CurrentColumn;
                 _textWindow.Advance(2);
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
@@ -350,7 +353,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.LineComment,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -363,6 +366,7 @@ namespace Ferrite.TLParser
                     if (_textWindow.Peek(count + 2) == '*' &&
                         _textWindow.Peek(count + 3) == '/')
                     {
+                        int column = _textWindow.CurrentColumn;
                         _textWindow.Advance(2);
                         var val = _textWindow.StringSlice(count);
                         _textWindow.Advance(count + 2);
@@ -372,7 +376,7 @@ namespace Ferrite.TLParser
                             Type = TokenType.MultilineComment,
                             Value = val,
                             Line = _textWindow.CurrentLine,
-                            Column = _textWindow.CurrentColumn,
+                            Column = column,
                         };
                         return true;
                     }
@@ -415,13 +419,14 @@ namespace Ferrite.TLParser
 
                 if (found)
                 {
+                    int column = _textWindow.CurrentColumn;
                     _textWindow.Advance(pos);
                     previousTokenType = TokenType.Functions;
                     token = new Token()
                     {
                         Type = TokenType.Functions,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = column,
                     };
                     return true;
                 }
@@ -462,13 +467,14 @@ namespace Ferrite.TLParser
 
                 if (found)
                 {
+                    int column = _textWindow.CurrentColumn;
                     _textWindow.Advance(pos);
                     previousTokenType = TokenType.Types;
                     token = new Token()
                     {
                         Type = TokenType.Types,
                         Line = _textWindow.CurrentLine,
-                        Column = _textWindow.CurrentColumn,
+                        Column = column,
                     };
                     return true;
                 }
@@ -516,6 +522,7 @@ namespace Ferrite.TLParser
 
             if (count is >= 6 and <= 8)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.HexConstant;
@@ -524,7 +531,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.HexConstant,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -555,6 +562,7 @@ namespace Ferrite.TLParser
 
             if (found)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.NamespaceIdentifier;
@@ -563,7 +571,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.NamespaceIdentifier,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -590,6 +598,7 @@ namespace Ferrite.TLParser
 
             if (found)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.CombinatorIdentifier;
@@ -598,7 +607,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.CombinatorIdentifier,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -629,6 +638,7 @@ namespace Ferrite.TLParser
 
             if (found)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.VariableIdentifier;
@@ -637,7 +647,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.VariableIdentifier,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -665,6 +675,7 @@ namespace Ferrite.TLParser
 
             if (found)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.ConditionalIdentifier;
@@ -673,7 +684,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.ConditionalIdentifier,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -684,12 +695,13 @@ namespace Ferrite.TLParser
         {
             int count = 0;
             bool found = false;
-            while (_textWindow.Peek(++count) != TextWindow.InvalidChar)
+            while (_textWindow.Peek(count) != TextWindow.InvalidChar)
             {
                 if(char.IsWhiteSpace(_textWindow.Peek(count))) break;
                 if ((char.IsLetterOrDigit(_textWindow.Peek(count)) ||
                      _textWindow.Peek(count) == '_') &&
                     (char.IsWhiteSpace(_textWindow.Peek(count + 1)) ||
+                     _textWindow.Peek(count + 1) == ':' ||
                      _textWindow.Peek(count + 1) == ';' ||
                      _textWindow.Peek(count + 1) == '}' ||
                      _textWindow.Peek(count + 1) == '<') ||
@@ -699,10 +711,13 @@ namespace Ferrite.TLParser
                     found = true;
                     break;
                 }
+
+                count++;
             }
 
             if (found)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.TypeIdentifier;
@@ -711,7 +726,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.TypeIdentifier,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -739,6 +754,7 @@ namespace Ferrite.TLParser
 
             if (found)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.BareTypeIdentifier;
@@ -747,7 +763,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.BareTypeIdentifier,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }
@@ -774,7 +790,7 @@ namespace Ferrite.TLParser
                     break;
                 }
             }
-
+            int column = _textWindow.CurrentColumn;
             var val = _textWindow.StringSlice(count);
             _textWindow.Advance(count);
             previousTokenType = TokenType.LowercaseIdentifier;
@@ -783,7 +799,7 @@ namespace Ferrite.TLParser
                 Type = TokenType.LowercaseIdentifier,
                 Value = val,
                 Line = _textWindow.CurrentLine,
-                Column = _textWindow.CurrentColumn,
+                Column = column,
             };
             return true;
         }
@@ -798,6 +814,7 @@ namespace Ferrite.TLParser
 
             if (count > 0)
             {
+                int column = _textWindow.CurrentColumn;
                 var val = _textWindow.StringSlice(count);
                 _textWindow.Advance(count);
                 previousTokenType = TokenType.Number;
@@ -806,7 +823,7 @@ namespace Ferrite.TLParser
                     Type = TokenType.Number,
                     Value = val,
                     Line = _textWindow.CurrentLine,
-                    Column = _textWindow.CurrentColumn,
+                    Column = column,
                 };
                 return true;
             }

@@ -54,7 +54,7 @@ public class LexerTests
             tokens.Add(token);
         }
         
-        Assert.Equal(24481, tokens.Count);
+        Assert.Equal(34841, tokens.Count);
     }
     [Fact]
     public void Lexer_Should_LexComments()
@@ -84,6 +84,8 @@ comment 2*/
 
         Assert.Equal(14, tokens.Count);
         Assert.Equal("line comment 1", tokens[1].Value);
+        Assert.Equal(1, tokens[1].Line);
+        Assert.Equal(1, tokens[1].Column);
         Assert.Equal("multi\nline\ncomment 1", tokens[8].Value);
     }
     [Theory]
@@ -345,6 +347,7 @@ int128 4*[ int ] = Int128;", 38)]
     [Theory]
     [InlineData(@"test#aabbccdd arg:vector<testns.TestType> = Test;", 18)]
     [InlineData("auth.sentCode#5e002502 flags:# type:auth.SentCodeType phone_code_hash:string next_type:flags.1?auth.CodeType timeout:flags.2?int = auth.SentCode;", 45)]
+    [InlineData(@"initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_version:string app_version:string system_lang_code:string lang_pack:string lang_code:string proxy:flags.0?InputClientProxy params:flags.1?JSONValue query:!X = X;", 68)]
     public void Lexer_Should_LexTypes(string source, int count)
     {
         List<Token> tokens = new List<Token>();
@@ -358,5 +361,23 @@ int128 4*[ int ] = Int128;", 38)]
         }
 
         Assert.Equal(count, tokens.Count);
+    }
+    [Fact]
+    public void Lexer_Should_LexUpperCaseVariables()
+    {
+        List<Token> tokens = new List<Token>();
+        string source = @"inputCheckPasswordSRP#d27ff082 srp_id:long A:bytes M1:bytes = InputCheckPasswordSRP;";
+        Lexer lexer = new Lexer(source);
+        var token = lexer.Lex();
+        tokens.Add(token);
+        while (token.Type != TokenType.EOF)
+        {
+            token = lexer.Lex();
+            tokens.Add(token);
+        }
+
+        Assert.Equal(21, tokens.Count);
+        Assert.Equal(TokenType.VariableIdentifier, tokens[8].Type);
+        Assert.Equal(TokenType.VariableIdentifier, tokens[12].Type);
     }
 }

@@ -188,7 +188,25 @@ public class Parser
             statement[offset + 3].Type == TokenType.TypeIdentifier &&
             statement[offset + 4].Type == TokenType.Langle)
         {
-            var returnType = ParseTypeTerm(statement, offset, out var consumed);
+            var returnType = ParseTypeTerm(statement, offset+1, out var consumed);
+            offset += consumed;
+            return new CombinatorDeclarationSyntax()
+            {
+                Namespace = nameSpace,
+                Identifier = identifier,
+                Name = name,
+                Arguments = arguments,
+                OptionalArguments = optionalArguments,
+                CombinatorType = _combinatorType,
+                Type = returnType
+            };
+        }
+        
+        if (statement.Count - offset > 4 && statement[offset].Type == TokenType.Equal &&
+            statement[offset + 1].Type == TokenType.TypeIdentifier &&
+            statement[offset + 2].Type == TokenType.Langle)
+        {
+            var returnType = ParseTypeTerm(statement, offset+1, out var consumed);
             offset += consumed;
             return new CombinatorDeclarationSyntax()
             {
