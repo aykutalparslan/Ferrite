@@ -19,6 +19,7 @@ using System;
 using System.Buffers;
 using DotNext.IO;
 using Ferrite.TL.Exceptions;
+using Ferrite.TL.slim;
 
 namespace Ferrite.TL
 {
