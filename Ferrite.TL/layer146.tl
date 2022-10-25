@@ -1,30 +1,44 @@
-// 
-// Project Ferrite is an Implementation of the Telegram Server API
-// Copyright 2022 Aykut Alparslan KOC <aykutalparslan@msn.com>
-// 
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-// 
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Affero General Public License for more details.
-// 
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-// 
+///////////////////////////////
+/////////////////// Layer cons
+///////////////////////////////
 
-namespace Ferrite.TLParser;
+//invokeAfterMsg#cb9f372d msg_id:long query:!X = X;
+//invokeAfterMsgs#3dc4b4f0 msg_ids:Vector<long> query:!X = X;
+//invokeWithLayer1#53835315 query:!X = X;
+//invokeWithLayer2#289dd1f6 query:!X = X;
+//invokeWithLayer3#b7475268 query:!X = X;
+//invokeWithLayer4#dea0d430 query:!X = X;
+//invokeWithLayer5#417a57ae query:!X = X;
+//invokeWithLayer6#3a64d54d query:!X = X;
+//invokeWithLayer7#a5be56d3 query:!X = X;
+//invokeWithLayer8#e9abd9fd query:!X = X;
+//invokeWithLayer9#76715a63 query:!X = X;
+//invokeWithLayer10#39620c41 query:!X = X;
+//invokeWithLayer11#a6b88fdf query:!X = X;
+//invokeWithLayer12#dda60d3c query:!X = X;
+//invokeWithLayer13#427c8ea2 query:!X = X;
+//invokeWithLayer14#2b9b08fa query:!X = X;
+//invokeWithLayer15#b4418b64 query:!X = X;
+//invokeWithLayer16#cf5f0987 query:!X = X;
+//invokeWithLayer17#50858a19 query:!X = X;
+//invokeWithLayer18#1c900537 query:!X = X;
+//invokeWithLayer#da9b0d0d layer:int query:!X = X; // after 18 layer
 
-public static class Layer146Schema
-{
-    public const string Schema = @"
-boolFalse#bc799737 = Bool;
-boolTrue#997275b5 = Bool;
-error#c4b9f9bb code:int text:string = Error;
-/*
+///////////////////////////////
+///////// Main application API
+///////////////////////////////
+
+//boolFalse#bc799737 = Bool;
+//boolTrue#997275b5 = Bool;
+
+//true#3fedd339 = True;
+
+//vector#1cb5c415 {t:Type} # [ t ] = Vector t;
+
+//error#c4b9f9bb code:int text:string = Error;
+
+//null#56730bcc = Null;
+
 inputPeerEmpty#7f3b18ea = InputPeer;
 inputPeerSelf#7da07ec9 = InputPeer;
 inputPeerChat#35a95cb9 chat_id:long = InputPeer;
@@ -58,7 +72,6 @@ inputMediaInvoice#8eb5a6d5 flags:# title:string description:string photo:flags.0
 inputMediaGeoLive#971fa843 flags:# stopped:flags.0?true geo_point:InputGeoPoint heading:flags.2?int period:flags.1?int proximity_notification_radius:flags.3?int = InputMedia;
 inputMediaPoll#f94e5f1 flags:# poll:Poll correct_answers:flags.0?Vector<bytes> solution:flags.1?string solution_entities:flags.1?Vector<MessageEntity> = InputMedia;
 inputMediaDice#e66fbf7b emoticon:string = InputMedia;
-
 
 inputChatPhotoEmpty#1ca48f57 = InputChatPhoto;
 inputChatUploadedPhoto#c642724e flags:# file:flags.0?InputFile video:flags.1?InputFile video_start_ts:flags.2?double = InputChatPhoto;
@@ -1436,7 +1449,6 @@ messageExtendedMediaPreview#ad628cc8 flags:# w:flags.0?int h:flags.0?int thumb:f
 messageExtendedMedia#ee479c64 media:MessageMedia = MessageExtendedMedia;
 
 ---functions---
-
 invokeAfterMsg#cb9f372d {X:Type} msg_id:long query:!X = X;
 invokeAfterMsgs#3dc4b4f0 {X:Type} msg_ids:Vector<long> query:!X = X;
 initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_version:string app_version:string system_lang_code:string lang_pack:string lang_code:string proxy:flags.0?InputClientProxy params:flags.1?JSONValue query:!X = X;
@@ -1910,7 +1922,5 @@ stats.loadAsyncGraph#621d5fa0 flags:# token:string x:flags.0?long = StatsGraph;
 stats.getMegagroupStats#dcdf8607 flags:# dark:flags.0?true channel:InputChannel = stats.MegagroupStats;
 stats.getMessagePublicForwards#5630281b channel:InputChannel msg_id:int offset_rate:int offset_peer:InputPeer offset_id:int limit:int = messages.Messages;
 stats.getMessageStats#b6e0a3f5 flags:# dark:flags.0?true channel:InputChannel msg_id:int = stats.MessageStats;
-*/
+
 // LAYER 146
-";
-}

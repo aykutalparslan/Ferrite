@@ -31,7 +31,7 @@ public class Compiler
     static void Generate()
     {
         Dictionary<string, List<CombinatorDeclarationSyntax>> types = new();
-        Dictionary<string, List<CombinatorDeclarationSyntax>> typesL146 = new();
+        Dictionary<string, List<CombinatorDeclarationSyntax>> typesCurrentLayer = new();
         SortedSet<string> nameSpaces = new SortedSet<string>();
         nameSpaces.Add("mtproto");
         List<CombinatorDeclarationSyntax> combinators = new();
@@ -95,9 +95,9 @@ public class Compiler
 
             var id = ns  + "." + combinator.Type.Identifier;
             if (combinator.CombinatorType == CombinatorType.Constructor &&
-                !typesL146.ContainsKey(id))
+                !typesCurrentLayer.ContainsKey(id))
             {
-                typesL146.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
+                typesCurrentLayer.Add(id, new List<CombinatorDeclarationSyntax>() { combinator });
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -106,7 +106,7 @@ public class Compiler
             }
             else if(combinator.CombinatorType == CombinatorType.Constructor)
             {
-                typesL146[id].Add(combinator);
+                typesCurrentLayer[id].Add(combinator);
                 if (combinator.Name != null)
                 {
                     combinators.Add(combinator);
@@ -627,15 +627,20 @@ public readonly ref struct " + typeName + @"
             {
                 sb.Append("ReadOnlySpan<byte> " + arg.Identifier + (comma ? ", ": ""));
             }
-            else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
-            {
-                sb.Append("ReadOnlySpan<byte> " + (arg.ConditionalDefinition!=null?"?":"")+ arg.Identifier+ (comma ? ", ": ""));
-            }
-            else if (arg.TypeTerm.Identifier != "true")
+            else if (arg.TypeTerm.Identifier is "int" or "double" or "long")
             {
                 string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
                 sb.Append(typeIdent + (arg.ConditionalDefinition!=null?"?":"") + " " + arg.Identifier +(comma ? ", ": ""));
             }
+            else if (arg.TypeTerm.Identifier != "true")
+            {
+                sb.Append("ReadOnlySpan<byte> " + (arg.ConditionalDefinition!=null?"?":"")+ arg.Identifier+ (comma ? ", ": ""));
+            }
+            /*else if (arg.TypeTerm.Identifier != "true")
+            {
+                string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
+                sb.Append(typeIdent + (arg.ConditionalDefinition!=null?"?":"") + " " + arg.Identifier +(comma ? ", ": ""));
+            }*/
         }
 
         sb.Append(@")
@@ -743,7 +748,7 @@ public readonly ref struct " + typeName + @"
                 }
                     
             }
-            else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
+            else //if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
                 if (arg.ConditionalDefinition != null)
                 {
@@ -759,7 +764,7 @@ public readonly ref struct " + typeName + @"
         Set_"+arg.Identifier+"("+arg.Identifier+@");");
                 }
             }
-            else
+            /*else
             {
                 if (arg.ConditionalDefinition != null)
                 {
@@ -775,7 +780,7 @@ public readonly ref struct " + typeName + @"
         Set_"+arg.Identifier+"("+arg.Identifier+@".ToReadOnlySpan());");
                 }
                 
-            }
+            }*/
         }
         sb.Append(@"
     }");
@@ -880,7 +885,7 @@ public readonly ref struct " + typeName + @"
         value.CopyTo(_buff[(offset + lenBytes)..]);
     }");
             }
-            else if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
+            else //if (arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
                 sb.Append(@"
     public Span<byte> " + arg.Identifier + @" => ObjectReader.Read(_buff);");
@@ -890,7 +895,7 @@ public readonly ref struct " + typeName + @"
         value.CopyTo(_buff[GetOffset("+index+@", _buff)..]);
     }");
             }
-            else 
+            /*else 
             {
                 sb.Append(@"
     public "+ arg.TypeTerm.GetFullyQualifiedIdentifier() +" "+arg.Identifier+@" => new "+ 
@@ -901,7 +906,7 @@ public readonly ref struct " + typeName + @"
     {
         value.CopyTo(_buff[GetOffset("+index+@", _buff)..]);
     }");
-            }
+            }*/
 
             if (arg.TypeTerm.Identifier != "true")
             {
@@ -966,8 +971,8 @@ public readonly ref struct " + typeName + @"
             return this;
         }");
             }
-            else if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256"||
-                     arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
+            else //if (arg.TypeTerm.Identifier is "bytes" or "string" or "int128" or "int256"||
+                  //   arg.TypeTerm.GetFullyQualifiedIdentifier() == "BoxedObject")
             {
                 sb.Append(@"
         private ReadOnlySpan<byte> _" + arg.Identifier + @";
@@ -977,7 +982,7 @@ public readonly ref struct " + typeName + @"
             return this;
         }");
             }
-            else
+            /*else
             {
                 string typeIdent = arg.TypeTerm.GetFullyQualifiedIdentifier();
                 sb.Append(@"
@@ -987,7 +992,7 @@ public readonly ref struct " + typeName + @"
             _" + arg.Identifier + @" = value;
             return this;
         }");
-            }
+            }*/
         }
         var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type.Identifier);
         sb.Append(@"
@@ -1080,17 +1085,17 @@ public readonly ref struct " + typeName + @"
                 sb.Append(@"
         if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += BufferUtils.GetTLBytesLength(buffer, offset);");
             }
-            else if (arg.TypeTerm.GetFullyQualifiedIdentifier() is "BoxedObject")
+            else //if (arg.TypeTerm.GetFullyQualifiedIdentifier() is "BoxedObject")
             {
                 sb.Append(@"
         if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += ObjectReader.ReadSize(buffer[offset..]"+
                           (combinator.Name == null ? "": ", unchecked((int)0x"+combinator.Name+")")+");");
             }
-            else
+            /*else
             {
                 sb.Append(@"
         if(index >= "+index+(arg.ConditionalDefinition != null? " && f["+arg.ConditionalDefinition.ConditionalArgumentBit+"]": "")+@") offset += "+arg.TypeTerm.GetFullyQualifiedIdentifier()+".ReadSize(buffer, offset);");
-            }
+            }*/
             if (arg.TypeTerm.Identifier != "true")
             {
                 index++;
