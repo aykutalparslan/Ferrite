@@ -18,15 +18,14 @@
 
 using System.Buffers;
 using System.IO.Compression;
-using System.IO.Pipelines;
 using DotNext.IO;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.RequestChain;
 
-public class GZipProcessor : IProcessor
+public class GZipProcessor : ILinkedHandler
 {
     private readonly ITLObjectFactory _factory;
 
@@ -34,7 +33,16 @@ public class GZipProcessor : IProcessor
     {
         _factory = factory;
     }
-    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
+    
+    public ILinkedHandler SetNext(ILinkedHandler value)
+    {
+        Next = value;
+        return Next;
+    }
+
+    public ILinkedHandler Next { get; set; }
+
+    public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
         if (sender is MTProtoConnection connection)
         {
@@ -48,20 +56,20 @@ public class GZipProcessor : IProcessor
                 var rd = new SequenceReader(new ReadOnlySequence<byte>(decompressed));
                 int constructor = rd.ReadInt32(true);
                 var obj = _factory.Read(constructor, ref rd);
-                output.Enqueue(obj);
+                await Next.Process(sender, obj, ctx);
             }
             else
             {
-                output.Enqueue(input);
+                await Next.Process(sender, input, ctx);
             }
         }
         else
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
     }
 
-    public Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
+    public ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

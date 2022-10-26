@@ -16,27 +16,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
 using System.Numerics;
-using DotNext.Buffers;
 using Ferrite.Crypto;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
 
-namespace Ferrite.Core.Methods;
+namespace Ferrite.Core.Execution.Functions;
 
-public class ReqPQHandler : IQueryHandler
+public class ReqPQ : ITLFunction
 {
     private IRandomGenerator _randomGenerator;
     private IKeyProvider _keyPairProvider;
-    public ReqPQHandler(IRandomGenerator generator, IKeyProvider provider)
+    public ReqPQ(IRandomGenerator generator, IKeyProvider provider)
     {
         _randomGenerator = generator;
         _keyPairProvider = provider;
     }
 
-    public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
 
         byte[] serverNonce;

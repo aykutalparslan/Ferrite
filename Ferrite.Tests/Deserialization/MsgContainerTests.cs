@@ -29,7 +29,9 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
 using DotNext.IO;
+using Elasticsearch.Net;
 using Ferrite.Core;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
@@ -216,7 +218,7 @@ public class MsgContainerTests
         builder.RegisterType<ServiceMessagesProcessor>();
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
+        builder.RegisterType<RequestPipeline>().As<IRequestPipeline>().SingleInstance();
         builder.RegisterMock(pipe);
         builder.RegisterMock(new Mock<IAuthService>());
 

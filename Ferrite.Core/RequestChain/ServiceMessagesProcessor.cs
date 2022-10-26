@@ -26,9 +26,9 @@ using Ferrite.TL.slim;
 using MessagePack;
 using Message = Ferrite.TL.mtproto.Message;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.RequestChain;
 
-public class ServiceMessagesProcessor : IProcessor
+public class ServiceMessagesProcessor : ILinkedHandler
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionService _sessionManager;
@@ -39,8 +39,16 @@ public class ServiceMessagesProcessor : IProcessor
         _sessionManager = sessionManager;
         _pipe = pipe;
     }
+    
+    public ILinkedHandler SetNext(ILinkedHandler value)
+    {
+        Next = value;
+        return Next;
+    }
 
-    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
+    public ILinkedHandler Next { get; set; }
+
+    public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
         if(sender is MTProtoConnection connection)
         {
@@ -82,16 +90,16 @@ public class ServiceMessagesProcessor : IProcessor
             }
             else
             {
-                output.Enqueue(input);
+                await Next.Process(sender, input, ctx);
             }
         }
         else
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
     }
 
-    public async Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
+    public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

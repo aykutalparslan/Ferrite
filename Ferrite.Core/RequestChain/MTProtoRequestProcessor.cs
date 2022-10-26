@@ -29,9 +29,9 @@ using MessagePack;
 using Message = Ferrite.TL.mtproto.Message;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.RequestChain;
 
-public class MTProtoRequestProcessor : IProcessor
+public class MTProtoRequestProcessor : ILinkedHandler
 {
     private readonly ITLObjectFactory _factory;
     private readonly ISessionService _sessionManager;
@@ -44,7 +44,16 @@ public class MTProtoRequestProcessor : IProcessor
         _pipe = pipe;
         _log = log;
     }
-    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
+    
+    public ILinkedHandler SetNext(ILinkedHandler value)
+    {
+        Next = value;
+        return Next;
+    }
+
+    public ILinkedHandler Next { get; set; }
+
+    public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
         if (input is ITLMethod method)
         {
@@ -185,7 +194,7 @@ public class MTProtoRequestProcessor : IProcessor
         }
     }
 
-    public async Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
+    public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

@@ -16,27 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Autofac;
-using Ferrite.TL.slim;
-using Ferrite.TL.slim.mtproto;
+namespace Ferrite.Core.RequestChain;
 
-namespace Ferrite.Core.Methods;
-
-public class DefaultApiLayer : IApiLayer
+public interface ILinkedHandler : ITLHandler
 {
-    private Dictionary<int, object> _handlers;
-
-    public DefaultApiLayer(IComponentContext context)
-    {
-        _handlers = new Dictionary<int, object>
-        {
-            { unchecked((int)0xbe7e8ef1), context.Resolve<ReqPQHandler>() },
-            { unchecked((int)0xd712e4be), context.Resolve<ReqDhParamsHandler>() },
-            { unchecked((int)0xf5045f1f), context.Resolve<SetClientDhParamsHandler>() }
-        };
-    }
-    public IQueryHandler? GetHandler(int constructor)
-    {
-        return (IQueryHandler?)_handlers[constructor];
-    }
+    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler SetNext(ILinkedHandler value);
 }

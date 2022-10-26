@@ -90,39 +90,32 @@ public class TLSourceGenerator
 
     private void DoRenameKeywords(CombinatorDeclarationSyntax combinator)
     {
-        if (combinator?.Identifier == "file")
-        {
-            combinator.Identifier += "_";
-        }
-
-        if (combinator != null && _bareNamespaces.Contains(combinator.Identifier))
-        {
-            combinator.Identifier += "_";
-        }
-
-        if (combinator != null && _typeCount[combinator.Identifier.TrimEnd('_')] > 1)
+        if (_typeCount[combinator.Identifier.TrimEnd('_')] > 1)
         {
             combinator.Identifier = combinator.Namespace != null
                 ? combinator.Namespace + "_" + combinator.Identifier
                 : combinator.Identifier;
         }
-
-        if (combinator?.Arguments != null)
+        if (combinator.Identifier == "file")
         {
-            foreach (var arg in combinator.Arguments)
+            combinator.Identifier += "_";
+        }
+        if (_bareNamespaces.Contains(combinator.Identifier))
+        {
+            combinator.Identifier += "_";
+        }
+        foreach (var arg in combinator.Arguments)
+        {
+            if (arg.Identifier == "long")
             {
-                if (arg.Identifier == "long")
-                {
-                    arg.Identifier = "longitude";
-                }
-
-                if (arg.Identifier == combinator.Identifier || arg.Identifier == "out" ||
-                    arg.Identifier == "static" || arg.Identifier == "params" ||
-                    arg.Identifier == "default" || arg.Identifier == "public" ||
-                    arg.Identifier == "readonly" || arg.Identifier == "private")
-                {
-                    arg.Identifier += "_";
-                }
+                arg.Identifier = "longitude";
+            }
+            if (arg.Identifier == combinator.Identifier || arg.Identifier == "out" ||
+                arg.Identifier == "static" || arg.Identifier == "params" ||
+                arg.Identifier == "default" || arg.Identifier == "public" ||
+                arg.Identifier == "readonly" || arg.Identifier == "private")
+            {
+                arg.Identifier += "_";
             }
         }
     }

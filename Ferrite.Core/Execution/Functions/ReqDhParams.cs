@@ -22,49 +22,47 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using DotNext.Buffers;
-using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.TL;
-using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 
-namespace Ferrite.Core.Methods;
+namespace Ferrite.Core.Execution.Functions;
 
-public class ReqDhParamsHandler : IQueryHandler
+public class ReqDhParams : ITLFunction
 {
-    private IKeyProvider keyProvider;
-    private ILogger log;
-    private IRandomGenerator random;
-    private readonly int[] gs = new int[] { 3, 4, 7 };
+    private readonly IKeyProvider _keyProvider;
+    private readonly ILogger _log;
+    private readonly IRandomGenerator _random;
+    private readonly int[] _gs = new int[] { 3, 4, 7 };
     //TODO: Maybe change the DH_PRIME
-    private const string dhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
-    public ReqDhParamsHandler(IKeyProvider provider, IRandomGenerator generator, ILogger logger)
+    private const string DhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
+    public ReqDhParams(IKeyProvider provider, IRandomGenerator generator, ILogger logger)
     {
-        keyProvider = provider;
-        random = generator;
-        this.log = logger;
+        _keyProvider = provider;
+        _random = generator;
+        this._log = logger;
     }
-    public async Task<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    public ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        return ProcessInternal(new req_DH_params(q.AsSpan()), ctx);
+        return new ValueTask<TLBytes?>(ProcessInternal(new req_DH_params(q.AsSpan()), ctx));
     }
 
     private TLBytes? ProcessInternal(req_DH_params query, TLExecutionContext ctx)
     {
-        var rsaKey = keyProvider.GetKey(query.public_key_fingerprint);
+        var rsaKey = _keyProvider.GetKey(query.public_key_fingerprint);
         if (rsaKey == null)
         {
             var rpcError = new rpc_error(-404, ""u8);
-            log.Debug("Could not obtain the RSA Key.");
+            _log.Debug("Could not obtain the RSA Key.");
             return rpcError.TLBytes;
         }
         if(!ctx.SessionData.ContainsKey("nonce") || 
                 !ctx.SessionData.ContainsKey("server_nonce"))
         {
             var rpcError = new rpc_error(-404, ""u8);
-            log.Debug("Session is empty.");
+            _log.Debug("Session is empty.");
             return rpcError.TLBytes;
         }
         Memory<byte> data;
@@ -73,7 +71,7 @@ public class ReqDhParamsHandler : IQueryHandler
 
         if (!sha256.AsSpan().SequenceEqual(data.Span.Slice(224)))
         {
-            log.Debug("SHA256 did not match.");
+            _log.Debug("SHA256 did not match.");
             var rpcError = new rpc_error(-404, ""u8);
             return rpcError.TLBytes;
         }
@@ -213,15 +211,15 @@ public class ReqDhParamsHandler : IQueryHandler
     }
     private IMemoryOwner<byte> GenerateEncryptedAnswer(TLExecutionContext ctx, byte[] sessionNonce, byte[] sessionServerNonce, byte[] tmpAesKey, byte[] tmpAesIV)
     {
-        BigInteger prime = BigInteger.Parse("0"+dhPrime, NumberStyles.HexNumber);
+        BigInteger prime = BigInteger.Parse("0"+DhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
         BigInteger max = prime - min;
-        BigInteger a = random.GetRandomInteger(2, prime - 2);
-        BigInteger g = new BigInteger(gs[random.GetRandomNumber(gs.Length)]);
+        BigInteger a = _random.GetRandomInteger(2, prime - 2);
+        BigInteger g = new BigInteger(_gs[_random.GetRandomNumber(_gs.Length)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
         while (g_a <= min || g_a >= max)
         {
-            a = random.GetRandomInteger(2, prime - 2);
+            a = _random.GetRandomInteger(2, prime - 2);
             g_a = BigInteger.ModPow(g, a, prime);
         }
         

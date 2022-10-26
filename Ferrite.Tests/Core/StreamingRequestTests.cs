@@ -33,6 +33,7 @@ using Autofac.Extras.Moq;
 using DotNext.Buffers;
 using Ferrite.Core;
 using Ferrite.Core.Features;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
@@ -138,7 +139,7 @@ public class StreamingRequestTests
         builder.RegisterMock(proto);
         var objectStore = new Mock<IUploadService>();
         builder.RegisterMock(objectStore).SingleInstance();
-        var processorManager = new Mock<IProcessorManager>();
+        var processorManager = new Mock<ITLHandler>();
         builder.RegisterMock(processorManager);
         var container = builder.Build();
         byte[] concat = new byte[ops[0].Length * ops.Count + 1];
@@ -216,7 +217,7 @@ public class StreamingRequestTests
                 return true;
             });
         builder.RegisterMock(objectStore);
-        var processorManager = new Mock<IProcessorManager>();
+        var processorManager = new Mock<ITLHandler>();
         processorManager.Setup(x => x.Process(It.IsAny<object?>(),
             It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback( 
             (object? sender, ITLObject input, TLExecutionContext ctx) =>

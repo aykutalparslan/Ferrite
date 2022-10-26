@@ -20,6 +20,7 @@ using System.Buffers;
 using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -30,12 +31,12 @@ namespace Ferrite.Core;
 
 public class UnencryptedMessageHandler : IUnencryptedMessageHandler
 {
-    private readonly IProcessorManager _processorManager;
+    private readonly ITLHandler _requestChain;
     private readonly SparseBufferWriter<byte> _writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly IRandomGenerator _random;
-    public UnencryptedMessageHandler(IProcessorManager processorManager, IRandomGenerator random)
+    public UnencryptedMessageHandler(ITLHandler requestChain, IRandomGenerator random)
     {
-        _processorManager = processorManager;
+        _requestChain = requestChain;
         _random = random;
     }
     public void HandleIncomingMessage(in ReadOnlySequence<byte> bytes, 
@@ -63,7 +64,7 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
         context.MessageId = msgId;
         context.AuthKeyId = session.AuthKeyId;
         context.PermAuthKeyId = session.PermAuthKeyId;
-        _processorManager.Process(connection, new TLBytes(
+        _requestChain.Process(connection, new TLBytes(
             messageData, 0, messageDataLength), context);
     }
     

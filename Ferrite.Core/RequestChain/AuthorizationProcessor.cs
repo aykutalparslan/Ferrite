@@ -15,7 +15,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-using System;
+
 using System.Buffers;
 using Autofac;
 using Ferrite.Data;
@@ -24,12 +24,11 @@ using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
 using Ferrite.Utils;
-using MessagePack;
 using Message = Ferrite.TL.mtproto.Message;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.RequestChain;
 
-public class AuthorizationProcessor : IProcessor
+public class AuthorizationProcessor : ILinkedHandler
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionService _sessionManager;
@@ -46,6 +45,12 @@ public class AuthorizationProcessor : IProcessor
         _pipe = pipe;
         _log = log;
         AddUnauthorizedMethods();
+    }
+    
+    public ILinkedHandler SetNext(ILinkedHandler value)
+    {
+        Next = value;
+        return Next;
     }
 
     private void AddUnauthorizedMethods()
@@ -79,54 +84,56 @@ public class AuthorizationProcessor : IProcessor
         _unauthorizedMethods.Add(2018609336);//initConnection
     }
 
-    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
+    public ILinkedHandler Next { get; set; }
+
+    public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
         bool isAuthorized = await _auth.IsAuthorized(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         if (isAuthorized || _unauthorizedMethods.Contains(input.Constructor))
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
         else if (input is Message message2)
         {
             if (_unauthorizedMethods.Contains(message2.Body.Constructor))
             {
-                output.Enqueue(input);
+                await Next.Process(sender, input, ctx);
             }
             else if (message2.Body is TL.currentLayer.InvokeWithLayer invoke2 &&
                 _unauthorizedMethods.Contains(invoke2.Query.Constructor))
             {
-                output.Enqueue(input);
+                await Next.Process(sender, input, ctx);
             }
             else if (message2.Body is TL.currentLayer.InvokeAfterMsg invokeAfter &&
                 _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
             {
-                output.Enqueue(input);
+                await Next.Process(sender, input, ctx);
             }
             else if (message2.Body is TL.currentLayer.InvokeAfterMsgs invokeAfter2 &&
                 _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
             {
-                output.Enqueue(input);
+                await Next.Process(sender, input, ctx);
             }
         }
         else if (input is TL.currentLayer.InvokeWithLayer invoke &&
             _unauthorizedMethods.Contains(invoke.Query.Constructor))
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
         else if (input is TL.currentLayer.InvokeAfterMsg invokeAfter &&
             _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
         else if (input is TL.currentLayer.InvokeAfterMsgs invokeAfter2 &&
             _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
         else if (input is TL.currentLayer.InvokeWithLayer invokeWithLayer &&
             _unauthorizedMethods.Contains(invokeWithLayer.Query.Constructor))
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
         else
         {
@@ -153,7 +160,7 @@ public class AuthorizationProcessor : IProcessor
         }
     }
 
-    public async Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
+    public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

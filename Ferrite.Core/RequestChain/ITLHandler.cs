@@ -15,16 +15,15 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-using System;
-using System.Buffers;
+
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.RequestChain;
 
-public interface IProcessorManager
+public interface ITLHandler
 {
-    public Task Process(object? sender, ITLObject input, TLExecutionContext ctx);
-    public Task Process(object? sender, TLBytes input, TLExecutionContext ctx);
+    public ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx);
+    public ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx);
 }
 

@@ -65,10 +65,16 @@ public class FerriteServer : IFerriteServer
             if (await socketListener.AcceptAsync() is { } connection)
             {
                 _log.Debug("New MTProto connection was created.");
-                connection.Start();
-                MTProtoConnection mtProtoConnection = _scope.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-                mtProtoConnection.Start();
-                
+                try
+                {
+                    connection.Start();
+                    MTProtoConnection mtProtoConnection = _scope.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
+                    mtProtoConnection.Start();
+                }
+                catch (Exception e)
+                {
+                    _log.Fatal(e, e.Message);
+                }
             }
         }
     }

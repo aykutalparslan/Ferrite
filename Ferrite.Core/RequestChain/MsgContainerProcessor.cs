@@ -27,9 +27,9 @@ using Ferrite.Utils;
 using MessagePack;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.RequestChain;
 
-public class MsgContainerProcessor : IProcessor
+public class MsgContainerProcessor : ILinkedHandler
 {
     private readonly ILifetimeScope _scope;
     private readonly ISessionService _sessionManager;
@@ -42,8 +42,16 @@ public class MsgContainerProcessor : IProcessor
         _pipe = pipe;
         _log = log;
     }
+    
+    public ILinkedHandler SetNext(ILinkedHandler value)
+    {
+        Next = value;
+        return Next;
+    }
 
-    public async Task Process(object? sender, ITLObject input, Queue<ITLObject> output, TLExecutionContext ctx)
+    public ILinkedHandler Next { get; set; }
+
+    public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
         if (input.Constructor == TLConstructor.MsgContainer &&
             input is MsgContainer container)
@@ -55,7 +63,7 @@ public class MsgContainerProcessor : IProcessor
             foreach (var msg in container.Messages)
             {
                 ack.MsgIds.Add(msg.MsgId);
-                output.Enqueue(msg);
+                await Next.Process(sender, msg, ctx);
             }
             MTProtoMessage message = new MTProtoMessage();
             message.SessionId = ctx.SessionId;
@@ -75,11 +83,11 @@ public class MsgContainerProcessor : IProcessor
         }
         else
         {
-            output.Enqueue(input);
+            await Next.Process(sender, input, ctx);
         }
     }
 
-    public async Task Process(object? sender, TLBytes input, Queue<TLBytes> output, TLExecutionContext ctx)
+    public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         throw new NotImplementedException();
     }

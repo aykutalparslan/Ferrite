@@ -30,8 +30,9 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
 using Ferrite.Core;
+using Ferrite.Core.Execution.Layers;
 using Ferrite.Core.Features;
-using Ferrite.Core.Methods;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -142,7 +143,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -169,7 +170,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -199,7 +200,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -249,7 +250,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 

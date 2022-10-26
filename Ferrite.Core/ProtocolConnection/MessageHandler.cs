@@ -20,7 +20,9 @@ using System.Buffers;
 using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
+using Elasticsearch.Net;
 using Ferrite.Core.Exceptions;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -32,16 +34,16 @@ namespace Ferrite.Core;
 public class MessageHandler : IMessageHandler
 {
     private readonly ILogger _log;
-    private readonly IProcessorManager _processorManager;
+    private readonly ITLHandler _requestChain;
     private readonly ITLObjectFactory _factory;
     private readonly IRandomGenerator _random;
     private readonly SparseBufferWriter<byte> _writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     
-    public MessageHandler(ILogger log, IProcessorManager processorManager,
+    public MessageHandler(ILogger log, ITLHandler requestChain,
         ITLObjectFactory factory, IRandomGenerator random)
     {
         _log = log;
-        _processorManager = processorManager;
+        _requestChain = requestChain;
         _factory = factory;
         _random = random;
     }
@@ -98,7 +100,7 @@ public class MessageHandler : IMessageHandler
             try
             {
                 var msg = _factory.Read(constructor, ref rd);
-                _processorManager.Process(connection, msg, context);
+                _requestChain.Process(connection, msg, context);
             }
             catch (Exception ex)
             {

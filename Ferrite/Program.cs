@@ -35,14 +35,21 @@ using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 using Ferrite.TL;
 using System.Reflection;
+using Elasticsearch.Net;
+using Ferrite.Core.Execution;
+using Ferrite.Core.Execution.Functions;
+using Ferrite.Core.Execution.Layers;
 using Ferrite.Core.Features;
-using Ferrite.Core.Methods;
+using Ferrite.Core.RequestChain;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using StackExchange.Redis;
 using MessagePack;
 using Ferrite.Services;
 using Ferrite.TL.ObjectMapper;
+using InitConnection = Ferrite.Core.Execution.Functions.Layer146.InitConnection;
+using ReqDhParams = Ferrite.Core.Execution.Functions.ReqDhParams;
+using SetClientDhParams = Ferrite.Core.Execution.Functions.SetClientDhParams;
 
 namespace Ferrite;
 
@@ -86,8 +93,8 @@ public class Program
     private static void RegisterPrimitives(ContainerBuilder builder)
     {
         builder.RegisterType<MTProtoTime>().As<IMTProtoTime>().SingleInstance();
-        builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
-        builder.RegisterType<KeyProvider>().As<IKeyProvider>();
+        builder.RegisterType<RandomGenerator>().As<IRandomGenerator>().SingleInstance();
+        builder.RegisterType<KeyProvider>().As<IKeyProvider>().SingleInstance();
     }
 
     private static void RegisterLocalDataStores(ContainerBuilder builder)
@@ -109,14 +116,14 @@ public class Program
     private static void RegisterCoreComponents(ContainerBuilder builder)
     {
         builder.RegisterType<MTProtoConnection>();
-        builder.RegisterType<DefaultApiLayer>().As<IApiLayer>().SingleInstance();
         builder.RegisterType<AuthKeyProcessor>();
         builder.RegisterType<MsgContainerProcessor>();
         builder.RegisterType<ServiceMessagesProcessor>();
         builder.RegisterType<GZipProcessor>();
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
-        builder.RegisterType<IncomingMessageHandler>().As<IProcessorManager>().SingleInstance();
+        builder.RegisterType<DefaultChain>().As<ITLHandler>().SingleInstance();
+        builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>().SingleInstance();
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
         builder.RegisterType<MessageHandler>().As<IMessageHandler>();

@@ -21,6 +21,7 @@ using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.TL;
@@ -36,17 +37,17 @@ namespace Ferrite.Core;
 public class StreamHandler : IStreamHandler
 {
     private readonly ILogger _log;
-    private readonly IProcessorManager _processorManager;
+    private readonly ITLHandler _requestChain;
     private readonly ITLObjectFactory _factory;
     private MTProtoPipe? _currentRequest;
     private readonly SparseBufferWriter<byte> _writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly IRandomGenerator _random;
     
-    public StreamHandler(ILogger log, IProcessorManager processorManager,
+    public StreamHandler(ILogger log, ITLHandler requestChain,
         ITLObjectFactory factory, IRandomGenerator random)
     {
         _log = log;
-        _processorManager = processorManager;
+        _requestChain = requestChain;
         _factory = factory;
         _random = random;
     }
@@ -126,13 +127,13 @@ public class StreamHandler : IStreamHandler
                 {
                     var msg = _factory.Resolve<SaveFilePart>();
                     await msg.SetPipe(pipe);
-                    _ = _processorManager.Process(connection, msg, context);
+                    _ = _requestChain.Process(connection, msg, context);
                 }
                 else if (constructor == TLConstructor.Upload_SaveBigFilePart)
                 {
                     var msg = _factory.Resolve<SaveBigFilePart>();
                     await msg.SetPipe(pipe);
-                    _ = _processorManager.Process(connection, msg, context);
+                    _ = _requestChain.Process(connection, msg, context);
                 }
             }
             catch (Exception ex)
