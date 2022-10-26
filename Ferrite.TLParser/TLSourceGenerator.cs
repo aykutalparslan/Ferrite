@@ -450,10 +450,6 @@ public readonly ref struct " + typeName + @"
         GenerateGetOffset(sourceBuilder, combinator);
         GenerateBuilder(sourceBuilder, combinator);
         var str = @"
-    public static TLObjectBuilder Builder()
-    {
-        return new TLObjectBuilder();
-    }
     public void Dispose()
     {
         _memory?.Dispose();
@@ -1111,6 +1107,10 @@ public readonly ref struct " + typeName + @"
 
         sb.Append(@"
         }
+    }
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
 ");
     }
