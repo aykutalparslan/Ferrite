@@ -31,7 +31,8 @@ public class ExecutionEngine : IExecutionEngine
     public ExecutionEngine(IComponentContext context)
     {
         _apiLayers = ImmutableDictionary<int, object>.Empty
-            .Add(146, new ApiLayer146(context, this));
+            .Add(146, new ApiLayer146(context, 
+                this));//autofac does not support circular constructor dependencies
     }
     public async ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 146)
     {

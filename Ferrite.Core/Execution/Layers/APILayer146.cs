@@ -22,6 +22,7 @@ using Ferrite.Core.Execution.Functions;
 using Ferrite.Core.Execution.Functions.Layer146;
 using Ferrite.Crypto;
 using Ferrite.Services;
+using Ferrite.TL.slim;
 using Ferrite.Utils;
 
 namespace Ferrite.Core.Execution.Layers;
@@ -33,10 +34,13 @@ public class ApiLayer146 : IApiLayer
     public ApiLayer146(IComponentContext context, IExecutionEngine engine)
     {
         _handlers = ImmutableDictionary<int, object>.Empty
-            .Add(unchecked((int)0xbe7e8ef1), new ReqPQ(context.Resolve<IRandomGenerator>(), context.Resolve<IKeyProvider>()))
-            .Add(unchecked((int)0xd712e4be), new ReqDhParams(context.Resolve<IKeyProvider>(), context.Resolve<IRandomGenerator>(), context.Resolve<ILogger>()))
-            .Add(unchecked((int)0xf5045f1f), new SetClientDhParams(context.Resolve<IMTProtoService>()))
-            .Add(unchecked(Ferrite.TL.slim.Constructors.initConnection), new InitConnection(context.Resolve<IRandomGenerator>(), context.Resolve<IAuthService>(), engine));
+            .Add(Constructors.req_pq_multi, context.Resolve<ReqPQ>())
+            .Add(Constructors.req_DH_params, context.Resolve<ReqDhParams>())
+            .Add(Constructors.set_client_DH_params, context.Resolve<SetClientDhParams>())
+            .Add(Constructors.initConnection, 
+                new InitConnection(context.Resolve<IRandomGenerator>(), 
+                    context.Resolve<IAuthService>(), 
+                    engine));//autofac does not support circular constructor dependencies
     }
     public ITLFunction? GetFunction(int constructor)
     {

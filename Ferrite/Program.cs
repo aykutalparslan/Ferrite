@@ -123,6 +123,10 @@ public class Program
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<DefaultChain>().As<ITLHandler>().SingleInstance();
+        builder.RegisterType<ReqPQ>();
+        builder.RegisterType<ReqDhParams>();
+        builder.RegisterType<SetClientDhParams>();
+        builder.RegisterType<ApiLayer146>();
         builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>().SingleInstance();
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
