@@ -18,28 +18,35 @@
 
 using System.Collections.Immutable;
 using Autofac;
-using Ferrite.Core.Execution.Layers;
+using Autofac.Features.Indexed;
+using Ferrite.Core.Execution.Functions;
 using Ferrite.TL;
 using Ferrite.TL.slim;
+using Ferrite.Utils;
 
 namespace Ferrite.Core.Execution;
 
 public class ExecutionEngine : IExecutionEngine
 {
-    private readonly ImmutableDictionary<int, object> _apiLayers;
+    private readonly IIndex<FunctionKey, ITLFunction> _functions;
+    private readonly ILogger _log;
 
-    public ExecutionEngine(IComponentContext context)
+    public ExecutionEngine(IIndex<FunctionKey, ITLFunction> functions, ILogger log)
     {
-        _apiLayers = ImmutableDictionary<int, object>.Empty
-            .Add(146, new ApiLayer146(context, 
-                this));//autofac does not support circular constructor dependencies
+        _functions = functions;
+        _log = log;
     }
+
     public async ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 146)
     {
-        if (_apiLayers.ContainsKey(layer))
+        try
         {
-            var func = ((IApiLayer)_apiLayers[layer]).GetFunction(rpc.Constructor);
-            if (func != null) return await func.Process(rpc, ctx);
+            var func = _functions[new FunctionKey(layer, rpc.Constructor)];
+            return await func.Process(rpc, ctx);
+        }
+        catch (Exception e)
+        {
+            _log.Error(e, e.Message);
         }
 
         return null;

@@ -29,14 +29,12 @@ namespace Ferrite.Core.Execution.Functions.Layer146;
 
 public class InitConnection : ITLFunction
 {
-    private readonly IExecutionEngine _executionEngine;
+    public IExecutionEngine ExecutionEngine { get; set; }
     private readonly IRandomGenerator _random;
     private readonly IAuthService _auth;
 
-    public InitConnection(IRandomGenerator random, IAuthService auth,
-        IExecutionEngine executionEngine)
+    public InitConnection(IRandomGenerator random, IAuthService auth)
     {
-        _executionEngine = executionEngine;
         _random = random;
         _auth = auth;
     }
@@ -45,7 +43,7 @@ public class InitConnection : ITLFunction
     {
         var info = CreateAppInfo(q, ctx);
         await _auth.SaveAppInfo(info);
-        return await _executionEngine.Invoke(GetQuery(q), ctx);
+        return await ExecutionEngine.Invoke(GetQuery(q), ctx);
     }
 
     private static TLBytes GetQuery(TLBytes q)

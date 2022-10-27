@@ -124,8 +124,10 @@ public class TLSourceGenerator
     {
         var parser = new Parser(lexer);
         var c = parser.ParseCombinator();
+        
         while (c != null)
         {
+            c.ContainingNamespace = nameSpace;
             var ns = nameSpace;
             if (c.CombinatorType == CombinatorType.Constructor &&
                 c.Type.NamespaceIdentifier != null)
@@ -298,7 +300,7 @@ public static class Constructors
         foreach (var combinator in _combinators.Values)
         {
             sb.Append(@"
-    public const int " + combinator.Identifier + " = unchecked((int)0x" + combinator.Name + @");");
+    public const int " + combinator.ContainingNamespace + "_" + combinator.Identifier + " = unchecked((int)0x" + combinator.Name + @");");
         }
 
         sb.Append(@"

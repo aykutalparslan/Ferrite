@@ -22,6 +22,7 @@ namespace Ferrite.TLParser;
 
 public class CombinatorDeclarationSyntax
 {
+    public string? ContainingNamespace { get; set; }
     public string? Namespace { get; set; }
     public string Identifier { get; set; }
     public CombinatorType CombinatorType { get; set; }

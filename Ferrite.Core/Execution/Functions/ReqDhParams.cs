@@ -80,7 +80,7 @@ public class ReqDhParams : ITLFunction
         
         var sessionNonce = (byte[])ctx.SessionData["nonce"];
         var sessionServerNonce = (byte[])ctx.SessionData["server_nonce"];
-        if (constructor == Constructors.p_q_inner_data)
+        if (constructor == Constructors.mtproto_p_q_inner_data)
         {
             var len = p_q_inner_data.ReadSize(data.Span, 32);
             var pQInnerData = new p_q_inner_data(data.Span.Slice(32, len));
@@ -111,7 +111,7 @@ public class ReqDhParams : ITLFunction
             
             return serverDhParamsOk.TLBytes;
         }
-        else if (constructor == Constructors.p_q_inner_data_dc)
+        else if (constructor == Constructors.mtproto_p_q_inner_data_dc)
         {
             var len = p_q_inner_data_dc.ReadSize(data.Span, 32);
             var pQInnerDataDc = new p_q_inner_data_dc(data.Span.Slice(32, len));
@@ -141,7 +141,7 @@ public class ReqDhParams : ITLFunction
             var serverDhParamsOk = new server_DH_params_ok(query.nonce, query.server_nonce,answer.Memory.Span);
             return serverDhParamsOk.TLBytes;
         }
-        else if (constructor == Constructors.p_q_inner_data_temp_dc)
+        else if (constructor == Constructors.mtproto_p_q_inner_data_temp_dc)
         {
             var len = p_q_inner_data_temp_dc.ReadSize(data.Span, 32);
             var pQInnerDataTempDc = new p_q_inner_data_temp_dc(data.Span.Slice(32, len));
@@ -174,7 +174,7 @@ public class ReqDhParams : ITLFunction
             var serverDhParamsOk = new server_DH_params_ok(query.nonce, query.server_nonce,answer.Memory.Span);
             return serverDhParamsOk.TLBytes;
         }
-        else if (constructor == Constructors.p_q_inner_data_temp)
+        else if (constructor == Constructors.mtproto_p_q_inner_data_temp)
         {
             var len = p_q_inner_data_temp.ReadSize(data.Span, 32);
             var pQInnerDataTemp = new p_q_inner_data_temp(data.Span.Slice(32, len));

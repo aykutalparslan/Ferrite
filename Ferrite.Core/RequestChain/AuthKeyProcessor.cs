@@ -144,7 +144,7 @@ public class AuthKeyProcessor : ILinkedHandler
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         var constructor = MemoryMarshal.Read<int>(input.AsSpan());
-        if (constructor == Constructors.req_pq_multi &&
+        if (constructor == Constructors.mtproto_req_pq_multi &&
             sender is MTProtoConnection connection)
         {
             var result = await _api.Invoke(input, ctx);
@@ -170,7 +170,7 @@ public class AuthKeyProcessor : ILinkedHandler
 
             _log.Information("Result for req_pq_multi sent.");
         }
-        else if (constructor == Constructors.req_DH_params)
+        else if (constructor == Constructors.mtproto_req_DH_params)
         {
             var nonce = new req_DH_params(input.AsSpan()).nonce.ToArray();
             var state = await _sessionManager.GetAuthSessionStateAsync(nonce);
@@ -208,7 +208,7 @@ public class AuthKeyProcessor : ILinkedHandler
 
             _log.Information("Result for req_DH_params sent.");
         }
-        else if (constructor == Constructors.set_client_DH_params)
+        else if (constructor == Constructors.mtproto_set_client_DH_params)
         {
 
             var nonce = new set_client_DH_params(input.AsSpan()).nonce.ToArray();

@@ -16,21 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Core.Execution.Functions;
+namespace Ferrite.Core.Execution.Functions;
 
-namespace Ferrite.Core.Execution.Layers;
-
-/// <summary>
-/// A layer is a collection of updated methods or constructors in a TL schema.
-/// Each layer is numbered with sequentially increasing numbers starting with 2.
-/// The first layer is the base layer -- the TL schema without any changes.
-/// </summary>
-public interface IApiLayer
-{
-    /// <summary>
-    /// Gets the ITLFunction with the given constructor.
-    /// </summary>
-    /// <param name="constructor">TL combinator number.</param>
-    /// <returns></returns>
-    public ITLFunction? GetFunction(int constructor);
-}
+public readonly record struct FunctionKey(int Layer, int ConstructorNumber);

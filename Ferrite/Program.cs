@@ -38,7 +38,6 @@ using System.Reflection;
 using Elasticsearch.Net;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
-using Ferrite.Core.Execution.Layers;
 using Ferrite.Core.Features;
 using Ferrite.Core.RequestChain;
 using Ferrite.Data;
@@ -47,6 +46,7 @@ using StackExchange.Redis;
 using MessagePack;
 using Ferrite.Services;
 using Ferrite.TL.ObjectMapper;
+using Ferrite.TL.slim;
 using InitConnection = Ferrite.Core.Execution.Functions.Layer146.InitConnection;
 using ReqDhParams = Ferrite.Core.Execution.Functions.ReqDhParams;
 using SetClientDhParams = Ferrite.Core.Execution.Functions.SetClientDhParams;
@@ -123,10 +123,7 @@ public class Program
         builder.RegisterType<AuthorizationProcessor>();
         builder.RegisterType<MTProtoRequestProcessor>();
         builder.RegisterType<DefaultChain>().As<ITLHandler>().SingleInstance();
-        builder.RegisterType<ReqPQ>();
-        builder.RegisterType<ReqDhParams>();
-        builder.RegisterType<SetClientDhParams>();
-        builder.RegisterType<ApiLayer146>();
+        RegisterApiLayers(builder);
         builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>().SingleInstance();
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
@@ -138,6 +135,27 @@ public class Program
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();
+    }
+
+    private static void RegisterApiLayers(ContainerBuilder builder)
+    {
+        builder.RegisterType<ReqPQ>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(146, Constructors.mtproto_req_pq_multi))
+            .SingleInstance();
+        builder.RegisterType<ReqDhParams>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(146, Constructors.mtproto_req_DH_params))
+            .SingleInstance();
+        builder.RegisterType<SetClientDhParams>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(146, Constructors.mtproto_set_client_DH_params))
+            .SingleInstance();
+        builder.RegisterType<SetClientDhParams>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(146, Constructors.layer146_initConnection))
+            .SingleInstance()
+            .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies);
     }
 
     private static void RegisterSchema(ContainerBuilder builder)

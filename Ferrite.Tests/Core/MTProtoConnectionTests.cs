@@ -30,7 +30,6 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
 using Ferrite.Core;
-using Ferrite.Core.Execution.Layers;
 using Ferrite.Core.Features;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -428,7 +427,6 @@ public class MTProtoConnectionTests
                     _authKeySessionStates.Add((Ferrite.TL.Int128)nonce, MessagePackSerializer.Serialize(state));
                     return true;
                 });
-        var apiLayer = new Mock<IApiLayer>();
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterMock(time);
@@ -455,7 +453,6 @@ public class MTProtoConnectionTests
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterMock(proto);
         builder.RegisterMock(logger);
-        builder.RegisterMock(apiLayer);
         builder.RegisterMock(sessionManager);
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<MessageHandler>().As<IMessageHandler>();

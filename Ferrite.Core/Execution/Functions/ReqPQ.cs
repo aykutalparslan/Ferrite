@@ -36,7 +36,6 @@ public class ReqPQ : ITLFunction
 
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-
         byte[] serverNonce;
         if (!ctx.SessionData.ContainsKey("nonce"))
         {
