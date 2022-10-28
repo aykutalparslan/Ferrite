@@ -37,7 +37,7 @@ public class AbridgedFrameDecoder : IFrameDecoder
     private bool _isStream;
     private Aes256Ctr? _decryptor;
     private readonly IMTProtoService _mtproto;
-    byte[] _headerBytes = new byte[72];
+    readonly byte[] _headerBytes = new byte[72];
 
     public AbridgedFrameDecoder(IMTProtoService mtproto)
     {
@@ -60,54 +60,16 @@ public class AbridgedFrameDecoder : IFrameDecoder
         {
             if (reader.Remaining == 0)
             {
-                frame = new ReadOnlySequence<byte>();
-                position = reader.Position;
-                return false;
+                return EmptyFrame(out frame, out position, reader);
             }
-
-            if (_lengthBytes[0] == 0)
+            GetFirstLengthByte(ref reader);
+            if (_lengthBytes[0] == 127 && reader.Remaining < 3)
             {
-                reader.TryCopyTo(_lengthBytes.AsSpan().Slice(0, 1));
-                reader.Advance(1);
-                if (_decryptor != null)
-                {
-                    _decryptor.Transform(_lengthBytes.AsSpan().Slice(0, 1));
-                }
+                return EmptyFrame(out frame, out position, reader);
             }
-            if ((_lengthBytes[0] & 1 << 7) == 1 << 7)
-            {
-                requiresQuickAck = true;
-                _lengthBytes[0] &= 0x7f;
-            }
+            requiresQuickAck = CheckRequiresQuickAck(_lengthBytes, 0);
             
-            if (_lengthBytes[0] < 127)
-            {
-                _length = _lengthBytes[0] * 4;
-            }
-            else if (_lengthBytes[0] == 127)
-            {
-                if (reader.Remaining < 3)
-                {
-                    frame = new ReadOnlySequence<byte>();
-                    position = reader.Position;
-                    return false;
-                }
-                reader.TryCopyTo(_lengthBytes.AsSpan().Slice(1, 3));
-                reader.Advance(3);
-                if (_decryptor != null)
-                {
-                    _decryptor.Transform(_lengthBytes.AsSpan().Slice(1, 3));
-                }
-                if ((_lengthBytes[3] & 1 << 7) == 1 << 7)
-                {
-                    requiresQuickAck = true;
-                    _lengthBytes[3] &= 0x7f;
-                }
-                _length = (_lengthBytes[1]) |
-                          (_lengthBytes[2] << 8) |
-                          (_lengthBytes[3] << 16);
-                _length *= 4;
-            }
+            requiresQuickAck = DecodeLength(ref reader);
             _remaining = _length;
         }
         
@@ -120,29 +82,7 @@ public class AbridgedFrameDecoder : IFrameDecoder
         int toBeWritten = Math.Min(_remaining, StreamChunkSize);
         if (_isStream && reader.Remaining >= toBeWritten)
         {
-            ReadOnlySequence<byte> chunk = reader.UnreadSequence.Slice(0, toBeWritten);
-            reader.Advance(toBeWritten);
-            _remaining -= toBeWritten;
-            if (_decryptor != null)
-            {
-                var chunkDecrypted = new byte[toBeWritten];
-                _decryptor.Transform(chunk, chunkDecrypted);
-                frame = new ReadOnlySequence<byte>(chunkDecrypted);
-            }
-            else
-            {
-                frame = chunk;
-            }
-            if (_remaining == 0)
-            {
-                _length = 0;
-                _isStream = false;
-                Array.Clear(_lengthBytes);
-                position = reader.Position;
-                return false;
-            }
-            position = reader.Position;
-            return true;
+            return HandleStream(out frame, out position, reader, toBeWritten);
         }
         if (reader.Remaining < _length)
         {
@@ -150,6 +90,92 @@ public class AbridgedFrameDecoder : IFrameDecoder
             position = reader.Position;
             return false;
         }
+        return HandleFrame(out frame, out position, reader);
+    }
+
+    private bool DecodeLength(ref SequenceReader<byte> reader)
+    {
+        bool requiresQuickAck = false;
+        if (_lengthBytes[0] < 127)
+        {
+            _length = _lengthBytes[0] * 4;
+        }
+        else if (_lengthBytes[0] == 127)
+        {
+            reader.TryCopyTo(_lengthBytes.AsSpan().Slice(1, 3));
+            reader.Advance(3);
+            _decryptor?.Transform(_lengthBytes.AsSpan().Slice(1, 3));
+            requiresQuickAck = CheckRequiresQuickAck(_lengthBytes, 3);
+            _length = (_lengthBytes[1]) |
+                      (_lengthBytes[2] << 8) |
+                      (_lengthBytes[3] << 16);
+            _length *= 4;
+        }
+
+        return requiresQuickAck;
+    }
+
+    private bool CheckRequiresQuickAck(byte[] arr, int pos)
+    {
+        bool requiresQuickAck = false;
+        if ((arr[pos] & 1 << 7) == 1 << 7)
+        {
+            requiresQuickAck = true;
+            arr[pos] &= 0x7f;
+        }
+
+        return requiresQuickAck;
+    }
+
+    private void GetFirstLengthByte(ref SequenceReader<byte> reader)
+    {
+        if (_lengthBytes[0] == 0)
+        {
+            reader.TryCopyTo(_lengthBytes.AsSpan()[..1]);
+            reader.Advance(1);
+            _decryptor?.Transform(_lengthBytes.AsSpan()[..1]);
+        }
+    }
+
+    private static bool EmptyFrame(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader)
+    {
+        frame = new ReadOnlySequence<byte>();
+        position = reader.Position;
+        return false;
+    }
+
+    private bool HandleStream(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader,
+        int toBeWritten)
+    {
+        ReadOnlySequence<byte> chunk = reader.UnreadSequence.Slice(0, toBeWritten);
+        reader.Advance(toBeWritten);
+        _remaining -= toBeWritten;
+        if (_decryptor != null)
+        {
+            var chunkDecrypted = new byte[toBeWritten];
+            _decryptor.Transform(chunk, chunkDecrypted);
+            frame = new ReadOnlySequence<byte>(chunkDecrypted);
+        }
+        else
+        {
+            frame = chunk;
+        }
+
+        if (_remaining == 0)
+        {
+            _length = 0;
+            _isStream = false;
+            Array.Clear(_lengthBytes);
+            position = reader.Position;
+            return false;
+        }
+
+        position = reader.Position;
+        return true;
+    }
+
+    private bool HandleFrame(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader)
+    {
         ReadOnlySequence<byte> data = reader.UnreadSequence.Slice(0, _length);
         reader.Advance(_length);
         _length = 0;
@@ -164,11 +190,13 @@ public class AbridgedFrameDecoder : IFrameDecoder
         {
             frame = data;
         }
+
         if (_remaining != 0)
         {
             position = reader.Position;
             return true;
         }
+
         position = reader.Position;
         return false;
     }
