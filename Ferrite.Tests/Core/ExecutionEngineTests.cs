@@ -17,19 +17,15 @@
 // 
 
 using System.Buffers.Binary;
-using System.Security.Cryptography;
 using Autofac;
 using Autofac.Extras.Moq;
-using Ferrite.Core;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using Microsoft.Toolkit.HighPerformance.Buffers;
 using Moq;
-using Moq.AutoMock;
 using Xunit;
 
 namespace Ferrite.Tests.Core;
@@ -37,12 +33,12 @@ namespace Ferrite.Tests.Core;
 public class ExecutionEngineTests
 {
     [Fact]
-    public void Should_Invoke_ReqPq()
+    public async Task Should_Invoke_ReqPq()
     {
         var reqPqMulti = MemoryOwner<byte>.Allocate(4);
         BinaryPrimitives.WriteInt32LittleEndian(reqPqMulti.Span, 
             Constructors.mtproto_req_pq_multi);
-        var tlBytes = new TLBytes(reqPqMulti, 0, 4);
+        using var tlBytes = new TLBytes(reqPqMulti, 0, 4);
 
         var reqPqMock = new Mock<ITLFunction>();
         using var autoMock = AutoMock.GetStrict(builder => 
@@ -51,10 +47,9 @@ public class ExecutionEngineTests
                     Constructors.mtproto_req_pq_multi)));
 
         var engine = autoMock.Create<ExecutionEngine>();
-        engine.Invoke(tlBytes, 
+        await engine.Invoke(tlBytes, 
             new TLExecutionContext(
-                new Dictionary<string, object>()))
-            .GetAwaiter().GetResult();
+                new Dictionary<string, object>()));
         
         reqPqMock.Verify(x => 
             x.Process(It.IsAny<TLBytes>(), 
@@ -63,12 +58,12 @@ public class ExecutionEngineTests
     }
 
     [Fact]
-    public void Should_Log_Exception()
+    public async Task Should_Log_Exception()
     {
         var reqPqMulti = MemoryOwner<byte>.Allocate(4);
         BinaryPrimitives.WriteInt32LittleEndian(reqPqMulti.Span,
             Constructors.mtproto_req_pq_multi);
-        var tlBytes = new TLBytes(reqPqMulti, 0, 4);
+        using var tlBytes = new TLBytes(reqPqMulti, 0, 4);
 
         var reqPqMock = new Mock<ITLFunction>();
         reqPqMock.Setup(x => x.Process(It.IsAny<TLBytes>(),
@@ -85,10 +80,9 @@ public class ExecutionEngineTests
         var engine = autoMock.Create<ExecutionEngine>();
 
 
-        engine.Invoke(tlBytes,
+        await engine.Invoke(tlBytes,
                 new TLExecutionContext(
-                    new Dictionary<string, object>()))
-            .GetAwaiter().GetResult();
+                    new Dictionary<string, object>()));
 
         loggerMock.Verify(x =>
                 x.Error(It.IsAny<Exception>(), It.IsAny<string>()),

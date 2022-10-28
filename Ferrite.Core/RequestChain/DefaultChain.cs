@@ -30,15 +30,18 @@ public class DefaultChain: ITLHandler
 {
     private readonly ILinkedHandler _first;
     private readonly ILogger _log;
-    public DefaultChain(ILifetimeScope scope, ILogger log)
+    public DefaultChain(AuthKeyProcessor authKeyProcessor, MsgContainerProcessor msgContainerProcessor,
+        ServiceMessagesProcessor serviceMessagesProcessor, GZipProcessor gZipProcessor,
+        AuthorizationProcessor authorizationProcessor, MTProtoRequestProcessor mtProtoRequestProcessor,
+        ILogger log)
     {
         _log = log;
-        _first = scope.Resolve<AuthKeyProcessor>();
-        _first.SetNext(scope.Resolve<MsgContainerProcessor>())
-            .SetNext(scope.Resolve<ServiceMessagesProcessor>())
-            .SetNext(scope.Resolve<GZipProcessor>())
-            .SetNext(scope.Resolve<AuthorizationProcessor>())
-            .SetNext(scope.Resolve<MTProtoRequestProcessor>());
+        _first = authKeyProcessor;
+        _first.SetNext(msgContainerProcessor)
+            .SetNext(serviceMessagesProcessor)
+            .SetNext(gZipProcessor)
+            .SetNext(authorizationProcessor)
+            .SetNext(mtProtoRequestProcessor);
     }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
