@@ -62,7 +62,7 @@ namespace Ferrite.Tests.Core
                 var framedata = frame.ToArray();
                 frames.Add(framedata);
             } while (hasMore);
-            Assert.Equal(11, frames.Count);
+            Assert.Equal(10, frames.Count);
             Assert.Equal(40, frames[0].Length);
             SequenceReader rd = IAsyncBinaryReader.Create(frames[0]);
             long authKey = rd.ReadInt64(true);
@@ -121,7 +121,7 @@ namespace Ferrite.Tests.Core
                     var framedata = frame.ToArray();
                     frames.Add(framedata);
                 } while (hasMore);
-                Assert.Equal(4, frames.Count);
+                Assert.Equal(3, frames.Count);
                 Assert.Equal(244, frames[0].Length);
                 SequenceReader rd = IAsyncBinaryReader.Create(frames[0]);
                 long authKey = rd.ReadInt64(true);

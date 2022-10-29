@@ -17,6 +17,7 @@
 // 
 
 using System.Buffers;
+using System.Buffers.Binary;
 using DotNext.Buffers;
 using DotNext.IO;
 using Ferrite.Crypto;
@@ -103,11 +104,9 @@ public abstract class FrameDecoderBase : IFrameDecoder
     protected bool CheckRequiresQuickAck(byte[] arr, int pos)
     {
         bool requiresQuickAck = false;
-        if ((arr[pos] & 1 << 7) == 1 << 7)
-        {
-            requiresQuickAck = true;
-            arr[pos] &= 0x7f;
-        }
+        if ((arr[pos] & 1 << 7) != 1 << 7) return requiresQuickAck;
+        requiresQuickAck = true;
+        arr[pos] &= 0x7f;
 
         return requiresQuickAck;
     }
@@ -133,7 +132,7 @@ public abstract class FrameDecoderBase : IFrameDecoder
             Decryptor.Transform(chunk, _remaining == Length ? 
                 chunkDecrypted.AsSpan()[LengthBytesToSkip..] : chunkDecrypted);
             
-            frame = new ReadOnlySequence<byte>(chunkDecrypted[head..tail]);
+            frame = new ReadOnlySequence<byte>(chunkDecrypted[head..^tail]);
         }
         else
         {
@@ -157,6 +156,7 @@ public abstract class FrameDecoderBase : IFrameDecoder
     {
         ReadOnlySequence<byte> data = reader.UnreadSequence.Slice(0, Length);
         reader.Advance(Length);
+        _remaining -= (int)data.Length;
         Length = 0;
         Array.Clear(LengthBytes);
         if (Decryptor != null)
@@ -170,48 +170,30 @@ public abstract class FrameDecoderBase : IFrameDecoder
             frame = data;
         }
 
-        if (_remaining != 0)
-        {
-            position = reader.Position;
-            return true;
-        }
-
         position = reader.Position;
-        return false;
+        return reader.UnreadSequence.Length != 0;
     }
     private bool CheckIfStream(ReadOnlySequence<byte> header)
     {
-        SequenceReader reader;
         if (Decryptor != null)
         {
             Decryptor.TransformPeek(header, _headerBytes);
-            reader = IAsyncBinaryReader.Create(_headerBytes);
         }
         else
         {
             header.CopyTo(_headerBytes);
-            reader = IAsyncBinaryReader.Create(_headerBytes);
         }
-        long authKeyId = reader.ReadInt64(true);
+
+        var authKeyId = BinaryPrimitives.ReadInt64LittleEndian(_headerBytes);
         var authKey = (_mtproto.GetAuthKey(authKeyId) ?? 
                        _mtproto.GetTempAuthKey(authKeyId));
-        if (authKey is { Length: > 0 })
-        {
-            Span<byte> messageKey = stackalloc byte[16];
-            reader.Read(messageKey);
-            AesIge aesIge = new AesIge(authKey, messageKey);
-            Span<byte> messageHeader = stackalloc byte[48];
-            reader.Read(messageHeader);
-            aesIge.Decrypt(messageHeader);
-            SpanReader<byte> sr = new SpanReader<byte>(messageHeader);
-            sr.Advance(32);
-            int constructor = sr.ReadInt32(true);
-            if (constructor == TLConstructor.Upload_SaveFilePart ||
-                constructor == TLConstructor.Upload_SaveBigFilePart)
-            {
-                return true;
-            }
-        }
-        return false;
+        if (authKey is not { Length: > 0 }) return false;
+        Span<byte> messageKey = _headerBytes.AsSpan(8,16);
+        AesIge aesIge = new(authKey, messageKey);
+        Span<byte> messageHeader = _headerBytes.AsSpan(24, 48);
+        aesIge.Decrypt(messageHeader);
+        int constructor = BinaryPrimitives.ReadInt32LittleEndian(messageHeader[32..]);
+        return constructor == TLConstructor.Upload_SaveFilePart ||
+               constructor == TLConstructor.Upload_SaveBigFilePart;
     }
 }
