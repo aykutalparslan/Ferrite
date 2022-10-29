@@ -90,39 +90,32 @@ public class TLSourceGenerator
 
     private void DoRenameKeywords(CombinatorDeclarationSyntax combinator)
     {
-        if (combinator?.Identifier == "file")
-        {
-            combinator.Identifier += "_";
-        }
-
-        if (combinator != null && _bareNamespaces.Contains(combinator.Identifier))
-        {
-            combinator.Identifier += "_";
-        }
-
-        if (combinator != null && _typeCount[combinator.Identifier.TrimEnd('_')] > 1)
+        if (_typeCount[combinator.Identifier.TrimEnd('_')] > 1)
         {
             combinator.Identifier = combinator.Namespace != null
                 ? combinator.Namespace + "_" + combinator.Identifier
                 : combinator.Identifier;
         }
-
-        if (combinator?.Arguments != null)
+        if (combinator.Identifier == "file")
         {
-            foreach (var arg in combinator.Arguments)
+            combinator.Identifier += "_";
+        }
+        if (_bareNamespaces.Contains(combinator.Identifier))
+        {
+            combinator.Identifier += "_";
+        }
+        foreach (var arg in combinator.Arguments)
+        {
+            if (arg.Identifier == "long")
             {
-                if (arg.Identifier == "long")
-                {
-                    arg.Identifier = "longitude";
-                }
-
-                if (arg.Identifier == combinator.Identifier || arg.Identifier == "out" ||
-                    arg.Identifier == "static" || arg.Identifier == "params" ||
-                    arg.Identifier == "default" || arg.Identifier == "public" ||
-                    arg.Identifier == "readonly" || arg.Identifier == "private")
-                {
-                    arg.Identifier += "_";
-                }
+                arg.Identifier = "longitude";
+            }
+            if (arg.Identifier == combinator.Identifier || arg.Identifier == "out" ||
+                arg.Identifier == "static" || arg.Identifier == "params" ||
+                arg.Identifier == "default" || arg.Identifier == "public" ||
+                arg.Identifier == "readonly" || arg.Identifier == "private")
+            {
+                arg.Identifier += "_";
             }
         }
     }
@@ -131,8 +124,10 @@ public class TLSourceGenerator
     {
         var parser = new Parser(lexer);
         var c = parser.ParseCombinator();
+        
         while (c != null)
         {
+            c.ContainingNamespace = nameSpace;
             var ns = nameSpace;
             if (c.CombinatorType == CombinatorType.Constructor &&
                 c.Type.NamespaceIdentifier != null)
@@ -305,7 +300,7 @@ public static class Constructors
         foreach (var combinator in _combinators.Values)
         {
             sb.Append(@"
-    public const int " + combinator.Identifier + " = unchecked((int)0x" + combinator.Name + @");");
+    public const int " + combinator.ContainingNamespace + "_" + combinator.Identifier + " = unchecked((int)0x" + combinator.Name + @");");
         }
 
         sb.Append(@"
@@ -457,10 +452,6 @@ public readonly ref struct " + typeName + @"
         GenerateGetOffset(sourceBuilder, combinator);
         GenerateBuilder(sourceBuilder, combinator);
         var str = @"
-    public static TLObjectBuilder Builder()
-    {
-        return new TLObjectBuilder();
-    }
     public void Dispose()
     {
         _memory?.Dispose();
@@ -1118,6 +1109,10 @@ public readonly ref struct " + typeName + @"
 
         sb.Append(@"
         }
+    }
+    public static TLObjectBuilder Builder()
+    {
+        return new TLObjectBuilder();
     }
 ");
     }

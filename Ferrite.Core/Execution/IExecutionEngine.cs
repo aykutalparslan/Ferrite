@@ -16,19 +16,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Generic;
+using Ferrite.TL;
+using Ferrite.TL.slim;
 
-namespace Ferrite.TLParser;
+namespace Ferrite.Core.Execution;
 
-public class CombinatorDeclarationSyntax
+public interface IExecutionEngine
 {
-    public string? ContainingNamespace { get; set; }
-    public string? Namespace { get; set; }
-    public string Identifier { get; set; }
-    public CombinatorType CombinatorType { get; set; }
-    public IReadOnlyList<OptionalArgumentSyntax> OptionalArguments { get; set; }
-    public IReadOnlyList<SimpleArgumentSyntax> Arguments { get; set; }
-    public string? Name { get; set; }
-    public int? Multiply { get; set; }
-    public TypeTermSyntax Type { get; set; }
+    /// <summary>
+    /// Invokes a Function with the specified layer.
+    /// Function (functional combinator) is a combinator which may be computed (reduced)
+    /// on condition that the requisite number of arguments of requisite types are provided.
+    /// The result of the computation is an expression consisting of constructors
+    /// and base type values only.
+    /// </summary>
+    /// <param name="rpc">Serialized functional combinator.</param>
+    /// <param name="layer">Layer with which the function should be computed.</param>
+    /// <returns>TL Serialized result of the computation.</returns>
+    public ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 146);
 }

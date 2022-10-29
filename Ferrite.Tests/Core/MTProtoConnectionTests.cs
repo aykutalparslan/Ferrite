@@ -31,7 +31,8 @@ using Autofac;
 using Autofac.Extras.Moq;
 using Ferrite.Core;
 using Ferrite.Core.Features;
-using Ferrite.Core.Methods;
+using Ferrite.Core.Framing;
+using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -142,7 +143,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -169,7 +170,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -199,7 +200,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -249,7 +250,7 @@ public class MTProtoConnectionTests
     {
         var builder = GetContainerBuilder();
         List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<IProcessorManager>();
+        var processor = new Mock<ITLHandler>();
         processor.Setup(p =>
             p.Process(It.IsAny<object?>(),
                 It.IsAny<ITLObject>(), 
@@ -427,7 +428,6 @@ public class MTProtoConnectionTests
                     _authKeySessionStates.Add((Ferrite.TL.Int128)nonce, MessagePackSerializer.Serialize(state));
                     return true;
                 });
-        var apiLayer = new Mock<IApiLayer>();
         var tl = Assembly.Load("Ferrite.TL");
         var builder = new ContainerBuilder();
         builder.RegisterMock(time);
@@ -454,7 +454,6 @@ public class MTProtoConnectionTests
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterMock(proto);
         builder.RegisterMock(logger);
-        builder.RegisterMock(apiLayer);
         builder.RegisterMock(sessionManager);
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<MessageHandler>().As<IMessageHandler>();

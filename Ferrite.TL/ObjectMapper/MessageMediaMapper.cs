@@ -122,7 +122,7 @@ public class MessageMediaMapper : ITLObjectMapper<MessageMedia, MessageMediaDTO>
             media.FirstName = obj.FirstName;
             media.LastName = obj.LastName;
             media.Vcard = obj.VCard;
-            media.UserId = (long)obj.UserId;
+            if (obj.UserId != null) media.UserId = (long)obj.UserId;
             return media;
         }
         if (obj.MessageMediaType == MessageMediaType.Unsupported)

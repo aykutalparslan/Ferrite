@@ -16,19 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Generic;
+using DotNext.Buffers;
+using Ferrite.Core.Framing;
+using Ferrite.Transport;
 
-namespace Ferrite.TLParser;
+namespace Ferrite.Core.Features;
 
-public class CombinatorDeclarationSyntax
+public interface IQuickAckFeature
 {
-    public string? ContainingNamespace { get; set; }
-    public string? Namespace { get; set; }
-    public string Identifier { get; set; }
-    public CombinatorType CombinatorType { get; set; }
-    public IReadOnlyList<OptionalArgumentSyntax> OptionalArguments { get; set; }
-    public IReadOnlyList<SimpleArgumentSyntax> Arguments { get; set; }
-    public string? Name { get; set; }
-    public int? Multiply { get; set; }
-    public TypeTermSyntax Type { get; set; }
+    public void Send(int ack, SparseBufferWriter<byte> writer,
+        IFrameEncoder encoder, WebSocketHandler? webSocketHandler,
+        MTProtoConnection connection);
 }

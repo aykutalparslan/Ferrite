@@ -16,19 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Generic;
+namespace Ferrite.Core.Execution.Functions;
 
-namespace Ferrite.TLParser;
-
-public class CombinatorDeclarationSyntax
+public readonly record struct FunctionKey
 {
-    public string? ContainingNamespace { get; set; }
-    public string? Namespace { get; set; }
-    public string Identifier { get; set; }
-    public CombinatorType CombinatorType { get; set; }
-    public IReadOnlyList<OptionalArgumentSyntax> OptionalArguments { get; set; }
-    public IReadOnlyList<SimpleArgumentSyntax> Arguments { get; set; }
-    public string? Name { get; set; }
-    public int? Multiply { get; set; }
-    public TypeTermSyntax Type { get; set; }
+    private readonly int _layer;
+    private readonly int _constructorNumber;
+    
+    public FunctionKey(int layer, int constructorNumber)
+    {
+        _layer = layer;
+        _constructorNumber = constructorNumber;
+    }
 }
+    

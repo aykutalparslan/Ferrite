@@ -16,19 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Generic;
+using Ferrite.TL;
+using Ferrite.TL.slim;
 
-namespace Ferrite.TLParser;
+namespace Ferrite.Core.Execution.Functions;
 
-public class CombinatorDeclarationSyntax
+public interface ITLFunction
 {
-    public string? ContainingNamespace { get; set; }
-    public string? Namespace { get; set; }
-    public string Identifier { get; set; }
-    public CombinatorType CombinatorType { get; set; }
-    public IReadOnlyList<OptionalArgumentSyntax> OptionalArguments { get; set; }
-    public IReadOnlyList<SimpleArgumentSyntax> Arguments { get; set; }
-    public string? Name { get; set; }
-    public int? Multiply { get; set; }
-    public TypeTermSyntax Type { get; set; }
+    public ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx);
 }

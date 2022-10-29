@@ -16,19 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Generic;
+namespace Ferrite.Core.RequestChain;
 
-namespace Ferrite.TLParser;
-
-public class CombinatorDeclarationSyntax
+public interface ILinkedHandler : ITLHandler
 {
-    public string? ContainingNamespace { get; set; }
-    public string? Namespace { get; set; }
-    public string Identifier { get; set; }
-    public CombinatorType CombinatorType { get; set; }
-    public IReadOnlyList<OptionalArgumentSyntax> OptionalArguments { get; set; }
-    public IReadOnlyList<SimpleArgumentSyntax> Arguments { get; set; }
-    public string? Name { get; set; }
-    public int? Multiply { get; set; }
-    public TypeTermSyntax Type { get; set; }
+    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler SetNext(ILinkedHandler value);
 }

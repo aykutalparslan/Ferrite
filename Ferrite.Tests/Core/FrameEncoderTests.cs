@@ -28,6 +28,7 @@ using Ferrite.Data;
 using Ferrite.TL;
 using Ferrite.Utils;
 using DotNext.IO;
+using Ferrite.Core.Framing;
 using Xunit;
 namespace Ferrite.Tests.Core
 {

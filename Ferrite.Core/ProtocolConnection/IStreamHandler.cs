@@ -16,19 +16,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections.Generic;
+using System.Buffers;
+using System.Net;
+using Ferrite.Core.Framing;
+using Ferrite.Data;
+using Ferrite.Transport;
 
-namespace Ferrite.TLParser;
+namespace Ferrite.Core;
 
-public class CombinatorDeclarationSyntax
+public interface IStreamHandler : IAsyncDisposable
 {
-    public string? ContainingNamespace { get; set; }
-    public string? Namespace { get; set; }
-    public string Identifier { get; set; }
-    public CombinatorType CombinatorType { get; set; }
-    public IReadOnlyList<OptionalArgumentSyntax> OptionalArguments { get; set; }
-    public IReadOnlyList<SimpleArgumentSyntax> Arguments { get; set; }
-    public string? Name { get; set; }
-    public int? Multiply { get; set; }
-    public TypeTermSyntax Type { get; set; }
+    public Task HandleIncomingStreamAsync(ReadOnlySequence<byte> bytes, 
+        MTProtoConnection connection,
+        EndPoint? endPoint,
+        MTProtoSession session,
+        bool hasMore);
+
+    public Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
+        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler);
 }
