@@ -18,6 +18,7 @@
 
 using System.Buffers;
 using System.Net;
+using Ferrite.Core.Framing;
 using Ferrite.Data;
 using Ferrite.Transport;
 

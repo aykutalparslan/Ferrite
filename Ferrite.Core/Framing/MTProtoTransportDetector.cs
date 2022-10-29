@@ -16,16 +16,13 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Buffers;
 using Autofac;
 using DotNext.Buffers;
-using DotNext.IO;
 using Ferrite.Crypto;
-using Ferrite.Data;
 using Ferrite.Services;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public class MTProtoTransportDetector : ITransportDetector
 {

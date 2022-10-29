@@ -31,6 +31,7 @@ using Ferrite.Utils;
 using DotNext.IO;
 using Xunit;
 using Autofac.Extras.Moq;
+using Ferrite.Core.Framing;
 using Ferrite.Services;
 using Moq;
 

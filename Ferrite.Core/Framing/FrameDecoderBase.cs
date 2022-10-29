@@ -23,7 +23,7 @@ using Ferrite.Crypto;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public abstract class FrameDecoderBase : IFrameDecoder
 {
@@ -33,7 +33,7 @@ public abstract class FrameDecoderBase : IFrameDecoder
     /// <summary>
     /// Number of length bytes to be skipped at the beginning of the frame before decoding it.
     /// </summary>
-    protected int SkipLength;
+    protected int LengthBytesToSkip;
     /// <summary>
     /// Number of bytes to be skipped at the beginning of the frame.
     /// </summary>
@@ -122,14 +122,18 @@ public abstract class FrameDecoderBase : IFrameDecoder
     private bool HandleStream(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader,
         int toBeWritten)
     {
+        int head = _remaining == Length ? LengthBytesToSkip + Header : 0;
         ReadOnlySequence<byte> chunk = reader.UnreadSequence.Slice(0, toBeWritten);
         reader.Advance(toBeWritten);
         _remaining -= toBeWritten;
+        int tail = _remaining == 0 ? Tail : 0;
         if (Decryptor != null)
         {
             var chunkDecrypted = new byte[toBeWritten];
-            Decryptor.Transform(chunk, chunkDecrypted);
-            frame = new ReadOnlySequence<byte>(chunkDecrypted);
+            Decryptor.Transform(chunk, _remaining == Length ? 
+                chunkDecrypted.AsSpan()[LengthBytesToSkip..] : chunkDecrypted);
+            
+            frame = new ReadOnlySequence<byte>(chunkDecrypted[head..tail]);
         }
         else
         {
@@ -158,8 +162,8 @@ public abstract class FrameDecoderBase : IFrameDecoder
         if (Decryptor != null)
         {
             var frameDecrypted = new byte[data.Length];
-            Decryptor.Transform(data, frameDecrypted.AsSpan()[SkipLength..]);
-            frame = new ReadOnlySequence<byte>(frameDecrypted[(SkipLength + Header)..^Tail]);
+            Decryptor.Transform(data, frameDecrypted.AsSpan()[LengthBytesToSkip..]);
+            frame = new ReadOnlySequence<byte>(frameDecrypted[(LengthBytesToSkip + Header)..^Tail]);
         }
         else
         {

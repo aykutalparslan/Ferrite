@@ -39,6 +39,7 @@ using Elasticsearch.Net;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
 using Ferrite.Core.Features;
+using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;

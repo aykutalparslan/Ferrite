@@ -24,6 +24,7 @@ using System.Threading.Channels;
 using Ferrite.Transport;
 using System.IO.Pipelines;
 using Ferrite.Core.Features;
+using Ferrite.Core.Framing;
 using Ferrite.Data;
 using Ferrite.Utils;
 using Ferrite.TL.mtproto;

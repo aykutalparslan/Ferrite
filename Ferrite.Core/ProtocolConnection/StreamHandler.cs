@@ -21,6 +21,7 @@ using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
+using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;

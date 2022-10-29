@@ -16,13 +16,11 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Buffers;
-using System.IO.Pipelines;
 using DotNext.Buffers;
 using Ferrite.Crypto;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public class IntermediateFrameEncoder : IFrameEncoder
 {
@@ -42,12 +40,10 @@ public class IntermediateFrameEncoder : IFrameEncoder
         writer.Write(input, false);
         var frame = writer.ToReadOnlySequence();
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 
@@ -64,12 +60,10 @@ public class IntermediateFrameEncoder : IFrameEncoder
         writer.Write(input, false);
         var frame = writer.ToReadOnlySequence();
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 

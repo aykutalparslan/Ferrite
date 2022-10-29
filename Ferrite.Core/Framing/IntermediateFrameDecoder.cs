@@ -16,16 +16,11 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Buffers;
-using DotNext.Buffers;
-using DotNext.IO;
 using Ferrite.Crypto;
-using Ferrite.Data;
 using Ferrite.Services;
-using Ferrite.TL.currentLayer;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public class IntermediateFrameDecoder : FrameDecoderBase
 {

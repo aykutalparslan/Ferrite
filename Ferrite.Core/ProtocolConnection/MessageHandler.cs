@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Elasticsearch.Net;
 using Ferrite.Core.Exceptions;
+using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Services;

@@ -16,13 +16,11 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Buffers;
-using System.IO.Pipelines;
 using DotNext.Buffers;
 using Ferrite.Crypto;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public class PaddedIntermediateFrameEncoder : IFrameEncoder
 {
@@ -52,12 +50,10 @@ public class PaddedIntermediateFrameEncoder : IFrameEncoder
         }
         var frame = writer.ToReadOnlySequence();
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 
@@ -75,12 +71,10 @@ public class PaddedIntermediateFrameEncoder : IFrameEncoder
         writer.Write(input, false);
         var frame = writer.ToReadOnlySequence();
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 
@@ -96,12 +90,10 @@ public class PaddedIntermediateFrameEncoder : IFrameEncoder
         var frame = writer.ToReadOnlySequence();
         _currentFrameLength = 0;
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 }

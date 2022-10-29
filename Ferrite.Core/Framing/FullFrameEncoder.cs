@@ -16,13 +16,11 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Buffers;
-using System.IO.Pipelines;
 using DotNext.Buffers;
 using Ferrite.Crypto;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public class FullFrameEncoder : IFrameEncoder
 {
@@ -71,27 +69,23 @@ public class FullFrameEncoder : IFrameEncoder
         writer.Write(input, false);
         var frame = writer.ToReadOnlySequence();
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 
     public ReadOnlySequence<byte> EncodeTail()
     {
-        writer.WriteInt32((int)_crc32.Crc32, true);
+        writer.WriteInt32((int)_crc32!.Crc32, true);
         var frame = writer.ToReadOnlySequence();
         _crc32 = null;
         writer.Clear();
-        if (_encryptor != null)
-        {
-            byte[] frameEncrypted = new byte[frame.Length];
-            _encryptor.Transform(frame, frameEncrypted);
-            frame = new ReadOnlySequence<byte>(frameEncrypted);
-        }
+        if (_encryptor == null) return frame;
+        byte[] frameEncrypted = new byte[frame.Length];
+        _encryptor.Transform(frame, frameEncrypted);
+        frame = new ReadOnlySequence<byte>(frameEncrypted);
         return frame;
     }
 }

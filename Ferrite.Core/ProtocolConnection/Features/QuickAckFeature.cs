@@ -18,6 +18,7 @@
 
 using System.Buffers.Binary;
 using DotNext.Buffers;
+using Ferrite.Core.Framing;
 using Ferrite.Transport;
 
 namespace Ferrite.Core.Features;

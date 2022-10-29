@@ -18,13 +18,11 @@
 
 using System.Buffers;
 using System.IO.Pipelines;
-using System.Security.Cryptography;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
-using Ferrite.Crypto;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public class EncoderPipe : IDisposable
 {

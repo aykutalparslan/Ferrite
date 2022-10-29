@@ -16,10 +16,9 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using System.Buffers;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Framing;
 
 public interface IFrameDecoder
 {

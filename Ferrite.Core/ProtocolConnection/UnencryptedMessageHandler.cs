@@ -20,6 +20,7 @@ using System.Buffers;
 using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Services;
