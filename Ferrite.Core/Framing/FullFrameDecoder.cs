@@ -27,30 +27,11 @@ using Ferrite.TL.currentLayer;
 
 namespace Ferrite.Core;
 
-public class FullFrameDecoder : IFrameDecoder
+public class FullFrameDecoder : FrameDecoderBase
 {
-    private readonly byte[] _lengthBytes = new byte[4];
-    private const int StreamChunkSize = 1024;
-    private int _length;
-    private int _remaining;
-    private bool _isStream;
-    private int _sequence;
-    private Aes256Ctr? _decryptor;
-    private readonly IMTProtoService _mtproto;
-    byte[] _headerBytes = new byte[72];
 
-    public FullFrameDecoder(IMTProtoService mtproto)
-    {
-        _mtproto = mtproto;
-    }
 
-    public FullFrameDecoder(Aes256Ctr decryptor, IMTProtoService mtproto)
-    {
-        _decryptor = decryptor;
-        _mtproto = mtproto;
-    }
-
-    public bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, 
+    /*public bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, 
         out bool isStream, out bool requiresQuickAck, out SequencePosition position)
     {
         var reader = new SequenceReader<byte>(bytes);
@@ -159,39 +140,40 @@ public class FullFrameDecoder : IFrameDecoder
         position = reader.Position;
         return false;
     }
-    private bool IsStream(ReadOnlySequence<byte> header)
+    */
+    public FullFrameDecoder(IMTProtoService mtproto) : base(mtproto)
     {
-        SequenceReader reader;
-        if (_decryptor != null)
+        SkipLength = 4;
+        Header = 4;
+        Tail = 4;
+    }
+
+    public FullFrameDecoder(Aes256Ctr decryptor, IMTProtoService mtproto) : base(decryptor, mtproto)
+    {
+        SkipLength = 4;
+        Header = 4;
+        Tail = 4;
+    }
+
+    protected override bool DecodeLength(ref SequenceReader<byte> reader, out bool emptyFrame)
+    {
+        if (reader.Remaining < 4)
         {
-            _decryptor.TransformPeek(header, _headerBytes);
-            reader = IAsyncBinaryReader.Create(_headerBytes);
+            emptyFrame = true;
+            return false;
         }
-        else
-        {
-            reader = IAsyncBinaryReader.Create(header);
-        }
-        long authKeyId = reader.ReadInt64(true);
-        var authKey = (_mtproto.GetAuthKey(authKeyId) ?? 
-                       _mtproto.GetTempAuthKey(authKeyId));
-        if (authKey is { Length: > 0 })
-        {
-            Span<byte> messageKey = stackalloc byte[16];
-            reader.Read(messageKey);
-            AesIge aesIge = new AesIge(authKey, messageKey);
-            Span<byte> messageHeader = stackalloc byte[48];
-            reader.Read(messageHeader);
-            aesIge.Decrypt(messageHeader);
-            SpanReader<byte> sr = new SpanReader<byte>(messageHeader);
-            sr.Advance(32);
-            int constructor = sr.ReadInt32(true);
-            if (constructor == TLConstructor.Upload_SaveFilePart ||
-                constructor == TLConstructor.Upload_SaveBigFilePart)
-            {
-                return true;
-            }
-        }
-        return false;
+
+        reader.TryCopyTo(LengthBytes);
+        Decryptor?.Transform(LengthBytes);
+        bool requiresQuickAck = CheckRequiresQuickAck(LengthBytes, 3);
+
+        Length = (LengthBytes[0]) |
+                 (LengthBytes[1] << 8) |
+                 (LengthBytes[2] << 16) |
+                 (LengthBytes[3] << 24);
+        reader.Advance(4);
+        emptyFrame = false;
+        return requiresQuickAck;
     }
 }
 

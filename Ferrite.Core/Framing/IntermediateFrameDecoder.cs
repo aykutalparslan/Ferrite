@@ -27,156 +27,35 @@ using Ferrite.TL.currentLayer;
 
 namespace Ferrite.Core;
 
-public class IntermediateFrameDecoder : IFrameDecoder
+public class IntermediateFrameDecoder : FrameDecoderBase
 {
-    private readonly byte[] _lengthBytes = new byte[4];
-    private const int StreamChunkSize = 1024;
-    private int _length;
-    private int _remaining;
-    private bool _isStream;
-    private Aes256Ctr? _decryptor;
-    private readonly IMTProtoService _mtproto;
-    byte[] _headerBytes = new byte[72];
-
-    public IntermediateFrameDecoder(IMTProtoService mtproto)
+    protected override bool DecodeLength(ref SequenceReader<byte> reader, out bool emptyFrame)
     {
-        _mtproto = mtproto;
-    }
-
-    public IntermediateFrameDecoder(Aes256Ctr decryptor, IMTProtoService mtproto)
-    {
-        _decryptor = decryptor;
-        _mtproto = mtproto;
-    }
-
-    public bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, 
-        out bool isStream, out bool requiresQuickAck, out SequencePosition position)
-    {
-        var reader = new SequenceReader<byte>(bytes);
-        isStream = _isStream;
-        requiresQuickAck = false;
-        if (_length == 0)
+        if (reader.Remaining < 4)
         {
-            if (reader.Remaining < 4)
-            {
-                frame = new ReadOnlySequence<byte>();
-                position = reader.Position;
-                return false;
-            }
-            else
-            {
-                reader.TryCopyTo(_lengthBytes);
-                if (_decryptor != null)
-                {
-                    _decryptor.Transform(_lengthBytes);
-                }
-                if ((_lengthBytes[3] & 1 << 7) == 1 << 7)
-                {
-                    requiresQuickAck = true;
-                    _lengthBytes[3] &= 0x7f;
-                }
-                _length = (_lengthBytes[0]) |
-                          (_lengthBytes[1] << 8) |
-                          (_lengthBytes[2] << 16) |
-                          (_lengthBytes[3] << 24);
-                reader.Advance(4);
-            }
-        }
-        if (reader.Remaining >= 72 && !_isStream)
-        {
-            _isStream = IsStream(reader.UnreadSequence.Slice(0, 72));
-            isStream = _isStream;
-        }
-
-        if (_isStream && reader.Remaining > 0)
-        {
-            int toBeWritten = Math.Min(_remaining, StreamChunkSize);
-            ReadOnlySequence<byte> chunk = reader.UnreadSequence.Slice(0, toBeWritten);
-            reader.Advance(toBeWritten);
-            _remaining -= toBeWritten;
-            if (_decryptor != null)
-            {
-                var chunkDecrypted = new byte[toBeWritten];
-                _decryptor.Transform(chunk, chunkDecrypted);
-                frame = new ReadOnlySequence<byte>(chunkDecrypted);
-            }
-            else
-            {
-                frame = chunk;
-            }
-            if (_remaining == 0)
-            {
-                _length = 0;
-                _isStream = false;
-                Array.Clear(_lengthBytes);
-                position = reader.Position;
-                return false;
-            }
-            position = reader.Position;
-            return true;
-        }
-        if (reader.Remaining < _length)
-        {
-            frame = new ReadOnlySequence<byte>();
-            position = reader.Position;
+            emptyFrame = true;
             return false;
         }
-        ReadOnlySequence<byte> data = reader.UnreadSequence.Slice(0, _length);
-        reader.Advance(_length);
-        _length = 0;
-        Array.Clear(_lengthBytes);
-        if (_decryptor != null)
-        {
-            var frameDecrypted = new byte[data.Length];
-            _decryptor.Transform(data, frameDecrypted);
-            frame = new ReadOnlySequence<byte>(frameDecrypted);
-        }
-        else
-        {
-            frame = data;
-        }
-        
-        if (reader.Remaining != 0)
-        {
-            position = reader.Position;
-            return true;
-        }
-        position = reader.Position;
-        return false;
+
+        reader.TryCopyTo(LengthBytes);
+        Decryptor?.Transform(LengthBytes);
+        var requiresQuickAck = CheckRequiresQuickAck(LengthBytes, 3);
+
+        Length = (LengthBytes[0]) |
+                 (LengthBytes[1] << 8) |
+                 (LengthBytes[2] << 16) |
+                 (LengthBytes[3] << 24);
+        reader.Advance(4);
+        emptyFrame = false;
+        return requiresQuickAck;
     }
-    private bool IsStream(ReadOnlySequence<byte> header)
+
+    public IntermediateFrameDecoder(IMTProtoService mtproto) : base(mtproto)
     {
-        SequenceReader reader;
-        if (_decryptor != null)
-        {
-            _decryptor.TransformPeek(header, _headerBytes);
-            reader = IAsyncBinaryReader.Create(_headerBytes);
-        }
-        else
-        {
-            reader = IAsyncBinaryReader.Create(header);
-        }
-        long authKeyId = reader.ReadInt64(true);
-        var authKey = (_mtproto.GetAuthKey(authKeyId) ?? 
-                       _mtproto.GetTempAuthKey(authKeyId));
-        if (authKey is { Length: > 0 })
-        {
-            Span<byte> messageKey = stackalloc byte[16];
-            reader.Read(messageKey);
-            AesIge aesIge = new AesIge(authKey, messageKey);
-            Span<byte> messageHeader = stackalloc byte[48];
-            reader.Read(messageHeader);
-            aesIge.Decrypt(messageHeader);
-            SpanReader<byte> sr = new SpanReader<byte>(messageHeader);
-            sr.Advance(32);
-            int constructor = sr.ReadInt32(true);
-            if (constructor == TLConstructor.Upload_SaveFilePart ||
-                constructor == TLConstructor.Upload_SaveBigFilePart)
-            {
-                return true;
-            }
-        }
-        return false;
+    }
+
+    public IntermediateFrameDecoder(Aes256Ctr decryptor, IMTProtoService mtproto) : base(decryptor, mtproto)
+    {
     }
 }
 

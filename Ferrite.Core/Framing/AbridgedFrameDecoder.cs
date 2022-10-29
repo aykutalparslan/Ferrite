@@ -37,53 +37,21 @@ public class AbridgedFrameDecoder : FrameDecoderBase
     public AbridgedFrameDecoder(Aes256Ctr decryptor, IMTProtoService mtproto) : base(decryptor, mtproto)
     {
     }
-
-    public override bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, 
-        out bool isStream, out bool requiresQuickAck, out SequencePosition position)
+    
+    protected override bool DecodeLength(ref SequenceReader<byte> reader, out bool emptyFrame)
     {
-        var reader = new SequenceReader<byte>(bytes);
-        isStream = IsStream;
-        requiresQuickAck = false;
-        if (Length == 0)
+        if (reader.Remaining == 0)
         {
-            if (reader.Remaining == 0)
-            {
-                return EmptyFrame(out frame, out position, reader);
-            }
-            GetFirstLengthByte(ref reader);
-            if (LengthBytes[0] == 127 && reader.Remaining < 3)
-            {
-                return EmptyFrame(out frame, out position, reader);
-            }
-            requiresQuickAck = CheckRequiresQuickAck(LengthBytes, 0);
-            
-            requiresQuickAck = DecodeLength(ref reader);
-            Remaining = Length;
-        }
-        
-        if (reader.Remaining >= 72 && !IsStream)
-        {
-            IsStream = CheckIfStream(reader.UnreadSequence.Slice(0, 72));
-            isStream = IsStream;
-        }
-        
-        int toBeWritten = Math.Min(Remaining, StreamChunkSize);
-        if (IsStream && reader.Remaining >= toBeWritten)
-        {
-            return HandleStream(out frame, out position, reader, toBeWritten);
-        }
-        if (reader.Remaining < Length)
-        {
-            frame = new ReadOnlySequence<byte>();
-            position = reader.Position;
+            emptyFrame = true;
             return false;
         }
-        return HandleFrame(out frame, out position, reader);
-    }
-
-    protected override bool DecodeLength(ref SequenceReader<byte> reader)
-    {
-        bool requiresQuickAck = false;
+        GetFirstLengthByte(ref reader);
+        if (LengthBytes[0] == 127 && reader.Remaining < 3)
+        {
+            emptyFrame = true;
+            return false;
+        }
+        bool requiresQuickAck = CheckRequiresQuickAck(LengthBytes, 0);
         if (LengthBytes[0] < 127)
         {
             Length = LengthBytes[0] * 4;
@@ -100,6 +68,7 @@ public class AbridgedFrameDecoder : FrameDecoderBase
             Length *= 4;
         }
 
+        emptyFrame = false;
         return requiresQuickAck;
     }
 

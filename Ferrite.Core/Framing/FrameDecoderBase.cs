@@ -27,11 +27,23 @@ namespace Ferrite.Core;
 
 public abstract class FrameDecoderBase : IFrameDecoder
 {
-    protected const int StreamChunkSize = 1024;
+    private const int StreamChunkSize = 1024;
     protected readonly byte[] LengthBytes = new byte[4];
     protected int Length;
-    protected int Remaining;
-    protected bool IsStream;
+    /// <summary>
+    /// Number of length bytes to be skipped at the beginning of the frame before decoding it.
+    /// </summary>
+    protected int SkipLength;
+    /// <summary>
+    /// Number of bytes to be skipped at the beginning of the frame.
+    /// </summary>
+    protected int Header;
+    /// <summary>
+    /// Number of bytes to be skipped at the end of the frame.
+    /// </summary>
+    protected int Tail;
+    private int _remaining;
+    private bool _isStream;
     protected readonly Aes256Ctr? Decryptor;
     private readonly IMTProtoService _mtproto;
     private readonly byte[] _headerBytes = new byte[72];
@@ -47,10 +59,46 @@ public abstract class FrameDecoderBase : IFrameDecoder
         _mtproto = mtproto;
     }
 
-    public abstract bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, 
-        out bool isStream, out bool requiresQuickAck, out SequencePosition position);
+    public bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame,
+        out bool isStream, out bool requiresQuickAck, out SequencePosition position)
+    {
+        var reader = new SequenceReader<byte>(bytes);
+        isStream = _isStream;
+        requiresQuickAck = false;
+        if (Length == 0)
+        {
+            requiresQuickAck = DecodeLength(ref reader, out var emptyFrame);
+            if (emptyFrame) return EmptyFrame(out frame, out position, reader);
+            _remaining = Length;
+        }
+        
+        if (reader.Remaining >= 72 && !_isStream)
+        {
+            _isStream = CheckIfStream(reader.UnreadSequence.Slice(0, 72));
+            isStream = _isStream;
+        }
+        
+        int toBeWritten = Math.Min(_remaining, StreamChunkSize);
+        if (_isStream && reader.Remaining >= toBeWritten)
+        {
+            return HandleStream(out frame, out position, reader, toBeWritten);
+        }
+        if (reader.Remaining < Length)
+        {
+            frame = new ReadOnlySequence<byte>();
+            position = reader.Position;
+            return false;
+        }
+        return HandleFrame(out frame, out position, reader);
+    }
 
-    protected abstract bool DecodeLength(ref SequenceReader<byte> reader);
+    /// <summary>
+    /// Decodes the frame length.
+    /// </summary>
+    /// <param name="reader">Reader for the buffer.</param>
+    /// <param name="emptyFrame">Is set if the received data length is too short.</param>
+    /// <returns>If a quick ack is required.</returns>
+    protected abstract bool DecodeLength(ref SequenceReader<byte> reader, out bool emptyFrame);
 
     protected bool CheckRequiresQuickAck(byte[] arr, int pos)
     {
@@ -64,19 +112,19 @@ public abstract class FrameDecoderBase : IFrameDecoder
         return requiresQuickAck;
     }
 
-    protected static bool EmptyFrame(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader)
+    private static bool EmptyFrame(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader)
     {
         frame = new ReadOnlySequence<byte>();
         position = reader.Position;
         return false;
     }
 
-    protected bool HandleStream(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader,
+    private bool HandleStream(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader,
         int toBeWritten)
     {
         ReadOnlySequence<byte> chunk = reader.UnreadSequence.Slice(0, toBeWritten);
         reader.Advance(toBeWritten);
-        Remaining -= toBeWritten;
+        _remaining -= toBeWritten;
         if (Decryptor != null)
         {
             var chunkDecrypted = new byte[toBeWritten];
@@ -88,10 +136,10 @@ public abstract class FrameDecoderBase : IFrameDecoder
             frame = chunk;
         }
 
-        if (Remaining == 0)
+        if (_remaining == 0)
         {
             Length = 0;
-            IsStream = false;
+            _isStream = false;
             Array.Clear(LengthBytes);
             position = reader.Position;
             return false;
@@ -101,7 +149,7 @@ public abstract class FrameDecoderBase : IFrameDecoder
         return true;
     }
 
-    protected bool HandleFrame(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader)
+    private bool HandleFrame(out ReadOnlySequence<byte> frame, out SequencePosition position, SequenceReader<byte> reader)
     {
         ReadOnlySequence<byte> data = reader.UnreadSequence.Slice(0, Length);
         reader.Advance(Length);
@@ -110,15 +158,15 @@ public abstract class FrameDecoderBase : IFrameDecoder
         if (Decryptor != null)
         {
             var frameDecrypted = new byte[data.Length];
-            Decryptor.Transform(data, frameDecrypted);
-            frame = new ReadOnlySequence<byte>(frameDecrypted);
+            Decryptor.Transform(data, frameDecrypted.AsSpan()[SkipLength..]);
+            frame = new ReadOnlySequence<byte>(frameDecrypted[(SkipLength + Header)..^Tail]);
         }
         else
         {
             frame = data;
         }
 
-        if (Remaining != 0)
+        if (_remaining != 0)
         {
             position = reader.Position;
             return true;
@@ -127,8 +175,7 @@ public abstract class FrameDecoderBase : IFrameDecoder
         position = reader.Position;
         return false;
     }
-
-    protected bool CheckIfStream(ReadOnlySequence<byte> header)
+    private bool CheckIfStream(ReadOnlySequence<byte> header)
     {
         SequenceReader reader;
         if (Decryptor != null)
