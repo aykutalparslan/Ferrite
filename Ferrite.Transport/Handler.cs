@@ -8,7 +8,7 @@ using System.Text;
 
 namespace Ferrite.Transport
 {
-    public class WebSocketHandler : IHttpRequestLineHandler, IHttpHeadersHandler
+    public class Handler : IHttpRequestLineHandler, IHttpHeadersHandler
     {
         public static int Get => 542393671;
         public IHeaderDictionary RequestHeaders { get; } = new HeaderDictionary();

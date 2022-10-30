@@ -33,5 +33,5 @@ public interface IMessageHandler
         bool requiresQuickAck);
 
     public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler);
+        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler);
 }

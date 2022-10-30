@@ -70,7 +70,7 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
     }
     
     public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection, 
-        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler)
+        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler)
     {
         if(message.Data == null) return;
         _writer.Clear();

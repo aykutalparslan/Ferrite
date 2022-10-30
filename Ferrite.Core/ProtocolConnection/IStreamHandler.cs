@@ -33,5 +33,5 @@ public interface IStreamHandler : IAsyncDisposable
         bool hasMore);
 
     public Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler);
+        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler);
 }

@@ -16,15 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using DotNext.Buffers;
-using Ferrite.Core.Framing;
+using System.Buffers;
+using System.IO.Pipelines;
 using Ferrite.Transport;
 
 namespace Ferrite.Core.Features;
 
-public interface ITransportErrorFeature
+public interface IWebSocketFeature
 {
-    public void SendTransportError(int errorCode, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, Handler? webSocketHandler,
-        MTProtoConnection connection);
+    public bool HandshakeCompleted { get; }
+    public Handler Handler { get; }
+    public PipeReader Reader { get; }
+    public ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
+    public ValueTask<SequencePosition> Decode(ReadOnlySequence<byte> buffer);
 }

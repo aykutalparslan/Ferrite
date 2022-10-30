@@ -25,7 +25,7 @@ namespace Ferrite.Core.Features;
 public class TransportErrorFeature : ITransportErrorFeature
 {
     public void SendTransportError(int errorCode, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, WebSocketHandler? webSocketHandler,
+        IFrameEncoder encoder, Handler? webSocketHandler,
         MTProtoConnection connection)
     {
         writer.Clear();

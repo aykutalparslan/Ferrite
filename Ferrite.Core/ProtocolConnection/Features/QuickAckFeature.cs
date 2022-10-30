@@ -26,7 +26,7 @@ namespace Ferrite.Core.Features;
 public class QuickAckFeature : IQuickAckFeature
 {
     public void Send(int ack, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, WebSocketHandler? webSocketHandler,
+        IFrameEncoder encoder, Handler? webSocketHandler,
         MTProtoConnection connection)
     {
         writer.Clear();

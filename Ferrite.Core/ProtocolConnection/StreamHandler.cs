@@ -145,7 +145,7 @@ public class StreamHandler : IStreamHandler
     }
     
     public async Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler)
+        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler)
     {
         if (message == null) return;
         var rpcResult = _factory.Resolve<RpcResult>();

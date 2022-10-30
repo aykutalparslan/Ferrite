@@ -41,8 +41,8 @@ namespace Ferrite.Tests.Transport
 
             var requestBytes = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(request));
             var reader = new SequenceReader<byte>(requestBytes);
-            HttpParser<WebSocketHandler> parser = new();
-            WebSocketHandler handler = new();
+            HttpParser<Handler> parser = new();
+            Handler handler = new();
             parser.ParseRequestLine(handler, ref reader);
             parser.ParseHeaders(handler, ref reader);
             Pipe p = new Pipe();
@@ -71,8 +71,8 @@ namespace Ferrite.Tests.Transport
 
             var requestBytes = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(request));
             var reader = new SequenceReader<byte>(requestBytes);
-            HttpParser<WebSocketHandler> parser = new();
-            WebSocketHandler handler = new();
+            HttpParser<Handler> parser = new();
+            Handler handler = new();
             parser.ParseRequestLine(handler, ref reader);
             parser.ParseHeaders(handler, ref reader);
             Pipe p = new Pipe();
