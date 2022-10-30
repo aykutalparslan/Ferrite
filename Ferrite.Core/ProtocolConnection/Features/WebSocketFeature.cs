@@ -24,12 +24,12 @@ namespace Ferrite.Core.Features;
 
 public class WebSocketFeature : IWebSocketFeature
 {
-    public bool HandshakeCompleted { get; private set; }
+    public bool WebSocketHandshakeCompleted { get; private set; }
     private WebSocketHandler _handler;
 
-    public WebSocketHandler? WebSocketHandler => HandshakeCompleted ? _handler : null;
+    public WebSocketHandler? WebSocketHandler => WebSocketHandshakeCompleted ? _handler : null;
 
-    public PipeReader Reader { get; }
+    public PipeReader WebSocketReader { get; }
     private readonly Pipe _webSocketPipe;
     private readonly ITransportConnection _connection;
 
@@ -38,7 +38,7 @@ public class WebSocketFeature : IWebSocketFeature
         _connection = connection;
         _handler = new();
         _webSocketPipe = new Pipe();
-        Reader = _webSocketPipe.Reader;
+        WebSocketReader = _webSocketPipe.Reader;
     }
     public async ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
     {
@@ -46,20 +46,20 @@ public class WebSocketFeature : IWebSocketFeature
         if (!_handler.HeadersComplete)return pos;
         _handler.WriteHandshakeResponseTo(_connection.Transport.Output);
         await _connection.Transport.Output.FlushAsync();
-        HandshakeCompleted = true;
+        WebSocketHandshakeCompleted = true;
         return pos;
     }
 
-    public async ValueTask<SequencePosition> Decode(ReadOnlySequence<byte> buffer)
+    public async ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer)
     {
         var pos = _handler.DecodeTo(buffer, _webSocketPipe.Writer);
         await _webSocketPipe.Writer.FlushAsync();
         return pos;
     }
 
-    public void WriteHeader(int length)
+    public void WriteWebSocketHeader(int length)
     {
-        if (!HandshakeCompleted) return;
+        if (!WebSocketHandshakeCompleted) return;
         _handler.WriteHeaderTo(_connection.Transport.Output, length);
     }
 

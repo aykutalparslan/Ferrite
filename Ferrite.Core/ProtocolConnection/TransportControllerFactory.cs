@@ -16,33 +16,30 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers.Binary;
-using DotNext.Buffers;
-using Ferrite.Core.Framing;
+using Ferrite.Core.Features;
 using Ferrite.Transport;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core;
 
-public class QuickAckFeature : IQuickAckFeature
+public class TransportControllerFactory
 {
-    public void SendQuickAck(int ack, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, IWebSocketFeature webSocket,
-        MTProtoConnection connection)
-    {
-        writer.Clear();
-        ack |= 1 << 31;
-        if (encoder is AbridgedFrameEncoder)
-        {
-            ack = BinaryPrimitives.ReverseEndianness(ack);
-        }
-        writer.WriteInt32(ack, true);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.EncodeBlock(msg);
-        if (webSocket.WebSocketHandshakeCompleted)
-        {
-            webSocket.WriteWebSocketHeader(4);
-        }
+    private readonly IQuickAckFeature _quickAck;
+    private readonly ITransportErrorFeature _transportError;
+    private readonly INotifySessionCreatedFeature _notifySessionCreated;
+    private readonly IWebSocketFeature _webSocket;
 
-        connection.TransportConnection.Transport.Output.Write(encoded);
+    public TransportControllerFactory(IQuickAckFeature quickAck,
+        ITransportErrorFeature transportError,
+        INotifySessionCreatedFeature notifySessionCreated)
+    {
+        _quickAck = quickAck;
+        _transportError = transportError;
+        _notifySessionCreated = notifySessionCreated;
+    }
+
+    public TransportController Create(ITransportConnection connection)
+    {
+        return new TransportController(_quickAck, _transportError, _notifySessionCreated,
+            new WebSocketFeature(connection));
     }
 }

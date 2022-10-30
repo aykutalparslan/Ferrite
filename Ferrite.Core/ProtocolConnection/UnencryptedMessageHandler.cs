@@ -81,9 +81,9 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
         _writer.Write(message.Data);
         var msg = _writer.ToReadOnlySequence();
         var encoded = encoder.Encode(msg);
-        if (webSocket.HandshakeCompleted)
+        if (webSocket.WebSocketHandshakeCompleted)
         {
-            webSocket.WriteHeader((int)encoded.Length);
+            webSocket.WriteWebSocketHeader((int)encoded.Length);
         }
         connection.TransportConnection.Transport.Output.Write(encoded);
     }

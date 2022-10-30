@@ -206,9 +206,9 @@ public class StreamHandler : IStreamHandler
         _writer.Write(messageKey);
         var frameHead = encoder.EncodeHead(24 + (int)stream.Length);
         var header = _writer.ToReadOnlySequence();
-        if (webSocket.HandshakeCompleted)
+        if (webSocket.WebSocketHandshakeCompleted)
         {
-            webSocket.WriteHeader((int)(frameHead.Length + 24 + stream.Length));
+            webSocket.WriteWebSocketHeader((int)(frameHead.Length + 24 + stream.Length));
         }
         connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(frameHead));
         connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(header));

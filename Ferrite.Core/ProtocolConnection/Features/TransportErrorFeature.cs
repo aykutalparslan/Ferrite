@@ -32,9 +32,9 @@ public class TransportErrorFeature : ITransportErrorFeature
         writer.WriteInt32(-1 * errorCode, true);
         var message = writer.ToReadOnlySequence();
         var encoded = encoder.Encode(message);
-        if (webSocket.HandshakeCompleted)
+        if (webSocket.WebSocketHandshakeCompleted)
         {
-            webSocket.WriteHeader(4);
+            webSocket.WriteWebSocketHeader(4);
         }
 
         connection.TransportConnection.Transport.Output.Write(encoded);

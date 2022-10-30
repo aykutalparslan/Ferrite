@@ -132,6 +132,7 @@ public class Program
         builder.RegisterType<NotifySessionCreatedFeature>().As<INotifySessionCreatedFeature>().SingleInstance();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
+        builder.RegisterType<TransportControllerFactory>().SingleInstance();
         builder.RegisterType<MTProtoSession>().AsSelf();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();

@@ -143,9 +143,9 @@ public class MessageHandler : IMessageHandler
         _writer.Write(messageSpan);
         var msg = _writer.ToReadOnlySequence();
         var encoded = encoder.Encode(msg);
-        if (webSocket.HandshakeCompleted)
+        if (webSocket.WebSocketHandshakeCompleted)
         {
-            webSocket.WriteHeader((int)encoded.Length);
+            webSocket.WriteWebSocketHeader((int)encoded.Length);
         }
         connection.TransportConnection.Transport.Output.Write(encoded);
     }

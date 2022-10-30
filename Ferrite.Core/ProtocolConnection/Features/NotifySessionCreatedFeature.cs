@@ -25,7 +25,7 @@ namespace Ferrite.Core.Features;
 
 public class NotifySessionCreatedFeature : INotifySessionCreatedFeature
 {
-    public void Notify(ITLObjectFactory factory,
+    public void NotifySessionCreated(ITLObjectFactory factory,
         MTProtoConnection connection, MTProtoSession session,
         long firstMessageId, long serverSalt)
     {

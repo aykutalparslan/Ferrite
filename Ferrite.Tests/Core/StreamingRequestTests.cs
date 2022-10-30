@@ -439,6 +439,7 @@ public class StreamingRequestTests
         builder.RegisterType<NotifySessionCreatedFeature>().As<INotifySessionCreatedFeature>().SingleInstance();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
+        builder.RegisterType<TransportControllerFactory>().SingleInstance();
         builder.RegisterType<MTProtoSession>().AsSelf();
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);

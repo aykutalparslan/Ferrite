@@ -22,8 +22,6 @@ using DotNext.Buffers;
 using Ferrite.TL;
 using System.Threading.Channels;
 using Ferrite.Transport;
-using System.IO.Pipelines;
-using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Data;
 using Ferrite.Utils;
@@ -61,10 +59,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
     private readonly object _disconnectTimerState = new object();
     private readonly ITLObjectFactory _factory;
     private readonly SparseBufferWriter<byte> _writer = new(UnmanagedMemoryPool<byte>.Shared);
-    private readonly IQuickAckFeature _quickAck;
-    private readonly ITransportErrorFeature _transportError;
-    private readonly INotifySessionCreatedFeature _notifySessionCreated;
-    private readonly IWebSocketFeature _webSocket;
+    private readonly TransportController _transportController;
     internal ITransportConnection TransportConnection => _socketConnection;
 
     private readonly object _abortLock = new object();
@@ -75,9 +70,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         ILogger logger, ISessionService sessionManager, IMapperContext mapper, 
         IUnencryptedMessageHandler unencryptedMessageHandler,
         IMessageHandler messageHandler, MTProtoSession session,
-        IStreamHandler streamHandler, IQuickAckFeature quickAck,
-        ITransportErrorFeature transportError,
-        INotifySessionCreatedFeature notifySessionCreated)
+        IStreamHandler streamHandler, TransportControllerFactory controllerFactory)
     {
         _socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -90,10 +83,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         _messageHandler = messageHandler;
         _mapper = mapper;
         _session = session;
-        _quickAck = quickAck;
-        _transportError = transportError;
-        _notifySessionCreated = notifySessionCreated;
-        _webSocket = new WebSocketFeature(connection);
+        _transportController = controllerFactory.Create(connection);
     }
     public void Start()
     {
@@ -123,14 +113,14 @@ public sealed class MTProtoConnection : IMTProtoConnection
             {
                 if (result.Buffer.Length > 0)
                 {
-                    if (_webSocket.HandshakeCompleted)
+                    if (_transportController.WebSocketHandshakeCompleted)
                     {
-                        var position = await _webSocket.Decode(result.Buffer);
+                        var position = await _transportController.DecodeWebSocketData(result.Buffer);
                         _socketConnection.Transport.Input.AdvanceTo(position);
                         
-                        var wsResult = await _webSocket.Reader.ReadAsync();
+                        var wsResult = await _transportController.WebSocketReader.ReadAsync();
                         var wsPosition = await Process(wsResult.Buffer);
-                        _webSocket.Reader.AdvanceTo(wsPosition);
+                        _transportController.WebSocketReader.AdvanceTo(wsPosition);
                     }
                     else
                     {
@@ -179,23 +169,23 @@ public sealed class MTProtoConnection : IMTProtoConnection
                             _log.Debug($"==> Sending Updates with Seq: {update.Seq} ==<");
                         }
                         _messageHandler.HandleOutgoingMessage(msg, this, 
-                            _session, _encoder, _webSocket);
+                            _session, _encoder, _transportController);
                     }
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    _quickAck.Send(msg.QuickAck, _writer, _encoder, _webSocket, this);
+                    _transportController.SendQuickAck(msg.QuickAck, _writer, _encoder, _transportController, this);
                 }
                 else if (_session.AuthKeyId == 0)
                 {
                     _unencryptedMessageHandler.HandleOutgoingMessage(msg, this, 
-                        _session, _encoder, _webSocket);
+                        _session, _encoder, _transportController);
                 }
                 else if (_session.AuthKey != null &&
                          _session.AuthKey.Length == 192)
                 {
                     _messageHandler.HandleOutgoingMessage(msg, this, 
-                        _session, _encoder, _webSocket);
+                        _session, _encoder, _transportController);
                 }
 
                 var result = await _socketConnection.Transport.Output.FlushAsync();
@@ -226,7 +216,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 _log.Debug($"=>Sending stream.");
 
                 await _streamHandler.HandleOutgoingStream(msg, this, _session,
-                    _encoder, _webSocket);
+                    _encoder, _transportController);
 
                 var result = await _socketConnection.Transport.Output.FlushAsync();
                 if (result.IsCompleted ||
@@ -255,7 +245,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             int firstInt = rd.ReadInt32(true);
             if (firstInt == WebSocketHandler.Get)
             {
-                var pos = await _webSocket.ProcessWebSocketHandshake(buffer);
+                var pos = await _transportController.ProcessWebSocketHandshake(buffer);
                 return pos;
             }
 
@@ -295,7 +285,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             if (!_session.TryFetchAuthKey(authKeyId) &&
                 _session.AuthKeyId == 0)
             {
-                _transportError.SendTransportError(404, _writer, _encoder, _webSocket, this);
+                _transportController.SendTransportError(404, _writer, _encoder, _transportController, this);
             }
         }
         if (_session.PermAuthKeyId != 0)
@@ -314,11 +304,11 @@ public sealed class MTProtoConnection : IMTProtoConnection
     }
     public void SendNewSessionCreatedMessage(long firstMessageId, long serverSalt)
     {
-       _notifySessionCreated.Notify(_factory, this, _session, firstMessageId, serverSalt);
+        _transportController.NotifySessionCreated(_factory, this, _session, firstMessageId, serverSalt);
     }
     internal void SendTransportError(int errorCode)
     {
-        _transportError.SendTransportError(errorCode, _writer, _encoder, _webSocket, this);
+        _transportController.SendTransportError(errorCode, _writer, _encoder, _transportController, this);
     }
     public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
     {

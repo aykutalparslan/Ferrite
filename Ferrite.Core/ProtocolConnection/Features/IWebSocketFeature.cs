@@ -24,9 +24,9 @@ namespace Ferrite.Core.Features;
 
 public interface IWebSocketFeature
 {
-    public bool HandshakeCompleted { get; }
-    public PipeReader Reader { get; }
+    public bool WebSocketHandshakeCompleted { get; }
+    public PipeReader WebSocketReader { get; }
     public ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
-    public ValueTask<SequencePosition> Decode(ReadOnlySequence<byte> buffer);
-    public void WriteHeader(int length);
+    public ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer);
+    public void WriteWebSocketHeader(int length);
 }
