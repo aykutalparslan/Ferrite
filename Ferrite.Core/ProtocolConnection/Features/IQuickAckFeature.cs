@@ -25,6 +25,6 @@ namespace Ferrite.Core.Features;
 public interface IQuickAckFeature
 {
     public void Send(int ack, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, Handler? webSocketHandler,
+        IFrameEncoder encoder, IWebSocketFeature webSocket,
         MTProtoConnection connection);
 }

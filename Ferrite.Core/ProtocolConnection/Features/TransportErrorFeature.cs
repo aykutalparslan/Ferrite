@@ -25,16 +25,16 @@ namespace Ferrite.Core.Features;
 public class TransportErrorFeature : ITransportErrorFeature
 {
     public void SendTransportError(int errorCode, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, Handler? webSocketHandler,
+        IFrameEncoder encoder, IWebSocketFeature webSocket,
         MTProtoConnection connection)
     {
         writer.Clear();
         writer.WriteInt32(-1 * errorCode, true);
         var message = writer.ToReadOnlySequence();
         var encoded = encoder.Encode(message);
-        if (webSocketHandler != null)
+        if (webSocket.HandshakeCompleted)
         {
-            webSocketHandler.WriteHeaderTo(connection.TransportConnection.Transport.Output, encoded.Length);
+            webSocket.WriteHeader(4);
         }
 
         connection.TransportConnection.Transport.Output.Write(encoded);

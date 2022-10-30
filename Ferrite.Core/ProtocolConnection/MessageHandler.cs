@@ -22,6 +22,7 @@ using DotNext.Buffers;
 using DotNext.IO;
 using Elasticsearch.Net;
 using Ferrite.Core.Exceptions;
+using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -111,7 +112,7 @@ public class MessageHandler : IMessageHandler
     }
     
     public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler)
+        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket)
     {
         if (message.Data == null) { return; }
         _writer.Clear();
@@ -142,9 +143,9 @@ public class MessageHandler : IMessageHandler
         _writer.Write(messageSpan);
         var msg = _writer.ToReadOnlySequence();
         var encoded = encoder.Encode(msg);
-        if (webSocketHandler != null)
+        if (webSocket.HandshakeCompleted)
         {
-            webSocketHandler.WriteHeaderTo(connection.TransportConnection.Transport.Output, encoded.Length);
+            webSocket.WriteHeader((int)encoded.Length);
         }
         connection.TransportConnection.Transport.Output.Write(encoded);
     }

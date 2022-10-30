@@ -20,6 +20,7 @@ using System.Buffers;
 using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
+using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -70,7 +71,7 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
     }
     
     public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection, 
-        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler)
+        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket)
     {
         if(message.Data == null) return;
         _writer.Clear();
@@ -80,9 +81,9 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
         _writer.Write(message.Data);
         var msg = _writer.ToReadOnlySequence();
         var encoded = encoder.Encode(msg);
-        if (webSocketHandler != null)
+        if (webSocket.HandshakeCompleted)
         {
-            webSocketHandler.WriteHeaderTo(connection.TransportConnection.Transport.Output, encoded.Length);
+            webSocket.WriteHeader((int)encoded.Length);
         }
         connection.TransportConnection.Transport.Output.Write(encoded);
     }

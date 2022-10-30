@@ -18,6 +18,7 @@
 
 using System.Buffers;
 using System.Net;
+using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Services;
 using Ferrite.Transport;
@@ -31,5 +32,5 @@ public interface IUnencryptedMessageHandler
         MTProtoSession session);
 
     public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler);
+        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket);
 }

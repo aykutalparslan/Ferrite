@@ -25,23 +25,26 @@ namespace Ferrite.Core.Features;
 public class WebSocketFeature : IWebSocketFeature
 {
     public bool HandshakeCompleted { get; private set; }
-    public Handler Handler { get; }
+    private WebSocketHandler _handler;
+
+    public WebSocketHandler? WebSocketHandler => HandshakeCompleted ? _handler : null;
+
     public PipeReader Reader { get; }
-    private Pipe _webSocketPipe;
+    private readonly Pipe _webSocketPipe;
     private readonly ITransportConnection _connection;
 
     public WebSocketFeature(ITransportConnection connection)
     {
         _connection = connection;
-        Handler = new();
+        _handler = new();
         _webSocketPipe = new Pipe();
         Reader = _webSocketPipe.Reader;
     }
     public async ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
     {
         var pos = ParseHeaders(data);
-        if (!Handler.HeadersComplete)return pos;
-        Handler.WriteHandshakeResponseTo(_connection.Transport.Output);
+        if (!_handler.HeadersComplete)return pos;
+        _handler.WriteHandshakeResponseTo(_connection.Transport.Output);
         await _connection.Transport.Output.FlushAsync();
         HandshakeCompleted = true;
         return pos;
@@ -49,20 +52,26 @@ public class WebSocketFeature : IWebSocketFeature
 
     public async ValueTask<SequencePosition> Decode(ReadOnlySequence<byte> buffer)
     {
-        var pos = Handler.DecodeTo(buffer, _webSocketPipe.Writer);
+        var pos = _handler.DecodeTo(buffer, _webSocketPipe.Writer);
         await _webSocketPipe.Writer.FlushAsync();
         return pos;
+    }
+
+    public void WriteHeader(int length)
+    {
+        if (!HandshakeCompleted) return;
+        _handler.WriteHeaderTo(_connection.Transport.Output, length);
     }
 
     private SequencePosition ParseHeaders(ReadOnlySequence<byte> data)
     {
         var reader = new SequenceReader<byte>(data);
-        HttpParser<Handler> parser = new HttpParser<Handler>();
-        if (!Handler.RequestLineComplete)
+        HttpParser<WebSocketHandler> parser = new HttpParser<WebSocketHandler>();
+        if (!_handler.RequestLineComplete)
         {
-            parser.ParseRequestLine(Handler, ref reader);
+            parser.ParseRequestLine(_handler, ref reader);
         }
-        parser.ParseHeaders(Handler, ref reader);
+        parser.ParseHeaders(_handler, ref reader);
         return reader.Position;
     }
 }

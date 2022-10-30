@@ -21,6 +21,7 @@ using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
+using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -145,7 +146,7 @@ public class StreamHandler : IStreamHandler
     }
     
     public async Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, Handler? webSocketHandler)
+        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket)
     {
         if (message == null) return;
         var rpcResult = _factory.Resolve<RpcResult>();
@@ -205,10 +206,9 @@ public class StreamHandler : IStreamHandler
         _writer.Write(messageKey);
         var frameHead = encoder.EncodeHead(24 + (int)stream.Length);
         var header = _writer.ToReadOnlySequence();
-        if (webSocketHandler != null)
+        if (webSocket.HandshakeCompleted)
         {
-            webSocketHandler.WriteHeaderTo(connection.TransportConnection.Transport.Output, 
-                frameHead.Length + 24 + (int)stream.Length);
+            webSocket.WriteHeader((int)(frameHead.Length + 24 + stream.Length));
         }
         connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(frameHead));
         connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(header));

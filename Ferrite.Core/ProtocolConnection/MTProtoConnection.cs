@@ -61,8 +61,6 @@ public sealed class MTProtoConnection : IMTProtoConnection
     private readonly object _disconnectTimerState = new object();
     private readonly ITLObjectFactory _factory;
     private readonly SparseBufferWriter<byte> _writer = new(UnmanagedMemoryPool<byte>.Shared);
-    //private WebSocketHandler? _webSocketHandler;
-    //private Pipe _webSocketPipe;
     private readonly IQuickAckFeature _quickAck;
     private readonly ITransportErrorFeature _transportError;
     private readonly INotifySessionCreatedFeature _notifySessionCreated;
@@ -181,23 +179,23 @@ public sealed class MTProtoConnection : IMTProtoConnection
                             _log.Debug($"==> Sending Updates with Seq: {update.Seq} ==<");
                         }
                         _messageHandler.HandleOutgoingMessage(msg, this, 
-                            _session, _encoder, _webSocket.Handler);
+                            _session, _encoder, _webSocket);
                     }
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {
-                    _quickAck.Send(msg.QuickAck, _writer, _encoder, _webSocket.Handler, this);
+                    _quickAck.Send(msg.QuickAck, _writer, _encoder, _webSocket, this);
                 }
                 else if (_session.AuthKeyId == 0)
                 {
                     _unencryptedMessageHandler.HandleOutgoingMessage(msg, this, 
-                        _session, _encoder, _webSocket.Handler);
+                        _session, _encoder, _webSocket);
                 }
                 else if (_session.AuthKey != null &&
                          _session.AuthKey.Length == 192)
                 {
                     _messageHandler.HandleOutgoingMessage(msg, this, 
-                        _session, _encoder, _webSocket.Handler);
+                        _session, _encoder, _webSocket);
                 }
 
                 var result = await _socketConnection.Transport.Output.FlushAsync();
@@ -228,7 +226,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 _log.Debug($"=>Sending stream.");
 
                 await _streamHandler.HandleOutgoingStream(msg, this, _session,
-                    _encoder, _webSocket.Handler);
+                    _encoder, _webSocket);
 
                 var result = await _socketConnection.Transport.Output.FlushAsync();
                 if (result.IsCompleted ||
@@ -255,7 +253,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         {
             var rd = IAsyncBinaryReader.Create(buffer);
             int firstInt = rd.ReadInt32(true);
-            if (firstInt == Handler.Get)
+            if (firstInt == WebSocketHandler.Get)
             {
                 var pos = await _webSocket.ProcessWebSocketHandshake(buffer);
                 return pos;
@@ -284,27 +282,6 @@ public sealed class MTProtoConnection : IMTProtoConnection
 
         return position;
     }
-    /*private SequencePosition ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
-    {
-        var reader = new SequenceReader<byte>(data);
-        if (_webSocketHandler == null)
-        {
-            _webSocketHandler = new();
-        }
-        HttpParser<WebSocketHandler> parser = new HttpParser<WebSocketHandler>();
-        if (!_webSocketHandler.RequestLineComplete)
-        {
-            parser.ParseRequestLine(_webSocketHandler, ref reader);
-        }
-        parser.ParseHeaders(_webSocketHandler, ref reader);
-        if (_webSocketHandler.HeadersComplete)
-        {
-            _webSocketHandler.WriteHandshakeResponseTo(_socketConnection.Transport.Output);
-            _socketConnection.Transport.Output.FlushAsync();
-        }
-
-        return reader.Position;
-    }*/
     private void ProcessFrame(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 8)
@@ -318,7 +295,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             if (!_session.TryFetchAuthKey(authKeyId) &&
                 _session.AuthKeyId == 0)
             {
-                _transportError.SendTransportError(404, _writer, _encoder, _webSocket.Handler, this);
+                _transportError.SendTransportError(404, _writer, _encoder, _webSocket, this);
             }
         }
         if (_session.PermAuthKeyId != 0)
@@ -341,7 +318,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
     }
     internal void SendTransportError(int errorCode)
     {
-        _transportError.SendTransportError(errorCode, _writer, _encoder, _webSocket.Handler, this);
+        _transportError.SendTransportError(errorCode, _writer, _encoder, _webSocket, this);
     }
     public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
     {
