@@ -111,10 +111,9 @@ public class MessageHandler : IMessageHandler
         }
     }
     
-    public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket)
+    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session)
     {
-        if (message.Data == null) { return; }
+        if(message.Data == null) throw new ArgumentNullException();
         _writer.Clear();
         _writer.WriteInt64(session.ServerSalt.Salt, true);
         _writer.WriteInt64(message.SessionId, true);
@@ -142,11 +141,6 @@ public class MessageHandler : IMessageHandler
         _writer.Write(messageKey);
         _writer.Write(messageSpan);
         var msg = _writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(msg);
-        if (webSocket.WebSocketHandshakeCompleted)
-        {
-            webSocket.WriteWebSocketHeader((int)encoded.Length);
-        }
-        connection.TransportConnection.Transport.Output.Write(encoded);
+        return msg;
     }
 }

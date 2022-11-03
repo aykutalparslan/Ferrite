@@ -53,7 +53,7 @@ public class FullFrameEncoder : IFrameEncoder
         return frame;
     }
 
-    public ReadOnlySequence<byte> EncodeHead(int length)
+    public ReadOnlySequence<byte> GenerateHead(int length)
     {
         _crc32 = new IncrementalCrc32();
         writer.WriteInt32(length, true);

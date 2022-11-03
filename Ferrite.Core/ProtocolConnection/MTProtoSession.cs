@@ -16,10 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using System.Security.Cryptography;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
+using Ferrite.TL;
+using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.Core;
@@ -31,6 +34,7 @@ public class MTProtoSession
     private readonly IMTProtoTime _time;
     private readonly ISessionService _sessionService;
     private readonly IRandomGenerator _random;
+    private readonly ITLObjectFactory _factory;
     private long _authKeyId;
     private long _permAuthKeyId;
     private byte[]? _authKey;
@@ -42,11 +46,12 @@ public class MTProtoSession
     private readonly CircularQueue<long> _lastMessageIds = new CircularQueue<long>(10);
     private Dictionary<string, object> _sessionData = new();
 
-    public MTProtoSession(IMTProtoService mtproto, ILogger log, 
+    public MTProtoSession(IMTProtoService mtproto, ILogger log, ITLObjectFactory factory,
         IMTProtoTime time, ISessionService sessionService, IRandomGenerator random)
     {
         _mtproto = mtproto;
         _log = log;
+        _factory = factory;
         _time = time;
         _sessionService = sessionService;
         _random = random;
@@ -204,5 +209,22 @@ public class MTProtoSession
             ) return false; 
         _lastMessageIds.Enqueue(messageId);
         return true;
+    }
+    
+    public MTProtoMessage GenerateSessionCreated(long firstMessageId, long serverSalt)
+    {
+        var newSessionCreated = _factory.Resolve<NewSessionCreated>();
+        newSessionCreated.FirstMsgId = firstMessageId;
+        newSessionCreated.ServerSalt = serverSalt;
+        newSessionCreated.UniqueId = UniqueSessionId;
+        MTProtoMessage newSessionMessage = new()
+        {
+            Data = newSessionCreated.TLBytes.ToArray(),
+            IsContentRelated = false,
+            IsResponse = false,
+            SessionId = SessionId,
+            MessageType = MTProtoMessageType.NewSession
+        };
+        return newSessionMessage;
     }
 }

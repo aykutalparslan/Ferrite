@@ -40,7 +40,7 @@ public class EncoderPipe : IDisposable
     }
     public async ValueTask<long> WriteLength(int length)
     {
-        return await _encoderPipe.Writer.WriteAsync(_encoder.EncodeHead(length));
+        return await _encoderPipe.Writer.WriteAsync(_encoder.GenerateHead(length));
     }
     public async ValueTask<FlushResult> WriteAsync(SequenceReader reader)
     {

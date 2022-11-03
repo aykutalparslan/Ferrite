@@ -16,15 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using DotNext.Buffers;
 using Ferrite.Core.Framing;
+using Ferrite.Services;
 using Ferrite.Transport;
 
 namespace Ferrite.Core.Features;
 
 public interface IQuickAckFeature
 {
-    public void SendQuickAck(int ack, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, IWebSocketFeature webSocket,
-        MTProtoConnection connection);
+    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport);
 }

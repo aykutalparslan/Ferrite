@@ -33,6 +33,5 @@ public interface IMessageHandler
         MTProtoSession session,
         bool requiresQuickAck);
 
-    public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket);
+    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session);
 }

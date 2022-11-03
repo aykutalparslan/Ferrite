@@ -57,7 +57,7 @@ public class PaddedIntermediateFrameEncoder : IFrameEncoder
         return frame;
     }
 
-    public ReadOnlySequence<byte> EncodeHead(int length)
+    public ReadOnlySequence<byte> GenerateHead(int length)
     {
         _currentFrameLength = length;
         writer.WriteInt32(length, true);

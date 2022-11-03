@@ -70,21 +70,15 @@ public class UnencryptedMessageHandler : IUnencryptedMessageHandler
             messageData, 0, messageDataLength), context);
     }
     
-    public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection, 
-        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket)
+    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session)
     {
-        if(message.Data == null) return;
+        if(message.Data == null) throw new ArgumentNullException();
         _writer.Clear();
         _writer.WriteInt64(0, true);
         _writer.WriteInt64(session.NextMessageId(message.IsContentRelated), true);
         _writer.WriteInt32(message.Data.Length, true);
         _writer.Write(message.Data);
         var msg = _writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(msg);
-        if (webSocket.WebSocketHandshakeCompleted)
-        {
-            webSocket.WriteWebSocketHeader((int)encoded.Length);
-        }
-        connection.TransportConnection.Transport.Output.Write(encoded);
+        return msg;
     }
 }

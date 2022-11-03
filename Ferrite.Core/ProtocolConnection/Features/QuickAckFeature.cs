@@ -16,33 +16,28 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using System.Buffers.Binary;
 using DotNext.Buffers;
 using Ferrite.Core.Framing;
+using Ferrite.Services;
 using Ferrite.Transport;
 
 namespace Ferrite.Core.Features;
 
 public class QuickAckFeature : IQuickAckFeature
 {
-    public void SendQuickAck(int ack, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, IWebSocketFeature webSocket,
-        MTProtoConnection connection)
+    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport)
     {
+        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
         writer.Clear();
         ack |= 1 << 31;
-        if (encoder is AbridgedFrameEncoder)
+        if (transport == MTProtoTransport.Abridged)
         {
             ack = BinaryPrimitives.ReverseEndianness(ack);
         }
         writer.WriteInt32(ack, true);
-        var msg = writer.ToReadOnlySequence();
-        var encoded = encoder.EncodeBlock(msg);
-        if (webSocket.WebSocketHandshakeCompleted)
-        {
-            webSocket.WriteWebSocketHeader(4);
-        }
-
-        connection.TransportConnection.Transport.Output.Write(encoded);
+        var msg = writer.WrittenSpan;
+        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
     }
 }

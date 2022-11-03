@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using DotNext.Buffers;
 using Ferrite.Core.Framing;
 using Ferrite.Transport;
@@ -24,20 +25,11 @@ namespace Ferrite.Core.Features;
 
 public class TransportErrorFeature : ITransportErrorFeature
 {
-    public void SendTransportError(int errorCode, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, IWebSocketFeature webSocket,
-        MTProtoConnection connection)
+    public ReadOnlySequence<byte> GenerateTransportError(int errorCode)
     {
-        writer.Clear();
+        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
         writer.WriteInt32(-1 * errorCode, true);
-        var message = writer.ToReadOnlySequence();
-        var encoded = encoder.Encode(message);
-        if (webSocket.WebSocketHandshakeCompleted)
-        {
-            webSocket.WriteWebSocketHeader(4);
-        }
-
-        connection.TransportConnection.Transport.Output.Write(encoded);
-        connection.TransportConnection.Transport.Output.FlushAsync();
+        var msg = writer.WrittenSpan;
+        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
     }
 }

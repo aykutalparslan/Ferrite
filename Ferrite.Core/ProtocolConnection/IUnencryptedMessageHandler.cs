@@ -31,6 +31,5 @@ public interface IUnencryptedMessageHandler
         MTProtoConnection connection,
         MTProtoSession session);
 
-    public void HandleOutgoingMessage(MTProtoMessage message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, IWebSocketFeature webSocket);
+    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session);
 }

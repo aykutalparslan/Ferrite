@@ -31,23 +31,22 @@ public class WebSocketFeature : IWebSocketFeature
 
     public PipeReader WebSocketReader { get; }
     private readonly Pipe _webSocketPipe;
-    private readonly ITransportConnection _connection;
 
-    public WebSocketFeature(ITransportConnection connection)
+    public WebSocketFeature()
     {
-        _connection = connection;
         _handler = new();
         _webSocketPipe = new Pipe();
         WebSocketReader = _webSocketPipe.Reader;
     }
-    public async ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
+    public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
     {
         var pos = ParseHeaders(data);
-        if (!_handler.HeadersComplete)return pos;
-        _handler.WriteHandshakeResponseTo(_connection.Transport.Output);
-        await _connection.Transport.Output.FlushAsync();
+        if (!_handler.HeadersComplete) return new HandshakeResponse(pos, 
+            new ReadOnlySequence<byte>(), false);
+        var response = _handler.GenerateHandshakeResponse();
         WebSocketHandshakeCompleted = true;
-        return pos;
+        return new HandshakeResponse(pos, 
+            response, true);
     }
 
     public async ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer)
@@ -57,10 +56,11 @@ public class WebSocketFeature : IWebSocketFeature
         return pos;
     }
 
-    public void WriteWebSocketHeader(int length)
+    public ReadOnlySequence<byte> GenerateWebSocketHeader(int length)
     {
-        if (!WebSocketHandshakeCompleted) return;
-        _handler.WriteHeaderTo(_connection.Transport.Output, length);
+        if (!WebSocketHandshakeCompleted) return new ReadOnlySequence<byte>();
+        var header = WebSocketHandler.GenerateHeader(length);
+        return new ReadOnlySequence<byte>(header);
     }
 
     private SequencePosition ParseHeaders(ReadOnlySequence<byte> data)

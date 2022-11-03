@@ -58,7 +58,7 @@ public class AbridgedFrameEncoder : IFrameEncoder
         return frame;
     }
 
-    public ReadOnlySequence<byte> EncodeHead(int length)
+    public ReadOnlySequence<byte> GenerateHead(int length)
     {
         int len = length / 4;
         if (len < 127)

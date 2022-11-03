@@ -26,7 +26,7 @@ public interface IWebSocketFeature
 {
     public bool WebSocketHandshakeCompleted { get; }
     public PipeReader WebSocketReader { get; }
-    public ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
+    public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
     public ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer);
-    public void WriteWebSocketHeader(int length);
+    public ReadOnlySequence<byte> GenerateWebSocketHeader(int length);
 }
