@@ -5,6 +5,7 @@ using System.Buffers.Text;
 using System.IO.Pipelines;
 using System.Security.Cryptography;
 using System.Text;
+using DotNext.Buffers;
 
 namespace Ferrite.Transport
 {
@@ -76,8 +77,9 @@ namespace Ferrite.Transport
         }
         //---
 
-        public void WriteHandshakeResponseTo(PipeWriter output)
+        public ReadOnlySequence<byte> GenerateHandshakeResponse()
         {
+            PooledArrayBufferWriter<byte> output = new();
             if (HeadersComplete && RequestLineComplete &&
                 RequestHeaders.Connection.ToString().ToLowerInvariant() == "upgrade" &&
                 RequestHeaders.Upgrade.ToString().ToLowerInvariant() == "websocket")
@@ -118,32 +120,34 @@ namespace Ferrite.Transport
                     output.Write(CRLF);
                 }
             }
+
+            return new ReadOnlySequence<byte>(output.WrittenArray);
         }
 
-        public void WriteHeaderTo(PipeWriter output, long length)
+        public static byte[] GenerateHeader(long length)
         {
             if (length <= 125)
             {
-                Span<byte> header = stackalloc byte[2];
+                var header = new byte[2];
                 header[0] = 0b10000010;
                 header[1] = (byte)length;
-                output.Write(header);
+                return header;
             }
             else if (length <= 65535)
             {
-                Span<byte> header = stackalloc byte[4];
+                var header = new byte[4];
                 header[0] = 0b10000010;
                 header[1] = (byte)126;
-                BinaryPrimitives.WriteUInt16BigEndian(header.Slice(2), (ushort)length);
-                output.Write(header);
+                BinaryPrimitives.WriteUInt16BigEndian(header.AsSpan()[2..], (ushort)length);
+                return header;
             }
             else
             {
-                Span<byte> header = stackalloc byte[10];
+                var header = new byte[10];
                 header[0] = 0b10000010;
                 header[1] = (byte)127;
-                BinaryPrimitives.WriteUInt64BigEndian(header.Slice(2), (ulong)length);
-                output.Write(header);
+                BinaryPrimitives.WriteUInt64BigEndian(header.AsSpan()[2..], (ulong)length);
+                return header;
             }
         }
 

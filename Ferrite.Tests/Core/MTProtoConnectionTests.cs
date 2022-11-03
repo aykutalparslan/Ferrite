@@ -458,10 +458,10 @@ public class MTProtoConnectionTests
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<MessageHandler>().As<IMessageHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
-        builder.RegisterType<NotifySessionCreatedFeature>().As<INotifySessionCreatedFeature>().SingleInstance();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
-        builder.RegisterType<TransportControllerFactory>().SingleInstance();
+        builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();
+        builder.RegisterType<ProtoTransport>();
         builder.RegisterType<MTProtoSession>().AsSelf();
         builder.RegisterMock(pipe);
         builder.RegisterMock(new Mock<IAuthService>());

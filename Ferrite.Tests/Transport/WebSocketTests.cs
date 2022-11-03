@@ -46,7 +46,8 @@ namespace Ferrite.Tests.Transport
             parser.ParseRequestLine(webSocketHandler, ref reader);
             parser.ParseHeaders(webSocketHandler, ref reader);
             Pipe p = new Pipe();
-            webSocketHandler.WriteHandshakeResponseTo(p.Writer);
+            var resp = webSocketHandler.GenerateHandshakeResponse();
+            p.Writer.Write(resp.ToArray());
             p.Writer.FlushAsync().AsTask().Wait();
             var result = p.Reader.ReadAsync().GetAwaiter().GetResult();
             string expected = "HTTP/1.1 101 Switching Protocols\r\n" +
@@ -76,7 +77,8 @@ namespace Ferrite.Tests.Transport
             parser.ParseRequestLine(webSocketHandler, ref reader);
             parser.ParseHeaders(webSocketHandler, ref reader);
             Pipe p = new Pipe();
-            webSocketHandler.WriteHandshakeResponseTo(p.Writer);
+            var resp = webSocketHandler.GenerateHandshakeResponse();
+            p.Writer.Write(resp.ToArray());
             p.Writer.FlushAsync().AsTask().Wait();
             var result = p.Reader.ReadAsync().GetAwaiter().GetResult();
             string expected = "HTTP/1.1 101 Switching Protocols\r\n" +
