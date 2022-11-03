@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Buffers;
 using DotNext.Buffers;
 using Ferrite.Core.Framing;
 using Ferrite.Transport;
@@ -24,7 +25,5 @@ namespace Ferrite.Core.Features;
 
 public interface ITransportErrorFeature
 {
-    public void SendTransportError(int errorCode, SparseBufferWriter<byte> writer,
-        IFrameEncoder encoder, WebSocketHandler? webSocketHandler,
-        MTProtoConnection connection);
+    public ReadOnlySequence<byte> GenerateTransportError(int errorCode);
 }

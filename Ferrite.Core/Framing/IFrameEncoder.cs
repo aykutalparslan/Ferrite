@@ -23,7 +23,7 @@ namespace Ferrite.Core.Framing;
 public interface IFrameEncoder
 {
     ReadOnlySequence<byte> Encode(in ReadOnlySequence<byte> input);
-    ReadOnlySequence<byte> EncodeHead(int length);
+    ReadOnlySequence<byte> GenerateHead(int length);
     ReadOnlySequence<byte> EncodeBlock(in ReadOnlySequence<byte> input);
     ReadOnlySequence<byte> EncodeTail();
 }

@@ -42,11 +42,12 @@ namespace Ferrite.Tests.Transport
             var requestBytes = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(request));
             var reader = new SequenceReader<byte>(requestBytes);
             HttpParser<WebSocketHandler> parser = new();
-            WebSocketHandler handler = new();
-            parser.ParseRequestLine(handler, ref reader);
-            parser.ParseHeaders(handler, ref reader);
+            WebSocketHandler webSocketHandler = new();
+            parser.ParseRequestLine(webSocketHandler, ref reader);
+            parser.ParseHeaders(webSocketHandler, ref reader);
             Pipe p = new Pipe();
-            handler.WriteHandshakeResponseTo(p.Writer);
+            var resp = webSocketHandler.GenerateHandshakeResponse();
+            p.Writer.Write(resp.ToArray());
             p.Writer.FlushAsync().AsTask().Wait();
             var result = p.Reader.ReadAsync().GetAwaiter().GetResult();
             string expected = "HTTP/1.1 101 Switching Protocols\r\n" +
@@ -72,11 +73,12 @@ namespace Ferrite.Tests.Transport
             var requestBytes = new ReadOnlySequence<byte>(Encoding.ASCII.GetBytes(request));
             var reader = new SequenceReader<byte>(requestBytes);
             HttpParser<WebSocketHandler> parser = new();
-            WebSocketHandler handler = new();
-            parser.ParseRequestLine(handler, ref reader);
-            parser.ParseHeaders(handler, ref reader);
+            WebSocketHandler webSocketHandler = new();
+            parser.ParseRequestLine(webSocketHandler, ref reader);
+            parser.ParseHeaders(webSocketHandler, ref reader);
             Pipe p = new Pipe();
-            handler.WriteHandshakeResponseTo(p.Writer);
+            var resp = webSocketHandler.GenerateHandshakeResponse();
+            p.Writer.Write(resp.ToArray());
             p.Writer.FlushAsync().AsTask().Wait();
             var result = p.Reader.ReadAsync().GetAwaiter().GetResult();
             string expected = "HTTP/1.1 101 Switching Protocols\r\n" +

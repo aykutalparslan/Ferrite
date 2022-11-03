@@ -16,13 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.TL;
+using System.Buffers;
 
 namespace Ferrite.Core.Features;
 
-public interface INotifySessionCreatedFeature
-{
-    public void Notify(ITLObjectFactory factory,
-        MTProtoConnection connection, MTProtoSession session,
-        long firstMessageId, long serverSalt);
-}
+public readonly record struct HandshakeResponse(SequencePosition Position, 
+    ReadOnlySequence<byte> Response, bool Completed);

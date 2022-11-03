@@ -129,9 +129,10 @@ public class Program
         builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
         builder.RegisterType<MessageHandler>().As<IMessageHandler>();
-        builder.RegisterType<NotifySessionCreatedFeature>().As<INotifySessionCreatedFeature>().SingleInstance();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
+        builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();
+        builder.RegisterType<ProtoTransport>();
         builder.RegisterType<MTProtoSession>().AsSelf();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();

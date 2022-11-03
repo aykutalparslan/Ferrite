@@ -21,6 +21,7 @@ using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
+using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -145,7 +146,7 @@ public class StreamHandler : IStreamHandler
     }
     
     public async Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler)
+        MTProtoSession session)
     {
         if (message == null) return;
         var rpcResult = _factory.Resolve<RpcResult>();
@@ -203,15 +204,9 @@ public class StreamHandler : IStreamHandler
         _writer.Clear();
         _writer.WriteInt64(session.AuthKeyId, true);
         _writer.Write(messageKey);
-        var frameHead = encoder.EncodeHead(24 + (int)stream.Length);
+        connection.WriteFrameHeader((int)(24 + stream.Length));
         var header = _writer.ToReadOnlySequence();
-        if (webSocketHandler != null)
-        {
-            webSocketHandler.WriteHeaderTo(connection.TransportConnection.Transport.Output, 
-                frameHead.Length + 24 + (int)stream.Length);
-        }
-        connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(frameHead));
-        connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(header));
+        connection.WriteFrameBlock(header);
         //--
         MTProtoPipe pipe = new MTProtoPipe(aesKey, aesIV, true);
         await pipe.WriteAsync(cryptographicHeader);
@@ -225,9 +220,9 @@ public class StreamHandler : IStreamHandler
             await pipe.WriteAsync(new ReadOnlySequence<byte>(buffer, 0, read));
             remaining -= read;
             var encrypted = await pipe.Input.ReadAsync();
-            connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(encrypted.Buffer));
+            connection.WriteFrameBlock(encrypted.Buffer);
             pipe.Input.AdvanceTo(encrypted.Buffer.End);
-            await connection.TransportConnection.Transport.Output.FlushAsync();
+            await connection.FlushSocketAsync();
         }
         if (pad > 0)
         {
@@ -241,20 +236,15 @@ public class StreamHandler : IStreamHandler
         await pipe.CompleteAsync();
 
         var readResult = await pipe.Input.ReadAsync();
-        connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(readResult.Buffer));
+        connection.WriteFrameBlock(readResult.Buffer);
         pipe.Input.AdvanceTo(readResult.Buffer.End);
         while (!readResult.IsCompleted)
         {
             readResult = await pipe.Input.ReadAsync();
-            connection.TransportConnection.Transport.Output.Write(encoder.EncodeBlock(readResult.Buffer));
+            connection.WriteFrameBlock(readResult.Buffer);
             pipe.Input.AdvanceTo(readResult.Buffer.End);
         }
-
-        var frameTail = encoder.EncodeTail();
-        if (frameTail.Length > 0)
-        {
-            connection.TransportConnection.Transport.Output.Write(frameTail);
-        }
+        connection.WriteFrameTail();
     }
 
     public ValueTask DisposeAsync()

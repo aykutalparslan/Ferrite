@@ -18,6 +18,7 @@
 
 using System.Buffers;
 using System.Net;
+using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Data;
 using Ferrite.Transport;
@@ -33,5 +34,5 @@ public interface IStreamHandler : IAsyncDisposable
         bool hasMore);
 
     public Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session, IFrameEncoder encoder, WebSocketHandler? webSocketHandler);
+        MTProtoSession session);
 }
