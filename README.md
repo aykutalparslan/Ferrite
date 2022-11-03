@@ -5,7 +5,7 @@ Project Ferrite is an implementation of the Telegram Server API in C# and this r
 ## What works?
 
 The following are the features that are implemented and working so far:
-- All MTProto transports are implemented (only Abridged and Intermediate transports are tested)
+- All MTProto transports are implemented
 - Websockets and Obfuscation
 - Creation of an Auth Key
 - MTProto Encryption/Decryption (AES-IGE, AES-CTR, RSA with custom padding etc.)
@@ -32,7 +32,9 @@ dotnet run
 
 ## Roadmap
 
-Development is currently focused on getting the Android application to run in a stable state and the planned order of steps to achive that are:
+A planned refactor is currently in progress. 
+After the refactor, more unit and integration tests will be added before continuing development. 
+Future development will focus on getting the Android application to run in a stable state and the planned order of steps to achieve that are:
 - All settings screens should work on the Android application
 - Contacts related features should work as expected
 - Phone calls.
