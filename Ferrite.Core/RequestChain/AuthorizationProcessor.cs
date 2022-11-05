@@ -145,7 +145,7 @@ public class AuthorizationProcessor : ILinkedHandler
             var response = _scope.Resolve<RpcError>();
             response.ErrorCode = 401;
             response.ErrorMessage = "UNAUTHORIZED";
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;

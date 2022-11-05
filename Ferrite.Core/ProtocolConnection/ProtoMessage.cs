@@ -16,20 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using System.Net;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
-using Ferrite.Services;
-using Ferrite.Transport;
+using Ferrite.TL.slim;
 
 namespace Ferrite.Core;
 
-public interface IUnencryptedMessageHandler
+public readonly record struct ProtoMessage : IDisposable
 {
-    public void HandleIncomingMessage(in ReadOnlySequence<byte> bytes, 
-        MTProtoConnection connection,
-        MTProtoSession session);
+    public long AuthKeyId { get; init; }
+    public long Salt { get; init; }
+    public long SessionId { get; init; }
+    public long MessageId { get; init; }
+    public int SequenceNo { get; init; }
+    public TLBytes MessageData { get; init; }
 
-    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session);
+    public void Dispose()
+    {
+        MessageData.Dispose();
+    }
 }

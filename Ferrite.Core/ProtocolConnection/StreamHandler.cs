@@ -75,7 +75,7 @@ public class StreamHandler : IStreamHandler
             }
             if (session.PermAuthKeyId != 0)
             {
-                session.SaveCurrentSession(session.PermAuthKeyId, connection);
+                session.SaveCurrentSession(session.PermAuthKeyId);
             }
 
             var incomingMessageKey = new byte[16];
@@ -118,7 +118,7 @@ public class StreamHandler : IStreamHandler
         int constructor = await pipe.Input.ReadInt32Async(true);
         if (session.SessionId == 0)
         {
-            session.CreateNewSession(context.SessionId, context.MessageId, connection);
+            session.CreateNewSession(context.SessionId, context.MessageId);
         }
 
         if (session.IsValidMessageId(context.MessageId))

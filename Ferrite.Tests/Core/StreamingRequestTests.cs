@@ -433,8 +433,7 @@ public class StreamingRequestTests
         builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
-        builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
-        builder.RegisterType<MessageHandler>().As<IMessageHandler>();
+        builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();

@@ -54,7 +54,7 @@ public class ServiceMessagesProcessor : ILinkedHandler
         {
             if (ctx.QuickAck != null)
             {
-                MTProtoMessage message = new MTProtoMessage()
+                Services.MTProtoMessage message = new Services.MTProtoMessage()
                 {
                     QuickAck = (int)ctx.QuickAck,
                     MessageType = MTProtoMessageType.QuickAck,

@@ -47,6 +47,7 @@ using Ferrite.Utils;
 using MessagePack;
 using Moq;
 using Xunit;
+using MTProtoMessage = Ferrite.Services.MTProtoMessage;
 
 namespace Ferrite.Tests.Core;
 
@@ -455,8 +456,7 @@ public class MTProtoConnectionTests
         builder.RegisterMock(proto);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
-        builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
-        builder.RegisterType<MessageHandler>().As<IMessageHandler>();
+        builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();

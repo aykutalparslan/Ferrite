@@ -126,9 +126,8 @@ public class Program
         builder.RegisterType<DefaultChain>().As<ITLHandler>().SingleInstance();
         RegisterApiLayers(builder);
         builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>().SingleInstance();
-        builder.RegisterType<UnencryptedMessageHandler>().As<IUnencryptedMessageHandler>();
         builder.RegisterType<StreamHandler>().As<IStreamHandler>();
-        builder.RegisterType<MessageHandler>().As<IMessageHandler>();
+        builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
         builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();

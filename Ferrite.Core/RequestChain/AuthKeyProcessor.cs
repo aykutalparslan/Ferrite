@@ -75,7 +75,7 @@ public class AuthKeyProcessor : ILinkedHandler
             {
                 return;
             }
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -96,7 +96,7 @@ public class AuthKeyProcessor : ILinkedHandler
         {
             ctx.SessionData = state.SessionData;
             var result = await reqDhParams.ExecuteAsync(ctx);
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -121,7 +121,7 @@ public class AuthKeyProcessor : ILinkedHandler
         {
             ctx.SessionData = state2.SessionData;
             var result = await setClientDhParams.ExecuteAsync(ctx);
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -154,7 +154,7 @@ public class AuthKeyProcessor : ILinkedHandler
                 return;
             }
 
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -188,7 +188,7 @@ public class AuthKeyProcessor : ILinkedHandler
             }
 
             ctx.SessionData = state.SessionData;
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -227,7 +227,7 @@ public class AuthKeyProcessor : ILinkedHandler
             }
 
             ctx.SessionData = state.SessionData;
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;

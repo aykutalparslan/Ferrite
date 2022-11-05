@@ -65,7 +65,7 @@ public class MsgContainerProcessor : ILinkedHandler
                 ack.MsgIds.Add(msg.MsgId);
                 await Next.Process(sender, msg, ctx);
             }
-            MTProtoMessage message = new MTProtoMessage();
+            Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;

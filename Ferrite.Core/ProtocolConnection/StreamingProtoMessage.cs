@@ -17,21 +17,8 @@
 // 
 
 using System.Buffers;
-using System.Net;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
-using Ferrite.Services;
-using Ferrite.Transport;
+using Ferrite.TL;
 
 namespace Ferrite.Core;
 
-public interface IMessageHandler
-{
-    public void HandleIncomingMessage(in ReadOnlySequence<byte> bytes, 
-        MTProtoConnection connection,
-        EndPoint? endPoint,
-        MTProtoSession session,
-        bool requiresQuickAck);
-
-    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session);
-}
+public record StreamingProtoMessage(MTProtoPipe Data, TLExecutionContext Context, bool IsFirst, bool IsLast);

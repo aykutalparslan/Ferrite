@@ -64,7 +64,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
                     var ack = _factory.Resolve<MsgsAck>();
                     ack.MsgIds = new VectorOfLong(1);
                     ack.MsgIds.Add(ctx.MessageId);
-                    MTProtoMessage message = new MTProtoMessage();
+                    Services.MTProtoMessage message = new Services.MTProtoMessage();
                     message.SessionId = ctx.SessionId;
                     message.IsResponse = true;
                     message.IsContentRelated = true;
@@ -78,7 +78,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
                 if (result != null)
                 {
                     _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
-                    MTProtoMessage message = new MTProtoMessage();
+                    Services.MTProtoMessage message = new Services.MTProtoMessage();
                     message.SessionId = ctx.SessionId;
                     message.IsResponse = true;
                     message.IsContentRelated = true;
@@ -123,7 +123,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
                 if (result != null)
                 {
                     _log.Debug($"Result for {encMethod} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
-                    MTProtoMessage message = new MTProtoMessage();
+                    Services.MTProtoMessage message = new Services.MTProtoMessage();
                     message.SessionId = ctx.SessionId;
                     message.IsResponse = true;
                     message.IsContentRelated = true;
@@ -161,7 +161,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
             }
             else if (sender != null)
             {
-                MTProtoMessage message = new MTProtoMessage
+                Services.MTProtoMessage message = new Services.MTProtoMessage
                 {
                     MessageType = MTProtoMessageType.Encrypted,
                     SessionId = ctx.SessionId,
@@ -182,7 +182,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
             }
             else if (sender != null)
             {
-                MTProtoMessage message = new MTProtoMessage
+                Services.MTProtoMessage message = new Services.MTProtoMessage
                 {
                     MessageType = MTProtoMessageType.Encrypted,
                     SessionId = ctx.SessionId,

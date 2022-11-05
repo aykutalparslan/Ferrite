@@ -17,6 +17,7 @@
 // 
 
 using System.Buffers;
+using System.Net;
 using System.Security.Cryptography;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -35,6 +36,8 @@ public class MTProtoSession
     private readonly ISessionService _sessionService;
     private readonly IRandomGenerator _random;
     private readonly ITLObjectFactory _factory;
+    public MTProtoConnection Connection { get; set; }
+    public IPEndPoint? EndPoint { get; set; }
     private long _authKeyId;
     private long _permAuthKeyId;
     private byte[]? _authKey;
@@ -59,7 +62,7 @@ public class MTProtoSession
     
     public long AuthKeyId => _authKeyId;
     public long PermAuthKeyId => _permAuthKeyId;
-    public byte[]? AuthKey => _authKey;
+    public virtual byte[]? AuthKey => _authKey;
     public long SessionId => _sessionId;
     public long UniqueSessionId => _uniqueSessionId;
     public ServerSaltDTO ServerSalt => _serverSalt;
@@ -157,20 +160,20 @@ public class MTProtoSession
         } while (!((response && id % 4 != 1) || (!response && id % 4 != 3)));
         return id;
     }
-    public void CreateNewSession(long sessionId, long firstMessageId, MTProtoConnection connection)
+    public void CreateNewSession(long sessionId, long firstMessageId)
     {
         _sessionId = sessionId;
         _uniqueSessionId = _random.NextLong();
-        connection.SendNewSessionCreatedMessage(firstMessageId, 
+        Connection.SendNewSessionCreatedMessage(firstMessageId, 
             SaveCurrentSession(_permAuthKeyId != 0 ? 
-                _permAuthKeyId : _authKeyId, connection));
+                _permAuthKeyId : _authKeyId));
     }
     /// <summary>
     /// 
     /// </summary>
     /// <param name="authKeyId"></param>
     /// <returns>Current Server Salt</returns>
-    internal long SaveCurrentSession(long authKeyId, MTProtoConnection connection)
+    internal long SaveCurrentSession(long authKeyId)
     {
         if (_serverSalt.ValidSince + 1800 < DateTimeOffset.Now.ToUnixTimeSeconds())
         {
@@ -189,7 +192,7 @@ public class MTProtoSession
         if (authKeyId != 0)
         {
             _sessionService.AddSession(authKeyId, _sessionId, 
-                new ActiveSession(connection));
+                new ActiveSession(Connection));
         }
         return _serverSalt.Salt;
     }
@@ -211,13 +214,13 @@ public class MTProtoSession
         return true;
     }
     
-    public MTProtoMessage GenerateSessionCreated(long firstMessageId, long serverSalt)
+    public Services.MTProtoMessage GenerateSessionCreated(long firstMessageId, long serverSalt)
     {
         var newSessionCreated = _factory.Resolve<NewSessionCreated>();
         newSessionCreated.FirstMsgId = firstMessageId;
         newSessionCreated.ServerSalt = serverSalt;
         newSessionCreated.UniqueId = UniqueSessionId;
-        MTProtoMessage newSessionMessage = new()
+        Services.MTProtoMessage newSessionMessage = new()
         {
             Data = newSessionCreated.TLBytes.ToArray(),
             IsContentRelated = false,

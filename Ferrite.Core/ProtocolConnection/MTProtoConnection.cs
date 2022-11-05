@@ -18,18 +18,22 @@
 
 using System.Buffers;
 using System.IO.Pipelines;
+using System.Net;
+using System.Runtime.InteropServices;
 using DotNext.IO;
 using DotNext.Buffers;
 using Ferrite.TL;
 using System.Threading.Channels;
 using Ferrite.Transport;
 using Ferrite.Core.Framing;
+using Ferrite.Core.RequestChain;
 using Ferrite.Data;
 using Ferrite.Utils;
 using Ferrite.TL.mtproto;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer;
 using Ferrite.TL.ObjectMapper;
+using Ferrite.TL.slim;
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -43,14 +47,14 @@ public sealed class MTProtoConnection : IMTProtoConnection
     private readonly ISessionService _sessionManager;
     private readonly IMapperContext _mapper;
     private readonly MTProtoSession _session;
+    private readonly ITLHandler _requestChain;
     private IFrameDecoder _decoder;
     private IFrameEncoder _encoder;
-    private readonly IUnencryptedMessageHandler _unencryptedMessageHandler;
-    private readonly IMessageHandler _messageHandler;
+    private readonly IProtoHandler _protoHandler;
     private readonly IStreamHandler _streamHandler;
     private readonly ITransportConnection _socketConnection;
     private Task? _receiveTask;
-    private readonly Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
+    private readonly Channel<Services.MTProtoMessage> _outgoing = Channel.CreateUnbounded<Services.MTProtoMessage>();
     private readonly Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private readonly SemaphoreSlim _incomingSemaphore = new SemaphoreSlim(1, 1);
@@ -69,9 +73,9 @@ public sealed class MTProtoConnection : IMTProtoConnection
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
         ILogger logger, ISessionService sessionManager, IMapperContext mapper, 
-        IUnencryptedMessageHandler unencryptedMessageHandler,
-        IMessageHandler messageHandler, MTProtoSession session,
-        IStreamHandler streamHandler, ProtoTransport protoTransport)
+        IProtoHandler protoHandler, MTProtoSession session,
+        IStreamHandler streamHandler, ProtoTransport protoTransport,
+        ITLHandler requestChain)
     {
         _socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -79,12 +83,15 @@ public sealed class MTProtoConnection : IMTProtoConnection
         _transportDetector = detector;
         _log = logger;
         _sessionManager = sessionManager;
-        _unencryptedMessageHandler = unencryptedMessageHandler;
         _streamHandler = streamHandler;
-        _messageHandler = messageHandler;
         _mapper = mapper;
         _session = session;
+        _session.Connection = this;
+        _session.EndPoint = _socketConnection.RemoteEndPoint as IPEndPoint;
+        _protoHandler = protoHandler;
+        _protoHandler.Session = _session;
         _protoTransport = protoTransport;
+        _requestChain = requestChain;
     }
     public void Start()
     {
@@ -100,7 +107,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             await _outgoingStreams.Writer.WriteAsync(message);
         }
     }
-    public async ValueTask SendAsync(MTProtoMessage message)
+    public async ValueTask SendAsync(Services.MTProtoMessage message)
     {
         await _outgoing.Writer.WriteAsync(message);
     }
@@ -168,7 +175,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                         {
                             _log.Debug($"==> Sending Updates with Seq: {update.Seq} ==<");
                         }
-                        var outgoingMessage = _messageHandler.GenerateOutgoingMessage(msg, _session);
+                        var outgoingMessage = _protoHandler.EncryptMessage(msg);
                         WriteFrame(outgoingMessage);
                     }
                 }
@@ -179,13 +186,13 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 }
                 else if (_session.AuthKeyId == 0)
                 {
-                    var outgoingMessage = _unencryptedMessageHandler.GenerateOutgoingMessage(msg, _session);
+                    var outgoingMessage = _protoHandler.PreparePlaintextMessage(msg);
                     WriteFrame(outgoingMessage);
                 }
                 else if (_session.AuthKey != null &&
                          _session.AuthKey.Length == 192)
                 {
-                    var outgoingMessage = _messageHandler.GenerateOutgoingMessage(msg, _session);
+                    var outgoingMessage = _protoHandler.EncryptMessage(msg);
                     WriteFrame(outgoingMessage);
                 }
 
@@ -263,15 +270,22 @@ public sealed class MTProtoConnection : IMTProtoConnection
         {
             hasMore = _decoder.Decode(buffer.Slice(position), out var frame, 
                 out var isStream, out var requiresQuickAck, out position);
-            if (isStream)
+            try
             {
-                await _streamHandler.HandleIncomingStreamAsync(frame, this, 
-                    _socketConnection.RemoteEndPoint, _session,
-                    hasMore);
+                if (isStream)
+                {
+                    await _streamHandler.HandleIncomingStreamAsync(frame, this, 
+                        _socketConnection.RemoteEndPoint, _session,
+                        hasMore);
+                }
+                else if (frame.Length > 0)
+                {
+                    ProcessFrame(frame, requiresQuickAck);
+                }
             }
-            else if (frame.Length > 0)
+            catch(Exception ex)
             {
-                ProcessFrame(frame, requiresQuickAck);
+                _log.Debug(ex, ex.Message);
             }
         } while (hasMore);
 
@@ -295,17 +309,45 @@ public sealed class MTProtoConnection : IMTProtoConnection
         }
         if (_session.PermAuthKeyId != 0)
         {
-            _session.SaveCurrentSession(_session.PermAuthKeyId, this);
+            _session.SaveCurrentSession(_session.PermAuthKeyId);
         }
         if (authKeyId == 0)
         {
-            _unencryptedMessageHandler.HandleIncomingMessage(bytes.Slice(8), this, _session);
+            using var message = _protoHandler.ReadPlaintextMessage(bytes.Slice(8));
+            var context = GenerateExecutionContext(message);
+            _requestChain.Process(this, message.MessageData, context);
         }
         else if(_session.AuthKey != null)
         {
-            _messageHandler.HandleIncomingMessage(bytes.Slice(8), this,
-                _socketConnection.RemoteEndPoint, _session, requiresQuickAck);
+            using var message = _protoHandler.DecryptMessage(bytes.Slice(8));
+            var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
+            var msg = _factory.Read(rd.ReadInt32(true), ref rd);
+            var context = GenerateExecutionContext(message);
+            _requestChain.Process(this, msg, context);
         }
+    }
+
+    private TLExecutionContext GenerateExecutionContext(ProtoMessage message, bool requiresQuickAck = false)
+    {
+        var context = new TLExecutionContext(_session.SessionData)
+        {
+            AuthKeyId = _session.AuthKeyId,
+            PermAuthKeyId = _session.AuthKeyId,
+            Salt = message.Salt,
+            MessageId = message.MessageId,
+            SequenceNo = message.SequenceNo,
+            SessionId = message.SessionId,
+        };
+        if (TransportConnection.RemoteEndPoint is IPEndPoint endPoint)
+        {
+            context.IP = endPoint.Address.ToString();
+        }
+        if (requiresQuickAck)
+        {
+            context.QuickAck = _session.GenerateQuickAck(message.MessageData.AsSpan());
+        }
+
+        return context;
     }
     public void SendNewSessionCreatedMessage(long firstMessageId, long serverSalt)
     {
@@ -327,7 +369,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         var pong = _factory.Resolve<Pong>();
         pong.PingId = pingId;
         pong.MsgId = _session.NextMessageId(true);
-        MTProtoMessage message = new MTProtoMessage()
+        Services.MTProtoMessage message = new Services.MTProtoMessage()
         {
             Data = pong.TLBytes.ToArray(),
             IsContentRelated = false,
