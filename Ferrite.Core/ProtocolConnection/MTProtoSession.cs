@@ -160,13 +160,12 @@ public class MTProtoSession
         } while (!((response && id % 4 != 1) || (!response && id % 4 != 3)));
         return id;
     }
-    public void CreateNewSession(long sessionId, long firstMessageId)
+    public long CreateNewSession(long sessionId, long firstMessageId)
     {
         _sessionId = sessionId;
         _uniqueSessionId = _random.NextLong();
-        Connection.SendNewSessionCreatedMessage(firstMessageId, 
-            SaveCurrentSession(_permAuthKeyId != 0 ? 
-                _permAuthKeyId : _authKeyId));
+       return SaveCurrentSession(_permAuthKeyId != 0 ? 
+                _permAuthKeyId : _authKeyId);
     }
     /// <summary>
     /// 

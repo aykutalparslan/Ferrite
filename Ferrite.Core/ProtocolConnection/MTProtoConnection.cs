@@ -280,7 +280,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 }
                 else if (frame.Length > 0)
                 {
-                    ProcessFrame(frame, requiresQuickAck);
+                    await ProcessFrame(frame, requiresQuickAck);
                 }
             }
             catch(Exception ex)
@@ -291,7 +291,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
 
         return position;
     }
-    private void ProcessFrame(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
+    private async Task ProcessFrame(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 8)
         {
@@ -314,16 +314,27 @@ public sealed class MTProtoConnection : IMTProtoConnection
         if (authKeyId == 0)
         {
             using var message = _protoHandler.ReadPlaintextMessage(bytes.Slice(8));
+            CreateNewSession(message);
             var context = GenerateExecutionContext(message);
-            _requestChain.Process(this, message.MessageData, context);
+            await _requestChain.Process(this, message.MessageData, context);
         }
         else if(_session.AuthKey != null)
         {
             using var message = _protoHandler.DecryptMessage(bytes.Slice(8));
+            CreateNewSession(message);
             var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
             var msg = _factory.Read(rd.ReadInt32(true), ref rd);
             var context = GenerateExecutionContext(message);
-            _requestChain.Process(this, msg, context);
+            await _requestChain.Process(this, msg, context);
+        }
+    }
+
+    private void CreateNewSession(ProtoMessage message)
+    {
+        if (_session.SessionId == 0)
+        {
+            var serverSalt =_session.CreateNewSession(message.SessionId, message.MessageId);
+            SendNewSessionCreatedMessage(message.MessageId, serverSalt);
         }
     }
 
@@ -332,7 +343,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         var context = new TLExecutionContext(_session.SessionData)
         {
             AuthKeyId = _session.AuthKeyId,
-            PermAuthKeyId = _session.AuthKeyId,
+            PermAuthKeyId = _session.PermAuthKeyId,
             Salt = message.Salt,
             MessageId = message.MessageId,
             SequenceNo = message.SequenceNo,
