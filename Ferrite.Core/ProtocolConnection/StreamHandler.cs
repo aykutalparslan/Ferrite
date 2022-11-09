@@ -21,8 +21,6 @@ using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -30,7 +28,6 @@ using Ferrite.TL;
 using Ferrite.TL.currentLayer.storage;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
-using Ferrite.Transport;
 using Ferrite.Utils;
 using TLConstructor = Ferrite.TL.currentLayer.TLConstructor;
 
@@ -53,98 +50,7 @@ public class StreamHandler : IStreamHandler
         _factory = factory;
         _random = random;
     }
-    public async Task HandleIncomingStreamAsync(ReadOnlySequence<byte> bytes, MTProtoConnection connection,
-        EndPoint? endPoint, MTProtoSession session, bool hasMore)
-    {
-        SequenceReader reader = IAsyncBinaryReader.Create(bytes);
-        if (_currentRequest == null)
-        {
-            if (bytes.Length < 24)
-            {
-                return;
-            }
-            
-            long authKeyId = reader.ReadInt64(true);
-            if (authKeyId != 0)
-            {
-                if (!session.TryFetchAuthKey(authKeyId) &&
-                    session.AuthKeyId == 0)
-                {
-                    connection.SendTransportError(404);
-                }
-            }
-            if (session.PermAuthKeyId != 0)
-            {
-                session.SaveCurrentSession(session.PermAuthKeyId);
-            }
 
-            var incomingMessageKey = new byte[16];
-            reader.Read(incomingMessageKey);
-            var aesKey = new byte[32];
-            var aesIV = new byte[32];
-            AesIge.GenerateAesKeyAndIV(session.AuthKey, incomingMessageKey, true, aesKey, aesIV);
-            _currentRequest = new MTProtoPipe(aesKey, aesIV, false);
-            await _currentRequest.WriteAsync(reader);
-            await ProcessPipe(_currentRequest, connection, endPoint, session);
-        }
-        else
-        { 
-            await _currentRequest.WriteAsync(reader);
-        }
-
-        if (!hasMore)
-        {
-            _currentRequest.Complete();
-            await _currentRequest.DisposeAsync();
-            _currentRequest = null;
-        }
-    }
-    private async Task ProcessPipe(MTProtoPipe pipe, MTProtoConnection connection,
-        EndPoint? endPoint, MTProtoSession session)
-    {
-        TLExecutionContext context = new TLExecutionContext(session.SessionData);
-        context.Salt = await pipe.Input.ReadInt64Async(true);
-        context.SessionId = await pipe.Input.ReadInt64Async(true);
-        context.AuthKeyId = session.AuthKeyId;
-        context.PermAuthKeyId = session.PermAuthKeyId;
-        context.MessageId = await pipe.Input.ReadInt64Async(true);
-        context.SequenceNo = await pipe.Input.ReadInt32Async(true);
-        if (endPoint is IPEndPoint ep)
-        {
-            context.IP = ep.Address.ToString();
-        }
-
-        int messageDataLength = await pipe.Input.ReadInt32Async(true);
-        int constructor = await pipe.Input.ReadInt32Async(true);
-        if (session.SessionId == 0)
-        {
-            session.CreateNewSession(context.SessionId, context.MessageId);
-        }
-
-        if (session.IsValidMessageId(context.MessageId))
-        {
-            try
-            {
-                if (constructor == TL.currentLayer.TLConstructor.Upload_SaveFilePart)
-                {
-                    var msg = _factory.Resolve<SaveFilePart>();
-                    await msg.SetPipe(pipe);
-                    _ = _requestChain.Process(connection, msg, context);
-                }
-                else if (constructor == TLConstructor.Upload_SaveBigFilePart)
-                {
-                    var msg = _factory.Resolve<SaveBigFilePart>();
-                    await msg.SetPipe(pipe);
-                    _ = _requestChain.Process(connection, msg, context);
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.Error(ex, ex.Message);
-            }
-        }
-    }
-    
     public async Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
         MTProtoSession session)
     {

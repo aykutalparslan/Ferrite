@@ -22,13 +22,8 @@ namespace Ferrite.Core;
 
 public readonly record struct ProtoMessage : IDisposable
 {
-    public long AuthKeyId { get; init; }
-    public long Salt { get; init; }
-    public long SessionId { get; init; }
-    public long MessageId { get; init; }
-    public int SequenceNo { get; init; }
+    public ProtoHeaders Headers { get; init; }
     public TLBytes MessageData { get; init; }
-
     public void Dispose()
     {
         MessageData.Dispose();

@@ -16,14 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using Ferrite.TL;
-
 namespace Ferrite.Core;
 
-public readonly record struct StreamingProtoMessage
+public readonly struct ProtoHeaders
 {
-    public static StreamingProtoMessage Default { get; } = new();
-    public ProtoHeaders Headers { get; init; }
-    public MTProtoPipe MessageData { get; init; }
+    public long AuthKeyId { get; init; }
+    public long Salt { get; init; }
+    public long SessionId { get; init; }
+    public long MessageId { get; init; }
+    public int SequenceNo { get; init; }
 }

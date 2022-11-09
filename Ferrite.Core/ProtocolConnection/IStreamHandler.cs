@@ -27,12 +27,5 @@ namespace Ferrite.Core;
 
 public interface IStreamHandler : IAsyncDisposable
 {
-    public Task HandleIncomingStreamAsync(ReadOnlySequence<byte> bytes, 
-        MTProtoConnection connection,
-        EndPoint? endPoint,
-        MTProtoSession session,
-        bool hasMore);
 
-    public Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session);
 }

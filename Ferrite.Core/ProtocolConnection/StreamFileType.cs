@@ -16,14 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using Ferrite.TL;
-
 namespace Ferrite.Core;
 
-public readonly record struct StreamingProtoMessage
+public enum StreamFileType
 {
-    public static StreamingProtoMessage Default { get; } = new();
-    public ProtoHeaders Headers { get; init; }
-    public MTProtoPipe MessageData { get; init; }
+    Unknown,
+    Partial,
+    Jpeg,
+    Gif,
+    Png,
+    Mp3,
+    Mov,
+    Mp4,
+    Webp,
 }

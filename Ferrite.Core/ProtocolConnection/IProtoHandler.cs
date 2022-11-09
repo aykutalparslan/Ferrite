@@ -17,14 +17,9 @@
 // 
 
 using System.Buffers;
-using System.Net;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.slim;
-using Ferrite.Transport;
 
 namespace Ferrite.Core;
 
@@ -35,6 +30,6 @@ public interface IProtoHandler
     public ProtoMessage ReadPlaintextMessage(in ReadOnlySequence<byte> bytes);
     public ReadOnlySequence<byte> EncryptMessage(MTProtoMessage message);
     public ReadOnlySequence<byte> PreparePlaintextMessage(MTProtoMessage message);
-    public Task<StreamingProtoMessage?> ProcessIncomingStreamAsync(ReadOnlySequence<byte> bytes, bool hasMore);
-    public Task ProcessOutgoingStream(IFileOwner message);
+    public ValueTask<StreamingProtoMessage> ProcessIncomingStreamAsync(ReadOnlySequence<byte> bytes, bool hasMore);
+    public ValueTask<ValueTuple<int, ReadOnlySequence<byte>, MTProtoPipe>> GenerateOutgoingStream(IFileOwner? message);
 }

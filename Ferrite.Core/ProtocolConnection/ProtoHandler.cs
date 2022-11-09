@@ -17,7 +17,6 @@
 // 
 
 using System.Buffers;
-using System.Net;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
@@ -27,8 +26,10 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer146.storage;
+using Ferrite.TL.slim.layer146.upload;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.Core;
@@ -37,17 +38,14 @@ public class ProtoHandler : IProtoHandler
 {
     private readonly ILogger _log;
     private readonly ITLHandler _requestChain;
-    private readonly ITLObjectFactory _factory;
     private readonly IRandomGenerator _random;
     private MTProtoPipe? _currentRequest;
     public MTProtoSession Session { get; set; }
     private readonly SparseBufferWriter<byte> _writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     
-    public ProtoHandler(ILogger log, ITLObjectFactory factory, 
-        IRandomGenerator random)
+    public ProtoHandler(ILogger log, IRandomGenerator random)
     {
         _log = log;
-        _factory = factory;
         _random = random;
     }
     public ProtoMessage DecryptMessage(in ReadOnlySequence<byte> bytes)
@@ -83,11 +81,14 @@ public class ProtoHandler : IProtoHandler
             var data = new TLBytes(messageData, 32, messageDataLength);
             return new ProtoMessage
             {
-                AuthKeyId = Session.AuthKeyId,
-                Salt = salt,
-                SessionId = sessionId,
-                MessageId = messageId,
-                SequenceNo = sequenceNo,
+                Headers = new ProtoHeaders
+                {
+                    AuthKeyId = Session.AuthKeyId,
+                    Salt = salt,
+                    SessionId = sessionId,
+                    MessageId = messageId,
+                    SequenceNo = sequenceNo,
+                },
                 MessageData = data,
             };
         }
@@ -114,7 +115,10 @@ public class ProtoHandler : IProtoHandler
         var data = new TLBytes(messageData, 0, messageDataLength);
         return new ProtoMessage
         {
-            MessageId = messageId,
+            Headers = new ProtoHeaders
+            {
+                MessageId = messageId,
+            },        
             MessageData = data,
         };
     }
@@ -164,7 +168,7 @@ public class ProtoHandler : IProtoHandler
         return msg;
     }
 
-    public async Task<StreamingProtoMessage?> ProcessIncomingStreamAsync(ReadOnlySequence<byte> bytes, bool hasMore)
+    public async ValueTask<StreamingProtoMessage> ProcessIncomingStreamAsync(ReadOnlySequence<byte> bytes, bool hasMore)
     {
         bool first = false;
         if (_currentRequest == null)
@@ -181,56 +185,171 @@ public class ProtoHandler : IProtoHandler
         { 
             await _currentRequest.WriteAsync(bytes);
         }
-
-        var context = await CreateExecutionContext();
-        if (context == null) return null;
-
-        if (!hasMore)
+        StreamingProtoMessage resp = StreamingProtoMessage.Default;
+        if (first)
         {
-            var resp = new StreamingProtoMessage(_currentRequest, context, first, !hasMore);
-            _currentRequest.Complete();
-            await _currentRequest.DisposeAsync();
-            _currentRequest = null;
-            return resp;
+            var salt = await _currentRequest.Input.ReadInt64Async(true);
+            var sessionId = await _currentRequest.Input.ReadInt64Async(true);
+            var messageId = await _currentRequest.Input.ReadInt64Async(true);
+            var sequenceNo = await _currentRequest.Input.ReadInt32Async(true);
+            resp = new StreamingProtoMessage
+            {
+                Headers = new ProtoHeaders
+                {
+                    AuthKeyId = Session.AuthKeyId,
+                    Salt = salt,
+                    SessionId = sessionId,
+                    MessageId = messageId,
+                    SequenceNo = sequenceNo,
+                },
+                MessageData = _currentRequest,
+            };
+        }
+
+        if (hasMore) return resp;
+        _currentRequest.Complete();
+        _currentRequest = null;
+        return resp;
+    }
+
+    public async ValueTask<ValueTuple<int, ReadOnlySequence<byte>, MTProtoPipe>> GenerateOutgoingStream(IFileOwner? message)
+    {
+        if (message == null) throw new ArgumentNullException();
+        var data = await message.GetFileStream();
+        if (data.Length < 0) throw new IOException();
+        _log.Debug($"=>Stream data length is {data.Length}.");
+        var (resultHeader, pad) = GenerateStreamHeader(message, data, 
+            StreamFileType.Jpeg);// TODO: detect actual file type
+        var cryptographicHeader = GenerateCryptographicHeader(resultHeader, data, pad);
+        var (paddingLength, paddingBytes) = GeneratePadding(resultHeader, data, pad);
+        var (streamLength, messageKey) = GenerateMessageKey(cryptographicHeader, resultHeader, data, pad, paddingBytes);
+        var (aesKey, aesIV) = GenerateAesKeyAndIV(messageKey);
+        _writer.Clear();
+        _writer.WriteInt64(Session.AuthKeyId, true);
+        _writer.Write(messageKey);
+        int frameLength = 24 + streamLength;
+        var frameHeader = _writer.ToReadOnlySequence();
+        
+        MTProtoPipe pipe = new(aesKey, aesIV, true);
+        _ = WriteStreamToPipe(message, pipe, cryptographicHeader, resultHeader, pad, paddingLength, paddingBytes);
+        return (frameLength, frameHeader, pipe);
+    }
+
+    private static async Task WriteStreamToPipe(IFileOwner message, MTProtoPipe pipe, byte[] cryptographicHeader,
+        byte[] resultHeader, int pad, int paddingLength, byte[] paddingBytes)
+    {
+        await pipe.WriteAsync(cryptographicHeader);
+        await pipe.WriteAsync(resultHeader);
+        var dataStream = await message.GetFileStream();
+        int remaining = (int)dataStream.Length;
+        ;
+        var buffer = new byte[1024];
+        while (remaining > 0)
+        {
+            var read = await dataStream.ReadAsync(buffer.AsMemory(0, Math.Min(remaining, 1024)));
+            await pipe.WriteAsync(new ReadOnlySequence<byte>(buffer, 0, read));
+            remaining -= read;
+        }
+
+        if (pad > 0)
+        {
+            await pipe.WriteAsync(new byte[pad]);
+        }
+
+        if (paddingLength > 0)
+        {
+            await pipe.WriteAsync(paddingBytes);
+        }
+
+        await pipe.CompleteAsync();
+    }
+
+    private ValueTuple<byte[], byte[]> GenerateAesKeyAndIV(byte[] messageKey)
+    {
+        byte[] aesKey = new byte[32];
+        byte[] aesIV = new byte[32];
+        AesIge.GenerateAesKeyAndIV(Session.AuthKey, messageKey, false, aesKey, aesIV);
+        return (aesKey, aesIV);
+    }
+
+    private ValueTuple<int, byte[]> GenerateMessageKey(byte[] cryptographicHeader, byte[] resultHeader, Stream data, int pad,
+        byte[] paddingBytes)
+    {
+        Queue<Stream> streams = new Queue<Stream>();
+        streams.Enqueue(new MemoryStream(cryptographicHeader));
+        streams.Enqueue(new MemoryStream(resultHeader));
+        streams.Enqueue(data);
+        streams.Enqueue(new MemoryStream(new byte[pad]));
+        streams.Enqueue(new MemoryStream(paddingBytes));
+        var stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
+
+        var messageKey = AesIge.GenerateMessageKey(Session.AuthKey, stream).ToArray();
+        return ((int)stream.Length, messageKey);
+    }
+
+    private ValueTuple<int, byte[]> GeneratePadding(byte[] resultHeader, Stream data, int pad)
+    {
+        int paddingLength = _random.GetNext(12, 512);
+        while ((resultHeader.Length + data.Length + pad + paddingLength) % 16 != 0)
+        {
+            paddingLength++;
+        }
+
+        var paddingBytes = _random.GetRandomBytes(paddingLength);
+        return (paddingLength, paddingBytes);
+    }
+
+    private byte[] GenerateCryptographicHeader(byte[] resultHeader, Stream data, int pad)
+    {
+        _writer.Clear();
+        _writer.WriteInt64(Session.ServerSalt.Salt, true);
+        _writer.WriteInt64(Session.SessionId, true);
+        _writer.WriteInt64(Session.NextMessageId(true), true);
+        _writer.WriteInt32(Session.GenerateSeqNo(true), true);
+        _writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
+        var cryptographicHeader = _writer.ToReadOnlySequence().ToArray();
+        return cryptographicHeader;
+    }
+
+    private static ValueTuple<byte[], int> GenerateStreamHeader(IFileOwner message, Stream data, StreamFileType fileType)
+    {
+        var file = file_.Builder()
+            .with_type(GetFileType(fileType))
+            .with_mtime((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+            .Build();
+        var rpcResult = rpc_result.Builder()
+            .with_req_msg_id(message.ReqMsgId)
+            .with_result(file.ToReadOnlySpan())
+            .Build();
+        byte[] resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
+        rpcResult.ToReadOnlySpan()[..24].CopyTo(resultHeader);
+        int pad = 0;
+        if (data.Length < 254)
+        {
+            resultHeader[24] = (byte)data.Length;
+            pad = (int)((4 - ((data.Length + 1) % 4)) % 4);
         }
         else
         {
-            return new StreamingProtoMessage(_currentRequest, context, first, !hasMore);
+            resultHeader[24] = 254;
+            resultHeader[25] = (byte)(data.Length & 0xff);
+            resultHeader[26] = (byte)((data.Length >> 8) & 0xff);
+            resultHeader[27] = (byte)((data.Length >> 16) & 0xff);
+            pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
         }
+        return new(resultHeader, pad);
     }
-    
-    private async Task<TLExecutionContext?> CreateExecutionContext()
+
+    private static ReadOnlySpan<byte> GetFileType(StreamFileType fileType) => fileType switch
     {
-        TLExecutionContext context = new(Session.SessionData)
-        {
-            Salt = await _currentRequest!.Input.ReadInt64Async(true),
-            SessionId = await _currentRequest!.Input.ReadInt64Async(true),
-            AuthKeyId = Session.AuthKeyId,
-            PermAuthKeyId = Session.PermAuthKeyId,
-            MessageId = await _currentRequest!.Input.ReadInt64Async(true),
-            SequenceNo = await _currentRequest!.Input.ReadInt32Async(true),
-            IP = Session.EndPoint?.Address.ToString() ?? string.Empty
-        };
-
-        int messageDataLength = await _currentRequest!.Input.ReadInt32Async(true);
-        int constructor = await _currentRequest!.Input.ReadInt32Async(true);
-        if (Session.SessionId == 0)
-        {
-            Session.CreateNewSession(context.SessionId, context.MessageId);
-        }
-
-        if (Session.IsValidMessageId(context.MessageId) && (
-                constructor == TL.currentLayer.TLConstructor.Upload_SaveFilePart ||
-                constructor == TL.currentLayer.TLConstructor.Upload_SaveBigFilePart))
-        {
-            return context;
-        }
-
-        return null;
-    }
-
-    public Task ProcessOutgoingStream(IFileOwner message)
-    {
-        throw new NotImplementedException();
-    }
+        StreamFileType.Gif => fileGif.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Jpeg => fileJpeg.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Mov => fileMov.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Mp3 => fileMp3.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Mp4 => fileMp4.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Partial => filePartial.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Png => filePng.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Webp => fileWebp.Builder().Build().ToReadOnlySpan(),
+        _ => fileUnknown.Builder().Build().ToReadOnlySpan(),
+    };
 }

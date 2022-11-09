@@ -19,11 +19,11 @@
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Net;
-using System.Runtime.InteropServices;
 using DotNext.IO;
 using DotNext.Buffers;
 using Ferrite.TL;
 using System.Threading.Channels;
+using DotNext.IO.Pipelines;
 using Ferrite.Transport;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
@@ -32,9 +32,10 @@ using Ferrite.Utils;
 using Ferrite.TL.mtproto;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer;
-using Ferrite.TL.ObjectMapper;
-using Ferrite.TL.slim;
+using Ferrite.TL.currentLayer.upload;
+using Ferrite.TL.ObjectMapper; 
 using MessagePack;
+using Org.BouncyCastle.Tls;
 
 namespace Ferrite.Core;
 
@@ -223,7 +224,10 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 await _sendSemaphore.WaitAsync();
                 _log.Debug($"=>Sending stream.");
 
-                await _streamHandler.HandleOutgoingStream(msg, this, _session);
+                var (frameLength, frameHeader, outgoingPipe) = 
+                    await _protoHandler.GenerateOutgoingStream(msg);
+                
+                await WriteOutgoingStream(frameLength, frameHeader, outgoingPipe);
 
                 var result = await _socketConnection.Transport.Output.FlushAsync();
                 if (result.IsCompleted ||
@@ -242,6 +246,26 @@ public sealed class MTProtoConnection : IMTProtoConnection
             }
         }
     }
+
+    private async Task WriteOutgoingStream(int frameLength, ReadOnlySequence<byte> frameHeader, MTProtoPipe outgoingPipe)
+    {
+        WriteFrameHeader(frameLength);
+        WriteFrameBlock(frameHeader);
+        while (true)
+        {
+            var pipeResult = await outgoingPipe.Input.ReadAsync();
+            WriteFrameBlock(pipeResult.Buffer);
+            outgoingPipe.Input.AdvanceTo(pipeResult.Buffer.End);
+            if (pipeResult.IsCanceled ||
+                pipeResult.IsCompleted)
+            {
+                break;
+            }
+        }
+
+        WriteFrameTail();
+    }
+
     private async Task<SequencePosition> Process(ReadOnlySequence<byte> buffer)
     {
         if (buffer.Length < 4) return buffer.Start;
@@ -272,15 +296,22 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 out var isStream, out var requiresQuickAck, out position);
             try
             {
+                long authKeyId = new SequenceReader(frame).ReadInt64(true);
+                if (authKeyId != 0)
+                {
+                    if (!_session.TryFetchAuthKey(authKeyId) &&
+                        _session.AuthKeyId == 0)
+                    {
+                        SendTransportError(404);
+                    }
+                }
                 if (isStream)
                 {
-                    await _streamHandler.HandleIncomingStreamAsync(frame, this, 
-                        _socketConnection.RemoteEndPoint, _session,
-                        hasMore);
+                    await ProcessStreamAsync(frame, hasMore);
                 }
                 else if (frame.Length > 0)
                 {
-                    await ProcessFrame(frame, requiresQuickAck);
+                    await ProcessFrameAsync(frame, requiresQuickAck);
                 }
             }
             catch(Exception ex)
@@ -291,71 +322,85 @@ public sealed class MTProtoConnection : IMTProtoConnection
 
         return position;
     }
-    private async Task ProcessFrame(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
+
+    private async Task ProcessStreamAsync(ReadOnlySequence<byte> frame, bool hasMore)
+    {
+        var message = await _protoHandler.ProcessIncomingStreamAsync(frame, hasMore);
+        if (message != StreamingProtoMessage.Default)
+        {
+            CreateNewSession(message.Headers);
+            var context = GenerateExecutionContext(message.Headers);
+            int messageDataLength = await message.MessageData.Input.ReadInt32Async(true);
+            int constructor = await message.MessageData.Input.ReadInt32Async(true);
+            if (constructor == TL.currentLayer.TLConstructor.Upload_SaveFilePart)
+            {
+                var msg = _factory.Resolve<SaveFilePart>();
+                await msg.SetPipe(message.MessageData);
+                var processResult = _requestChain.Process(this, msg, context);
+            }
+            else if (constructor == TL.currentLayer.TLConstructor.Upload_SaveBigFilePart)
+            {
+                var msg = _factory.Resolve<SaveBigFilePart>();
+                await msg.SetPipe(message.MessageData);
+                var processResult = _requestChain.Process(this, msg, context);
+            }
+        }
+    }
+    private async Task ProcessFrameAsync(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 8)
         {
             return;
         }
-        var reader = new SequenceReader(bytes);
-        long authKeyId = reader.ReadInt64(true);
-        if (authKeyId != 0)
-        {
-            if (!_session.TryFetchAuthKey(authKeyId) &&
-                _session.AuthKeyId == 0)
-            {
-                SendTransportError(404);
-            }
-        }
         if (_session.PermAuthKeyId != 0)
         {
             _session.SaveCurrentSession(_session.PermAuthKeyId);
         }
-        if (authKeyId == 0)
+        if (_session.AuthKeyId == 0)
         {
             using var message = _protoHandler.ReadPlaintextMessage(bytes.Slice(8));
-            CreateNewSession(message);
-            var context = GenerateExecutionContext(message);
+            var context = GenerateExecutionContext(message.Headers);
             await _requestChain.Process(this, message.MessageData, context);
         }
         else if(_session.AuthKey != null)
         {
             using var message = _protoHandler.DecryptMessage(bytes.Slice(8));
-            CreateNewSession(message);
+            CreateNewSession(message.Headers);
             var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
             var msg = _factory.Read(rd.ReadInt32(true), ref rd);
-            var context = GenerateExecutionContext(message);
+            var context = GenerateExecutionContext(message.Headers,
+                requiresQuickAck ? _session.GenerateQuickAck(message.MessageData.AsSpan()) : null);
             await _requestChain.Process(this, msg, context);
         }
     }
 
-    private void CreateNewSession(ProtoMessage message)
+    private void CreateNewSession(ProtoHeaders headers)
     {
         if (_session.SessionId == 0)
         {
-            var serverSalt =_session.CreateNewSession(message.SessionId, message.MessageId);
-            SendNewSessionCreatedMessage(message.MessageId, serverSalt);
+            var serverSalt =_session.CreateNewSession(headers.SessionId, headers.MessageId);
+            SendNewSessionCreatedMessage(headers.MessageId, serverSalt);
         }
     }
 
-    private TLExecutionContext GenerateExecutionContext(ProtoMessage message, bool requiresQuickAck = false)
+    private TLExecutionContext GenerateExecutionContext(ProtoHeaders headers, int? quickAck = null)
     {
         var context = new TLExecutionContext(_session.SessionData)
         {
             AuthKeyId = _session.AuthKeyId,
             PermAuthKeyId = _session.PermAuthKeyId,
-            Salt = message.Salt,
-            MessageId = message.MessageId,
-            SequenceNo = message.SequenceNo,
-            SessionId = message.SessionId,
+            Salt = headers.Salt,
+            MessageId = headers.MessageId,
+            SequenceNo = headers.SequenceNo,
+            SessionId = headers.SessionId,
         };
         if (TransportConnection.RemoteEndPoint is IPEndPoint endPoint)
         {
             context.IP = endPoint.Address.ToString();
         }
-        if (requiresQuickAck)
+        if (quickAck != null)
         {
-            context.QuickAck = _session.GenerateQuickAck(message.MessageData.AsSpan());
+            context.QuickAck = quickAck;
         }
 
         return context;
