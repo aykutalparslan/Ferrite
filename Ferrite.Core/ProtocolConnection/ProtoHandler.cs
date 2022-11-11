@@ -40,7 +40,7 @@ public class ProtoHandler : IProtoHandler
     private readonly ITLHandler _requestChain;
     private readonly IRandomGenerator _random;
     private MTProtoPipe? _currentRequest;
-    public MTProtoSession Session { get; set; }
+    public IMTProtoSession Session { get; set; }
     private readonly SparseBufferWriter<byte> _writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     
     public ProtoHandler(ILogger log, IRandomGenerator random)

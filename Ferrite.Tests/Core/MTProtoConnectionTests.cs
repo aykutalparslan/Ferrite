@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -29,7 +30,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
+using Cassandra;
+using DotNext.Buffers;
+using DotNext.Collections.Generic;
 using Ferrite.Core;
+using Ferrite.Core.Exceptions;
 using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
@@ -42,10 +47,12 @@ using Ferrite.TL;
 using Ferrite.TL.currentLayer;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.ObjectMapper;
+using Ferrite.TL.slim;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
 using Moq;
+using Moq.AutoMock;
 using Xunit;
 using MTProtoMessage = Ferrite.Services.MTProtoMessage;
 
@@ -246,71 +253,102 @@ public class MTProtoConnectionTests
         connection.Application.Input.AdvanceTo(result.Buffer.End);
     }
 
-    [Fact]
-    public async Task SendsEncryptedMessage()
+    [Theory]
+    [InlineData(16)]
+    [InlineData(256)]
+    [InlineData(512)]
+    [InlineData(4096)]
+    public async Task SendsEncryptedMessage(int len)
     {
-        var builder = GetContainerBuilder();
-        List<ITLObject> received = new List<ITLObject>();
-        var processor = new Mock<ITLHandler>();
-        processor.Setup(p =>
-            p.Process(It.IsAny<object?>(),
-                It.IsAny<ITLObject>(), 
-                It.IsAny<TLExecutionContext>())).Callback((object? sender, 
-            ITLObject input, TLExecutionContext ctx) =>
+        using var mocker = AutoMock.GetLoose((builder) =>
         {
-            received.Add(input);
+            builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
+            builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
         });
-        builder.RegisterMock(processor);
-        var container = builder.Build();
-        FakeTransportConnection connection = new FakeTransportConnection("testdata/websocketSession_plain");
-        connection.Start();
-        MTProtoConnection mtProtoConnection = container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
-        
-        mtProtoConnection.Start();
-        var webSocketResult = await connection.Application.Input.ReadAsync();
-        string webSocketResponse = Encoding.UTF8.GetString(webSocketResult.Buffer.ToSpan());
-        connection.Application.Input.AdvanceTo(webSocketResult.Buffer.End);
-        
-        byte[] data = File.ReadAllBytes("testdata/message_0");
-        var message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        var result = await connection.Application.Input.ReadAsync();
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        await connection.Receive("testdata/websocketSession_encrypted");
-
-        data = File.ReadAllBytes("testdata/message_1");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        result = await connection.Application.Input.ReadAsync();
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        data = File.ReadAllBytes("testdata/message_2");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        await mtProtoConnection.SendAsync(message);
-        result = await connection.Application.Input.ReadAsync();
-        connection.Application.Input.AdvanceTo(result.Buffer.End);
-
-        data = File.ReadAllBytes("testdata/message_3");
-        var expected = File.ReadAllBytes("testdata/sent_3");
-        message = MessagePackSerializer.Deserialize<MTProtoMessage>(data);
-        int wait = 20;
-        while (!mtProtoConnection.IsEncrypted)
-        {
-            await Task.Delay(wait).ContinueWith(async (a) =>
+        var transport = mocker.Mock<ITransportConnection>();
+        var pipe = new Pipe();
+        transport.Setup(t => t.Write(It.IsAny<ReadOnlySequence<byte>>()))
+            .Callback((ReadOnlySequence<byte> buffer) =>
             {
-                if (mtProtoConnection.IsEncrypted)
-                {
-                    await mtProtoConnection.SendAsync(message);
-                    result = await connection.Application.Input.ReadAsync();
-                    var actual = result.Buffer.ToSpan().Slice(4).ToArray();
-                    Assert.Equal(expected, actual);
-                    connection.Application.Input.AdvanceTo(result.Buffer.End);
-                }
+                pipe.Writer.Write(buffer.ToArray());
             });
-        }
+        transport.Setup(t => t.FlushAsync())
+            .Returns(() => pipe.Writer.FlushAsync());
+        var session = mocker.Mock<IMTProtoSession>();
+        var authKey = new byte[192];
+        Random.Shared.NextBytes(authKey);
+        session.SetupGet(s => s.AuthKeyId).Returns(() => Random.Shared.NextInt64());
+        session.SetupGet(s => s.AuthKey).Returns(() => authKey);
+        session.SetupGet(s => s.ServerSalt).Returns(() => new ServerSaltDTO());
+        var connection = mocker.Create<MTProtoConnection>();
+        var expected = new byte[len];
+        Random.Shared.NextBytes(expected);
+        MTProtoMessage message = new()
+        {
+            Data = expected,
+            MessageType = MTProtoMessageType.Encrypted,
+        };
+        connection.Start();
+        await connection.SendAsync(message);
+        var result = await pipe.Reader.ReadAsync();
+        var actual = DecryptMessage(result.Buffer.Slice(8), authKey).AsSpan(32,len).ToArray();
+        Assert.Equal(expected, actual);
     }
-
+    [Theory]
+    [InlineData(8192)]
+    [InlineData(16384)]
+    [InlineData(32168)]
+    [InlineData(65536)]
+    public async Task SendsStream(int len)
+    {
+        using var mocker = AutoMock.GetLoose((builder) =>
+        {
+            builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
+            builder.RegisterType<RandomGenerator>().As<IRandomGenerator>();
+        });
+        var transport = mocker.Mock<ITransportConnection>();
+        var pipe = new Pipe();
+        transport.Setup(t => t.Write(It.IsAny<ReadOnlySequence<byte>>()))
+            .Callback((ReadOnlySequence<byte> buffer) =>
+            {
+                pipe.Writer.Write(buffer.ToArray());
+            });
+        transport.Setup(t => t.FlushAsync())
+            .Returns(() => pipe.Writer.FlushAsync());
+        var session = mocker.Mock<IMTProtoSession>();
+        var authKey = new byte[192];
+        Random.Shared.NextBytes(authKey);
+        session.SetupGet(s => s.AuthKeyId).Returns(() => Random.Shared.NextInt64());
+        session.SetupGet(s => s.AuthKey).Returns(() => authKey);
+        session.SetupGet(s => s.ServerSalt).Returns(() => new ServerSaltDTO());
+        var connection = mocker.Create<MTProtoConnection>();
+        var expected = new byte[len];
+        Random.Shared.NextBytes(expected);
+        var file = new Mock<IFileOwner>();
+        file.Setup(f => f.GetFileStream())
+            .ReturnsAsync(() => new MemoryStream(expected));
+        connection.Start();
+        await connection.SendAsync(file.Object);
+        int fileHeaderLen = 24 + (len < 254 ? 1 : 4);
+        var result = await pipe.Reader.ReadAtLeastAsync(56 + len + fileHeaderLen);
+        var actual = DecryptMessage(result.Buffer.Slice(8), authKey)
+            .AsSpan(32 + fileHeaderLen,len).ToArray();
+        Assert.Equal(expected, actual);
+    }
+    private byte[] DecryptMessage(ReadOnlySequence<byte> bytes, byte[] authKey)
+    {
+        if (bytes.Length < 16)
+        {
+            throw new ArgumentOutOfRangeException();
+        }
+        Span<byte> messageKey = stackalloc byte[16];
+        bytes.Slice(0, 16).CopyTo(messageKey);
+        AesIge aesIge = new(authKey, messageKey, false);
+        var messageData = new byte[(int)bytes.Length - 16];
+        bytes.Slice(16).CopyTo(messageData);
+        aesIge.Decrypt(messageData);
+        return messageData;
+    }
     private ContainerBuilder GetContainerBuilder()
     {
         ConcurrentQueue<byte[]> _channel = new();
@@ -457,12 +495,11 @@ public class MTProtoConnectionTests
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
         builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
-        builder.RegisterType<StreamHandler>().As<IStreamHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
         builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();
         builder.RegisterType<ProtoTransport>();
-        builder.RegisterType<MTProtoSession>().AsSelf();
+        builder.RegisterType<MTProtoSession>().As<IMTProtoSession>();
         builder.RegisterMock(pipe);
         builder.RegisterMock(new Mock<IAuthService>());
         return builder;

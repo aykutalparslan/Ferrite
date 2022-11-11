@@ -35,7 +35,6 @@ using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.ObjectMapper; 
 using MessagePack;
-using Org.BouncyCastle.Tls;
 
 namespace Ferrite.Core;
 
@@ -47,12 +46,11 @@ public sealed class MTProtoConnection : IMTProtoConnection
     private readonly ILogger _log;
     private readonly ISessionService _sessionManager;
     private readonly IMapperContext _mapper;
-    private readonly MTProtoSession _session;
+    private readonly IMTProtoSession _session;
     private readonly ITLHandler _requestChain;
     private IFrameDecoder _decoder;
     private IFrameEncoder _encoder;
     private readonly IProtoHandler _protoHandler;
-    private readonly IStreamHandler _streamHandler;
     private readonly ITransportConnection _socketConnection;
     private Task? _receiveTask;
     private readonly Channel<Services.MTProtoMessage> _outgoing = Channel.CreateUnbounded<Services.MTProtoMessage>();
@@ -74,9 +72,8 @@ public sealed class MTProtoConnection : IMTProtoConnection
     public MTProtoConnection(ITransportConnection connection,
         ITLObjectFactory objectFactory, ITransportDetector detector,
         ILogger logger, ISessionService sessionManager, IMapperContext mapper, 
-        IProtoHandler protoHandler, MTProtoSession session,
-        IStreamHandler streamHandler, ProtoTransport protoTransport,
-        ITLHandler requestChain)
+        IProtoHandler protoHandler, IMTProtoSession session,
+        ProtoTransport protoTransport, ITLHandler requestChain)
     {
         _socketConnection = connection;
         TransportType = MTProtoTransport.Unknown;
@@ -84,7 +81,6 @@ public sealed class MTProtoConnection : IMTProtoConnection
         _transportDetector = detector;
         _log = logger;
         _sessionManager = sessionManager;
-        _streamHandler = streamHandler;
         _mapper = mapper;
         _session = session;
         _session.Connection = this;
@@ -229,7 +225,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 
                 await WriteOutgoingStream(frameLength, frameHeader, outgoingPipe);
 
-                var result = await _socketConnection.Transport.Output.FlushAsync();
+                var result = await _socketConnection.FlushAsync();
                 if (result.IsCompleted ||
                     result.IsCanceled)
                 {
@@ -251,10 +247,12 @@ public sealed class MTProtoConnection : IMTProtoConnection
     {
         WriteFrameHeader(frameLength);
         WriteFrameBlock(frameHeader);
+        await FlushSocketAsync();
         while (true)
         {
             var pipeResult = await outgoingPipe.Input.ReadAsync();
             WriteFrameBlock(pipeResult.Buffer);
+            await FlushSocketAsync();
             outgoingPipe.Input.AdvanceTo(pipeResult.Buffer.End);
             if (pipeResult.IsCanceled ||
                 pipeResult.IsCompleted)
@@ -262,8 +260,8 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 break;
             }
         }
-
         WriteFrameTail();
+        await FlushSocketAsync();
     }
 
     private async Task<SequencePosition> Process(ReadOnlySequence<byte> buffer)
@@ -296,6 +294,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 out var isStream, out var requiresQuickAck, out position);
             try
             {
+                if(frame.Length == 0) continue;
                 long authKeyId = new SequenceReader(frame).ReadInt64(true);
                 if (authKeyId != 0)
                 {
@@ -450,8 +449,9 @@ public sealed class MTProtoConnection : IMTProtoConnection
     }
     internal void WriteFrameHeader(int length)
     {
-        if(length == 0) return;
+        if(length == 0 || _encoder == null) return;
         var header = _encoder.GenerateHead(length);
+        
         if (_protoTransport.WebSocketHandshakeCompleted)
         {
             var webSocketHeader = _protoTransport.GenerateWebSocketHeader((int)header.Length + length);
@@ -463,11 +463,12 @@ public sealed class MTProtoConnection : IMTProtoConnection
     internal void WriteFrameBlock(ReadOnlySequence<byte> buffer)
     {
         if(buffer.Length == 0) return;
-        var encoded = _encoder.EncodeBlock(buffer);
+        var encoded = _encoder?.EncodeBlock(buffer) ?? buffer;
         _socketConnection.Write(encoded);
     }
     internal void WriteFrameTail()
     {
+        if (_encoder == null) return;
         var frameTail = _encoder.EncodeTail();
         if (frameTail.Length > 0)
         {
@@ -508,7 +509,6 @@ public sealed class MTProtoConnection : IMTProtoConnection
             _connectionAborted = true;
             try
             {
-                _ = _streamHandler.DisposeAsync();
                 _sessionManager.RemoveSession(_session.AuthKeyId, _session.SessionId);
                 _outgoing.Writer.Complete();
                 _socketConnection.Abort(abortReason);

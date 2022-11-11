@@ -28,7 +28,7 @@ using Ferrite.Utils;
 
 namespace Ferrite.Core;
 
-public class MTProtoSession
+public class MTProtoSession : IMTProtoSession
 {
     private readonly IMTProtoService _mtproto;
     private readonly ILogger _log;
@@ -172,7 +172,7 @@ public class MTProtoSession
     /// </summary>
     /// <param name="authKeyId"></param>
     /// <returns>Current Server Salt</returns>
-    internal long SaveCurrentSession(long authKeyId)
+    public long SaveCurrentSession(long authKeyId)
     {
         if (_serverSalt.ValidSince + 1800 < DateTimeOffset.Now.ToUnixTimeSeconds())
         {

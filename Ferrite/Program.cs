@@ -126,13 +126,12 @@ public class Program
         builder.RegisterType<DefaultChain>().As<ITLHandler>().SingleInstance();
         RegisterApiLayers(builder);
         builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>().SingleInstance();
-        builder.RegisterType<StreamHandler>().As<IStreamHandler>();
         builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
         builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();
         builder.RegisterType<ProtoTransport>();
-        builder.RegisterType<MTProtoSession>().AsSelf();
+        builder.RegisterType<MTProtoSession>().As<IMTProtoSession>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<FerriteServer>().As<IFerriteServer>().SingleInstance();

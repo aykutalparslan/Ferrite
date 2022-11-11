@@ -281,8 +281,9 @@ public class PhotosService : IPhotosService
     public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null) return new PhotosDTO(Array.Empty<Data.PhotoDTO>(), Array.Empty<UserDTO>());
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
-        
+        if(user == null) return new PhotosDTO(Array.Empty<Data.PhotoDTO>(), Array.Empty<UserDTO>());
 
         var profilePhotos = _unitOfWork.PhotoRepository.GetProfilePhotos(auth.UserId);
         if (auth.UserId == user.Id)

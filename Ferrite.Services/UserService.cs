@@ -70,9 +70,7 @@ public class UserService : IUsersService
             return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
                 new List<UserDTO>(){user with
                 {
-                    Self = self, 
-                    Min = true,
-                    ApplyMinPhoto = true,
+                    Self = self
                 }}), true, ErrorMessages.None);
         }
 
@@ -129,7 +127,9 @@ public class UserService : IUsersService
 
     private PeerNotifySettingsDTO GetPeerNotifySettings(long authKeyId, UserDTO? user, DeviceType deviceType)
     {
-        var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
+        if (user == null) return new PeerNotifySettingsDTO();
+        var settings = 
+            _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
         {
             NotifyPeerType = InputNotifyPeerType.Peer,
             Peer = new InputPeerDTO
@@ -139,8 +139,7 @@ public class UserService : IUsersService
                 InputPeerType = InputPeerType.User
             }
         });
-        PeerNotifySettingsDTO notifySettings = null;
-        notifySettings = settings.Count == 0
+        PeerNotifySettingsDTO notifySettings = notifySettings = settings.Count == 0
             ? new PeerNotifySettingsDTO()
             : settings.First(_ => _.DeviceType == deviceType);
         return notifySettings;

@@ -25,7 +25,7 @@ namespace Ferrite.Core;
 
 public interface IProtoHandler
 {
-    public MTProtoSession Session { get; set; }
+    public IMTProtoSession Session { get; set; }
     public ProtoMessage DecryptMessage(in ReadOnlySequence<byte> bytes);
     public ProtoMessage ReadPlaintextMessage(in ReadOnlySequence<byte> bytes);
     public ReadOnlySequence<byte> EncryptMessage(MTProtoMessage message);
