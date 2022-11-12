@@ -255,7 +255,7 @@ public static class ObjectReader
         if (_sizeReaders.ContainsKey(constructor))
         {
             var reader = _sizeReaders[constructor];
-            return reader.Invoke(buff, 0);
+            return reader(buff, 0);
         }
         return 0;
     }
@@ -1309,7 +1309,7 @@ public readonly ref struct " + typeName + @"
         if(index >= " + index +
                           (arg.ConditionalDefinition != null
                               ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
-                              : "") + @") offset += ObjectReader.ReadSize(buffer, offset);");
+                              : "") + @") offset += ObjectReader.ReadSize(buffer[offset..]);");
             }
 
             if (arg.TypeTerm.Identifier != "true")

@@ -331,8 +331,8 @@ public class MTProtoConnectionTests
         await connection.SendAsync(file.Object);
         int fileHeaderLen = 24 + (len < 254 ? 1 : 4);
         var result = await pipe.Reader.ReadAtLeastAsync(56 + len + fileHeaderLen);
-        var actual = DecryptMessage(result.Buffer.Slice(8), authKey)
-            .AsSpan(32 + fileHeaderLen,len).ToArray();
+        var decrypted = DecryptMessage(result.Buffer.Slice(8), authKey);
+        var actual = decrypted.AsSpan(32 + fileHeaderLen,len).ToArray();
         Assert.Equal(expected, actual);
     }
     private byte[] DecryptMessage(ReadOnlySequence<byte> bytes, byte[] authKey)
