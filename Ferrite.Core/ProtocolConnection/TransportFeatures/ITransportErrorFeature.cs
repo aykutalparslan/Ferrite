@@ -18,7 +18,9 @@
 
 using System.Buffers;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.ProtocolConnection.TransportFeatures;
 
-public readonly record struct HandshakeResponse(SequencePosition Position, 
-    ReadOnlySequence<byte> Response, bool Completed);
+public interface ITransportErrorFeature
+{
+    public ReadOnlySequence<byte> GenerateTransportError(int errorCode);
+}

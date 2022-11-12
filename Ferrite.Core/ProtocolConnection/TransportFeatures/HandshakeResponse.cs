@@ -17,13 +17,8 @@
 // 
 
 using System.Buffers;
-using DotNext.Buffers;
-using Ferrite.Core.Framing;
-using Ferrite.Transport;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.ProtocolConnection.TransportFeatures;
 
-public interface ITransportErrorFeature
-{
-    public ReadOnlySequence<byte> GenerateTransportError(int errorCode);
-}
+public readonly record struct HandshakeResponse(SequencePosition Position, 
+    ReadOnlySequence<byte> Response, bool Completed);

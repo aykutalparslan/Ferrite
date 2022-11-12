@@ -116,9 +116,9 @@ public sealed class MTProtoConnection : IMTProtoConnection
                         var position = await _protoTransport.DecodeWebSocketData(result.Buffer);
                         _socketConnection.Transport.Input.AdvanceTo(position);
                         
-                        var wsResult = await _protoTransport.WebSocketReader.ReadAsync();
-                        var wsPosition = await Process(wsResult.Buffer);
-                        _protoTransport.WebSocketReader.AdvanceTo(wsPosition);
+                        var wsResult = await _protoTransport.ReadFromWebSocketAsync();
+                        var wsPosition = await Process(wsResult);
+                        _protoTransport.AdvanceWebSocketTo(wsPosition);
                     }
                     else
                     {

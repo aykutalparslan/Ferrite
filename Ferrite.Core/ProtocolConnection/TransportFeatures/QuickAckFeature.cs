@@ -17,16 +17,25 @@
 // 
 
 using System.Buffers;
-using System.IO.Pipelines;
-using Ferrite.Transport;
+using System.Buffers.Binary;
+using DotNext.Buffers;
+using Ferrite.Services;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.ProtocolConnection.TransportFeatures;
 
-public interface IWebSocketFeature
+public class QuickAckFeature : IQuickAckFeature
 {
-    public bool WebSocketHandshakeCompleted { get; }
-    public PipeReader WebSocketReader { get; }
-    public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
-    public ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer);
-    public ReadOnlySequence<byte> GenerateWebSocketHeader(int length);
+    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport)
+    {
+        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
+        writer.Clear();
+        ack |= 1 << 31;
+        if (transport == MTProtoTransport.Abridged)
+        {
+            ack = BinaryPrimitives.ReverseEndianness(ack);
+        }
+        writer.WriteInt32(ack, true);
+        var msg = writer.WrittenSpan;
+        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
+    }
 }

@@ -20,7 +20,7 @@ using System.Buffers;
 using System.IO.Pipelines;
 using Ferrite.Transport;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.ProtocolConnection.TransportFeatures;
 
 public class WebSocketFeature : IWebSocketFeature
 {

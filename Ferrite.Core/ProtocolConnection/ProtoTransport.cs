@@ -19,8 +19,8 @@
 using System.Buffers;
 using System.IO.Pipelines;
 using DotNext.Buffers;
-using Ferrite.Core.Features;
 using Ferrite.Core.Framing;
+using Ferrite.Core.ProtocolConnection.TransportFeatures;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.Transport;
@@ -28,8 +28,7 @@ using Ferrite.Transport;
 namespace Ferrite.Core;
 
 public class ProtoTransport : IQuickAckFeature,
-    ITransportErrorFeature, IWebSocketFeature,
-    IFrameEncoder, IFrameDecoder
+    ITransportErrorFeature, IFrameEncoder, IFrameDecoder
 {
     public MTProtoTransport TransportType { get; private set; }
     private readonly ITransportDetector _transportDetector;
@@ -52,8 +51,15 @@ public class ProtoTransport : IQuickAckFeature,
     }
 
     public bool WebSocketHandshakeCompleted => _webSocket.WebSocketHandshakeCompleted;
-    public PipeReader WebSocketReader => _webSocket.WebSocketReader;
-
+    public async ValueTask<ReadOnlySequence<byte>> ReadFromWebSocketAsync()
+    {
+        var wsResult = await _webSocket.WebSocketReader.ReadAsync();
+        return wsResult.Buffer;
+    }
+    public void AdvanceWebSocketTo(SequencePosition position)
+    {
+        _webSocket.WebSocketReader.AdvanceTo(position);
+    }
     public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data)
     {
         return _webSocket.ProcessWebSocketHandshake(data);
