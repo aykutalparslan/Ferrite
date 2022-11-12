@@ -22,7 +22,6 @@ namespace Ferrite.Services;
 
 public interface IMTProtoConnection
 {
-    MTProtoTransport TransportType { get; }
     bool IsEncrypted { get; }
     void Abort(Exception abortReason);
     ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75);

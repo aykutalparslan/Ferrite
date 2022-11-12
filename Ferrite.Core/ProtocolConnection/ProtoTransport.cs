@@ -28,16 +28,24 @@ using Ferrite.Transport;
 namespace Ferrite.Core;
 
 public class ProtoTransport : IQuickAckFeature,
-    ITransportErrorFeature, IWebSocketFeature
+    ITransportErrorFeature, IWebSocketFeature,
+    IFrameEncoder, IFrameDecoder
 {
+    public MTProtoTransport TransportType { get; private set; }
+    private readonly ITransportDetector _transportDetector;
+    private IFrameDecoder? _decoder;
+    private IFrameEncoder? _encoder;
     private readonly IQuickAckFeature _quickAck;
     private readonly ITransportErrorFeature _transportError;
     private readonly IWebSocketFeature _webSocket;
 
-    public ProtoTransport(IQuickAckFeature quickAck,
+    public ProtoTransport(ITransportDetector detector,
+        IQuickAckFeature quickAck,
         ITransportErrorFeature transportError,
         IWebSocketFeature webSocket)
     {
+        TransportType = MTProtoTransport.Unknown;
+        _transportDetector = detector;
         _quickAck = quickAck;
         _transportError = transportError;
         _webSocket = webSocket;
@@ -69,5 +77,45 @@ public class ProtoTransport : IQuickAckFeature,
     public ReadOnlySequence<byte> GenerateTransportError(int errorCode)
     {
         return _transportError.GenerateTransportError(errorCode);
+    }
+
+    public void DetectTransport(ReadOnlySequence<byte> bytes, out SequencePosition sequencePosition)
+    {
+        TransportType = _transportDetector.DetectTransport(bytes, out _decoder, out _encoder, out sequencePosition);
+    }
+
+    public ReadOnlySequence<byte> Encode(in ReadOnlySequence<byte> input)
+    {
+        return _encoder?.Encode(input) ?? input;
+    }
+
+    public ReadOnlySequence<byte> GenerateHead(int length)
+    {
+        return _encoder?.GenerateHead(length) ?? new ReadOnlySequence<byte>();
+    }
+
+    public ReadOnlySequence<byte> EncodeBlock(in ReadOnlySequence<byte> input)
+    {
+        return _encoder?.EncodeBlock(input) ?? input;
+    }
+
+    public ReadOnlySequence<byte> EncodeTail()
+    {
+        return _encoder?.EncodeTail() ?? new ReadOnlySequence<byte>();
+    }
+
+    public bool Decode(ReadOnlySequence<byte> bytes, out ReadOnlySequence<byte> frame, out bool isStream, out bool requiresQuickAck,
+        out SequencePosition position)
+    {
+        if (_decoder != null)
+        {
+            return _decoder.Decode(bytes, out frame, out isStream, out requiresQuickAck, out position);
+        }
+
+        frame = new ReadOnlySequence<byte>();
+        isStream = false;
+        requiresQuickAck = false;
+        position = bytes.Start;
+        return false;
     }
 }
