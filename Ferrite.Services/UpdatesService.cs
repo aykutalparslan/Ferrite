@@ -156,7 +156,7 @@ public class UpdatesService : IUpdatesService
                     MessageType = MTProtoMessageType.Updates,
                 };
                 var bytes = MessagePackSerializer.Serialize(message);
-                _ = _pipe.WriteMessageAsync(s.NodeId.ToString(), bytes);
+                await _pipe.WriteMessageAsync(s.NodeId.ToString(), bytes);
             }
         }
 

@@ -438,6 +438,7 @@ public class StreamingRequestTests
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
         builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();
         builder.RegisterType<ProtoTransport>();
+        builder.RegisterType<SerializationFeature>();
         builder.RegisterType<MTProtoSession>().As<IMTProtoSession>();
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);

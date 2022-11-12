@@ -25,7 +25,6 @@ using Ferrite.TL;
 using System.Threading.Channels;
 using DotNext.IO.Pipelines;
 using Ferrite.Transport;
-using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Data;
 using Ferrite.Utils;
@@ -33,7 +32,6 @@ using Ferrite.TL.mtproto;
 using Ferrite.Services;
 using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.upload;
-using Ferrite.TL.ObjectMapper; 
 using MessagePack;
 
 namespace Ferrite.Core;
@@ -43,38 +41,33 @@ public sealed class MTProtoConnection : IMTProtoConnection
     public bool IsEncrypted => _session.AuthKeyId != 0;
     private readonly ILogger _log;
     private readonly ISessionService _sessionManager;
-    private readonly IMapperContext _mapper;
     private readonly IMTProtoSession _session;
     private readonly ITLHandler _requestChain;
     private readonly IProtoHandler _protoHandler;
     private readonly ITransportConnection _socketConnection;
-    private Task? _receiveTask;
+    private readonly ProtoTransport _protoTransport;
+    private readonly SerializationFeature _serialization;
     private readonly Channel<MTProtoMessage> _outgoing = Channel.CreateUnbounded<MTProtoMessage>();
     private readonly Channel<IFileOwner> _outgoingStreams = Channel.CreateUnbounded<IFileOwner>();
     private readonly SemaphoreSlim _sendSemaphore = new SemaphoreSlim(1, 1);
     private readonly SemaphoreSlim _incomingSemaphore = new SemaphoreSlim(1, 1);
+    private Task? _receiveTask;
     private Task? _sendTask;
     private Task? _sendStreamTask;
     private Timer? _disconnectTimer;
     private readonly object _disconnectTimerState = new object();
-    private readonly ITLObjectFactory _factory;
-    private readonly ProtoTransport _protoTransport;
-    internal ITransportConnection TransportConnection => _socketConnection;
-
     private readonly object _abortLock = new object();
     private bool _connectionAborted = false;
 
     public MTProtoConnection(ITransportConnection connection,
-        ITLObjectFactory objectFactory, ITransportDetector detector,
-        ILogger logger, ISessionService sessionManager, IMapperContext mapper, 
+        ILogger logger, ISessionService sessionManager, 
         IProtoHandler protoHandler, IMTProtoSession session,
-        ProtoTransport protoTransport, ITLHandler requestChain)
+        ProtoTransport protoTransport, ITLHandler requestChain,
+        SerializationFeature serialization)
     {
         _socketConnection = connection;
-        _factory = objectFactory;
         _log = logger;
         _sessionManager = sessionManager;
-        _mapper = mapper;
         _session = session;
         _session.Connection = this;
         _session.EndPoint = _socketConnection.RemoteEndPoint as IPEndPoint;
@@ -82,6 +75,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         _protoHandler.Session = _session;
         _protoTransport = protoTransport;
         _requestChain = requestChain;
+        _serialization = serialization;
     }
     public void Start()
     {
@@ -159,7 +153,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
                     var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
                     if (updates != null)
                     {
-                        var tlObj = _mapper.MapToTLObject<Updates, UpdatesBase>(updates);
+                        var tlObj = _serialization.MapToTLObject<Updates, UpdatesBase>(updates);
                         msg.Data = tlObj.TLBytes.ToArray();
                         if (tlObj is UpdatesImpl update)
                         {
@@ -258,7 +252,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         await FlushSocketAsync();
     }
 
-    private async Task<SequencePosition> Process(ReadOnlySequence<byte> buffer)
+    private async ValueTask<SequencePosition> Process(ReadOnlySequence<byte> buffer)
     {
         if (buffer.Length < 4) return buffer.Start;
         SequencePosition position = buffer.Start;
@@ -268,13 +262,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             int firstInt = rd.ReadInt32(true);
             if (firstInt == WebSocketHandler.Get)
             {
-                var handshake = _protoTransport.ProcessWebSocketHandshake(buffer);
-                if (handshake.Completed)
-                {
-                    WriteFrame(handshake.Response, false);
-                    var result = await FlushSocketAsync();
-                }
-                return handshake.Position;
+                return await ProcessWebSocketHandshake(buffer);
             }
 
             _protoTransport.DetectTransport(buffer, out position);
@@ -288,23 +276,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             try
             {
                 if(frame.Length == 0) continue;
-                long authKeyId = new SequenceReader(frame).ReadInt64(true);
-                if (authKeyId != 0)
-                {
-                    if (!_session.TryFetchAuthKey(authKeyId) &&
-                        _session.AuthKeyId == 0)
-                    {
-                        SendTransportError(404);
-                    }
-                }
-                if (isStream)
-                {
-                    await ProcessStreamAsync(frame, hasMore);
-                }
-                else if (frame.Length > 0)
-                {
-                    await ProcessFrameAsync(frame, requiresQuickAck);
-                }
+                await ProcessIncomingData(frame, isStream, hasMore, requiresQuickAck);
             }
             catch(Exception ex)
             {
@@ -315,7 +287,41 @@ public sealed class MTProtoConnection : IMTProtoConnection
         return position;
     }
 
-    private async Task ProcessStreamAsync(ReadOnlySequence<byte> frame, bool hasMore)
+    private async ValueTask<SequencePosition> ProcessWebSocketHandshake(ReadOnlySequence<byte> buffer)
+    {
+        var handshake = _protoTransport.ProcessWebSocketHandshake(buffer);
+        if (handshake.Completed)
+        {
+            WriteFrame(handshake.Response, false);
+            await FlushSocketAsync();
+        }
+
+        return handshake.Position;
+    }
+
+    private async ValueTask ProcessIncomingData(ReadOnlySequence<byte> frame, bool isStream, bool hasMore, bool requiresQuickAck)
+    {
+        long authKeyId = new SequenceReader(frame).ReadInt64(true);
+        if (authKeyId != 0)
+        {
+            if (!_session.TryFetchAuthKey(authKeyId) &&
+                _session.AuthKeyId == 0)
+            {
+                SendTransportError(404);
+            }
+        }
+
+        if (isStream)
+        {
+            await ProcessStreamAsync(frame, hasMore);
+        }
+        else if (frame.Length > 0)
+        {
+            await ProcessFrameAsync(frame, requiresQuickAck);
+        }
+    }
+
+    private async ValueTask ProcessStreamAsync(ReadOnlySequence<byte> frame, bool hasMore)
     {
         var message = await _protoHandler.ProcessIncomingStreamAsync(frame, hasMore);
         if (message != StreamingProtoMessage.Default)
@@ -326,19 +332,19 @@ public sealed class MTProtoConnection : IMTProtoConnection
             int constructor = await message.MessageData.Input.ReadInt32Async(true);
             if (constructor == TL.currentLayer.TLConstructor.Upload_SaveFilePart)
             {
-                var msg = _factory.Resolve<SaveFilePart>();
+                var msg = _serialization.Resolve<SaveFilePart>();
                 await msg.SetPipe(message.MessageData);
                 var processResult = _requestChain.Process(this, msg, context);
             }
             else if (constructor == TL.currentLayer.TLConstructor.Upload_SaveBigFilePart)
             {
-                var msg = _factory.Resolve<SaveBigFilePart>();
+                var msg = _serialization.Resolve<SaveBigFilePart>();
                 await msg.SetPipe(message.MessageData);
                 var processResult = _requestChain.Process(this, msg, context);
             }
         }
     }
-    private async Task ProcessFrameAsync(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
+    private async ValueTask ProcessFrameAsync(ReadOnlySequence<byte> bytes, bool requiresQuickAck)
     {
         if (bytes.Length < 8)
         {
@@ -359,7 +365,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             using var message = _protoHandler.DecryptMessage(bytes.Slice(8));
             CreateNewSession(message.Headers);
             var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
-            var msg = _factory.Read(rd.ReadInt32(true), ref rd);
+            var msg = _serialization.Read(rd.ReadInt32(true), ref rd);
             var context = GenerateExecutionContext(message.Headers,
                 requiresQuickAck ? _session.GenerateQuickAck(message.MessageData.AsSpan()) : null);
             await _requestChain.Process(this, msg, context);
@@ -386,7 +392,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             SequenceNo = headers.SequenceNo,
             SessionId = headers.SessionId,
         };
-        if (TransportConnection.RemoteEndPoint is IPEndPoint endPoint)
+        if (_socketConnection.RemoteEndPoint is IPEndPoint endPoint)
         {
             context.IP = endPoint.Address.ToString();
         }
@@ -414,7 +420,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         await _sessionManager.OnPing(_session.AuthKeyId != 0 ? 
                 _session.PermAuthKeyId : _session.AuthKeyId,
             _session.SessionId);
-        var pong = _factory.Resolve<Pong>();
+        var pong = _serialization.Resolve<Pong>();
         pong.PingId = pingId;
         pong.MsgId = _session.NextMessageId(true);
         Services.MTProtoMessage message = new Services.MTProtoMessage()

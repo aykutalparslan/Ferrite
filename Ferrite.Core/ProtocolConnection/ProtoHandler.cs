@@ -27,9 +27,6 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer146.storage;
-using Ferrite.TL.slim.layer146.upload;
-using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.Core;

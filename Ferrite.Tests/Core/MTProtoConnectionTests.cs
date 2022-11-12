@@ -499,6 +499,7 @@ public class MTProtoConnectionTests
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
         builder.RegisterType<WebSocketFeature>().As<IWebSocketFeature>();
         builder.RegisterType<ProtoTransport>();
+        builder.RegisterType<SerializationFeature>();
         builder.RegisterType<MTProtoSession>().As<IMTProtoSession>();
         builder.RegisterMock(pipe);
         builder.RegisterMock(new Mock<IAuthService>());
