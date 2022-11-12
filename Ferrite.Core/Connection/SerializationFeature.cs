@@ -20,7 +20,7 @@ using DotNext.IO;
 using Ferrite.TL;
 using Ferrite.TL.ObjectMapper;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
 public class SerializationFeature : ITLObjectFactory, IMapperContext
 {

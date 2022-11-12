@@ -31,6 +31,7 @@ using Autofac.Extras.Moq;
 using DotNext.IO;
 using Elasticsearch.Net;
 using Ferrite.Core;
+using Ferrite.Core.Connection;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;

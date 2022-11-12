@@ -17,6 +17,7 @@
 //
 using System;
 using System.Buffers;
+using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -51,7 +52,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
         return Next;
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
@@ -161,14 +162,15 @@ public class MTProtoRequestProcessor : ILinkedHandler
             }
             else if (sender != null)
             {
-                Services.MTProtoMessage message = new Services.MTProtoMessage
+                MTProtoMessage message = new()
                 {
                     MessageType = MTProtoMessageType.Encrypted,
                     SessionId = ctx.SessionId,
                     IsResponse = true,
-                    IsContentRelated = true
+                    IsContentRelated = true,
+                    Data = result.Error?.TLBytes.ToArray()
                 };
-                message.Data = result.Error.TLBytes.ToArray();
+                await ((MTProtoConnection)sender).SendAsync(message);
             }
         }
         else if (input is Message { Body: GetFile getFileRequest2 })
@@ -182,21 +184,26 @@ public class MTProtoRequestProcessor : ILinkedHandler
             }
             else if (sender != null)
             {
-                Services.MTProtoMessage message = new Services.MTProtoMessage
+                MTProtoMessage message = new()
                 {
                     MessageType = MTProtoMessageType.Encrypted,
                     SessionId = ctx.SessionId,
                     IsResponse = true,
-                    IsContentRelated = true
+                    IsContentRelated = true,
+                    Data = result.Error?.TLBytes.ToArray()
                 };
-                message.Data = result.Error.TLBytes.ToArray();
+                await ((MTProtoConnection)sender).SendAsync(message);
             }
+        }
+        else
+        {
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
     }
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (Next != null) await Next.Process(sender, input, ctx);
     }
 }
 

@@ -19,22 +19,22 @@
 using System.Buffers;
 using System.IO.Pipelines;
 using System.Net;
-using DotNext.IO;
-using DotNext.Buffers;
-using Ferrite.TL;
 using System.Threading.Channels;
+using DotNext.Buffers;
+using DotNext.IO;
 using DotNext.IO.Pipelines;
-using Ferrite.Transport;
 using Ferrite.Core.RequestChain;
 using Ferrite.Data;
-using Ferrite.Utils;
-using Ferrite.TL.mtproto;
 using Ferrite.Services;
+using Ferrite.TL;
 using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.upload;
+using Ferrite.TL.mtproto;
+using Ferrite.Transport;
+using Ferrite.Utils;
 using MessagePack;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
 public sealed class MTProtoConnection : IMTProtoConnection
 {
@@ -307,7 +307,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
             if (!_session.TryFetchAuthKey(authKeyId) &&
                 _session.AuthKeyId == 0)
             {
-                SendTransportError(404);
+                await SendTransportError(404);
             }
         }
 
@@ -326,7 +326,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         var message = await _protoHandler.ProcessIncomingStreamAsync(frame, hasMore);
         if (message != StreamingProtoMessage.Default)
         {
-            CreateNewSession(message.Headers);
+            await CreateNewSession(message.Headers);
             var context = GenerateExecutionContext(message.Headers);
             int messageDataLength = await message.MessageData.Input.ReadInt32Async(true);
             int constructor = await message.MessageData.Input.ReadInt32Async(true);
@@ -363,7 +363,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         else if(_session.AuthKey != null)
         {
             using var message = _protoHandler.DecryptMessage(bytes.Slice(8));
-            CreateNewSession(message.Headers);
+            await CreateNewSession(message.Headers);
             var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
             var msg = _serialization.Read(rd.ReadInt32(true), ref rd);
             var context = GenerateExecutionContext(message.Headers,
@@ -372,12 +372,12 @@ public sealed class MTProtoConnection : IMTProtoConnection
         }
     }
 
-    private void CreateNewSession(ProtoHeaders headers)
+    private async ValueTask CreateNewSession(ProtoHeaders headers)
     {
         if (_session.SessionId == 0)
         {
             var serverSalt =_session.CreateNewSession(headers.SessionId, headers.MessageId);
-            SendNewSessionCreatedMessage(headers.MessageId, serverSalt);
+            await SendNewSessionCreatedMessage(headers.MessageId, serverSalt);
         }
     }
 
@@ -403,16 +403,16 @@ public sealed class MTProtoConnection : IMTProtoConnection
 
         return context;
     }
-    public void SendNewSessionCreatedMessage(long firstMessageId, long serverSalt)
+    private async ValueTask SendNewSessionCreatedMessage(long firstMessageId, long serverSalt)
     {
         var sessionCreated = _session.GenerateSessionCreated(firstMessageId, serverSalt);
-        SendAsync(sessionCreated);
+        await SendAsync(sessionCreated);
     }
-    internal void SendTransportError(int errorCode)
+    private async ValueTask SendTransportError(int errorCode)
     {
         var transportError = _protoTransport.GenerateTransportError(errorCode);
         WriteFrame(transportError);
-        FlushSocketAsync();
+        await FlushSocketAsync();
     }
     public async ValueTask Ping(long pingId, int delayDisconnectInSeconds = 75)
     {

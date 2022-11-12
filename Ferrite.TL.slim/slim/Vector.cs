@@ -90,7 +90,7 @@ public ref struct Vector
         {
             var sizeReader = ObjectReader.GetObjectSizeReader(
                 MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
-            len += sizeReader.Invoke(data, len);
+            if (sizeReader != null) len += sizeReader.Invoke(data, len);
         }
         return len;
     }

@@ -16,7 +16,7 @@ public interface IConnectionListener : IAsyncDisposable
     /// <summary>
     /// The endpoint that was bound. This may differ from the requested endpoint, such as when the caller requested that any free port be selected.
     /// </summary>
-    EndPoint EndPoint { get; }
+    EndPoint? EndPoint { get; }
 
     void Bind(EndPoint localEndPoint);
 

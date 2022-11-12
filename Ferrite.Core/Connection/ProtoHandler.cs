@@ -29,15 +29,14 @@ using Ferrite.TL;
 using Ferrite.TL.slim;
 using Ferrite.Utils;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
 public class ProtoHandler : IProtoHandler
 {
     private readonly ILogger _log;
-    private readonly ITLHandler _requestChain;
     private readonly IRandomGenerator _random;
     private MTProtoPipe? _currentRequest;
-    public IMTProtoSession Session { get; set; }
+    public IMTProtoSession? Session { get; set; }
     private readonly SparseBufferWriter<byte> _writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     
     public ProtoHandler(ILogger log, IRandomGenerator random)
@@ -53,13 +52,13 @@ public class ProtoHandler : IProtoHandler
         }
         Span<byte> messageKey = stackalloc byte[16];
         bytes.Slice(0, 16).CopyTo(messageKey);
-        AesIge aesIge = new(Session.AuthKey, messageKey);
+        AesIge aesIge = new(Session?.AuthKey, messageKey);
         var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)bytes.Length - 16);
         var messageSpan = messageData.Memory.Span[..((int)bytes.Length - 16)];
         bytes.Slice(16).CopyTo(messageSpan);
         aesIge.Decrypt(messageSpan);
 
-        var messageKeyActual = AesIge.GenerateMessageKey(Session.AuthKey, messageSpan, true);
+        var messageKeyActual = AesIge.GenerateMessageKey(Session?.AuthKey, messageSpan, true);
         if (!messageKey.SequenceEqual(messageKeyActual))
         {
             var ex = new MTProtoSecurityException("The security check for the 'msg_key' failed.");
@@ -76,18 +75,13 @@ public class ProtoHandler : IProtoHandler
         if (messageDataLength < rd.RemainingCount)
         {
             var data = new TLBytes(messageData, 32, messageDataLength);
-            return new ProtoMessage
-            {
-                Headers = new ProtoHeaders
+            if (Session != null)
+                return new ProtoMessage
                 {
-                    AuthKeyId = Session.AuthKeyId,
-                    Salt = salt,
-                    SessionId = sessionId,
-                    MessageId = messageId,
-                    SequenceNo = sequenceNo,
-                },
-                MessageData = data,
-            };
+                    Headers = new ProtoHeaders(authKeyId: Session.AuthKeyId, salt: salt, sessionId: sessionId,
+                        messageId: messageId, sequenceNo: sequenceNo),
+                    MessageData = data,
+                };
         }
 
         throw new MTProtoSecurityException("Could not decrypt the message.");
@@ -124,31 +118,37 @@ public class ProtoHandler : IProtoHandler
     {
         if(message.Data == null) throw new ArgumentNullException();
         _writer.Clear();
-        _writer.WriteInt64(Session.ServerSalt.Salt, true);
-        _writer.WriteInt64(message.SessionId, true);
-        _writer.WriteInt64(message.MessageType == MTProtoMessageType.Pong ?
-            message.MessageId :
-            Session.NextMessageId(message.IsResponse), true);
-        _writer.WriteInt32(Session.GenerateSeqNo(message.IsContentRelated), true);
-        _writer.WriteInt32(message.Data.Length, true);
-        _writer.Write(message.Data);
-        int paddingLength = _random.GetNext(12, 512);
-        while ((message.Data.Length + paddingLength) % 16 != 0)
+        if (Session != null)
         {
-            paddingLength++;
-        }
-        _writer.Write(_random.GetRandomBytes(paddingLength), false);
+            _writer.WriteInt64(Session.ServerSalt.Salt, true);
+            _writer.WriteInt64(message.SessionId, true);
+            _writer.WriteInt64(
+                message.MessageType == MTProtoMessageType.Pong
+                    ? message.MessageId
+                    : Session.NextMessageId(message.IsResponse), true);
+            _writer.WriteInt32(Session.GenerateSeqNo(message.IsContentRelated), true);
+            _writer.WriteInt32(message.Data.Length, true);
+            _writer.Write(message.Data);
+            int paddingLength = _random.GetNext(12, 512);
+            while ((message.Data.Length + paddingLength) % 16 != 0)
+            {
+                paddingLength++;
+            }
 
-        using var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)_writer.WrittenCount);
-        var messageSpan = messageData.Memory.Slice(0, (int)_writer.WrittenCount).Span;
-        _writer.ToReadOnlySequence().CopyTo(messageSpan);
-        Span<byte> messageKey = AesIge.GenerateMessageKey(Session.AuthKey, messageSpan);
-        AesIge aesIge = new AesIge(Session.AuthKey, messageKey, false);
-        aesIge.Encrypt(messageSpan);
-        _writer.Clear();
-        _writer.WriteInt64(Session.AuthKeyId, true);
-        _writer.Write(messageKey);
-        _writer.Write(messageSpan);
+            _writer.Write(_random.GetRandomBytes(paddingLength), false);
+
+            using var messageData = UnmanagedMemoryPool<byte>.Shared.Rent((int)_writer.WrittenCount);
+            var messageSpan = messageData.Memory.Slice(0, (int)_writer.WrittenCount).Span;
+            _writer.ToReadOnlySequence().CopyTo(messageSpan);
+            Span<byte> messageKey = AesIge.GenerateMessageKey(Session.AuthKey, messageSpan);
+            AesIge aesIge = new AesIge(Session.AuthKey, messageKey, false);
+            aesIge.Encrypt(messageSpan);
+            _writer.Clear();
+            _writer.WriteInt64(Session.AuthKeyId, true);
+            _writer.Write(messageKey);
+            _writer.Write(messageSpan);
+        }
+
         var msg = _writer.ToReadOnlySequence();
         return msg;
     }
@@ -158,7 +158,7 @@ public class ProtoHandler : IProtoHandler
         if(message.Data == null) throw new ArgumentNullException();
         _writer.Clear();
         _writer.WriteInt64(0, true);
-        _writer.WriteInt64(Session.NextMessageId(message.IsContentRelated), true);
+        if (Session != null) _writer.WriteInt64(Session.NextMessageId(message.IsContentRelated), true);
         _writer.WriteInt32(message.Data.Length, true);
         _writer.Write(message.Data);
         var msg = _writer.ToReadOnlySequence();
@@ -174,7 +174,7 @@ public class ProtoHandler : IProtoHandler
             var incomingMessageKey = bytes.Slice(8,16).ToArray();
             var aesKey = new byte[32];
             var aesIV = new byte[32];
-            AesIge.GenerateAesKeyAndIV(Session.AuthKey, incomingMessageKey, true, aesKey, aesIV);
+            AesIge.GenerateAesKeyAndIV(Session?.AuthKey, incomingMessageKey, true, aesKey, aesIV);
             _currentRequest = new MTProtoPipe(aesKey, aesIV, false);
             await _currentRequest.WriteAsync(bytes.Slice(24));
         }
@@ -189,18 +189,19 @@ public class ProtoHandler : IProtoHandler
             var sessionId = await _currentRequest.Input.ReadInt64Async(true);
             var messageId = await _currentRequest.Input.ReadInt64Async(true);
             var sequenceNo = await _currentRequest.Input.ReadInt32Async(true);
-            resp = new StreamingProtoMessage
-            {
-                Headers = new ProtoHeaders
+            if (Session != null)
+                resp = new StreamingProtoMessage
                 {
-                    AuthKeyId = Session.AuthKeyId,
-                    Salt = salt,
-                    SessionId = sessionId,
-                    MessageId = messageId,
-                    SequenceNo = sequenceNo,
-                },
-                MessageData = _currentRequest,
-            };
+                    Headers = new ProtoHeaders
+                    {
+                        AuthKeyId = Session.AuthKeyId,
+                        Salt = salt,
+                        SessionId = sessionId,
+                        MessageId = messageId,
+                        SequenceNo = sequenceNo,
+                    },
+                    MessageData = _currentRequest,
+                };
         }
 
         if (hasMore) return resp;
@@ -221,7 +222,7 @@ public class ProtoHandler : IProtoHandler
         var (streamLength, messageKey) = GenerateMessageKey(cryptographicHeader, resultHeader, data, pad, paddingBytes);
         var (aesKey, aesIV) = GenerateAesKeyAndIV(messageKey);
         _writer.Clear();
-        _writer.WriteInt64(Session.AuthKeyId, true);
+        if (Session != null) _writer.WriteInt64(Session.AuthKeyId, true);
         _writer.Write(messageKey);
         int frameLength = 24 + streamLength;
         var frameHeader = _writer.ToReadOnlySequence();
@@ -286,7 +287,7 @@ public class ProtoHandler : IProtoHandler
     {
         byte[] aesKey = new byte[32];
         byte[] aesIV = new byte[32];
-        AesIge.GenerateAesKeyAndIV(Session.AuthKey, messageKey, false, aesKey, aesIV);
+        AesIge.GenerateAesKeyAndIV(Session?.AuthKey, messageKey, false, aesKey, aesIV);
         return (aesKey, aesIV);
     }
 
@@ -301,7 +302,7 @@ public class ProtoHandler : IProtoHandler
         streams.Enqueue(new MemoryStream(paddingBytes));
         var stream = new ConcatenatedStream(streams, 0, Int32.MaxValue);
 
-        var messageKey = AesIge.GenerateMessageKey(Session.AuthKey, stream).ToArray();
+        var messageKey = AesIge.GenerateMessageKey(Session?.AuthKey, stream).ToArray();
         return ((int)stream.Length, messageKey);
     }
 
@@ -320,10 +321,14 @@ public class ProtoHandler : IProtoHandler
     private byte[] GenerateCryptographicHeader(byte[] resultHeader, Stream data, int pad)
     {
         _writer.Clear();
-        _writer.WriteInt64(Session.ServerSalt.Salt, true);
-        _writer.WriteInt64(Session.SessionId, true);
-        _writer.WriteInt64(Session.NextMessageId(true), true);
-        _writer.WriteInt32(Session.GenerateSeqNo(true), true);
+        if (Session != null)
+        {
+            _writer.WriteInt64(Session.ServerSalt.Salt, true);
+            _writer.WriteInt64(Session.SessionId, true);
+            _writer.WriteInt64(Session.NextMessageId(true), true);
+            _writer.WriteInt32(Session.GenerateSeqNo(true), true);
+        }
+
         _writer.WriteInt32(resultHeader.Length + (int)data.Length + pad, true);
         var cryptographicHeader = _writer.ToReadOnlySequence().ToArray();
         return cryptographicHeader;

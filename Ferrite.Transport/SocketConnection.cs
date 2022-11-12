@@ -84,7 +84,7 @@ public sealed class SocketConnection : ITransportConnection
             _receivingTask = DoReceive();
             _sendingTask = DoSend();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             
         }
@@ -119,7 +119,7 @@ public sealed class SocketConnection : ITransportConnection
             }
 
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             
         }
@@ -321,7 +321,7 @@ public sealed class SocketConnection : ITransportConnection
         {
             _connectionClosedTokenSource.Cancel();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             
         }

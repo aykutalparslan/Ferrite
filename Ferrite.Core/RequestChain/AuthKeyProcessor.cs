@@ -18,6 +18,7 @@
 
 using System.Buffers;
 using System.Runtime.InteropServices;
+using Ferrite.Core.Connection;
 using Ferrite.Core.Execution;
 using Ferrite.Data;
 using Ferrite.Services;
@@ -46,7 +47,7 @@ public class AuthKeyProcessor : ILinkedHandler
         _api = api;
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public ILinkedHandler SetNext(ILinkedHandler value)
     {
@@ -58,7 +59,7 @@ public class AuthKeyProcessor : ILinkedHandler
     {
         if (ctx.AuthKeyId != 0)
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
             return;
         }
         if (input.Constructor != TLConstructor.ReqPqMulti &&

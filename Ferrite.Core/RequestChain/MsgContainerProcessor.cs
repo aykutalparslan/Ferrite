@@ -18,6 +18,7 @@
 using System;
 using System.Buffers;
 using Autofac;
+using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -49,7 +50,7 @@ public class MsgContainerProcessor : ILinkedHandler
         return Next;
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
@@ -63,7 +64,7 @@ public class MsgContainerProcessor : ILinkedHandler
             foreach (var msg in container.Messages)
             {
                 ack.MsgIds.Add(msg.MsgId);
-                await Next.Process(sender, msg, ctx);
+                if (Next != null) await Next.Process(sender, msg, ctx);
             }
             Services.MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
@@ -83,13 +84,13 @@ public class MsgContainerProcessor : ILinkedHandler
         }
         else
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
     }
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (Next != null) await Next.Process(sender, input, ctx);
     }
 }
 

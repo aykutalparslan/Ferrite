@@ -25,7 +25,7 @@ public class TypeTermSyntax
     public bool IsBare { get; set; }
     public bool IsTypeOf { get; set; }
     public string? NamespaceIdentifier { get; set; }
-    public string Identifier { get; set; }
+    public string? Identifier { get; set; }
     public TypeTermSyntax? OptionalType { get; set; }
 
     public string GetFullyQualifiedIdentifier()
@@ -41,15 +41,15 @@ public class TypeTermSyntax
         {
             return "BoxedObject";
         }
-        if (Identifier == "Vector" && OptionalType.Identifier == "int")
+        if (Identifier == "Vector" && OptionalType?.Identifier == "int")
         {
             return "VectorOfInt";
         }
-        if (Identifier == "Vector" && OptionalType.Identifier == "long")
+        if (Identifier == "Vector" && OptionalType?.Identifier == "long")
         {
             return "VectorOfLong";
         }
-        if (Identifier == "Vector" && OptionalType.Identifier == "double")
+        if (Identifier == "Vector" && OptionalType?.Identifier == "double")
         {
             return "VectorOfDouble";
         }

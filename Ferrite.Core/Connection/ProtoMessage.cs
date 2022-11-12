@@ -16,11 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
+using Ferrite.TL.slim;
 
-namespace Ferrite.Core.ProtocolConnection.TransportFeatures;
+namespace Ferrite.Core.Connection;
 
-public interface ITransportErrorFeature
+public readonly record struct ProtoMessage : IDisposable
 {
-    public ReadOnlySequence<byte> GenerateTransportError(int errorCode);
+    public ProtoHeaders Headers { get; init; }
+    public TLBytes MessageData { get; init; }
+    public void Dispose()
+    {
+        MessageData.Dispose();
+    }
 }

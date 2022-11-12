@@ -19,11 +19,11 @@
 using System.Net;
 using Ferrite.Data;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
 public interface IMTProtoSession
 {
-    MTProtoConnection Connection { get; set; }
+    MTProtoConnection? Connection { get; set; }
     IPEndPoint? EndPoint { get; set; }
     long AuthKeyId { get; }
     long PermAuthKeyId { get; }

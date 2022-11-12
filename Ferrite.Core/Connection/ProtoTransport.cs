@@ -17,15 +17,11 @@
 // 
 
 using System.Buffers;
-using System.IO.Pipelines;
-using DotNext.Buffers;
+using Ferrite.Core.Connection.TransportFeatures;
 using Ferrite.Core.Framing;
-using Ferrite.Core.ProtocolConnection.TransportFeatures;
 using Ferrite.Services;
-using Ferrite.TL;
-using Ferrite.Transport;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
 public class ProtoTransport : IQuickAckFeature,
     ITransportErrorFeature, IFrameEncoder, IFrameDecoder

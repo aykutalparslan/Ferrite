@@ -16,9 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
+using Ferrite.TL;
 
-namespace Ferrite.Core.ProtocolConnection.TransportFeatures;
+namespace Ferrite.Core.Connection;
 
-public readonly record struct HandshakeResponse(SequencePosition Position, 
-    ReadOnlySequence<byte> Response, bool Completed);
+public readonly record struct StreamingProtoMessage
+{
+    public static StreamingProtoMessage Default { get; } = new();
+    public ProtoHeaders Headers { get; init; }
+    public MTProtoPipe MessageData { get; init; }
+}

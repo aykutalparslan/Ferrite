@@ -40,7 +40,7 @@ public class MTProtoTransportDetector : ITransportDetector
     }
 
     public MTProtoTransport DetectTransport(ReadOnlySequence<byte> bytes,
-        out IFrameDecoder decoder, out IFrameEncoder encoder, 
+        out IFrameDecoder? decoder, out IFrameEncoder? encoder, 
         out SequencePosition sequencePosition)
     {
         var reader = new SequenceReader<byte>(bytes);

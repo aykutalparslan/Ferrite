@@ -26,7 +26,7 @@ using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
 public class MTProtoSession : IMTProtoSession
 {
@@ -36,7 +36,7 @@ public class MTProtoSession : IMTProtoSession
     private readonly ISessionService _sessionService;
     private readonly IRandomGenerator _random;
     private readonly ITLObjectFactory _factory;
-    public MTProtoConnection Connection { get; set; }
+    public MTProtoConnection? Connection { get; set; }
     public IPEndPoint? EndPoint { get; set; }
     private long _authKeyId;
     private long _permAuthKeyId;
@@ -190,8 +190,9 @@ public class MTProtoSession : IMTProtoSession
         
         if (authKeyId != 0)
         {
-            _sessionService.AddSession(authKeyId, _sessionId, 
-                new ActiveSession(Connection));
+            if (Connection != null)
+                _sessionService.AddSession(authKeyId, _sessionId,
+                    new ActiveSession(Connection));
         }
         return _serverSalt.Salt;
     }
@@ -213,13 +214,13 @@ public class MTProtoSession : IMTProtoSession
         return true;
     }
     
-    public Services.MTProtoMessage GenerateSessionCreated(long firstMessageId, long serverSalt)
+    public MTProtoMessage GenerateSessionCreated(long firstMessageId, long serverSalt)
     {
         var newSessionCreated = _factory.Resolve<NewSessionCreated>();
         newSessionCreated.FirstMsgId = firstMessageId;
         newSessionCreated.ServerSalt = serverSalt;
         newSessionCreated.UniqueId = UniqueSessionId;
-        Services.MTProtoMessage newSessionMessage = new()
+        MTProtoMessage newSessionMessage = new()
         {
             Data = newSessionCreated.TLBytes.ToArray(),
             IsContentRelated = false,

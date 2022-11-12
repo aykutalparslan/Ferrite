@@ -17,13 +17,20 @@
 // 
 
 using System.Buffers;
+using Ferrite.Core.Connection;
+using Ferrite.Data;
+using Ferrite.Services;
 using Ferrite.TL;
 
 namespace Ferrite.Core;
 
-public readonly record struct StreamingProtoMessage
+public interface IProtoHandler
 {
-    public static StreamingProtoMessage Default { get; } = new();
-    public ProtoHeaders Headers { get; init; }
-    public MTProtoPipe MessageData { get; init; }
+    public IMTProtoSession? Session { get; set; }
+    public ProtoMessage DecryptMessage(in ReadOnlySequence<byte> bytes);
+    public ProtoMessage ReadPlaintextMessage(in ReadOnlySequence<byte> bytes);
+    public ReadOnlySequence<byte> EncryptMessage(MTProtoMessage message);
+    public ReadOnlySequence<byte> PreparePlaintextMessage(MTProtoMessage message);
+    public ValueTask<StreamingProtoMessage> ProcessIncomingStreamAsync(ReadOnlySequence<byte> bytes, bool hasMore);
+    public ValueTask<ValueTuple<int, ReadOnlySequence<byte>, MTProtoPipe>> GenerateOutgoingStream(IFileOwner? message);
 }

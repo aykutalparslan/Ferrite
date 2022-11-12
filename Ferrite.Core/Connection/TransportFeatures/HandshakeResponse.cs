@@ -16,13 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Core;
+using System.Buffers;
 
-public readonly struct ProtoHeaders
-{
-    public long AuthKeyId { get; init; }
-    public long Salt { get; init; }
-    public long SessionId { get; init; }
-    public long MessageId { get; init; }
-    public int SequenceNo { get; init; }
-}
+namespace Ferrite.Core.Connection.TransportFeatures;
+
+public readonly record struct HandshakeResponse(SequencePosition Position, 
+    ReadOnlySequence<byte> Response, bool Completed);

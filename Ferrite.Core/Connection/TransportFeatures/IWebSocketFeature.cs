@@ -17,19 +17,15 @@
 // 
 
 using System.Buffers;
-using Ferrite.Data;
-using Ferrite.Services;
-using Ferrite.TL;
+using System.IO.Pipelines;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
-public interface IProtoHandler
+public interface IWebSocketFeature
 {
-    public IMTProtoSession Session { get; set; }
-    public ProtoMessage DecryptMessage(in ReadOnlySequence<byte> bytes);
-    public ProtoMessage ReadPlaintextMessage(in ReadOnlySequence<byte> bytes);
-    public ReadOnlySequence<byte> EncryptMessage(MTProtoMessage message);
-    public ReadOnlySequence<byte> PreparePlaintextMessage(MTProtoMessage message);
-    public ValueTask<StreamingProtoMessage> ProcessIncomingStreamAsync(ReadOnlySequence<byte> bytes, bool hasMore);
-    public ValueTask<ValueTuple<int, ReadOnlySequence<byte>, MTProtoPipe>> GenerateOutgoingStream(IFileOwner? message);
+    public bool WebSocketHandshakeCompleted { get; }
+    public PipeReader WebSocketReader { get; }
+    public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
+    public ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer);
+    public ReadOnlySequence<byte> GenerateWebSocketHeader(int length);
 }

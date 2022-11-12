@@ -16,16 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.TL.slim;
+using System.Buffers;
+using Ferrite.Services;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
-public readonly record struct ProtoMessage : IDisposable
+public interface IQuickAckFeature
 {
-    public ProtoHeaders Headers { get; init; }
-    public TLBytes MessageData { get; init; }
-    public void Dispose()
-    {
-        MessageData.Dispose();
-    }
+    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport);
 }

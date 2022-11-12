@@ -20,6 +20,6 @@ namespace Ferrite.TLParser;
 
 public class ConditionalDefinitionSyntax
 {
-    public string Identifier { get; set; }
+    public string? Identifier { get; set; }
     public int ConditionalArgumentBit { get; set; }
 }
