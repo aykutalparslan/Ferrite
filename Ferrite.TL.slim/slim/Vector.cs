@@ -22,7 +22,6 @@ using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
-using Nest;
 
 namespace Ferrite.TL.slim;
 
@@ -91,7 +90,7 @@ public ref struct Vector
         {
             var sizeReader = ObjectReader.GetObjectSizeReader(
                 MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
-            len += sizeReader.Invoke(data, len);
+            if (sizeReader != null) len += sizeReader.Invoke(data, len);
         }
         return len;
     }

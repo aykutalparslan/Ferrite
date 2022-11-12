@@ -25,14 +25,19 @@ public class LocalFileOwner : IFileOwner
     private readonly int _offset;
     private readonly int _limit;
 
-    public LocalFileOwner(UploadedFileInfoDTO fileInfo, IObjectStore objectStore, int offset, int limit, long reqMsgId)
+    public LocalFileOwner(UploadedFileInfoDTO fileInfo, IObjectStore objectStore, 
+        int offset, int limit, long reqMsgId, byte[] streamHeader)
     {
+        TLObjectHeader = streamHeader;
         _fileInfo = fileInfo;
         _objectStore = objectStore;
         _offset = offset;
         _limit = limit;
         ReqMsgId = reqMsgId;
     }
+
+    public byte[] TLObjectHeader { get; init; }
+
     public async ValueTask<Stream> GetFileStream()
     {
         int offset = _offset;

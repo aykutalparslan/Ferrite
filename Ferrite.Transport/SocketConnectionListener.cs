@@ -13,7 +13,7 @@ public sealed class SocketConnectionListener : IConnectionListener
     private Socket? _listenSocket;
     private readonly IOQueue _pipeScheduler;
     private readonly SocketSenderPool _socketSenderPool;
-    public EndPoint EndPoint { get; private set; }
+    public EndPoint? EndPoint { get; private set; }
 
     public SocketConnectionListener()
     {

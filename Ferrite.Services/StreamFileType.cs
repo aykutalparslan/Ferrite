@@ -16,20 +16,17 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using System.Net;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
-using Ferrite.Services;
-using Ferrite.Transport;
+namespace Ferrite.Services;
 
-namespace Ferrite.Core;
-
-public interface IUnencryptedMessageHandler
+public enum StreamFileType
 {
-    public void HandleIncomingMessage(in ReadOnlySequence<byte> bytes, 
-        MTProtoConnection connection,
-        MTProtoSession session);
-
-    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session);
+    Unknown,
+    Partial,
+    Jpeg,
+    Gif,
+    Png,
+    Mp3,
+    Mov,
+    Mp4,
+    Webp,
 }

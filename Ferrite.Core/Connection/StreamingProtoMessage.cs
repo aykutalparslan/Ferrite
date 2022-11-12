@@ -16,11 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+using Ferrite.TL;
 
-public interface IFileOwner
+namespace Ferrite.Core.Connection;
+
+public readonly record struct StreamingProtoMessage
 {
-    public byte[] TLObjectHeader { get; init; }
-    public ValueTask<Stream> GetFileStream();
-    public long ReqMsgId { get; }
+    public static StreamingProtoMessage Default { get; } = new();
+    public ProtoHeaders Headers { get; init; }
+    public MTProtoPipe MessageData { get; init; }
 }

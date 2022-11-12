@@ -16,28 +16,22 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using System.Buffers.Binary;
-using DotNext.Buffers;
-using Ferrite.Core.Framing;
-using Ferrite.Services;
-using Ferrite.Transport;
+namespace Ferrite.Core.Connection;
 
-namespace Ferrite.Core.Features;
-
-public class QuickAckFeature : IQuickAckFeature
+public readonly struct ProtoHeaders
 {
-    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport)
+    public ProtoHeaders(long authKeyId, long salt, long sessionId, long messageId, int sequenceNo)
     {
-        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
-        writer.Clear();
-        ack |= 1 << 31;
-        if (transport == MTProtoTransport.Abridged)
-        {
-            ack = BinaryPrimitives.ReverseEndianness(ack);
-        }
-        writer.WriteInt32(ack, true);
-        var msg = writer.WrittenSpan;
-        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
+        AuthKeyId = authKeyId;
+        Salt = salt;
+        SessionId = sessionId;
+        MessageId = messageId;
+        SequenceNo = sequenceNo;
     }
+
+    public long AuthKeyId { get; init; }
+    public long Salt { get; init; }
+    public long SessionId { get; init; }
+    public long MessageId { get; init; }
+    public int SequenceNo { get; init; }
 }

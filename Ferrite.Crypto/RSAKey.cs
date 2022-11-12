@@ -30,28 +30,28 @@ namespace Ferrite.Crypto;
 
 public class RSAKey : IRSAKey
 {
-    private RSA key;
-    public RSA Key => key;
+    private RSA? _key;
+    public RSA? Key => _key;
     private RSAParameters privateKeyParameters;
     public RSAParameters PrivateKeyParameters => privateKeyParameters;
     private RSAParameters publicKeyParameters;
     public RSAParameters PublicKeyParameters => publicKeyParameters;
     private long fingerprint;
     public long Fingerprint => fingerprint;
-    private ICipherParameters publicKey;
-    private ICipherParameters privateKey;
+    private ICipherParameters? _publicKey;
+    private ICipherParameters? _privateKey;
 
     private void CalculateFingerprint()
     {
         SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
-        writer.WriteTLBytes(publicKeyParameters.Modulus);
-        writer.WriteTLBytes(publicKeyParameters.Exponent);
+        if (publicKeyParameters.Modulus != null) writer.WriteTLBytes(publicKeyParameters.Modulus);
+        if (publicKeyParameters.Exponent != null) writer.WriteTLBytes(publicKeyParameters.Exponent);
         var sha1 = SHA1.HashData(writer.ToReadOnlySequence().ToArray());
         fingerprint = BitConverter.ToInt64(sha1, 12);
     }
-    private RSA GetRSAKeyPair(string alias)
+    private RSA? GetRSAKeyPair(string alias)
     {
-        RSA rsa = RSA.Create(2048);
+        RSA? rsa = RSA.Create(2048);
         string[] keyFiles = new string[] { alias + "-private.key", alias + "-public.key" };
         bool exists = true;
         foreach (var filename in keyFiles)
@@ -73,12 +73,16 @@ public class RSAKey : IRSAKey
 
     public void Init(string alias)
     {
-        key = GetRSAKeyPair(alias);
-        publicKeyParameters = key.ExportParameters(false);
-        privateKeyParameters = key.ExportParameters(true);
+        _key = GetRSAKeyPair(alias);
+        if (_key != null)
+        {
+            publicKeyParameters = _key.ExportParameters(false);
+            privateKeyParameters = _key.ExportParameters(true);
+        }
+
         CalculateFingerprint();
-        publicKey = (ICipherParameters)new PemReader(new StringReader(ExportPublicKey())).ReadObject();
-        privateKey = ((AsymmetricCipherKeyPair)new PemReader(new StringReader(ExportPrivateKey())).ReadObject()).Private;
+        _publicKey = (ICipherParameters)new PemReader(new StringReader(ExportPublicKey())).ReadObject();
+        _privateKey = ((AsymmetricCipherKeyPair)new PemReader(new StringReader(ExportPrivateKey())).ReadObject()).Private;
     }
     
     // https://stackoverflow.com/a/7768475/2015348
@@ -163,23 +167,25 @@ public class RSAKey : IRSAKey
         }
     }
 
-    private static void EncodeIntegerBigEndian(BinaryWriter stream, byte[] value, bool forceUnsigned = true)
+    private static void EncodeIntegerBigEndian(BinaryWriter stream, byte[]? value, bool forceUnsigned = true)
     {
         stream.Write((byte)0x02); // INTEGER
         var prefixZeros = 0;
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value[i] != 0) break;
-            prefixZeros++;
-        }
-        if (value.Length - prefixZeros == 0)
+        if (value != null)
+            for (var i = 0; i < value.Length; i++)
+            {
+                if (value[i] != 0) break;
+                prefixZeros++;
+            }
+
+        if (value != null && value.Length - prefixZeros == 0)
         {
             EncodeLength(stream, 1);
             stream.Write((byte)0);
         }
         else
         {
-            if (forceUnsigned && value[prefixZeros] > 0x7f)
+            if (value != null && forceUnsigned && value[prefixZeros] > 0x7f)
             {
                 // Add a prefix zero to force unsigned if the MSB is 1
                 EncodeLength(stream, value.Length - prefixZeros + 1);
@@ -187,12 +193,14 @@ public class RSAKey : IRSAKey
             }
             else
             {
-                EncodeLength(stream, value.Length - prefixZeros);
+                if (value != null) EncodeLength(stream, value.Length - prefixZeros);
             }
-            for (var i = prefixZeros; i < value.Length; i++)
-            {
-                stream.Write(value[i]);
-            }
+
+            if (value != null)
+                for (var i = prefixZeros; i < value.Length; i++)
+                {
+                    stream.Write(value[i]);
+                }
         }
     }
     // https://stackoverflow.com/a/28407693/ -----------------------------------
@@ -254,7 +262,7 @@ public class RSAKey : IRSAKey
         }
         var engine = new RsaEngine();
 
-        engine.Init(true, usePublicKey ? publicKey:privateKey);
+        engine.Init(true, usePublicKey ? _publicKey:_privateKey);
         return engine.ProcessBlock(data, 0, 256);
     }
 
@@ -266,7 +274,7 @@ public class RSAKey : IRSAKey
         }
         var engine = new RsaEngine();
 
-        engine.Init(false, usePrivateKey ? privateKey : publicKey);
+        engine.Init(false, usePrivateKey ? _privateKey : _publicKey);
         return engine.ProcessBlock(data, 0, 256);
     }
 }

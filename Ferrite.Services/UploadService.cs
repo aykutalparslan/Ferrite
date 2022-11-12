@@ -20,6 +20,9 @@ using System.IO.Pipelines;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
+using Ferrite.TL.slim.layer146.storage;
+using Ferrite.TL.slim.layer146.upload;
+using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Services;
 
@@ -113,7 +116,8 @@ public class UploadService : IUploadService
                 }
             }
             var file = _unitOfWork.FileInfoRepository.GetBigFileInfo(thumbFileId);
-            var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId);
+            var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId, 
+                GenerateStreamHeader(regMsgId, StreamFileType.Jpeg));
             return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
         else
@@ -129,8 +133,37 @@ public class UploadService : IUploadService
                 }
             }
             var file = _unitOfWork.FileInfoRepository.GetFileInfo(thumbFileId);
-            var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId);
+            var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId, 
+                GenerateStreamHeader(regMsgId, StreamFileType.Jpeg));
             return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
         }
     }
+    private static byte[] GenerateStreamHeader(long reqMsgId, StreamFileType fileType)
+    {
+        var file = file_.Builder()
+            .with_type(GetFileType(fileType))
+            .with_mtime((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+            .Build();
+        var rpcResult = rpc_result.Builder()
+            .with_req_msg_id(reqMsgId)
+            .with_result(file.ToReadOnlySpan())
+            .Build();
+        byte[] resultHeader = new byte[24];
+        rpcResult.ToReadOnlySpan()[..24].CopyTo(resultHeader);
+        
+        return resultHeader;
+    }
+
+    private static ReadOnlySpan<byte> GetFileType(StreamFileType fileType) => fileType switch
+    {
+        StreamFileType.Gif => fileGif.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Jpeg => fileJpeg.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Mov => fileMov.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Mp3 => fileMp3.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Mp4 => fileMp4.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Partial => filePartial.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Png => filePng.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Webp => fileWebp.Builder().Build().ToReadOnlySpan(),
+        _ => fileUnknown.Builder().Build().ToReadOnlySpan(),
+    };
 }

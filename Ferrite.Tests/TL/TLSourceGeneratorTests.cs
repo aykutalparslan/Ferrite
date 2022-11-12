@@ -253,7 +253,7 @@ initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_v
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
         Assert.Contains("public Span<byte> query => ObjectReader.Read(_buff);",generated.SourceText);
-        Assert.Contains("if(index >= 12) offset += ObjectReader.ReadSize(buffer, offset);",generated.SourceText);
+        Assert.Contains("if(index >= 12) offset += ObjectReader.ReadSize(buffer[offset..]);",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_Functions()

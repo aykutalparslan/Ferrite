@@ -18,7 +18,7 @@
 
 using System.Buffers;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
 public readonly record struct HandshakeResponse(SequencePosition Position, 
     ReadOnlySequence<byte> Response, bool Completed);

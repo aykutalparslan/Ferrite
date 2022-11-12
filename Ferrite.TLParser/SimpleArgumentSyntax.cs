@@ -20,7 +20,7 @@ namespace Ferrite.TLParser;
 
 public class SimpleArgumentSyntax
 {
-    public string Identifier { get; set; }
+    public string? Identifier { get; set; }
     public ConditionalDefinitionSyntax? ConditionalDefinition { get; set; }
-    public TypeTermSyntax TypeTerm { get; set; }
+    public TypeTermSyntax? TypeTerm { get; set; }
 }

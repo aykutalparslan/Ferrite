@@ -18,6 +18,7 @@
 
 using System.Buffers;
 using Autofac;
+using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -84,56 +85,56 @@ public class AuthorizationProcessor : ILinkedHandler
         _unauthorizedMethods.Add(2018609336);//initConnection
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
         bool isAuthorized = await _auth.IsAuthorized(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         if (isAuthorized || _unauthorizedMethods.Contains(input.Constructor))
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
         else if (input is Message message2)
         {
             if (_unauthorizedMethods.Contains(message2.Body.Constructor))
             {
-                await Next.Process(sender, input, ctx);
+                if (Next != null) await Next.Process(sender, input, ctx);
             }
             else if (message2.Body is TL.currentLayer.InvokeWithLayer invoke2 &&
                 _unauthorizedMethods.Contains(invoke2.Query.Constructor))
             {
-                await Next.Process(sender, input, ctx);
+                if (Next != null) await Next.Process(sender, input, ctx);
             }
             else if (message2.Body is TL.currentLayer.InvokeAfterMsg invokeAfter &&
                 _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
             {
-                await Next.Process(sender, input, ctx);
+                if (Next != null) await Next.Process(sender, input, ctx);
             }
             else if (message2.Body is TL.currentLayer.InvokeAfterMsgs invokeAfter2 &&
                 _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
             {
-                await Next.Process(sender, input, ctx);
+                if (Next != null) await Next.Process(sender, input, ctx);
             }
         }
         else if (input is TL.currentLayer.InvokeWithLayer invoke &&
             _unauthorizedMethods.Contains(invoke.Query.Constructor))
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
         else if (input is TL.currentLayer.InvokeAfterMsg invokeAfter &&
             _unauthorizedMethods.Contains(invokeAfter.Query.Constructor))
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
         else if (input is TL.currentLayer.InvokeAfterMsgs invokeAfter2 &&
             _unauthorizedMethods.Contains(invokeAfter2.Query.Constructor))
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
         else if (input is TL.currentLayer.InvokeWithLayer invokeWithLayer &&
             _unauthorizedMethods.Contains(invokeWithLayer.Query.Constructor))
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
         else
         {
@@ -145,7 +146,7 @@ public class AuthorizationProcessor : ILinkedHandler
             var response = _scope.Resolve<RpcError>();
             response.ErrorCode = 401;
             response.ErrorMessage = "UNAUTHORIZED";
-            MTProtoMessage message = new MTProtoMessage();
+            MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -162,7 +163,7 @@ public class AuthorizationProcessor : ILinkedHandler
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (Next != null) await Next.Process(sender, input, ctx);
     }
 }
 

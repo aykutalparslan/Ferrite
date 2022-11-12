@@ -20,6 +20,6 @@ namespace Ferrite.TLParser;
 
 public class OptionalArgumentSyntax
 {
-    public string Identifier { get; set; }
-    public TypeTermSyntax TypeTerm { get; set; }
+    public string? Identifier { get; set; }
+    public TypeTermSyntax? TypeTerm { get; set; }
 }

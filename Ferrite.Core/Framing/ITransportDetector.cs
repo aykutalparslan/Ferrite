@@ -24,7 +24,7 @@ namespace Ferrite.Core.Framing
     public interface ITransportDetector
     {
         MTProtoTransport DetectTransport(ReadOnlySequence<byte> bytes,
-            out IFrameDecoder decoder, out IFrameEncoder encoder, 
+            out IFrameDecoder? decoder, out IFrameEncoder? encoder, 
             out SequencePosition sequencePosition);
     }
 }

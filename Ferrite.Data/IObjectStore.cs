@@ -26,5 +26,6 @@ public interface IObjectStore
     public ValueTask<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data);
     public ValueTask<Stream> GetFilePart(long fileId, int filePart);
     public ValueTask<Stream> GetBigFilePart(long fileId, int filePart);
-    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, long reqMsgId);
+    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, 
+        int limit, long reqMsgId, byte[] fileHeaders);
 }

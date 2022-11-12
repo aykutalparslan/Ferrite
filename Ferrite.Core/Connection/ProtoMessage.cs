@@ -16,17 +16,16 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using System.IO.Pipelines;
-using Ferrite.Transport;
+using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.Connection;
 
-public interface IWebSocketFeature
+public readonly record struct ProtoMessage : IDisposable
 {
-    public bool WebSocketHandshakeCompleted { get; }
-    public PipeReader WebSocketReader { get; }
-    public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
-    public ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer);
-    public ReadOnlySequence<byte> GenerateWebSocketHeader(int length);
+    public ProtoHeaders Headers { get; init; }
+    public TLBytes MessageData { get; init; }
+    public void Dispose()
+    {
+        MessageData.Dispose();
+    }
 }

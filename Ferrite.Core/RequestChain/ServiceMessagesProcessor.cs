@@ -18,6 +18,7 @@
 using System;
 using System.Buffers;
 using Autofac;
+using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -46,7 +47,7 @@ public class ServiceMessagesProcessor : ILinkedHandler
         return Next;
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
@@ -54,7 +55,7 @@ public class ServiceMessagesProcessor : ILinkedHandler
         {
             if (ctx.QuickAck != null)
             {
-                MTProtoMessage message = new MTProtoMessage()
+                Services.MTProtoMessage message = new Services.MTProtoMessage()
                 {
                     QuickAck = (int)ctx.QuickAck,
                     MessageType = MTProtoMessageType.QuickAck,
@@ -90,18 +91,18 @@ public class ServiceMessagesProcessor : ILinkedHandler
             }
             else
             {
-                await Next.Process(sender, input, ctx);
+                if (Next != null) await Next.Process(sender, input, ctx);
             }
         }
         else
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
     }
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (Next != null) await Next.Process(sender, input, ctx);
     }
 }
 

@@ -17,21 +17,25 @@
 // 
 
 using System.Buffers;
-using System.Net;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
+using System.Buffers.Binary;
+using DotNext.Buffers;
 using Ferrite.Services;
-using Ferrite.Transport;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
-public interface IMessageHandler
+public class QuickAckFeature : IQuickAckFeature
 {
-    public void HandleIncomingMessage(in ReadOnlySequence<byte> bytes, 
-        MTProtoConnection connection,
-        EndPoint? endPoint,
-        MTProtoSession session,
-        bool requiresQuickAck);
-
-    public ReadOnlySequence<byte> GenerateOutgoingMessage(MTProtoMessage message, MTProtoSession session);
+    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport)
+    {
+        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
+        writer.Clear();
+        ack |= 1 << 31;
+        if (transport == MTProtoTransport.Abridged)
+        {
+            ack = BinaryPrimitives.ReverseEndianness(ack);
+        }
+        writer.WriteInt32(ack, true);
+        var msg = writer.WrittenSpan;
+        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
+    }
 }

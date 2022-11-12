@@ -19,6 +19,7 @@
 using System.Buffers;
 using System.IO.Compression;
 using DotNext.IO;
+using Ferrite.Core.Connection;
 using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
@@ -40,7 +41,7 @@ public class GZipProcessor : ILinkedHandler
         return Next;
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
@@ -56,16 +57,16 @@ public class GZipProcessor : ILinkedHandler
                 var rd = new SequenceReader(new ReadOnlySequence<byte>(decompressed));
                 int constructor = rd.ReadInt32(true);
                 var obj = _factory.Read(constructor, ref rd);
-                await Next.Process(sender, obj, ctx);
+                if (Next != null) await Next.Process(sender, obj, ctx);
             }
             else
             {
-                await Next.Process(sender, input, ctx);
+                if (Next != null) await Next.Process(sender, input, ctx);
             }
         }
         else
         {
-            await Next.Process(sender, input, ctx);
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
     }
 

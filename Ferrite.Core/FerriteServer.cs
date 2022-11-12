@@ -18,6 +18,7 @@
 using System;
 using System.Net;
 using Autofac;
+using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -86,7 +87,7 @@ public class FerriteServer : IFerriteServer
             var result = await _pipe.ReadMessageAsync();
             try
             {
-                var message = MessagePackSerializer.Deserialize<MTProtoMessage>(result);
+                var message = MessagePackSerializer.Deserialize<Services.MTProtoMessage>(result);
                 if (message is { MessageType: MTProtoMessageType.Unencrypted } &&
                     message.Nonce != null)
                 {

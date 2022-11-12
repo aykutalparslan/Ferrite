@@ -29,8 +29,13 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
+using Ferrite.TL.currentLayer.storage;
+using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer146;
+using Ferrite.TL.slim.layer146.storage;
+using Ferrite.TL.slim.layer146.upload;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using Moq;
@@ -317,4 +322,29 @@ public class AllocationFreeSerializationTests
         var container = builder.Build();
         return container;
     }
+
+    [Fact]
+    public void Should_SerializeFileHeader()
+    {
+        using var jpeg = new fileJpeg();
+        using var file = file_.Builder()
+            .with_type(jpeg.ToReadOnlySpan())
+            .with_mtime(0)
+            .Build();
+        using var rpcResult = rpc_result.Builder()
+            .with_req_msg_id(0)
+            .with_result(file.ToReadOnlySpan())
+            .Build();
+        var actual = rpcResult.ToReadOnlySpan()[..24];
+        var rpcResult2 = new RpcResult(null);
+        rpcResult2.ReqMsgId = 0;
+
+        byte[] expected = new byte[]
+        {
+            1, 109, 92, 243, 0, 0, 0, 0, 0, 0, 0, 0,
+            213, 24, 106, 9, 14, 254, 126, 0, 0, 0, 0, 0
+        };
+        Assert.Equal(expected, actual.ToArray());
+    }
+
 }

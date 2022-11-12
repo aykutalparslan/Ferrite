@@ -16,11 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Data;
+using System.Buffers;
 
-public interface IFileOwner
+namespace Ferrite.Core.Connection.TransportFeatures;
+
+public interface ITransportErrorFeature
 {
-    public byte[] TLObjectHeader { get; init; }
-    public ValueTask<Stream> GetFileStream();
-    public long ReqMsgId { get; }
+    public ReadOnlySequence<byte> GenerateTransportError(int errorCode);
 }

@@ -17,22 +17,15 @@
 // 
 
 using System.Buffers;
-using System.Net;
-using Ferrite.Core.Features;
-using Ferrite.Core.Framing;
-using Ferrite.Data;
-using Ferrite.Transport;
+using System.IO.Pipelines;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
-public interface IStreamHandler : IAsyncDisposable
+public interface IWebSocketFeature
 {
-    public Task HandleIncomingStreamAsync(ReadOnlySequence<byte> bytes, 
-        MTProtoConnection connection,
-        EndPoint? endPoint,
-        MTProtoSession session,
-        bool hasMore);
-
-    public Task HandleOutgoingStream(IFileOwner message, MTProtoConnection connection,
-        MTProtoSession session);
+    public bool WebSocketHandshakeCompleted { get; }
+    public PipeReader WebSocketReader { get; }
+    public HandshakeResponse ProcessWebSocketHandshake(ReadOnlySequence<byte> data);
+    public ValueTask<SequencePosition> DecodeWebSocketData(ReadOnlySequence<byte> buffer);
+    public ReadOnlySequence<byte> GenerateWebSocketHeader(int length);
 }

@@ -17,6 +17,7 @@
 // 
 
 using System.Buffers;
+using System.Net;
 using System.Security.Cryptography;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -25,9 +26,9 @@ using Ferrite.TL;
 using Ferrite.TL.mtproto;
 using Ferrite.Utils;
 
-namespace Ferrite.Core;
+namespace Ferrite.Core.Connection;
 
-public class MTProtoSession
+public class MTProtoSession : IMTProtoSession
 {
     private readonly IMTProtoService _mtproto;
     private readonly ILogger _log;
@@ -35,6 +36,8 @@ public class MTProtoSession
     private readonly ISessionService _sessionService;
     private readonly IRandomGenerator _random;
     private readonly ITLObjectFactory _factory;
+    public MTProtoConnection? Connection { get; set; }
+    public IPEndPoint? EndPoint { get; set; }
     private long _authKeyId;
     private long _permAuthKeyId;
     private byte[]? _authKey;
@@ -59,7 +62,7 @@ public class MTProtoSession
     
     public long AuthKeyId => _authKeyId;
     public long PermAuthKeyId => _permAuthKeyId;
-    public byte[]? AuthKey => _authKey;
+    public virtual byte[]? AuthKey => _authKey;
     public long SessionId => _sessionId;
     public long UniqueSessionId => _uniqueSessionId;
     public ServerSaltDTO ServerSalt => _serverSalt;
@@ -157,20 +160,19 @@ public class MTProtoSession
         } while (!((response && id % 4 != 1) || (!response && id % 4 != 3)));
         return id;
     }
-    public void CreateNewSession(long sessionId, long firstMessageId, MTProtoConnection connection)
+    public long CreateNewSession(long sessionId, long firstMessageId)
     {
         _sessionId = sessionId;
         _uniqueSessionId = _random.NextLong();
-        connection.SendNewSessionCreatedMessage(firstMessageId, 
-            SaveCurrentSession(_permAuthKeyId != 0 ? 
-                _permAuthKeyId : _authKeyId, connection));
+       return SaveCurrentSession(_permAuthKeyId != 0 ? 
+                _permAuthKeyId : _authKeyId);
     }
     /// <summary>
     /// 
     /// </summary>
     /// <param name="authKeyId"></param>
     /// <returns>Current Server Salt</returns>
-    internal long SaveCurrentSession(long authKeyId, MTProtoConnection connection)
+    public long SaveCurrentSession(long authKeyId)
     {
         if (_serverSalt.ValidSince + 1800 < DateTimeOffset.Now.ToUnixTimeSeconds())
         {
@@ -188,8 +190,9 @@ public class MTProtoSession
         
         if (authKeyId != 0)
         {
-            _sessionService.AddSession(authKeyId, _sessionId, 
-                new ActiveSession(connection));
+            if (Connection != null)
+                _sessionService.AddSession(authKeyId, _sessionId,
+                    new ActiveSession(Connection));
         }
         return _serverSalt.Salt;
     }

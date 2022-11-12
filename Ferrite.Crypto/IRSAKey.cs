@@ -23,7 +23,7 @@ namespace Ferrite.Crypto
 {
     public interface IRSAKey
     {
-        public RSA Key { get; }
+        public RSA? Key { get; }
         public RSAParameters PublicKeyParameters { get; }
         public RSAParameters PrivateKeyParameters { get; }
         public long Fingerprint { get; }

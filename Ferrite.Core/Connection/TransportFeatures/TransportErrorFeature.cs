@@ -18,12 +18,16 @@
 
 using System.Buffers;
 using DotNext.Buffers;
-using Ferrite.Core.Framing;
-using Ferrite.Transport;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
-public interface ITransportErrorFeature
+public class TransportErrorFeature : ITransportErrorFeature
 {
-    public ReadOnlySequence<byte> GenerateTransportError(int errorCode);
+    public ReadOnlySequence<byte> GenerateTransportError(int errorCode)
+    {
+        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
+        writer.WriteInt32(-1 * errorCode, true);
+        var msg = writer.WrittenSpan;
+        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
+    }
 }

@@ -17,19 +17,11 @@
 // 
 
 using System.Buffers;
-using DotNext.Buffers;
-using Ferrite.Core.Framing;
-using Ferrite.Transport;
+using Ferrite.Services;
 
-namespace Ferrite.Core.Features;
+namespace Ferrite.Core.Connection.TransportFeatures;
 
-public class TransportErrorFeature : ITransportErrorFeature
+public interface IQuickAckFeature
 {
-    public ReadOnlySequence<byte> GenerateTransportError(int errorCode)
-    {
-        BufferWriterSlim<byte> writer = new(stackalloc byte[4]);
-        writer.WriteInt32(-1 * errorCode, true);
-        var msg = writer.WrittenSpan;
-        return new ReadOnlySequence<byte>(writer.WrittenSpan.ToArray());
-    }
+    public ReadOnlySequence<byte> GenerateQuickAck(int ack, MTProtoTransport transport);
 }

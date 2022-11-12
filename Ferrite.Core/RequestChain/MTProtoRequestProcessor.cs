@@ -17,6 +17,7 @@
 //
 using System;
 using System.Buffers;
+using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -51,7 +52,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
         return Next;
     }
 
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
 
     public async ValueTask Process(object? sender, ITLObject input, TLExecutionContext ctx)
     {
@@ -64,7 +65,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
                     var ack = _factory.Resolve<MsgsAck>();
                     ack.MsgIds = new VectorOfLong(1);
                     ack.MsgIds.Add(ctx.MessageId);
-                    MTProtoMessage message = new MTProtoMessage();
+                    Services.MTProtoMessage message = new Services.MTProtoMessage();
                     message.SessionId = ctx.SessionId;
                     message.IsResponse = true;
                     message.IsContentRelated = true;
@@ -78,7 +79,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
                 if (result != null)
                 {
                     _log.Debug($"Result for {input} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
-                    MTProtoMessage message = new MTProtoMessage();
+                    Services.MTProtoMessage message = new Services.MTProtoMessage();
                     message.SessionId = ctx.SessionId;
                     message.IsResponse = true;
                     message.IsContentRelated = true;
@@ -123,7 +124,7 @@ public class MTProtoRequestProcessor : ILinkedHandler
                 if (result != null)
                 {
                     _log.Debug($"Result for {encMethod} is {result} Processed with AuthKeyId: {ctx.AuthKeyId}");
-                    MTProtoMessage message = new MTProtoMessage();
+                    Services.MTProtoMessage message = new Services.MTProtoMessage();
                     message.SessionId = ctx.SessionId;
                     message.IsResponse = true;
                     message.IsContentRelated = true;
@@ -161,14 +162,15 @@ public class MTProtoRequestProcessor : ILinkedHandler
             }
             else if (sender != null)
             {
-                MTProtoMessage message = new MTProtoMessage
+                MTProtoMessage message = new()
                 {
                     MessageType = MTProtoMessageType.Encrypted,
                     SessionId = ctx.SessionId,
                     IsResponse = true,
-                    IsContentRelated = true
+                    IsContentRelated = true,
+                    Data = result.Error?.TLBytes.ToArray()
                 };
-                message.Data = result.Error.TLBytes.ToArray();
+                await ((MTProtoConnection)sender).SendAsync(message);
             }
         }
         else if (input is Message { Body: GetFile getFileRequest2 })
@@ -182,21 +184,26 @@ public class MTProtoRequestProcessor : ILinkedHandler
             }
             else if (sender != null)
             {
-                MTProtoMessage message = new MTProtoMessage
+                MTProtoMessage message = new()
                 {
                     MessageType = MTProtoMessageType.Encrypted,
                     SessionId = ctx.SessionId,
                     IsResponse = true,
-                    IsContentRelated = true
+                    IsContentRelated = true,
+                    Data = result.Error?.TLBytes.ToArray()
                 };
-                message.Data = result.Error.TLBytes.ToArray();
+                await ((MTProtoConnection)sender).SendAsync(message);
             }
+        }
+        else
+        {
+            if (Next != null) await Next.Process(sender, input, ctx);
         }
     }
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (Next != null) await Next.Process(sender, input, ctx);
     }
 }
 

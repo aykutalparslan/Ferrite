@@ -20,6 +20,6 @@ namespace Ferrite.Core.RequestChain;
 
 public interface ILinkedHandler : ITLHandler
 {
-    public ILinkedHandler Next { get; set; }
+    public ILinkedHandler? Next { get; set; }
     public ILinkedHandler SetNext(ILinkedHandler value);
 }

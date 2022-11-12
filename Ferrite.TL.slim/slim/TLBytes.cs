@@ -50,6 +50,19 @@ public readonly struct TLBytes: IDisposable
         var slice = _memory.Memory.Span.Slice(_offset, _length);
         return slice;
     }
+    public Memory<byte> AsMemory()
+    {
+        if (_offset == 0 && _length == _memory.Memory.Span.Length)
+        {
+            return _memory.Memory;
+        }
+        if (_memory.Memory.Span.Length < _offset + _length)
+        {
+            return new Memory<byte>();
+        }
+        var slice = _memory.Memory.Slice(_offset, _length);
+        return slice;
+    }
     public void Dispose()
     {
         _memory.Dispose();

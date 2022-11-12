@@ -50,9 +50,9 @@ public class Parser
         }
 
         int offset = 0;
-        string nameSpace = null;
-        string identifier = null;
-        string name = null;
+        string? nameSpace = null;
+        string? identifier = null;
+        string? name = null;
         List<OptionalArgumentSyntax> optionalArguments = new();
         List<SimpleArgumentSyntax> arguments = new();
         if (statement.Count > 4 && statement[0].Type == TokenType.BareTypeIdentifier &&
