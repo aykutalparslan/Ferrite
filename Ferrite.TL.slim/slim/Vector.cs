@@ -22,7 +22,6 @@ using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
-using Nest;
 
 namespace Ferrite.TL.slim;
 

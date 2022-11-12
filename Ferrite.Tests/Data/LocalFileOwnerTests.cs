@@ -58,7 +58,7 @@ public class LocalFileOwnerTests
 
         LocalFileOwner owner = new LocalFileOwner(new UploadedFileInfoDTO(fileId, len, 10,
                 0, "", null, DateTimeOffset.Now, false),
-            store, 0, len * 10, 1);
+            store, 0, len * 10, 1, new byte[24]);
 
         
         var stream = await owner.GetFileStream();

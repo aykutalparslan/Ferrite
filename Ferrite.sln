@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.Services", "Ferrite
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TLParser", "Ferrite.TLParser\Ferrite.TLParser.csproj", "{0DCC3419-A0FB-4A2F-8123-9A8CC6BB3A86}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TL.slim", "Ferrite.TL.slim\Ferrite.TL.slim.csproj", "{21EF4764-AF52-440A-84C1-996C19F63283}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,6 +80,10 @@ Global
 		{0DCC3419-A0FB-4A2F-8123-9A8CC6BB3A86}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0DCC3419-A0FB-4A2F-8123-9A8CC6BB3A86}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0DCC3419-A0FB-4A2F-8123-9A8CC6BB3A86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21EF4764-AF52-440A-84C1-996C19F63283}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21EF4764-AF52-440A-84C1-996C19F63283}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21EF4764-AF52-440A-84C1-996C19F63283}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21EF4764-AF52-440A-84C1-996C19F63283}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

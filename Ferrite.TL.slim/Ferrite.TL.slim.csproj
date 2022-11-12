@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net7.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="layer146.tl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </AdditionalFiles>
+      <AdditionalFiles Include="mtproto.tl">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </AdditionalFiles>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+    </ItemGroup>
+    <ItemGroup>
+        <None Remove="mtproto.tl" />
+        <None Remove="layer146.tl" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="DotNext.IO" Version="4.7.4" />
+    </ItemGroup>
+</Project>

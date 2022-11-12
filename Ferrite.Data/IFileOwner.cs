@@ -20,6 +20,7 @@ namespace Ferrite.Data;
 
 public interface IFileOwner
 {
+    public byte[] TLObjectHeader { get; init; }
     public ValueTask<Stream> GetFileStream();
     public long ReqMsgId { get; }
 }

@@ -113,8 +113,9 @@ public class S3ObjectStore : IObjectStore
         return getObjectResponse.ResponseStream;
     }
 
-    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, long reqMsgId)
+    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, 
+        long reqMsgId, byte[] headerBytes)
     {
-        return new S3FileOwner(fileInfo, this, offset, limit, reqMsgId);
+        return new S3FileOwner(fileInfo, this, offset, limit, reqMsgId, headerBytes);
     }
 }

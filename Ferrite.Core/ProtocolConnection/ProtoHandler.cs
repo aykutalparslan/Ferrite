@@ -218,8 +218,7 @@ public class ProtoHandler : IProtoHandler
         var data = await message.GetFileStream();
         if (data.Length < 0) throw new IOException();
         _log.Debug($"=>Stream data length is {data.Length}.");
-        var (resultHeader, pad) = GenerateStreamHeader(message, data, 
-            StreamFileType.Jpeg);// TODO: detect actual file type
+        var resultHeader = GenerateResultHeader(message, data, out var pad);
         var cryptographicHeader = GenerateCryptographicHeader(resultHeader, data, pad);
         var (paddingLength, paddingBytes) = GeneratePadding(resultHeader, data, pad);
         var (streamLength, messageKey) = GenerateMessageKey(cryptographicHeader, resultHeader, data, pad, paddingBytes);
@@ -233,6 +232,28 @@ public class ProtoHandler : IProtoHandler
         MTProtoPipe pipe = new(aesKey, aesIV, true);
         _ = WriteStreamToPipe(message, pipe, cryptographicHeader, resultHeader, pad, paddingLength, paddingBytes);
         return (frameLength, frameHeader, pipe);
+    }
+
+    private static byte[] GenerateResultHeader(IFileOwner message, Stream data, out int pad)
+    {
+        var resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
+        message.TLObjectHeader.AsSpan().CopyTo(resultHeader);
+        pad = data.Length < 254
+            ? (int)((4 - ((data.Length + 1) % 4)) % 4)
+            : (int)((4 - ((data.Length + 4) % 4)) % 4);
+        if (data.Length < 254)
+        {
+            resultHeader[24] = (byte)data.Length;
+        }
+        else
+        {
+            resultHeader[24] = 254;
+            resultHeader[25] = (byte)(data.Length & 0xff);
+            resultHeader[26] = (byte)((data.Length >> 8) & 0xff);
+            resultHeader[27] = (byte)((data.Length >> 16) & 0xff);
+        }
+
+        return resultHeader;
     }
 
     private static async Task WriteStreamToPipe(IFileOwner message, MTProtoPipe pipe, byte[] cryptographicHeader,
@@ -310,46 +331,4 @@ public class ProtoHandler : IProtoHandler
         var cryptographicHeader = _writer.ToReadOnlySequence().ToArray();
         return cryptographicHeader;
     }
-
-    private static ValueTuple<byte[], int> GenerateStreamHeader(IFileOwner message, Stream data, StreamFileType fileType)
-    {
-        var file = file_.Builder()
-            .with_type(GetFileType(fileType))
-            .with_mtime((int)DateTimeOffset.Now.ToUnixTimeSeconds())
-            .Build();
-        var rpcResult = rpc_result.Builder()
-            .with_req_msg_id(message.ReqMsgId)
-            .with_result(file.ToReadOnlySpan())
-            .Build();
-        byte[] resultHeader = new byte[24 + (data.Length < 254 ? 1 : 4)];
-        rpcResult.ToReadOnlySpan()[..24].CopyTo(resultHeader);
-        int pad = 0;
-        if (data.Length < 254)
-        {
-            resultHeader[24] = (byte)data.Length;
-            pad = (int)((4 - ((data.Length + 1) % 4)) % 4);
-        }
-        else
-        {
-            resultHeader[24] = 254;
-            resultHeader[25] = (byte)(data.Length & 0xff);
-            resultHeader[26] = (byte)((data.Length >> 8) & 0xff);
-            resultHeader[27] = (byte)((data.Length >> 16) & 0xff);
-            pad = (int)((4 - ((data.Length + 4) % 4)) % 4);
-        }
-        return new(resultHeader, pad);
-    }
-
-    private static ReadOnlySpan<byte> GetFileType(StreamFileType fileType) => fileType switch
-    {
-        StreamFileType.Gif => fileGif.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Jpeg => fileJpeg.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Mov => fileMov.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Mp3 => fileMp3.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Mp4 => fileMp4.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Partial => filePartial.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Png => filePng.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Webp => fileWebp.Builder().Build().ToReadOnlySpan(),
-        _ => fileUnknown.Builder().Build().ToReadOnlySpan(),
-    };
 }

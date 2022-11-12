@@ -89,9 +89,10 @@ public class LocalObjectStore : IObjectStore
         return ValueTask.FromResult(GetFileStream(fileId, filePart));
     }
 
-    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, int limit, long reqMsgId)
+    public IFileOwner GetFileOwner(UploadedFileInfoDTO fileInfo, int offset, 
+        int limit, long reqMsgId, byte[] headerBytes)
     {
-        return new LocalFileOwner(fileInfo, this, offset, limit, reqMsgId);
+        return new LocalFileOwner(fileInfo, this, offset, limit, reqMsgId, headerBytes);
     }
 
     private Stream GetFileStream(long fileId, int filePart)
