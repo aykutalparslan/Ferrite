@@ -27,13 +27,13 @@ using Ferrite.TL.slim.layer146;
 
 namespace Ferrite.Core.Execution.Functions.Layer146;
 
-public class InitConnection : ITLFunction
+public class InitConnectionFunc : ITLFunction
 {
     public IExecutionEngine? ExecutionEngine { get; set; }
     private readonly IRandomGenerator _random;
     private readonly IAuthService _auth;
 
-    public InitConnection(IRandomGenerator random, IAuthService auth)
+    public InitConnectionFunc(IRandomGenerator random, IAuthService auth)
     {
         _random = random;
         _auth = auth;
@@ -49,7 +49,7 @@ public class InitConnection : ITLFunction
 
     private static TLBytes GetQuery(TLBytes q)
     {
-        initConnection request = new(q.AsSpan());
+        TL.slim.layer146.InitConnection request = new(q.AsSpan());
         var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.query.Length);
         request.query.CopyTo(queryMemory.Memory.Span);
         TLBytes query = new(queryMemory, 0, request.query.Length);
@@ -58,7 +58,7 @@ public class InitConnection : ITLFunction
 
     private AppInfoDTO CreateAppInfo(TLBytes q, TLExecutionContext ctx)
     {
-        initConnection request = new(q.AsSpan());
+        TL.slim.layer146.InitConnection request = new(q.AsSpan());
         return new AppInfoDTO()
         {
             Hash = _random.NextLong(),

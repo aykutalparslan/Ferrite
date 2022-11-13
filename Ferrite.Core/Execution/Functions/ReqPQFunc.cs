@@ -24,11 +24,11 @@ using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Core.Execution.Functions;
 
-public class ReqPQ : ITLFunction
+public class ReqPQFunc : ITLFunction
 {
     private IRandomGenerator _randomGenerator;
     private IKeyProvider _keyPairProvider;
-    public ReqPQ(IRandomGenerator generator, IKeyProvider provider)
+    public ReqPQFunc(IRandomGenerator generator, IKeyProvider provider)
     {
         _randomGenerator = generator;
         _keyPairProvider = provider;
@@ -39,24 +39,24 @@ public class ReqPQ : ITLFunction
         byte[] serverNonce;
         if (!ctx.SessionData.ContainsKey("nonce"))
         {
-            ctx.SessionData.Add("nonce", new req_pq_multi(q.AsSpan()).nonce.ToArray());
+            ctx.SessionData.Add("nonce", new ReqPqMulti(q.AsSpan()).nonce.ToArray());
             serverNonce = _randomGenerator.GetRandomBytes(16);
             ctx.SessionData.Add("server_nonce", serverNonce);
             await Task.Delay(100);
         }
-        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new req_pq_multi(q.AsSpan()).nonce))
+        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new ReqPqMulti(q.AsSpan()).nonce))
         {
-            ctx.SessionData["nonce"] = new req_pq_multi(q.AsSpan()).nonce.ToArray();
+            ctx.SessionData["nonce"] = new ReqPqMulti(q.AsSpan()).nonce.ToArray();
             serverNonce = _randomGenerator.GetRandomBytes(16);
             ctx.SessionData["server_nonce"] = serverNonce;
             return null;
         }
 
         serverNonce = (byte[])ctx.SessionData["server_nonce"];
-        return ProcessInternal(serverNonce, new req_pq_multi(q.AsSpan()), ctx);
+        return ProcessInternal(serverNonce, new ReqPqMulti(q.AsSpan()), ctx);
     }
 
-    private TLBytes? ProcessInternal(byte[] serverNonce, req_pq_multi query, TLExecutionContext ctx)
+    private TLBytes? ProcessInternal(byte[] serverNonce, ReqPqMulti query, TLExecutionContext ctx)
     {
         byte[] nonce = (byte[])ctx.SessionData["nonce"];
         if (ctx.SessionData.ContainsKey("p"))
@@ -89,7 +89,7 @@ public class ReqPQ : ITLFunction
         {
             fingerprints.Append(f);
         }
-        var resPq = new resPQ(nonce, 
+        var resPq = new ResPQ(nonce, 
             serverNonce, Pq, fingerprints);
         return resPq.TLBytes;
     }

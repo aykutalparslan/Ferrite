@@ -29,21 +29,21 @@ using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Core.Execution.Functions;
 
-public class SetClientDhParams : ITLFunction
+public class SetClientDhParamsFunc : ITLFunction
 {
     private readonly IMTProtoService _mtproto;
     //TODO: Maybe change the DH_PRIME
     private const string dhPrime = "C71CAEB9C6B1C9048E6C522F70F13F73980D40238E3E21C14934D037563D930F48198A0AA7C14058229493D22530F4DBFA336F6E0AC925139543AED44CCE7C3720FD51F69458705AC68CD4FE6B6B13ABDC9746512969328454F18FAF8C595F642477FE96BB2A941D5BCD1D4AC8CC49880708FA9B378E3C4F3A9060BEE67CF9A4A4A695811051907E162753B56B0F6B410DBA74D8A84B2A14B3144E0EF1284754FD17ED950D5965B4B9DD46582DB1178D169C6BC465B0D6FF9CA3928FEF5B9AE4E418FC15E83EBEA0F87FA9FF5EED70050DED2849F47BF959D956850CE929851F0D8115F635B105EE2E4E15D04B2454BF6F4FADF034B10403119CD8E3B92FCC5B";
-    public SetClientDhParams(IMTProtoService mtproto)
+    public SetClientDhParamsFunc(IMTProtoService mtproto)
     {
         _mtproto = mtproto;
     }
     public ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        return new ValueTask<TLBytes?>(ProcessInternal(new set_client_DH_params(q.AsSpan()), ctx));
+        return new ValueTask<TLBytes?>(ProcessInternal(new TL.slim.mtproto.SetClientDhParams(q.AsSpan()), ctx));
     }
 
-    private TLBytes? ProcessInternal(set_client_DH_params query, TLExecutionContext ctx)
+    private TLBytes? ProcessInternal(TL.slim.mtproto.SetClientDhParams query, TLExecutionContext ctx)
     {
         bool failed = false;
         var sessionNonce = (byte[])ctx.SessionData["nonce"];
@@ -61,8 +61,8 @@ public class SetClientDhParams : ITLFunction
             encryptedData.Span);
         var sha1Received = encryptedData.Span[..20].ToArray();
         var dataWithPadding = encryptedData.Memory[20..];
-        var len = client_DH_inner_data.ReadSize(dataWithPadding.Span, 0);
-        var clientDhInnerData = new client_DH_inner_data(dataWithPadding.Span[..len]);
+        var len = ClientDhInnerData.ReadSize(dataWithPadding.Span, 0);
+        var clientDhInnerData = new ClientDhInnerData(dataWithPadding.Span[..len]);
         var sha1Actual = SHA1.HashData(clientDhInnerData.ToReadOnlySpan());
         if (!sha1Actual.SequenceEqual(sha1Received) ||
             !query.nonce.SequenceEqual(sessionNonce) ||
@@ -91,7 +91,7 @@ public class SetClientDhParams : ITLFunction
         BigInteger max = prime - min;
         if (g_b <= min || g_b >= max || failed)
         {
-            var dhGenFail = new dh_gen_fail(sessionNonce, sessionServerNonce, newNonceHash3);
+            var dhGenFail = new DhGenFail(sessionNonce, sessionServerNonce, newNonceHash3);
             return dhGenFail.TLBytes;
         }
 
@@ -117,7 +117,7 @@ public class SetClientDhParams : ITLFunction
                 _mtproto.PutAuthKey(authKeyHash, authKeyTrimmed);
             }
 
-            var dhGenOk = new dh_gen_ok(sessionNonce, sessionServerNonce, newNonceHash1);
+            var dhGenOk = new DhGenOk(sessionNonce, sessionServerNonce, newNonceHash1);
             ctx.SessionData.Clear();
             return dhGenOk.TLBytes;
         }
@@ -126,7 +126,7 @@ public class SetClientDhParams : ITLFunction
             var newNonceHash2 = SHA1.HashData(((byte[])ctx.SessionData["new_nonce"])
                     .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
                 .Skip(4).ToArray();
-            var dhGenRetry = new dh_gen_retry(sessionNonce, sessionServerNonce, newNonceHash2);
+            var dhGenRetry = new DhGenRetry(sessionNonce, sessionServerNonce, newNonceHash2);
             return dhGenRetry.TLBytes;
         }
     }

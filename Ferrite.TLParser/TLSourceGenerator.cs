@@ -96,11 +96,11 @@ public class TLSourceGenerator
                 ? combinator.Namespace + "_" + combinator.Identifier
                 : combinator.Identifier;
         }
-        if (combinator.Identifier == "file")
+        if (combinator.Identifier?.ToLower() == "file")
         {
             combinator.Identifier += "_";
         }
-        if (_bareNamespaces.Contains(combinator.Identifier))
+        if (_bareNamespaces.Contains(combinator.Identifier?.ToLower()))
         {
             combinator.Identifier += "_";
         }
@@ -113,7 +113,7 @@ public class TLSourceGenerator
                     arg.Identifier = "longitude";
                 }
 
-                if (arg.Identifier == combinator.Identifier || arg.Identifier == "out" ||
+                if (arg.Identifier == combinator.Identifier?.ToLower() || arg.Identifier == "out" ||
                     arg.Identifier == "static" || arg.Identifier == "params" ||
                     arg.Identifier == "default" || arg.Identifier == "public" ||
                     arg.Identifier == "readonly" || arg.Identifier == "private")
@@ -130,6 +130,7 @@ public class TLSourceGenerator
         
         while (c != null)
         {
+            c.Identifier = c.Identifier?.ToPascalCase();
             c.ContainingNamespace = nameSpace;
             var ns = nameSpace;
             if (c.CombinatorType == CombinatorType.Constructor &&

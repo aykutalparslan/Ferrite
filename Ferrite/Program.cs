@@ -49,9 +49,6 @@ using MessagePack;
 using Ferrite.Services;
 using Ferrite.TL.ObjectMapper;
 using Ferrite.TL.slim;
-using InitConnection = Ferrite.Core.Execution.Functions.Layer146.InitConnection;
-using ReqDhParams = Ferrite.Core.Execution.Functions.ReqDhParams;
-using SetClientDhParams = Ferrite.Core.Execution.Functions.SetClientDhParams;
 
 namespace Ferrite;
 
@@ -141,21 +138,21 @@ public class Program
 
     private static void RegisterApiLayers(ContainerBuilder builder)
     {
-        builder.RegisterType<ReqPQ>()
+        builder.RegisterType<ReqPQFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.mtproto_req_pq_multi))
+                new FunctionKey(146, Constructors.mtproto_ReqPqMulti))
             .SingleInstance();
-        builder.RegisterType<ReqDhParams>()
+        builder.RegisterType<ReqDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.mtproto_req_DH_params))
+                new FunctionKey(146, Constructors.mtproto_ReqDhParams))
             .SingleInstance();
-        builder.RegisterType<SetClientDhParams>()
+        builder.RegisterType<SetClientDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.mtproto_set_client_DH_params))
+                new FunctionKey(146, Constructors.mtproto_SetClientDhParams))
             .SingleInstance();
-        builder.RegisterType<SetClientDhParams>()
+        builder.RegisterType<SetClientDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.layer146_initConnection))
+                new FunctionKey(146, Constructors.layer146_InitConnection))
             .SingleInstance()
             .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies);
     }

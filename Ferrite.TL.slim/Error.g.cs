@@ -12,11 +12,11 @@ using DotNext.Buffers;
 
 namespace Ferrite.TL.slim;
 
-public readonly ref struct error
+public readonly ref struct Error
 {
     private readonly Span<byte> _buff;
     private readonly IMemoryOwner<byte>? _memory;
-    public error(int code, ReadOnlySpan<byte> text)
+    public Error(int code, ReadOnlySpan<byte> text)
     {
         var length = GetRequiredBufferSize(text.Length);
         _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
@@ -26,7 +26,7 @@ public readonly ref struct error
         Set_code(code);
         Set_text(text);
     }
-    public error(Span<byte> buff)
+    public Error(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -96,9 +96,9 @@ public readonly ref struct error
             _text = value;
             return this;
         }
-        public error Build()
+        public Error Build()
         {
-            return new error(_code, _text);
+            return new Error(_code, _text);
         }
     }
 

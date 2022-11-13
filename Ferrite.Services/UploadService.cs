@@ -140,11 +140,11 @@ public class UploadService : IUploadService
     }
     private static byte[] GenerateStreamHeader(long reqMsgId, StreamFileType fileType)
     {
-        var file = file_.Builder()
+        var file = File_.Builder()
             .with_type(GetFileType(fileType))
             .with_mtime((int)DateTimeOffset.Now.ToUnixTimeSeconds())
             .Build();
-        var rpcResult = rpc_result.Builder()
+        var rpcResult = RpcResult.Builder()
             .with_req_msg_id(reqMsgId)
             .with_result(file.ToReadOnlySpan())
             .Build();
@@ -156,14 +156,14 @@ public class UploadService : IUploadService
 
     private static ReadOnlySpan<byte> GetFileType(StreamFileType fileType) => fileType switch
     {
-        StreamFileType.Gif => fileGif.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Jpeg => fileJpeg.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Mov => fileMov.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Mp3 => fileMp3.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Mp4 => fileMp4.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Partial => filePartial.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Png => filePng.Builder().Build().ToReadOnlySpan(),
-        StreamFileType.Webp => fileWebp.Builder().Build().ToReadOnlySpan(),
-        _ => fileUnknown.Builder().Build().ToReadOnlySpan(),
+        StreamFileType.Gif => new FileGif().ToReadOnlySpan(),
+        StreamFileType.Jpeg => new FileJpeg().ToReadOnlySpan(),
+        StreamFileType.Mov => new FileMov().ToReadOnlySpan(),
+        StreamFileType.Mp3 => new FileMp3().ToReadOnlySpan(),
+        StreamFileType.Mp4 => new FileMp4().ToReadOnlySpan(),
+        StreamFileType.Partial => new FilePartial().ToReadOnlySpan(),
+        StreamFileType.Png => new FilePng().ToReadOnlySpan(),
+        StreamFileType.Webp => new FileWebp().ToReadOnlySpan(),
+        _ => new FileUnknown().ToReadOnlySpan(),
     };
 }

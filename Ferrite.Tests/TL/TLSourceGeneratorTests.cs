@@ -30,7 +30,7 @@ public class TLSourceGeneratorTests
 ";
         TLSourceGenerator generator = new TLSourceGenerator();
         var generated = generator.Generate("mtproto", source).First();
-        Assert.Contains("public future_salts(long req_msg_id, int now, VectorBare salts)", generated.SourceText);
+        Assert.Contains("public FutureSalts(long req_msg_id, int now, VectorBare salts)", generated.SourceText);
         Assert.Contains("public VectorBare salts => new VectorBare(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
         Assert.Contains("if(index >= 4) offset += VectorBare.ReadSize(buffer, offset);", generated.SourceText);
         Assert.Contains("public TLObjectBuilder with_salts(VectorBare value)", generated.SourceText);
@@ -72,7 +72,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public inputMediaPoll(Flags flags, ReadOnlySpan<byte> poll, Vector correct_answers, ReadOnlySpan<byte> solution, Vector solution_entities)", generated.SourceText);
+        Assert.Contains("public InputMediaPoll(Flags flags, ReadOnlySpan<byte> poll, Vector correct_answers, ReadOnlySpan<byte> solution, Vector solution_entities)", generated.SourceText);
         Assert.Contains("Set_flags(flags);", generated.SourceText);
         Assert.Contains(@"if(flags[1])
         {
@@ -93,7 +93,7 @@ help.getConfig#c4f9186b = Config;
             _flags[1] = true;
             return this;
         }", generated.SourceText);
-        Assert.Contains("return new inputMediaPoll(_flags, _poll, _correct_answers, _solution, _solution_entities);", generated.SourceText);
+        Assert.Contains("return new InputMediaPoll(_flags, _poll, _correct_answers, _solution, _solution_entities);", generated.SourceText);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("return new messageMediaInvoice(_flags, _flags[1], _flags[3], _title, _description, _photo, _receipt_msg_id, _currency, _total_amount, _start_param, _extended_media);", generated.SourceText);
+        Assert.Contains("return new MessageMediaInvoice(_flags, _flags[1], _flags[3], _title, _description, _photo, _receipt_msg_id, _currency, _total_amount, _start_param, _extended_media);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_auth_sentCode()
@@ -177,7 +177,7 @@ updates.differenceEmpty#5d75a138 date:int seq:int = updates.Difference;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct updates_",generated.SourceText);
+        Assert.Contains("public readonly ref struct Updates_",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_chatFull()
@@ -188,7 +188,7 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct messages_chatFull",generated.SourceText);
+        Assert.Contains("public readonly ref struct messages_ChatFull",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_inputPeerNotifySettings()
@@ -241,7 +241,7 @@ auth.sendCode#a677244f phone_number:string api_id:int api_hash:string settings:C
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public sendCode(ReadOnlySpan<byte> phone_number, int api_id, ReadOnlySpan<byte> api_hash, ReadOnlySpan<byte> settings)",generated.SourceText);
+        Assert.Contains("public SendCode(ReadOnlySpan<byte> phone_number, int api_id, ReadOnlySpan<byte> api_hash, ReadOnlySpan<byte> settings)",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_auth_initConnection()
@@ -290,7 +290,7 @@ account.getAllSecureValues#b288bc7d = Vector<SecureValue>;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct getAllSecureValues", generated.SourceText);
+        Assert.Contains("public readonly ref struct GetAllSecureValues", generated.SourceText);
     }
     [Fact]
         public void TLSourceGenerator_Should_Generate_messages_setInlineBotResults()
@@ -300,7 +300,7 @@ messages.setInlineBotResults#eb5ea206 flags:# gallery:flags.0?true private:flags
     ";
             TLSourceGenerator generator = new();
             var generated = generator.Generate("layer146", source).First();
-            Assert.Contains("public setInlineBotResults(Flags flags, bool gallery, bool private_, long query_id,", generated.SourceText);
+            Assert.Contains("public SetInlineBotResults(Flags flags, bool gallery, bool private_, long query_id,", generated.SourceText);
         }
     [Fact]
     public void TLSourceGenerator_Should_Generate_inputCheckPasswordSRP()
@@ -310,6 +310,6 @@ inputCheckPasswordSRP#d27ff082 srp_id:long A:bytes M1:bytes = InputCheckPassword
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public inputCheckPasswordSRP(long srp_id, ReadOnlySpan<byte> A, ReadOnlySpan<byte> M1)", generated.SourceText);
+        Assert.Contains("public InputCheckPasswordSRP(long srp_id, ReadOnlySpan<byte> A, ReadOnlySpan<byte> M1)", generated.SourceText);
     }
 }

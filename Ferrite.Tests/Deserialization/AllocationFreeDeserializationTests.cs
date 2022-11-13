@@ -55,8 +55,8 @@ public class AllocationFreeDeserializationTests
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(24);
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
-        req_DH_params reqDhParams =
-           new req_DH_params(data);
+        Ferrite.TL.slim.mtproto.ReqDhParams reqDhParams =
+           new(data);
         Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());
         Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
         Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
@@ -80,7 +80,7 @@ public class AllocationFreeDeserializationTests
         fingerprints.Add(923874923784422L);
         tmp.ServerPublicKeyFingerprints = fingerprints;
         byte[] data = tmp.TLBytes.ToArray();
-        resPQ value = new resPQ(data);
+        Ferrite.TL.slim.mtproto.ResPQ value = new(data);
         Assert.Equal(data, value.ToReadOnlySpan().ToArray());
         Assert.Equal(tmp.Constructor, value.Constructor);
         Assert.Equal((byte[])tmp.Nonce, value.nonce.ToArray());
@@ -116,7 +116,7 @@ public class AllocationFreeDeserializationTests
         for (int i = 0; i < vec.Count; i++)
         {
             var tmp = vecTmp[i];
-            var reqDhParams = new req_DH_params(vec.ReadTLObject());
+            var reqDhParams = new Ferrite.TL.slim.mtproto.ReqDhParams(vec.ReadTLObject());
             Assert.Equal(tmp.Constructor, reqDhParams.Constructor);
             Assert.Equal((byte[])tmp.Nonce, reqDhParams.nonce.ToArray());
             Assert.Equal((byte[])tmp.ServerNonce, reqDhParams.server_nonce.ToArray());
