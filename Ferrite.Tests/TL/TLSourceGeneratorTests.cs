@@ -30,10 +30,10 @@ public class TLSourceGeneratorTests
 ";
         TLSourceGenerator generator = new TLSourceGenerator();
         var generated = generator.Generate("mtproto", source).First();
-        Assert.Contains("public FutureSalts(long req_msg_id, int now, VectorBare salts)", generated.SourceText);
-        Assert.Contains("public VectorBare salts => new VectorBare(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
+        Assert.Contains("public FutureSalts(long reqMsgId, int now, VectorBare salts)", generated.SourceText);
+        Assert.Contains("public VectorBare Salts => new VectorBare(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
         Assert.Contains("if(index >= 4) offset += VectorBare.ReadSize(buffer, offset);", generated.SourceText);
-        Assert.Contains("public TLObjectBuilder with_salts(VectorBare value)", generated.SourceText);
+        Assert.Contains("public TLObjectBuilder Salts(VectorBare value)", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_GenerateCorrectNamespaceForCombinator()
@@ -72,28 +72,28 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public InputMediaPoll(Flags flags, ReadOnlySpan<byte> poll, Vector correct_answers, ReadOnlySpan<byte> solution, Vector solution_entities)", generated.SourceText);
-        Assert.Contains("Set_flags(flags);", generated.SourceText);
+        Assert.Contains("public InputMediaPoll(Flags flags, ReadOnlySpan<byte> poll, Vector correctAnswers, ReadOnlySpan<byte> solution, Vector solutionEntities)", generated.SourceText);
+        Assert.Contains("SetFlags(flags);", generated.SourceText);
         Assert.Contains(@"if(flags[1])
         {
-            Set_solution_entities(solution_entities.ToReadOnlySpan());
+            SetSolutionEntities(solutionEntities.ToReadOnlySpan());
         }", generated.SourceText);
         Assert.Contains("public readonly Flags flags => new Flags(MemoryMarshal.Read<int>(_buff[GetOffset(1, _buff)..]));", generated.SourceText);
-        Assert.Contains(" var bufferLength = GetRequiredBufferSize(poll.Length, (flags[0]?correct_answers.Length:0), flags[1], solution.Length, (flags[1]?solution_entities.Length:0));", generated.SourceText);
-        Assert.Contains(@"public static int GetRequiredBufferSize(int len_poll, int len_correct_answers, bool has_solution, int len_solution, int len_solution_entities)
+        Assert.Contains("var bufferLength = GetRequiredBufferSize(poll.Length, (flags[0]?correctAnswers.Length:0), flags[1], solution.Length, (flags[1]?solutionEntities.Length:0));", generated.SourceText);
+        Assert.Contains(@"public static int GetRequiredBufferSize(int lenPoll, int lenCorrectAnswers, bool hasSolution, int lenSolution, int lenSolutionEntities)
     {
-        return 4 + 4 + len_poll + len_correct_answers + (has_solution?BufferUtils.CalculateTLBytesLength(len_solution):0) + len_solution_entities;
+        return 4 + 4 + lenPoll + lenCorrectAnswers + (hasSolution?BufferUtils.CalculateTLBytesLength(lenSolution):0) + lenSolutionEntities;
     }", generated.SourceText);
-        Assert.Contains("public Vector correct_answers => !flags[0] ? new Vector() : new Vector(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
-        Assert.Contains("public ReadOnlySpan<byte> solution => !flags[1] ? new ReadOnlySpan<byte>() :  BufferUtils.GetTLBytes(_buff, GetOffset(4, _buff));", generated.SourceText);
+        Assert.Contains("public Vector CorrectAnswers => !flags[0] ? new Vector() : new Vector(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
+        Assert.Contains("public ReadOnlySpan<byte> Solution => !flags[1] ? new ReadOnlySpan<byte>() :  BufferUtils.GetTLBytes(_buff, GetOffset(4, _buff));", generated.SourceText);
         Assert.Contains("private Flags _flags = new Flags();", generated.SourceText);
-        Assert.Contains(@"public TLObjectBuilder with_solution(ReadOnlySpan<byte> value)
+        Assert.Contains(@"public TLObjectBuilder Solution(ReadOnlySpan<byte> value)
         {
             _solution = value;
             _flags[1] = true;
             return this;
         }", generated.SourceText);
-        Assert.Contains("return new InputMediaPoll(_flags, _poll, _correct_answers, _solution, _solution_entities);", generated.SourceText);
+        Assert.Contains("return new InputMediaPoll(_flags, _poll, _correctAnswers, _solution, _solutionEntities);", generated.SourceText);
     }
 
     [Fact]
@@ -103,10 +103,10 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly int accuracy_radius => !flags[0] ? 0 : MemoryMarshal.Read<int>(_buff[GetOffset(4, _buff)..]);", generated.SourceText);
-        Assert.Contains("public readonly double longitude => MemoryMarshal.Read<double>(_buff[GetOffset(3, _buff)..]);", generated.SourceText);
+        Assert.Contains("public readonly int AccuracyRadius => !flags[0] ? 0 : MemoryMarshal.Read<int>(_buff[GetOffset(4, _buff)..]);", generated.SourceText);
+        Assert.Contains("public readonly double Longitude => MemoryMarshal.Read<double>(_buff[GetOffset(3, _buff)..]);", generated.SourceText);
         Assert.Contains("var bufferLength = GetRequiredBufferSize(flags[0]);", generated.SourceText);
-        Assert.Contains("public static int GetRequiredBufferSize(bool has_accuracy_radius)", generated.SourceText);
+        Assert.Contains("public static int GetRequiredBufferSize(bool hasAccuracyRadius)", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_inputMediaInvoice()
@@ -115,10 +115,10 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("ReadOnlySpan<byte> start_param, ReadOnlySpan<byte> extended_media)", generated.SourceText);
-        Assert.Contains("var bufferLength = GetRequiredBufferSize(title.Length, description.Length, (flags[0]?photo.Length:0), invoice.Length, payload.Length, provider.Length, provider_data.Length, flags[1], start_param.Length, (flags[2]?extended_media.Length:0));", generated.SourceText);
-        Assert.Contains("Set_photo(photo);", generated.SourceText);
-        Assert.Contains("public Span<byte> photo => !flags[0] ? new Span<byte>() : ObjectReader.Read(_buff);", generated.SourceText);
+        Assert.Contains("ReadOnlySpan<byte> startParam, ReadOnlySpan<byte> extendedMedia)", generated.SourceText);
+        Assert.Contains("var bufferLength = GetRequiredBufferSize(title.Length, description.Length, (flags[0]?photo.Length:0), invoice.Length, payload.Length, provider.Length, providerData.Length, flags[1], startParam.Length, (flags[2]?extendedMedia.Length:0));", generated.SourceText);
+        Assert.Contains("SetPhoto(photo);", generated.SourceText);
+        Assert.Contains("public Span<byte> Photo => !flags[0] ? new Span<byte>() : ObjectReader.Read(_buff);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_channelFull()
@@ -127,19 +127,19 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly bool can_delete_channel => flags2[0];", generated.SourceText);
-        Assert.Contains(@"private Flags _flags2 = new Flags();
-        public TLObjectBuilder with_can_delete_channel(bool value)
+        Assert.Contains("public readonly bool CanDeleteChannel => flags2[0];", generated.SourceText);
+        Assert.Contains(@"private Flags _flags2 = new Flags();", generated.SourceText);
+        Assert.Contains(@"public TLObjectBuilder CanDeleteChannel(bool value)
         {
             _flags2[0] = value;
             return this;
         }", generated.SourceText);
-        Assert.Contains("Set_flags(flags);", generated.SourceText);
+        Assert.Contains("SetFlags(flags);", generated.SourceText);
         Assert.Contains(@"if(flags[4])
         {
-            Set_migrated_from_max_id(migrated_from_max_id);
+            SetMigratedFromMaxId(migratedFromMaxId);
         }", generated.SourceText);
-        Assert.Contains("var bufferLength = GetRequiredBufferSize(hidden_prehistory.Length, can_set_location.Length, has_scheduled.Length, can_view_stats.Length, blocked.Length, about.Length, flags[0], flags[1], flags[2], flags[2], online_count.Length, chat_photo.Length, notify_settings.Length, exported_invite.Length, bot_info.Length, flags[4], flags[4], flags[5], (flags[8]?stickerset.Length:0), flags[9], folder_id.Length, linked_chat_id.Length, location.Length, slowmode_seconds.Length, slowmode_next_send_date.Length, stats_dc.Length, call.Length, ttl_period.Length, pending_suggestions.Length, groupcall_default_join_as.Length, theme_emoticon.Length, requests_pending.Length, recent_requesters.Length, default_send_as.Length, available_reactions.Length);", generated.SourceText);
+        Assert.Contains("var bufferLength = GetRequiredBufferSize(hiddenPrehistory.Length, canSetLocation.Length, hasScheduled.Length, canViewStats.Length, blocked.Length, about.Length, flags[0], flags[1], flags[2], flags[2], onlineCount.Length, chatPhoto.Length, notifySettings.Length, exportedInvite.Length, botInfo.Length, flags[4], flags[4], flags[5], (flags[8]?stickerset.Length:0), flags[9], folderId.Length, linkedChatId.Length, location.Length, slowmodeSeconds.Length, slowmodeNextSendDate.Length, statsDc.Length, call.Length, ttlPeriod.Length, pendingSuggestions.Length, groupcallDefaultJoinAs.Length, themeEmoticon.Length, requestsPending.Length, recentRequesters.Length, defaultSendAs.Length, availableReactions.Length);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_message()
@@ -148,7 +148,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("Set_message_(message_);", generated.SourceText);
+        Assert.Contains("SetMessageProperty(messageProperty);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_messageMediaInvoice()
@@ -157,7 +157,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("return new MessageMediaInvoice(_flags, _flags[1], _flags[3], _title, _description, _photo, _receipt_msg_id, _currency, _total_amount, _start_param, _extended_media);", generated.SourceText);
+        Assert.Contains("return new MessageMediaInvoice(_flags, _flags[1], _flags[3], _title, _description, _photo, _receiptMsgId, _currency, _totalAmount, _startParam, _extendedMedia);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_auth_sentCode()
@@ -166,7 +166,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("GetRequiredBufferSize(type.Length, phone_code_hash.Length, (flags[1]?next_type.Length:0), flags[2])",generated.SourceText);
+        Assert.Contains("GetRequiredBufferSize(type.Length, phoneCodeHash.Length, (flags[1]?nextType.Length:0), flags[2])",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_updates()
@@ -177,7 +177,7 @@ updates.differenceEmpty#5d75a138 date:int seq:int = updates.Difference;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct Updates_",generated.SourceText);
+        Assert.Contains("public readonly ref struct Updates",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_chatFull()
@@ -188,7 +188,7 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct messages_ChatFull",generated.SourceText);
+        Assert.Contains("public readonly ref struct MessagesChatFull",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_inputPeerNotifySettings()
@@ -197,9 +197,9 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains(@"public static int GetRequiredBufferSize(bool has_show_previews, bool has_silent, bool has_mute_until, int len_sound)
+        Assert.Contains(@"public static int GetRequiredBufferSize(bool hasShowPreviews, bool hasSilent, bool hasMuteUntil, int lenSound)
     {
-        return 4 + 4 + (has_show_previews?4:0) + (has_silent?4:0) + (has_mute_until?4:0) + len_sound;
+        return 4 + 4 + (hasShowPreviews?4:0) + (hasSilent?4:0) + (hasMuteUntil?4:0) + lenSound;
     }",generated.SourceText);
     }
     [Fact]
@@ -209,10 +209,10 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains(", bool test_mode,",generated.SourceText);
-        Assert.Contains("GetRequiredBufferSize(pfs_enabled.Length, force_try_ipv6.Length, dc_options.Length, dc_txt_domain_name.Length, flags[0], me_url_prefix.Length, flags[7], autoupdate_url_prefix.Length, flags[9], gif_search_username.Length, venue_search_username.Length, img_search_username.Length, static_maps_provider.Length, flags[2], suggested_lang_code.Length, flags[2], flags[2], reactions_default.Length)",generated.SourceText);
-        Assert.Contains(@"public readonly bool test_mode => MemoryMarshal.Read<int>(_buff[GetOffset(6, _buff)..]) == unchecked((int)0x997275b5);
-    private void Set_test_mode(bool value)
+        Assert.Contains(", bool testMode,",generated.SourceText);
+        Assert.Contains("GetRequiredBufferSize(pfsEnabled.Length, forceTryIpv6.Length, dcOptions.Length, dcTxtDomainName.Length, flags[0], meUrlPrefix.Length, flags[7], autoupdateUrlPrefix.Length, flags[9], gifSearchUsername.Length, venueSearchUsername.Length, imgSearchUsername.Length, staticMapsProvider.Length, flags[2], suggestedLangCode.Length, flags[2], flags[2], reactionsDefault.Length)",generated.SourceText);
+        Assert.Contains(@"public readonly bool TestMode => MemoryMarshal.Read<int>(_buff[GetOffset(6, _buff)..]) == unchecked((int)0x997275b5);
+    private void SetTestMode(bool value)
     {
         int t = unchecked((int)0x997275b5);
         int f = unchecked((int)0xbc799737);
@@ -225,10 +225,10 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
             MemoryMarshal.Write(_buff[GetOffset(6, _buff)..], ref f);
         }
     }",generated.SourceText);
-        Assert.Contains(@"private bool _test_mode;
-        public TLObjectBuilder with_test_mode(bool value)
+        Assert.Contains(@"private bool _testMode;", generated.SourceText);
+        Assert.Contains(@"public TLObjectBuilder TestMode(bool value)
         {
-            _test_mode = value;
+            _testMode = value;
             return this;
         }",generated.SourceText);
     }
@@ -241,7 +241,7 @@ auth.sendCode#a677244f phone_number:string api_id:int api_hash:string settings:C
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public SendCode(ReadOnlySpan<byte> phone_number, int api_id, ReadOnlySpan<byte> api_hash, ReadOnlySpan<byte> settings)",generated.SourceText);
+        Assert.Contains("public SendCode(ReadOnlySpan<byte> phoneNumber, int apiId, ReadOnlySpan<byte> apiHash, ReadOnlySpan<byte> settings)",generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_auth_initConnection()
@@ -252,7 +252,7 @@ initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_v
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public Span<byte> query => ObjectReader.Read(_buff);",generated.SourceText);
+        Assert.Contains("public Span<byte> Query => ObjectReader.Read(_buff);",generated.SourceText);
         Assert.Contains("if(index >= 12) offset += ObjectReader.ReadSize(buffer[offset..]);",generated.SourceText);
     }
     [Fact]
@@ -300,7 +300,7 @@ messages.setInlineBotResults#eb5ea206 flags:# gallery:flags.0?true private:flags
     ";
             TLSourceGenerator generator = new();
             var generated = generator.Generate("layer146", source).First();
-            Assert.Contains("public SetInlineBotResults(Flags flags, bool gallery, bool private_, long query_id,", generated.SourceText);
+            Assert.Contains("public SetInlineBotResults(Flags flags, bool gallery, bool privateProperty, long queryId,", generated.SourceText);
         }
     [Fact]
     public void TLSourceGenerator_Should_Generate_inputCheckPasswordSRP()
@@ -310,6 +310,6 @@ inputCheckPasswordSRP#d27ff082 srp_id:long A:bytes M1:bytes = InputCheckPassword
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public InputCheckPasswordSRP(long srp_id, ReadOnlySpan<byte> A, ReadOnlySpan<byte> M1)", generated.SourceText);
+        Assert.Contains("public InputCheckPasswordSRP(long srpId, ReadOnlySpan<byte> a, ReadOnlySpan<byte> m1)", generated.SourceText);
     }
 }

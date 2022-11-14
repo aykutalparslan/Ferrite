@@ -39,14 +39,14 @@ public class ReqPQFunc : ITLFunction
         byte[] serverNonce;
         if (!ctx.SessionData.ContainsKey("nonce"))
         {
-            ctx.SessionData.Add("nonce", new ReqPqMulti(q.AsSpan()).nonce.ToArray());
+            ctx.SessionData.Add("nonce", new ReqPqMulti(q.AsSpan()).Nonce.ToArray());
             serverNonce = _randomGenerator.GetRandomBytes(16);
             ctx.SessionData.Add("server_nonce", serverNonce);
             await Task.Delay(100);
         }
-        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new ReqPqMulti(q.AsSpan()).nonce))
+        else if (!((byte[])ctx.SessionData["nonce"]).AsSpan().SequenceEqual(new ReqPqMulti(q.AsSpan()).Nonce))
         {
-            ctx.SessionData["nonce"] = new ReqPqMulti(q.AsSpan()).nonce.ToArray();
+            ctx.SessionData["nonce"] = new ReqPqMulti(q.AsSpan()).Nonce.ToArray();
             serverNonce = _randomGenerator.GetRandomBytes(16);
             ctx.SessionData["server_nonce"] = serverNonce;
             return null;

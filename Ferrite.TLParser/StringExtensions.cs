@@ -37,13 +37,9 @@ public static class StringExtensions
     }
     public static string ToCamelCase(this string str)
     {
-        if (!str.Contains("_"))
-        {
-            return "_"+str;
-        }
         var chars = str.ToPascalCase().ToCharArray();
         chars[0] = Char.ToLower(chars[0]);
-        return "_" + new string(chars);
+        return new string(chars);
     }
     public static string FirstLetterToUpperCase(this string str)
     {

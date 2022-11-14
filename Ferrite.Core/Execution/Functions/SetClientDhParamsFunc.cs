@@ -48,16 +48,16 @@ public class SetClientDhParamsFunc : ITLFunction
         bool failed = false;
         var sessionNonce = (byte[])ctx.SessionData["nonce"];
         var sessionServerNonce = (byte[])ctx.SessionData["server_nonce"];
-        if (!query.nonce.SequenceEqual(sessionNonce) ||
-            !query.server_nonce.SequenceEqual(sessionServerNonce))
+        if (!query.Nonce.SequenceEqual(sessionNonce) ||
+            !query.ServerNonce.SequenceEqual(sessionServerNonce))
         {
             failed = true;
         }
 
         Aes aes = Aes.Create();
         aes.Key = (byte[])ctx.SessionData["temp_aes_key"];
-        using var encryptedData = UnmanagedMemoryAllocator.Allocate<byte>(query.encrypted_data.Length);
-        aes.DecryptIge(query.encrypted_data, ((byte[])ctx.SessionData["temp_aes_iv"]).ToArray(),
+        using var encryptedData = UnmanagedMemoryAllocator.Allocate<byte>(query.EncryptedData.Length);
+        aes.DecryptIge(query.EncryptedData, ((byte[])ctx.SessionData["temp_aes_iv"]).ToArray(),
             encryptedData.Span);
         var sha1Received = encryptedData.Span[..20].ToArray();
         var dataWithPadding = encryptedData.Memory[20..];
@@ -65,16 +65,16 @@ public class SetClientDhParamsFunc : ITLFunction
         var clientDhInnerData = new ClientDhInnerData(dataWithPadding.Span[..len]);
         var sha1Actual = SHA1.HashData(clientDhInnerData.ToReadOnlySpan());
         if (!sha1Actual.SequenceEqual(sha1Received) ||
-            !query.nonce.SequenceEqual(sessionNonce) ||
-            !query.server_nonce.SequenceEqual(sessionServerNonce) ||
-            !clientDhInnerData.nonce.SequenceEqual(sessionNonce) ||
-            !clientDhInnerData.server_nonce.SequenceEqual(sessionServerNonce))
+            !query.Nonce.SequenceEqual(sessionNonce) ||
+            !query.ServerNonce.SequenceEqual(sessionServerNonce) ||
+            !clientDhInnerData.Nonce.SequenceEqual(sessionNonce) ||
+            !clientDhInnerData.ServerNonce.SequenceEqual(sessionServerNonce))
         {
             failed = true;
         }
 
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
-        BigInteger g_b = new BigInteger(clientDhInnerData.g_b, true, true);
+        BigInteger g_b = new BigInteger(clientDhInnerData.GB, true, true);
         BigInteger g = new BigInteger((int)ctx.SessionData["g"]);
         BigInteger a = new BigInteger((byte[])ctx.SessionData["a"], true, true);
         var authKey = BigInteger.ModPow(g_b, a, prime).ToByteArray(true, true);

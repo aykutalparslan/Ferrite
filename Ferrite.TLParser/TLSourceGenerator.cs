@@ -93,16 +93,12 @@ public class TLSourceGenerator
         if (_typeCount[combinator.Identifier?.TrimEnd('_')] > 1)
         {
             combinator.Identifier = combinator.Namespace != null
-                ? combinator.Namespace + "_" + combinator.Identifier
+                ? combinator.Namespace.ToPascalCase() + combinator.Identifier
                 : combinator.Identifier;
         }
         if (combinator.Identifier?.ToLower() == "file")
         {
-            combinator.Identifier += "_";
-        }
-        if (_bareNamespaces.Contains(combinator.Identifier?.ToLower()))
-        {
-            combinator.Identifier += "_";
+            combinator.Identifier = combinator.Namespace?.ToPascalCase()+combinator.Identifier;
         }
 
         if (combinator.Arguments != null)
@@ -112,13 +108,13 @@ public class TLSourceGenerator
                 {
                     arg.Identifier = "longitude";
                 }
-
-                if (arg.Identifier == combinator.Identifier?.ToLower() || arg.Identifier == "out" ||
+                if (arg.Identifier?.ToLowerInvariant() == combinator.Identifier?.ToLowerInvariant() || 
+                    arg.Identifier == "out" || arg.Identifier == "length" ||
                     arg.Identifier == "static" || arg.Identifier == "params" ||
                     arg.Identifier == "default" || arg.Identifier == "public" ||
                     arg.Identifier == "readonly" || arg.Identifier == "private")
                 {
-                    arg.Identifier += "_";
+                    arg.Identifier += "Property";
                 }
             }
     }
@@ -168,6 +164,12 @@ public class TLSourceGenerator
                 combinators.Add(c);
                 _combinators.Add(c.Name, c);
             }
+
+            if (c.Arguments != null)
+                foreach (var arg in c.Arguments)
+                {
+                    arg.Identifier = arg.Identifier?.ToCamelCase();
+                }
 
             c = parser.ParseCombinator();
         }
@@ -495,11 +497,11 @@ public readonly ref struct " + typeName + @"
                     first = false;
                     if (arg.TypeTerm?.Identifier is "int" or "long" or "double" or "int128" or "int258" or "Bool")
                     {
-                        sb.Append("bool has_" + arg.Identifier);
+                        sb.Append("bool has" + arg.Identifier?.ToPascalCase());
                     }
                     else
                     {
-                        sb.Append("bool has_" + arg.Identifier + ", int len_" + arg.Identifier);
+                        sb.Append("bool has" + arg.Identifier?.ToPascalCase() + ", int len" + arg.Identifier?.ToPascalCase());
                     }
                 }
                 else if (arg.ConditionalDefinition != null && arg.TypeTerm?.Identifier == "Bool")
@@ -510,7 +512,7 @@ public readonly ref struct " + typeName + @"
                     }
 
                     first = false;
-                    sb.Append("bool has_" + arg.Identifier);
+                    sb.Append("bool has" + arg.Identifier?.ToPascalCase());
                 }
                 else if (arg.ConditionalDefinition != null && arg.TypeTerm?.Identifier != "true")
                 {
@@ -520,7 +522,7 @@ public readonly ref struct " + typeName + @"
                     }
 
                     first = false;
-                    sb.Append("int len_" + arg.Identifier);
+                    sb.Append("int len" + arg.Identifier?.ToPascalCase());
                 }
                 else if (arg.TypeTerm?.Identifier != "#" && arg.TypeTerm?.Identifier != "int" &&
                          arg.TypeTerm?.Identifier != "long" && arg.TypeTerm?.Identifier != "double" &&
@@ -533,7 +535,7 @@ public readonly ref struct " + typeName + @"
                     }
 
                     first = false;
-                    sb.Append("int len_" + arg.Identifier);
+                    sb.Append("int len" + arg.Identifier?.ToPascalCase());
                 }
             }
 
@@ -577,7 +579,7 @@ public readonly ref struct " + typeName + @"
                         appended = true;
                     }
 
-                    sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?4:0)" : "4");
+                    sb.Append(arg.ConditionalDefinition != null ? "(has" + arg.Identifier?.ToPascalCase() + @"?4:0)" : "4");
                 }
                 else if (arg.TypeTerm?.Identifier == "Bool")
                 {
@@ -590,7 +592,7 @@ public readonly ref struct " + typeName + @"
                         appended = true;
                     }
 
-                    sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?4:0)" : "4");
+                    sb.Append(arg.ConditionalDefinition != null ? "(has" + arg.Identifier?.ToPascalCase() + @"?4:0)" : "4");
                 }
                 else if (arg.TypeTerm?.Identifier is "long" or "double")
                 {
@@ -603,7 +605,7 @@ public readonly ref struct " + typeName + @"
                         appended = true;
                     }
 
-                    sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?8:0)" : "8");
+                    sb.Append(arg.ConditionalDefinition != null ? "(has" + arg.Identifier?.ToPascalCase() + @"?8:0)" : "8");
                 }
                 else if (arg.TypeTerm?.Identifier == "int128")
                 {
@@ -616,7 +618,7 @@ public readonly ref struct " + typeName + @"
                         appended = true;
                     }
 
-                    sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?16:0)" : "16");
+                    sb.Append(arg.ConditionalDefinition != null ? "(has" + arg.Identifier?.ToPascalCase() + @"?16:0)" : "16");
                 }
                 else if (arg.TypeTerm?.Identifier == "int256")
                 {
@@ -629,7 +631,7 @@ public readonly ref struct " + typeName + @"
                         appended = true;
                     }
 
-                    sb.Append(arg.ConditionalDefinition != null ? "(has_" + arg.Identifier + @"?32:0)" : "32");
+                    sb.Append(arg.ConditionalDefinition != null ? "(has" + arg.Identifier?.ToPascalCase() + @"?32:0)" : "32");
                 }
                 else if (arg.TypeTerm?.Identifier is "bytes" or "string")
                 {
@@ -644,13 +646,13 @@ public readonly ref struct " + typeName + @"
 
                     if (arg.ConditionalDefinition != null)
                     {
-                        sb.Append("(has_" + arg.Identifier + "?BufferUtils.CalculateTLBytesLength(len_" +
-                                  arg.Identifier +
+                        sb.Append("(has" + arg.Identifier?.ToPascalCase() + "?BufferUtils.CalculateTLBytesLength(len" +
+                                  arg.Identifier?.ToPascalCase() +
                                   "):0)");
                     }
                     else
                     {
-                        sb.Append("BufferUtils.CalculateTLBytesLength(len_" + arg.Identifier + ")");
+                        sb.Append("BufferUtils.CalculateTLBytesLength(len" + arg.Identifier?.ToPascalCase() + ")");
                     }
                 }
                 else
@@ -664,7 +666,7 @@ public readonly ref struct " + typeName + @"
                         appended = true;
                     }
 
-                    sb.Append("len_" + arg.Identifier);
+                    sb.Append("len" + arg.Identifier?.ToPascalCase());
                 }
             }
 
@@ -739,7 +741,7 @@ public readonly ref struct " + typeName + @"
     private static void GenerateSetFlagsValue(StringBuilder sb, SimpleArgumentSyntax arg)
     {
         sb.Append(@"
-        Set_" + arg.Identifier + @"(" + arg.Identifier + ");");
+        Set" + arg.Identifier?.FirstLetterToUpperCase() + @"(" + arg.Identifier + ");");
     }
 
     private static void GenerateSetBareTypeValue(StringBuilder sb, SimpleArgumentSyntax arg)
@@ -752,7 +754,7 @@ public readonly ref struct " + typeName + @"
         if(" + arg.ConditionalDefinition.Identifier + "[" + arg.ConditionalDefinition.ConditionalArgumentBit + @"])" +
                       @"
         {
-            Set_" + arg.Identifier + "(" + arg.Identifier + @");
+            Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @");
         }");
         }
         else if (arg.ConditionalDefinition != null)
@@ -761,13 +763,13 @@ public readonly ref struct " + typeName + @"
         if(" + arg.ConditionalDefinition.Identifier + "[" + arg.ConditionalDefinition.ConditionalArgumentBit + @"])" +
                       @"
         {
-            Set_" + arg.Identifier + "(" + arg.Identifier + @");
+            Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @");
         }");
         }
         else
         {
             sb.Append(@"
-        Set_" + arg.Identifier + "(" + arg.Identifier + @");");
+        Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @");");
         }
     }
 
@@ -778,13 +780,13 @@ public readonly ref struct " + typeName + @"
             sb.Append(@"
         if(" + arg.ConditionalDefinition.Identifier + "[" + arg.ConditionalDefinition.ConditionalArgumentBit + @"])
         {
-            Set_" + arg.Identifier + "(" + arg.Identifier + @");
+            Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @");
         }");
         }
         else
         {
             sb.Append(@"
-        Set_" + arg.Identifier + "(" + arg.Identifier + @");");
+        Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @");");
         }
     }
 
@@ -795,13 +797,13 @@ public readonly ref struct " + typeName + @"
             sb.Append(@"
         if(" + arg.ConditionalDefinition.Identifier + "[" + arg.ConditionalDefinition.ConditionalArgumentBit + @"])
         {
-            Set_" + arg.Identifier + "(" + arg.Identifier + @".ToReadOnlySpan());
+            Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @".ToReadOnlySpan());
         }");
         }
         else
         {
             sb.Append(@"
-        Set_" + arg.Identifier + "(" + arg.Identifier + @".ToReadOnlySpan());");
+        Set" + arg.Identifier?.FirstLetterToUpperCase() + "(" + arg.Identifier + @".ToReadOnlySpan());");
         }
     }
 
@@ -965,7 +967,7 @@ public readonly ref struct " + typeName + @"
     public readonly Flags " + arg.Identifier + @" => new Flags(MemoryMarshal.Read<int>(_buff[GetOffset(" + index +
                   ", _buff)..]));");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"(Flags value)
+    private void Set" + arg.Identifier?.ToPascalCase() + @"(Flags value)
     {
         MemoryMarshal.Write(_buff[GetOffset(" + index + @", _buff)..], ref value);
     }");
@@ -974,20 +976,20 @@ public readonly ref struct " + typeName + @"
     private static void GenerateFlagsAccessorProperty(StringBuilder sb, SimpleArgumentSyntax arg)
     {
         sb.Append(@"
-    public readonly bool " + arg.Identifier + @" => " + arg.ConditionalDefinition?.Identifier + "[" +
+    public readonly bool " + arg.Identifier?.FirstLetterToUpperCase() + @" => " + arg.ConditionalDefinition?.Identifier + "[" +
                   arg.ConditionalDefinition?.ConditionalArgumentBit + "];");
     }
 
     private static void GenerateTLBoolProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index)
     {
         sb.Append(@"
-    public readonly bool " + arg.Identifier + " => " + (arg.ConditionalDefinition != null
-                      ? "!flags[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? false : "
+    public readonly bool " + arg.Identifier?.FirstLetterToUpperCase() + " => " + (arg.ConditionalDefinition != null
+                      ? "!"+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? false : "
                       : "") +
                   "MemoryMarshal.Read<int>(_buff[GetOffset(" + index +
                   ", _buff)..]) == unchecked((int)0x997275b5);");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"(bool value)
+    private void Set" + arg.Identifier?.FirstLetterToUpperCase() + @"(bool value)
     {
         int t = unchecked((int)0x997275b5);
         int f = unchecked((int)0xbc799737);
@@ -1005,13 +1007,13 @@ public readonly ref struct " + typeName + @"
     private static void GenerateFixedSizeProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index, int size)
     {
         sb.Append(@"
-    public ReadOnlySpan<byte> " + arg.Identifier + " => " + (arg.ConditionalDefinition != null
-                      ? "!flags[" + arg.ConditionalDefinition.ConditionalArgumentBit +
+    public ReadOnlySpan<byte> " + arg.Identifier?.FirstLetterToUpperCase() + " => " + (arg.ConditionalDefinition != null
+                      ? "!"+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit +
                         "] ? new ReadOnlySpan<byte>() : "
                       : "") +
                   " _buff.Slice(GetOffset(" + index + @", _buff), "+size+@");");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"(ReadOnlySpan<byte> value)
+    private void Set" + arg.Identifier?.FirstLetterToUpperCase() + @"(ReadOnlySpan<byte> value)
     {
         if(value.Length != "+size+@")
         {
@@ -1024,12 +1026,12 @@ public readonly ref struct " + typeName + @"
     private static void GenerateObjectProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index)
     {
         sb.Append(@"
-    public Span<byte> " + arg.Identifier + " => " + (arg.ConditionalDefinition != null
-                      ? "!flags[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? new Span<byte>() : "
+    public Span<byte> " + arg.Identifier?.FirstLetterToUpperCase() + " => " + (arg.ConditionalDefinition != null
+                      ? "!"+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? new Span<byte>() : "
                       : "") +
                   "ObjectReader.Read(_buff);");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"(ReadOnlySpan<byte> value)
+    private void Set" + arg.Identifier?.FirstLetterToUpperCase() + @"(ReadOnlySpan<byte> value)
     {
         value.CopyTo(_buff[GetOffset(" + index + @", _buff)..]);
     }");
@@ -1038,15 +1040,15 @@ public readonly ref struct " + typeName + @"
     private static void GenerateVectorProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index)
     {
         sb.Append(@"
-    public " + arg.TypeTerm?.GetFullyQualifiedIdentifier() + " " + arg.Identifier + " => "
+    public " + arg.TypeTerm?.GetFullyQualifiedIdentifier() + " " + arg.Identifier?.FirstLetterToUpperCase() + " => "
                   + (arg.ConditionalDefinition != null
-                      ? "!flags[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? new "
+                      ? "!"+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? new "
                         + arg.TypeTerm?.GetFullyQualifiedIdentifier() + "() : "
                       : "")
                   + "new " + arg.TypeTerm?.GetFullyQualifiedIdentifier() +
                   "(_buff.Slice(GetOffset(" + index + @", _buff)));");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"(ReadOnlySpan<byte> value)
+    private void Set" + arg.Identifier?.FirstLetterToUpperCase() + @"(ReadOnlySpan<byte> value)
     {
         value.CopyTo(_buff[GetOffset(" + index + @", _buff)..]);
     }");
@@ -1055,13 +1057,13 @@ public readonly ref struct " + typeName + @"
     private static void GenerateStringProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index)
     {
         sb.Append(@"
-    public ReadOnlySpan<byte> " + arg.Identifier + " => " + (arg.ConditionalDefinition != null
-                      ? "!flags[" + arg.ConditionalDefinition.ConditionalArgumentBit +
+    public ReadOnlySpan<byte> " + arg.Identifier?.FirstLetterToUpperCase() + " => " + (arg.ConditionalDefinition != null
+                      ? "!"+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit +
                         "] ? new ReadOnlySpan<byte>() : "
                       : "") +
                   " BufferUtils.GetTLBytes(_buff, GetOffset(" + index + @", _buff));");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"(ReadOnlySpan<byte> value)
+    private void Set" + arg.Identifier?.FirstLetterToUpperCase() + @"(ReadOnlySpan<byte> value)
     {
         if(value.Length == 0)
         {
@@ -1077,13 +1079,13 @@ public readonly ref struct " + typeName + @"
     private static void GenerateBareTypeProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index)
     {
         sb.Append(@"
-    public readonly "+arg.TypeTerm?.Identifier+" " + arg.Identifier + " => " + (arg.ConditionalDefinition != null
-                      ? "!flags[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? 0 : "
+    public readonly "+arg.TypeTerm?.Identifier+" " + arg.Identifier?.FirstLetterToUpperCase() + " => " + (arg.ConditionalDefinition != null
+                      ? "!"+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? 0 : "
                       : "") +
                   "MemoryMarshal.Read<"+arg.TypeTerm?.Identifier+">(_buff[GetOffset(" + index +
                   ", _buff)..]);");
         sb.Append(@"
-    private void Set_" + arg.Identifier + @"("+arg.TypeTerm?.Identifier+@" value)
+    private void Set" + arg.Identifier?.FirstLetterToUpperCase() + @"("+arg.TypeTerm?.Identifier+@" value)
     {
         MemoryMarshal.Write(_buff[GetOffset(" + index + @", _buff)..], ref value);
     }");
@@ -1149,7 +1151,7 @@ public readonly ref struct " + typeName + @"
     private static void GenerateBuilderSetFlags(StringBuilder sb, SimpleArgumentSyntax arg)
     {
         sb.Append(@"
-        public TLObjectBuilder with_" + arg.Identifier + @"(bool value)
+        public TLObjectBuilder " + arg.Identifier?.FirstLetterToUpperCase() + @"(bool value)
         {
             _" + arg.ConditionalDefinition?.Identifier + "[" + arg.ConditionalDefinition?.ConditionalArgumentBit +
                   @"] = value;
@@ -1161,7 +1163,11 @@ public readonly ref struct " + typeName + @"
     {
         sb.Append(@"
         private "+arg.TypeTerm?.Identifier?.ToLower()+" _" + arg.Identifier + @";
-        public TLObjectBuilder with_" + arg.Identifier + "("+arg.TypeTerm?.Identifier?.ToLower()+@" value)
+        /// <summary>
+        /// This parameter is "+(arg.ConditionalDefinition == null ? "":"NOT ") +@"required.
+        /// </summary>
+        /// <param name=""value"">"+ arg.TypeTerm?.GetFullyQualifiedIdentifier() +@"</param>
+        public TLObjectBuilder " + arg.Identifier?.FirstLetterToUpperCase() + "("+arg.TypeTerm?.Identifier?.ToLower()+@" value)
         {
             _" + arg.Identifier + @" = value;"
                   + (arg.ConditionalDefinition != null
@@ -1179,7 +1185,11 @@ public readonly ref struct " + typeName + @"
         string typeIdent = arg.TypeTerm?.GetFullyQualifiedIdentifier() ?? string.Empty;
         sb.Append(@"
         private " + typeIdent + " _" + arg.Identifier + @";
-        public TLObjectBuilder with_" + arg.Identifier + "(" + typeIdent + @" value)
+        /// <summary>
+        /// This parameter is "+(arg.ConditionalDefinition == null ? "":"NOT ") +@"required.
+        /// </summary>
+        /// <param name=""value"">"+ arg.TypeTerm?.GetFullyQualifiedIdentifier() +@"</param>
+        public TLObjectBuilder " + arg.Identifier?.FirstLetterToUpperCase() + "(" + typeIdent + @" value)
         {
             _" + arg.Identifier + @" = value;"
                   + (arg.ConditionalDefinition != null
@@ -1196,7 +1206,11 @@ public readonly ref struct " + typeName + @"
     {
         sb.Append(@"
         private ReadOnlySpan<byte> _" + arg.Identifier + @";
-        public TLObjectBuilder with_" + arg.Identifier + @"(ReadOnlySpan<byte> value)
+        /// <summary>
+        /// This parameter is "+(arg.ConditionalDefinition == null ? "":"NOT ") +@"required.
+        /// </summary>
+        /// <param name=""value"">"+ arg.TypeTerm?.GetFullyQualifiedIdentifier() +@"</param>
+        public TLObjectBuilder " + arg.Identifier?.FirstLetterToUpperCase() + @"(ReadOnlySpan<byte> value)
         {
             _" + arg.Identifier + @" = value;"
                   + (arg.ConditionalDefinition != null

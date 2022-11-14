@@ -161,7 +161,7 @@ public class AuthKeyProcessor : ILinkedHandler
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.Value.AsSpan().ToArray();
-            var nonce = new ReqPqMulti(input.AsSpan()).nonce.ToArray();
+            var nonce = new ReqPqMulti(input.AsSpan()).Nonce.ToArray();
             await _sessionManager.AddAuthSessionAsync(nonce,
                 new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
                 new ActiveSession(connection));
@@ -174,7 +174,7 @@ public class AuthKeyProcessor : ILinkedHandler
         }
         else if (constructor == Constructors.mtproto_ReqDhParams)
         {
-            var nonce = new TL.slim.mtproto.ReqDhParams(input.AsSpan()).nonce.ToArray();
+            var nonce = new TL.slim.mtproto.ReqDhParams(input.AsSpan()).Nonce.ToArray();
             var state = await _sessionManager.GetAuthSessionStateAsync(nonce);
             if (state == null)
             {
@@ -212,7 +212,7 @@ public class AuthKeyProcessor : ILinkedHandler
         }
         else if (constructor == Constructors.mtproto_SetClientDhParams)
         {
-            var nonce = new TL.slim.mtproto.SetClientDhParams(input.AsSpan()).nonce.ToArray();
+            var nonce = new TL.slim.mtproto.SetClientDhParams(input.AsSpan()).Nonce.ToArray();
             var state = await _sessionManager.GetAuthSessionStateAsync(nonce);
             if (state == null)
             {

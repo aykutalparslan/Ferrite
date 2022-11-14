@@ -204,12 +204,12 @@ public class AllocationFreeSerializationTests
         int serverTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
 
         using var actual = Ferrite.TL.slim.mtproto.ServerDhInnerData.Builder()
-            .with_nonce(nonce)
-            .with_server_nonce(serverNonce)
-            .with_g(g)
-            .with_dh_prime(dhPrime)
-            .with_g_a(ga)
-            .with_server_time(serverTime)
+            .Nonce(nonce)
+            .ServerNonce(serverNonce)
+            .G(g)
+            .DhPrime(dhPrime)
+            .GA(ga)
+            .ServerTime(serverTime)
             .Build();
         
         using var expected = new Ferrite.TL.slim.mtproto.ServerDhInnerData(
@@ -220,12 +220,12 @@ public class AllocationFreeSerializationTests
             ga, 
             serverTime);
         
-        Assert.Equal(nonce, actual.nonce.ToArray());
-        Assert.Equal(serverNonce, actual.server_nonce.ToArray());
-        Assert.Equal(g, actual.g);
-        Assert.Equal(dhPrime, actual.dh_prime.ToArray());
-        Assert.Equal(ga, actual.g_a.ToArray());
-        Assert.Equal(serverTime, actual.server_time);
+        Assert.Equal(nonce, actual.Nonce.ToArray());
+        Assert.Equal(serverNonce, actual.ServerNonce.ToArray());
+        Assert.Equal(g, actual.G);
+        Assert.Equal(dhPrime, actual.DhPrime.ToArray());
+        Assert.Equal(ga, actual.GA.ToArray());
+        Assert.Equal(serverTime, actual.ServerTime);
         
         Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
             actual.ToReadOnlySpan().ToArray());
@@ -249,9 +249,9 @@ public class AllocationFreeSerializationTests
         salts.Append(salt2.ToReadOnlySpan());
 
         using var actual = Ferrite.TL.slim.mtproto.FutureSalts.Builder()
-            .with_req_msg_id(reqMsgId)
-            .with_now(now)
-            .with_salts(salts)
+            .ReqMsgId(reqMsgId)
+            .Now(now)
+            .Salts(salts)
             .Build();
 
         using var expected = new Ferrite.TL.slim.mtproto.FutureSalts(reqMsgId, now, salts);
@@ -273,10 +273,10 @@ public class AllocationFreeSerializationTests
         fingerprints.Append(246810L);
 
         using var actual = Ferrite.TL.slim.mtproto.ResPQ.Builder()
-            .with_nonce(nonce)
-            .with_server_nonce(serverNonce)
-            .with_pq(pq)
-            .with_server_public_key_fingerprints(fingerprints)
+            .Nonce(nonce)
+            .ServerNonce(serverNonce)
+            .Pq(pq)
+            .ServerPublicKeyFingerprints(fingerprints)
             .Build();
 
         using var expected = new Ferrite.TL.slim.mtproto.ResPQ(nonce, serverNonce, pq, fingerprints);
@@ -328,13 +328,13 @@ public class AllocationFreeSerializationTests
     public void Should_SerializeFileHeader()
     {
         using var jpeg = new FileJpeg();
-        using var file = File_.Builder()
-            .with_type(jpeg.ToReadOnlySpan())
-            .with_mtime(0)
+        using var file = UploadFile.Builder()
+            .Type(jpeg.ToReadOnlySpan())
+            .Mtime(0)
             .Build();
         using var rpcResult = RpcResult.Builder()
-            .with_req_msg_id(0)
-            .with_result(file.ToReadOnlySpan())
+            .ReqMsgId(0)
+            .Result(file.ToReadOnlySpan())
             .Build();
         var actual = rpcResult.ToReadOnlySpan()[..24];
         var rpcResult2 = new Ferrite.TL.mtproto.RpcResult(null);

@@ -140,13 +140,13 @@ public class UploadService : IUploadService
     }
     private static byte[] GenerateStreamHeader(long reqMsgId, StreamFileType fileType)
     {
-        var file = File_.Builder()
-            .with_type(GetFileType(fileType))
-            .with_mtime((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+        var file = UploadFile.Builder()
+            .Type(GetFileType(fileType))
+            .Mtime((int)DateTimeOffset.Now.ToUnixTimeSeconds())
             .Build();
         var rpcResult = RpcResult.Builder()
-            .with_req_msg_id(reqMsgId)
-            .with_result(file.ToReadOnlySpan())
+            .ReqMsgId(reqMsgId)
+            .Result(file.ToReadOnlySpan())
             .Build();
         byte[] resultHeader = new byte[24];
         rpcResult.ToReadOnlySpan()[..24].CopyTo(resultHeader);

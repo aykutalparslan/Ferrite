@@ -50,9 +50,9 @@ public class InitConnectionFunc : ITLFunction
     private static TLBytes GetQuery(TLBytes q)
     {
         TL.slim.layer146.InitConnection request = new(q.AsSpan());
-        var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.query.Length);
-        request.query.CopyTo(queryMemory.Memory.Span);
-        TLBytes query = new(queryMemory, 0, request.query.Length);
+        var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.Query.Length);
+        request.Query.CopyTo(queryMemory.Memory.Span);
+        TLBytes query = new(queryMemory, 0, request.Query.Length);
         return query;
     }
 
@@ -62,15 +62,15 @@ public class InitConnectionFunc : ITLFunction
         return new AppInfoDTO()
         {
             Hash = _random.NextLong(),
-            ApiId = request.api_id,
-            AppVersion = Encoding.UTF8.GetString(request.app_version),
+            ApiId = request.ApiId,
+            AppVersion = Encoding.UTF8.GetString(request.AppVersion),
             AuthKeyId = ctx.CurrentAuthKeyId,
-            DeviceModel = Encoding.UTF8.GetString(request.device_model),
+            DeviceModel = Encoding.UTF8.GetString(request.DeviceModel),
             IP = ctx.IP,
-            LangCode = Encoding.UTF8.GetString(request.lang_code),
-            LangPack = Encoding.UTF8.GetString(request.lang_pack),
-            SystemLangCode = Encoding.UTF8.GetString(request.lang_code),
-            SystemVersion = Encoding.UTF8.GetString(request.system_version)
+            LangCode = Encoding.UTF8.GetString(request.LangCode),
+            LangPack = Encoding.UTF8.GetString(request.LangPack),
+            SystemLangCode = Encoding.UTF8.GetString(request.LangCode),
+            SystemVersion = Encoding.UTF8.GetString(request.SystemVersion)
         };
     }
 }
