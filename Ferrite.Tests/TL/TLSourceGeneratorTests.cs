@@ -78,14 +78,14 @@ help.getConfig#c4f9186b = Config;
         {
             SetSolutionEntities(solutionEntities.ToReadOnlySpan());
         }", generated.SourceText);
-        Assert.Contains("public readonly Flags flags => new Flags(MemoryMarshal.Read<int>(_buff[GetOffset(1, _buff)..]));", generated.SourceText);
+        Assert.Contains("public readonly Flags Flags => new Flags(MemoryMarshal.Read<int>(_buff[GetOffset(1, _buff)..]));", generated.SourceText);
         Assert.Contains("var bufferLength = GetRequiredBufferSize(poll.Length, (flags[0]?correctAnswers.Length:0), flags[1], solution.Length, (flags[1]?solutionEntities.Length:0));", generated.SourceText);
         Assert.Contains(@"public static int GetRequiredBufferSize(int lenPoll, int lenCorrectAnswers, bool hasSolution, int lenSolution, int lenSolutionEntities)
     {
         return 4 + 4 + lenPoll + lenCorrectAnswers + (hasSolution?BufferUtils.CalculateTLBytesLength(lenSolution):0) + lenSolutionEntities;
     }", generated.SourceText);
-        Assert.Contains("public Vector CorrectAnswers => !flags[0] ? new Vector() : new Vector(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
-        Assert.Contains("public ReadOnlySpan<byte> Solution => !flags[1] ? new ReadOnlySpan<byte>() :  BufferUtils.GetTLBytes(_buff, GetOffset(4, _buff));", generated.SourceText);
+        Assert.Contains("public Vector CorrectAnswers => !Flags[0] ? new Vector() : new Vector(_buff.Slice(GetOffset(3, _buff)));", generated.SourceText);
+        Assert.Contains("public ReadOnlySpan<byte> Solution => !Flags[1] ? new ReadOnlySpan<byte>() :  BufferUtils.GetTLBytes(_buff, GetOffset(4, _buff));", generated.SourceText);
         Assert.Contains("private Flags _flags = new Flags();", generated.SourceText);
         Assert.Contains(@"public TLObjectBuilder Solution(ReadOnlySpan<byte> value)
         {
@@ -103,7 +103,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly int AccuracyRadius => !flags[0] ? 0 : MemoryMarshal.Read<int>(_buff[GetOffset(4, _buff)..]);", generated.SourceText);
+        Assert.Contains("public readonly int AccuracyRadius => !Flags[0] ? 0 : MemoryMarshal.Read<int>(_buff[GetOffset(4, _buff)..]);", generated.SourceText);
         Assert.Contains("public readonly double Longitude => MemoryMarshal.Read<double>(_buff[GetOffset(3, _buff)..]);", generated.SourceText);
         Assert.Contains("var bufferLength = GetRequiredBufferSize(flags[0]);", generated.SourceText);
         Assert.Contains("public static int GetRequiredBufferSize(bool hasAccuracyRadius)", generated.SourceText);
@@ -118,7 +118,7 @@ help.getConfig#c4f9186b = Config;
         Assert.Contains("ReadOnlySpan<byte> startParam, ReadOnlySpan<byte> extendedMedia)", generated.SourceText);
         Assert.Contains("var bufferLength = GetRequiredBufferSize(title.Length, description.Length, (flags[0]?photo.Length:0), invoice.Length, payload.Length, provider.Length, providerData.Length, flags[1], startParam.Length, (flags[2]?extendedMedia.Length:0));", generated.SourceText);
         Assert.Contains("SetPhoto(photo);", generated.SourceText);
-        Assert.Contains("public Span<byte> Photo => !flags[0] ? new Span<byte>() : ObjectReader.Read(_buff);", generated.SourceText);
+        Assert.Contains("public Span<byte> Photo => !Flags[0] ? new Span<byte>() : ObjectReader.Read(_buff);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_channelFull()
@@ -127,7 +127,7 @@ help.getConfig#c4f9186b = Config;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly bool CanDeleteChannel => flags2[0];", generated.SourceText);
+        Assert.Contains("public readonly bool CanDeleteChannel => Flags2[0];", generated.SourceText);
         Assert.Contains(@"private Flags _flags2 = new Flags();", generated.SourceText);
         Assert.Contains(@"public TLObjectBuilder CanDeleteChannel(bool value)
         {
