@@ -23,6 +23,7 @@ using System.Threading.Channels;
 using DotNext.Buffers;
 using DotNext.IO;
 using DotNext.IO.Pipelines;
+using Ferrite.Core.Execution;
 using Ferrite.Core.RequestChain;
 using Ferrite.Data;
 using Ferrite.Services;
@@ -30,6 +31,7 @@ using Ferrite.TL;
 using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
@@ -43,6 +45,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
     private readonly ISessionService _sessionManager;
     private readonly IMTProtoSession _session;
     private readonly ITLHandler _requestChain;
+    private readonly IExecutionEngine _engine;
     private readonly IProtoHandler _protoHandler;
     private readonly ITransportConnection _socketConnection;
     private readonly ProtoTransport _protoTransport;
@@ -61,7 +64,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
 
     public MTProtoConnection(ITransportConnection connection,
         ILogger logger, ISessionService sessionManager, 
-        IProtoHandler protoHandler, IMTProtoSession session,
+        IProtoHandler protoHandler, IExecutionEngine engine, IMTProtoSession session,
         ProtoTransport protoTransport, ITLHandler requestChain,
         SerializationFeature serialization)
     {
@@ -72,6 +75,7 @@ public sealed class MTProtoConnection : IMTProtoConnection
         _session.Connection = this;
         _session.EndPoint = _socketConnection.RemoteEndPoint as IPEndPoint;
         _protoHandler = protoHandler;
+        _engine = engine;
         _protoHandler.Session = _session;
         _protoTransport = protoTransport;
         _requestChain = requestChain;
@@ -362,13 +366,21 @@ public sealed class MTProtoConnection : IMTProtoConnection
         }
         else if(_session.AuthKey != null)
         {
-            using var message = _protoHandler.DecryptMessage(bytes.Slice(8));
+            var message = _protoHandler.DecryptMessage(bytes.Slice(8));
             await CreateNewSession(message.Headers);
-            var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
-            var msg = _serialization.Read(rd.ReadInt32(true), ref rd);
             var context = GenerateExecutionContext(message.Headers,
                 requiresQuickAck ? _session.GenerateQuickAck(message.MessageData.AsSpan()) : null);
-            await _requestChain.Process(this, msg, context);
+            if (_engine.IsImplemented(message.MessageData.Constructor))
+            {
+                await _requestChain.Process(this, message.MessageData, context);
+            }
+            else
+            {
+                var rd = new SequenceReader(new ReadOnlySequence<byte>(message.MessageData.AsMemory()));
+                var msg = _serialization.Read(rd.ReadInt32(true), ref rd);
+                message.Dispose();
+                await _requestChain.Process(this, msg, context);
+            }
         }
     }
 

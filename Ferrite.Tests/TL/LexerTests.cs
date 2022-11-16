@@ -54,7 +54,7 @@ public class LexerTests
             tokens.Add(token);
         }
         
-        Assert.Equal(34841, tokens.Count);
+        Assert.Equal(35497, tokens.Count);
     }
     [Fact]
     public void Lexer_Should_LexComments()
@@ -300,6 +300,7 @@ resPQ#05162463";
     }
     [Theory]
     [InlineData(@"test123.testMethod1#aabbccdd testVar12:flags.2?customType ", new[]{12})]
+    [InlineData(@"test123.testMethod1#aabbccdd testVar12:flags.20?string ", new[]{12})]
     [InlineData(@"test123.testMethod1#aabbccdd testVar12:flags.2?customType<innerType>", new[]{12})]
     [InlineData(@"test123.testMethod1#aabbccdd testVar12:flags.2?customType<innerType>", new[]{12, 14})]
     public void Lexer_Should_LexBareTypeIdentifier(string source, int[] locations)

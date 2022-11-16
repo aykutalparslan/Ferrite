@@ -228,7 +228,7 @@ public class AuthKeyProcessor : ILinkedHandler
             }
 
             ctx.SessionData = state.SessionData;
-            Services.MTProtoMessage message = new Services.MTProtoMessage();
+            MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -247,8 +247,11 @@ public class AuthKeyProcessor : ILinkedHandler
 
             _log.Information("Result for set_client_DH_params sent.");
         }
-
-        input.Dispose();
+        else
+        {
+            if (Next != null) await Next.Process(sender, input, ctx);
+            else input.Dispose();
+        }
     }
 }
 

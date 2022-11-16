@@ -36,7 +36,7 @@ public readonly struct TLBytes: IDisposable
         _offset = offset;
         _length = length;
     }
-    public int Constructor => MemoryMarshal.Read<int>(_memory.Memory.Span);
+    public int Constructor => MemoryMarshal.Read<int>(_memory.Memory.Span[_offset..]);
     public Span<byte> AsSpan()
     {
         if (_offset == 0 && _length == _memory.Memory.Span.Length)

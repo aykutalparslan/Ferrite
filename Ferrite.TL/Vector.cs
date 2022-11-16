@@ -56,7 +56,8 @@ public class Vector<T> : ITLObject, ICollection<T>
 
             foreach (var item in list)
             {
-                writer.Write(item.TLBytes, true);
+                var tbytes = item.TLBytes;
+                writer.Write(tbytes, true);
             }
 
 

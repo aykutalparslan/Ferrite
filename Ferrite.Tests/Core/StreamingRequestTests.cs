@@ -34,6 +34,7 @@ using DotNext.Buffers;
 using Ferrite.Core;
 using Ferrite.Core.Connection;
 using Ferrite.Core.Connection.TransportFeatures;
+using Ferrite.Core.Execution;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -434,6 +435,7 @@ public class StreamingRequestTests
         builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
+        builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>();
         builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();

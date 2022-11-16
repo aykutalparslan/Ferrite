@@ -46,9 +46,24 @@ public class ExecutionEngine : IExecutionEngine
         }
         catch (Exception e)
         {
-            _log.Error(e, e.Message);
+            _log.Error(e, $"#{rpc.Constructor.ToString("x")} is not registered for layer {layer}");
         }
 
         return null;
+    }
+
+    public bool IsImplemented(int constructor, int layer = 146)
+    {
+        try
+        {
+            var func = _functions[new FunctionKey(layer, constructor)];
+            return true;
+        }
+        catch (Exception e)
+        {
+            _log.Error(e, $"#{constructor.ToString("x")} is not registered for layer {layer}");
+        }
+
+        return false;
     }
 }

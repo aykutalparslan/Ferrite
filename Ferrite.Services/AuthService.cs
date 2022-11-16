@@ -326,7 +326,11 @@ public class AuthService : IAuthService
 
     public async Task<SentCodeDTO> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettingsDTO settings)
     {
-        var code = _random.GetNext(10000, 99999);
+#if DEBUG
+        var code = 12345;
+#else
+		var code = _random.GetNext(10000, 99999);
+#endif
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");

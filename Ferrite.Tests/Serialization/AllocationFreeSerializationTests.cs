@@ -21,7 +21,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using Autofac;
 using Autofac.Core.Lifetime;
 using Autofac.Extras.Moq;
@@ -115,10 +117,34 @@ public class AllocationFreeSerializationTests
             using var reqDhParams = new Ferrite.TL.slim.mtproto.ReqDhParams((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
             vec.AppendTLObject(reqDhParams.ToReadOnlySpan());
+        }
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data.Length, vec.Length);
+        Assert.Equal(data, actual);
+    }
+    [Fact]
+    public void VectorOfDcOptions_Should_Serialize()
+    {
+        var container = BuildContainer();
+        var vecTmp = new Vector<Ferrite.TL.currentLayer.DcOption>(container.Resolve<ITLObjectFactory>());
+        for (int i = 0; i < 10; i++)
+        {
+            var tmp = new Ferrite.TL.currentLayer.DcOptionImpl(container.Resolve<ITLObjectFactory>());
+            tmp.IpAddress = "10.0.2.2";
+            tmp.Port = 5222;
+            vecTmp.Add(tmp);
+            var opt = tmp.TLBytes.ToArray();
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var vec = new Ferrite.TL.slim.Vector();
+        foreach (var tmp in vecTmp)
+        {
+            using var dcOption = DcOption.Builder().IpAddress("10.0.2.2"u8).Port(5222).Build();
+            vec.AppendTLObject(dcOption.ToReadOnlySpan());
             
         }
         var actual = vec.ToReadOnlySpan().ToArray();
-        Assert.Equal(actual.Length, vec.Length);
+        Assert.Equal(data.Length, vec.Length);
         Assert.Equal(data, actual);
     }
     [Fact]
@@ -314,6 +340,15 @@ public class AllocationFreeSerializationTests
         builder.RegisterType<KeyProvider>().As<IKeyProvider>();
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
+            .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyOpenGenericTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.currentLayer"))
             .AsSelf();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());

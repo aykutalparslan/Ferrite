@@ -485,8 +485,7 @@ public readonly ref struct " + typeName + @"
         {
             foreach (var arg in combinator.Arguments)
             {
-                if (arg.TypeTerm != null && arg.ConditionalDefinition != null && arg.TypeTerm != null 
-                    && arg.TypeTerm.Identifier != "true" &&
+                if (arg.TypeTerm != null && arg.ConditionalDefinition != null && arg.TypeTerm.Identifier != "true" &&
                     arg.TypeTerm.IsBare)
                 {
                     if (!first)
@@ -633,7 +632,7 @@ public readonly ref struct " + typeName + @"
 
                     sb.Append(arg.ConditionalDefinition != null ? "(has" + arg.Identifier?.ToPascalCase() + @"?32:0)" : "32");
                 }
-                else if (arg.TypeTerm?.Identifier is "bytes" or "string")
+                else if (arg.TypeTerm?.Identifier  is "bytes" or "string")
                 {
                     if (appended)
                     {
@@ -1029,7 +1028,7 @@ public readonly ref struct " + typeName + @"
     public Span<byte> " + arg.Identifier?.ToPascalCase() + " => " + (arg.ConditionalDefinition != null
                       ? "!"+arg.ConditionalDefinition.Identifier?.ToPascalCase()+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? new Span<byte>() : "
                       : "") +
-                  "ObjectReader.Read(_buff);");
+                  "ObjectReader.Read(_buff[GetOffset(" + index + @", _buff)..]);");
         sb.Append(@"
     private void Set" + arg.Identifier?.ToPascalCase() + @"(ReadOnlySpan<byte> value)
     {

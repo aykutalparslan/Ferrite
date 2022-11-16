@@ -70,8 +70,9 @@ public class GZipProcessor : ILinkedHandler
         }
     }
 
-    public ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
+    public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        if (Next != null) await Next.Process(sender, input, ctx);
+        else input.Dispose();
     }
 }

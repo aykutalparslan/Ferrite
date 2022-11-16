@@ -80,7 +80,7 @@ public ref struct Vector
 
     public static int ReadSize(Span<byte> data, int offset)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        if (MemoryMarshal.Read<int>(data[offset..]) != unchecked((int)0x1cb5c415))
         {
             throw new InvalidOperationException();
         }
@@ -90,7 +90,7 @@ public ref struct Vector
         {
             var sizeReader = ObjectReader.GetObjectSizeReader(
                 MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
-            if (sizeReader != null) len += sizeReader.Invoke(data, len);
+            if (sizeReader != null) len += sizeReader.Invoke(data, offset + len);
         }
         return len;
     }

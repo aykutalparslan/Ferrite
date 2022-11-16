@@ -118,7 +118,7 @@ help.getConfig#c4f9186b = Config;
         Assert.Contains("ReadOnlySpan<byte> startParam, ReadOnlySpan<byte> extendedMedia)", generated.SourceText);
         Assert.Contains("var bufferLength = GetRequiredBufferSize(title.Length, description.Length, (flags[0]?photo.Length:0), invoice.Length, payload.Length, provider.Length, providerData.Length, flags[1], startParam.Length, (flags[2]?extendedMedia.Length:0));", generated.SourceText);
         Assert.Contains("SetPhoto(photo);", generated.SourceText);
-        Assert.Contains("public Span<byte> Photo => !Flags[0] ? new Span<byte>() : ObjectReader.Read(_buff);", generated.SourceText);
+        Assert.Contains("public Span<byte> Photo => !Flags[0] ? new Span<byte>() : ObjectReader.Read(_buff[GetOffset(4, _buff)..]);", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_channelFull()
@@ -139,7 +139,7 @@ help.getConfig#c4f9186b = Config;
         {
             SetMigratedFromMaxId(migratedFromMaxId);
         }", generated.SourceText);
-        Assert.Contains("var bufferLength = GetRequiredBufferSize(hiddenPrehistory.Length, canSetLocation.Length, hasScheduled.Length, canViewStats.Length, blocked.Length, about.Length, flags[0], flags[1], flags[2], flags[2], onlineCount.Length, chatPhoto.Length, notifySettings.Length, exportedInvite.Length, botInfo.Length, flags[4], flags[4], flags[5], (flags[8]?stickerset.Length:0), flags[9], folderId.Length, linkedChatId.Length, location.Length, slowmodeSeconds.Length, slowmodeNextSendDate.Length, statsDc.Length, call.Length, ttlPeriod.Length, pendingSuggestions.Length, groupcallDefaultJoinAs.Length, themeEmoticon.Length, requestsPending.Length, recentRequesters.Length, defaultSendAs.Length, availableReactions.Length);", generated.SourceText);
+        Assert.Contains("var bufferLength = GetRequiredBufferSize(about.Length, flags[0], flags[1], flags[2], flags[2], flags[13], chatPhoto.Length, notifySettings.Length, (flags[23]?exportedInvite.Length:0), botInfo.Length, flags[4], flags[4], flags[5], (flags[8]?stickerset.Length:0), flags[9], flags[11], flags[14], (flags[15]?location.Length:0), flags[17], flags[18], flags[12], (flags[21]?call.Length:0), flags[24], (flags[25]?pendingSuggestions.Length:0), (flags[26]?groupcallDefaultJoinAs.Length:0), flags[27], themeEmoticon.Length, flags[28], (flags[28]?recentRequesters.Length:0), (flags[29]?defaultSendAs.Length:0), (flags[30]?availableReactions.Length:0));", generated.SourceText);
     }
     [Fact]
     public void TLSourceGenerator_Should_Generate_message()
@@ -210,19 +210,19 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
         Assert.Contains(", bool testMode,",generated.SourceText);
-        Assert.Contains("GetRequiredBufferSize(pfsEnabled.Length, forceTryIpv6.Length, dcOptions.Length, dcTxtDomainName.Length, flags[0], meUrlPrefix.Length, flags[7], autoupdateUrlPrefix.Length, flags[9], gifSearchUsername.Length, venueSearchUsername.Length, imgSearchUsername.Length, staticMapsProvider.Length, flags[2], suggestedLangCode.Length, flags[2], flags[2], reactionsDefault.Length)",generated.SourceText);
-        Assert.Contains(@"public readonly bool TestMode => MemoryMarshal.Read<int>(_buff[GetOffset(6, _buff)..]) == unchecked((int)0x997275b5);
+        Assert.Contains("var bufferLength = GetRequiredBufferSize(dcOptions.Length, dcTxtDomainName.Length, flags[0], meUrlPrefix.Length, flags[7], autoupdateUrlPrefix.Length, flags[9], gifSearchUsername.Length, flags[10], venueSearchUsername.Length, flags[11], imgSearchUsername.Length, flags[12], staticMapsProvider.Length, flags[2], suggestedLangCode.Length, flags[2], flags[2], (flags[15]?reactionsDefault.Length:0));",generated.SourceText);
+        Assert.Contains(@"public readonly bool TestMode => MemoryMarshal.Read<int>(_buff[GetOffset(4, _buff)..]) == unchecked((int)0x997275b5);
     private void SetTestMode(bool value)
     {
         int t = unchecked((int)0x997275b5);
         int f = unchecked((int)0xbc799737);
         if(value)
         {
-            MemoryMarshal.Write(_buff[GetOffset(6, _buff)..], ref t);
+            MemoryMarshal.Write(_buff[GetOffset(4, _buff)..], ref t);
         }
         else 
         {
-            MemoryMarshal.Write(_buff[GetOffset(6, _buff)..], ref f);
+            MemoryMarshal.Write(_buff[GetOffset(4, _buff)..], ref f);
         }
     }",generated.SourceText);
         Assert.Contains(@"private bool _testMode;", generated.SourceText);
@@ -252,7 +252,7 @@ initConnection#c1cd5ea9 {X:Type} flags:# api_id:int device_model:string system_v
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public Span<byte> Query => ObjectReader.Read(_buff);",generated.SourceText);
+        Assert.Contains("public Span<byte> Query => ObjectReader.Read(_buff[GetOffset(11, _buff)..]);",generated.SourceText);
         Assert.Contains("if(index >= 12) offset += ObjectReader.ReadSize(buffer[offset..]);",generated.SourceText);
     }
     [Fact]

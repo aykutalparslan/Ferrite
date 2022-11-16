@@ -37,6 +37,7 @@ using Ferrite.Core;
 using Ferrite.Core.Connection;
 using Ferrite.Core.Connection.TransportFeatures;
 using Ferrite.Core.Exceptions;
+using Ferrite.Core.Execution;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -495,6 +496,7 @@ public class MTProtoConnectionTests
         builder.RegisterMock(proto);
         builder.RegisterMock(logger);
         builder.RegisterMock(sessionManager);
+        builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>();
         builder.RegisterType<ProtoHandler>().As<IProtoHandler>();
         builder.RegisterType<QuickAckFeature>().As<IQuickAckFeature>().SingleInstance();
         builder.RegisterType<TransportErrorFeature>().As<ITransportErrorFeature>().SingleInstance();
