@@ -23,9 +23,8 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer146;
 
-namespace Ferrite.Core.Execution.Functions.Layer146;
+namespace Ferrite.Core.Execution.Functions.Layer148;
 
 public class InitConnectionFunc : ITLFunction
 {
@@ -49,7 +48,7 @@ public class InitConnectionFunc : ITLFunction
 
     private static TLBytes GetQuery(TLBytes q)
     {
-        TL.slim.layer146.InitConnection request = new(q.AsSpan());
+        TL.slim.layer148.InitConnection request = new(q.AsSpan());
         var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.Query.Length);
         request.Query.CopyTo(queryMemory.Memory.Span);
         TLBytes query = new(queryMemory, 0, request.Query.Length);
@@ -58,7 +57,7 @@ public class InitConnectionFunc : ITLFunction
 
     private AppInfoDTO CreateAppInfo(TLBytes q, TLExecutionContext ctx)
     {
-        TL.slim.layer146.InitConnection request = new(q.AsSpan());
+        TL.slim.layer148.InitConnection request = new(q.AsSpan());
         return new AppInfoDTO()
         {
             Hash = _random.NextLong(),

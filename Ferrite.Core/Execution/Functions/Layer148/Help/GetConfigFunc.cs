@@ -19,10 +19,10 @@
 using System.Text;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer146;
+using Ferrite.TL.slim.layer148;
 using Ferrite.TL.slim.mtproto;
 
-namespace Ferrite.Core.Execution.Functions.Layer146.Help;
+namespace Ferrite.Core.Execution.Functions.Layer148.Help;
 
 public class GetConfigFunc : ITLFunction
 {

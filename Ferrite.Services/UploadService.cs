@@ -20,8 +20,8 @@ using System.IO.Pipelines;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
-using Ferrite.TL.slim.layer146.storage;
-using Ferrite.TL.slim.layer146.upload;
+using Ferrite.TL.slim.layer148.storage;
+using Ferrite.TL.slim.layer148.upload;
 using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Services;

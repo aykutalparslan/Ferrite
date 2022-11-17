@@ -310,7 +310,7 @@ public class AbridgedFrameDecoderTests
         
         var frame = new byte[2000];
         Random.Shared.NextBytes(frame);
-        BinaryPrimitives.WriteInt32LittleEndian(frame.AsSpan()[60..], Constructors.layer146_SaveFilePart);
+        BinaryPrimitives.WriteInt32LittleEndian(frame.AsSpan()[60..], unchecked((int)0xb304a621));
         var messageKey = AesIge.GenerateMessageKey(authKey, frame.AsSpan()[28..], true);
         messageKey.CopyTo(frame.AsSpan()[12..]);
         var aes = new AesIge(authKey, messageKey);

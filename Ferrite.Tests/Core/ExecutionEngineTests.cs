@@ -43,7 +43,7 @@ public class ExecutionEngineTests
         var reqPqMock = new Mock<ITLFunction>();
         using var autoMock = AutoMock.GetStrict(builder => 
             builder.RegisterInstance(reqPqMock.Object)
-                .Keyed<ITLFunction>(new FunctionKey(146, 
+                .Keyed<ITLFunction>(new FunctionKey(148, 
                     Constructors.mtproto_ReqPqMulti)));
 
         var engine = autoMock.Create<ExecutionEngine>();

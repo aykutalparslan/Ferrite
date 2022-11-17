@@ -7,10 +7,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <AdditionalFiles Include="layer146.tl">
+      <AdditionalFiles Include="mtproto.tl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </AdditionalFiles>
-      <AdditionalFiles Include="mtproto.tl">
+      <None Remove="layer148.tl" />
+      <AdditionalFiles Include="layer148.tl">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </AdditionalFiles>
     </ItemGroup>

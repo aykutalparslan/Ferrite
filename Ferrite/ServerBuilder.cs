@@ -24,8 +24,8 @@ using Ferrite.Core.Connection;
 using Ferrite.Core.Connection.TransportFeatures;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
-using Ferrite.Core.Execution.Functions.Layer146;
-using Ferrite.Core.Execution.Functions.Layer146.Help;
+using Ferrite.Core.Execution.Functions.Layer148;
+using Ferrite.Core.Execution.Functions.Layer148.Help;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -35,10 +35,8 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.ObjectMapper;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer146;
 using Ferrite.Transport;
 using Ferrite.Utils;
-using InitConnection = Ferrite.TL.InitConnection;
 
 namespace Ferrite;
 
@@ -130,29 +128,29 @@ public class ServerBuilder
     {
         builder.RegisterType<ReqPQFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.mtproto_ReqPqMulti))
+                new FunctionKey(148, Constructors.mtproto_ReqPqMulti))
             .SingleInstance();
         builder.RegisterType<ReqDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.mtproto_ReqDhParams))
+                new FunctionKey(148, Constructors.mtproto_ReqDhParams))
             .SingleInstance();
         builder.RegisterType<SetClientDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.mtproto_SetClientDhParams))
+                new FunctionKey(148, Constructors.mtproto_SetClientDhParams))
             .SingleInstance();
         builder.RegisterType<InitConnectionFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.layer146_InitConnection))
+                new FunctionKey(148, Constructors.layer148_InitConnection))
             .SingleInstance()
             .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies);
         builder.RegisterType<InvokeWithLayerFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.layer146_InvokeWithLayer))
+                new FunctionKey(148, Constructors.layer148_InvokeWithLayer))
             .SingleInstance()
             .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies);
         builder.RegisterType<GetConfigFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(146, Constructors.layer146_GetConfig))
+                new FunctionKey(148, Constructors.layer148_GetConfig))
             .SingleInstance();
     }
 
