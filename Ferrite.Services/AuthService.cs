@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Text;
 using System.Threading.Tasks.Sources;
 using DotNext.IO;
 using Ferrite.Crypto;
@@ -23,6 +24,8 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer148.auth;
 using Ferrite.Utils;
 using xxHash;
 
@@ -324,26 +327,36 @@ public class AuthService : IAuthService
         return false;
     }
 
-    public async Task<SentCodeDTO> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettingsDTO settings)
+    public async ValueTask<TLBytes> SendCode(TLBytes q)
     {
 #if DEBUG
         var code = 12345;
 #else
 		var code = _random.GetNext(10000, 99999);
 #endif
-        Console.WriteLine("auth.sentCode=>" + code.ToString());
+        _log.Information("auth.sentCode=>" + code);
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        var (phoneNumber, apiId, apiHash) = GetSendCodeParameters(q);
         _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
-        return new SentCodeDTO()
-        {
-            CodeType = SentCodeType.Sms,
-            CodeLength = 5,
-            Timeout = PhoneCodeTimeout,
-            PhoneCodeHash = hash
-        };
+        return GenerateSentCode(Encoding.UTF8.GetBytes(hash));
+    }
+    private static ValueTuple<string, int, string> GetSendCodeParameters(TLBytes q)
+    {
+        var sendCode = new SendCode(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(sendCode.PhoneNumber);
+        var apiHash = Encoding.UTF8.GetString(sendCode.ApiHash);
+        return (phoneNumber, sendCode.ApiId, apiHash);
+    }
+    private static TLBytes GenerateSentCode(ReadOnlySpan<byte> phoneCodeHash)
+    {
+        return ((TLBytes)SentCode.Builder()
+            .Type(new CodeTypeSms().ToReadOnlySpan())
+            .Timeout(PhoneCodeTimeout)
+            .PhoneCodeHash(phoneCodeHash)
+            .Build().TLBytes!);
     }
 
     public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)

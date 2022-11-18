@@ -16,10 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using System.Collections;
-using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
@@ -32,7 +28,6 @@ public ref struct VectorBare
     public VectorBare()
     {
         _buff = new byte[512];
-        SetConstructor(unchecked((int)0x1cb5c415));
         SetCount(0);
         _position = 4;
         _offset = 4;
@@ -41,15 +36,11 @@ public ref struct VectorBare
     {
         _buff = buffer;
         _position = 4;
-        _offset = 4;
+        _offset = buffer.Length;
     }
-    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
-    private void SetConstructor(int constructor)
-    {
-        MemoryMarshal.Write(_buff[..4], ref constructor);
-    }
+    public readonly int Constructor => 0;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff[.._offset];
-    public readonly int Count => MemoryMarshal.Read<int>(_buff.Slice(4, 4));
+    public readonly int Count => MemoryMarshal.Read<int>(_buff);
     public readonly int Length => _offset;
     private void SetCount(int count)
     {
@@ -69,13 +60,13 @@ public ref struct VectorBare
         return data.Slice(offset, len);
     }
 
-    public static int ReadSize(Span<byte> data, int offset)
+    public static int ReadSize(Span<byte> data, int offset, ObjectSizeReaderDelegate? sizeReader = null)
     {
         int count = MemoryMarshal.Read<int>(data.Slice(offset, 4));
         int len = 4;
         for (int i = 0; i < count; i++)
         {
-            var sizeReader = ObjectReader.GetObjectSizeReader(
+            sizeReader ??= ObjectReader.GetObjectSizeReader(
                 MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
             if (sizeReader != null) len += sizeReader.Invoke(data, offset + len);
         }
@@ -93,13 +84,14 @@ public ref struct VectorBare
         value.CopyTo(_buff[_offset..]);
         _offset += value.Length;
     }
-    public ReadOnlySpan<byte> Read()
+    public ReadOnlySpan<byte> Read(ObjectReaderDelegate? reader = null)
     {
         if (_position == _offset)
         {
             throw new EndOfStreamException();
         }
-        ObjectReaderDelegate? reader = ObjectReader.GetObjectReader(
+
+        reader ??= ObjectReader.GetObjectReader(
             MemoryMarshal.Read<int>(_buff.Slice(_position, 4)));
         if (reader == null)
         {

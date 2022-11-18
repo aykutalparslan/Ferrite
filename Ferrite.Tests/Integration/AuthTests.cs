@@ -18,14 +18,17 @@
 
 using System.Net;
 using Ferrite.Core;
+using TL;
+using TL.Methods;
 using WTelegram;
 using Xunit;
+using Authorization = TL.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
-public class AuthKeyTests
+public class AuthTests
 {
-    public AuthKeyTests()
+    static AuthTests()
     {
         IFerriteServer ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52222);
         _ = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52222), default);
@@ -59,5 +62,19 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         using var client = new WTelegram.Client(Config, new MemoryStream());
         await client.ConnectAsync();
         Assert.NotNull(client.TLConfig);
+    }
+    [Fact]
+    public async Task SendCode_Returns_SentCode()
+    {
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke<Auth_SentCode>((IMethod<Auth_SentCode>) new Auth_SendCode()
+        {
+            phone_number = "+15555555555",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
     }
 }

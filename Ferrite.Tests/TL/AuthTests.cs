@@ -55,38 +55,6 @@ namespace Ferrite.Tests.TL;
 public class AuthTests
 {
     [Fact]
-    public async Task SendCode_Returns_SentCode()
-    {
-        var builder = GetBuilder();
-        var auth = new Mock<IAuthService>();
-        auth.Setup(x => x.SendCode(It.IsAny<string>(), It.IsAny<int>(),
-            It.IsAny<string>(), It.IsAny<CodeSettingsDTO>())).ReturnsAsync(() => new Ferrite.Data.Auth.SentCodeDTO()
-        {
-            CodeType = Ferrite.Data.Auth.SentCodeType.Sms,
-            NextType = Ferrite.Data.Auth.SentCodeType.Sms,
-            CodeLength = 5,
-            Timeout = 60,
-            PhoneCodeHash = "acabadef"
-        });
-        builder.RegisterMock(auth);
-        var container = builder.Build();
-        var factory = container.Resolve<TLObjectFactory>();
-        var sendCode = factory.Resolve<SendCode>();
-        var result = await sendCode.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
-        {
-            MessageId = 1223
-        });
-        Assert.IsType<RpcResult>(result);
-        var rslt = (RpcResult)result;
-        Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<SentCodeImpl>(rslt.Result);
-        var sntCode = (SentCodeImpl)rslt.Result;
-        Assert.IsType<SentCodeTypeSmsImpl>(sntCode.Type);
-        Assert.NotNull(sntCode.NextType);
-        Assert.Equal(60, sntCode.Timeout);
-        Assert.Equal("acabadef", sntCode.PhoneCodeHash);
-    }
-    [Fact]
     public async Task SignIn_Returns_SignUpRequired()
     {
         var builder = GetBuilder();

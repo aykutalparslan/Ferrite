@@ -370,7 +370,8 @@ public sealed class MTProtoConnection : IMTProtoConnection
             await CreateNewSession(message.Headers);
             var context = GenerateExecutionContext(message.Headers,
                 requiresQuickAck ? _session.GenerateQuickAck(message.MessageData.AsSpan()) : null);
-            if (_engine.IsImplemented(message.MessageData.Constructor))
+            if (message.MessageData.Constructor == 0x73f1f8dc || 
+                _engine.IsImplemented(message.MessageData.Constructor))
             {
                 await _requestChain.Process(this, message.MessageData, context);
             }

@@ -19,6 +19,7 @@ using System;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Account;
 using Ferrite.Data;
+using Ferrite.TL.slim;
 
 namespace Ferrite.Services;
 
@@ -27,15 +28,7 @@ public interface IAuthService
     public Task<bool> SaveAppInfo(AppInfoDTO info);
     public Task<AppInfoDTO?> GetAppInfo(long authKeyId);
     public Task<bool> IsAuthorized(long authKeyId);
-    /// <summary>
-	/// Send the verification code for login
-	/// </summary>
-	/// <param name="phoneNumber">Phone number in international format</param>
-	/// <param name="apiId">Application identifier</param>
-	/// <param name="apiHash">Application secret hash</param>
-	/// <param name="settings">Settings for the code type to send</param>
-	/// <returns>The method returns an auth.SentCode object with information on the message sent.</returns>
-    public Task<SentCodeDTO> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettingsDTO settings);
+    public ValueTask<TLBytes> SendCode(TLBytes q);
     public Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName);
     public Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
     public Task<LoggedOutDTO?> LogOut(long authKeyId);

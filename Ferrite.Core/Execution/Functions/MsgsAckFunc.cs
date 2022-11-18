@@ -16,22 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer148.Auth;
+namespace Ferrite.Core.Execution.Functions;
 
-public class SendCodeFunc : ITLFunction
+public class MsgsAckFunc : ITLFunction
 {
-    private readonly IAuthService _auth;
-
-    public SendCodeFunc(IAuthService auth)
+    public ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        _auth = auth;
-    }
-    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
-    {
-        return await _auth.SendCode(q);
+        throw new NotImplementedException();
     }
 }

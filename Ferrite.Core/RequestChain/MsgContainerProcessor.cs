@@ -18,6 +18,7 @@
 using System;
 using System.Buffers;
 using Autofac;
+using DotNext.Buffers;
 using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
@@ -90,8 +91,32 @@ public class MsgContainerProcessor : ILinkedHandler
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
+        if (input.Constructor == 0x73f1f8dc)//msg_container
+        {
+            var messages = GetContainedMessages(input);
+            foreach (var message in messages)
+            {
+                if (Next != null) await Next.Process(sender, message, ctx);
+            }
+        }
+
         if (Next != null) await Next.Process(sender, input, ctx);
         else input.Dispose();
+    }
+
+    private static TLBytes[] GetContainedMessages(TLBytes input)
+    {
+        TL.slim.mtproto.MsgContainer container = new(input.AsSpan());
+        var messages = new TLBytes[container.Messages.Count];
+        for (int i = 0; i < messages.Length; i++)
+        {
+            var message = container.Messages.Read();
+            var memoryOwner = UnmanagedMemoryPool<byte>.Shared.Rent(message.Length);
+            message.CopyTo(memoryOwner.Memory.Span);
+            messages[i] = new TLBytes(memoryOwner, 0, message.Length);
+        }
+
+        return messages;
     }
 }
 

@@ -25,6 +25,7 @@ using Ferrite.Core.Connection.TransportFeatures;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
 using Ferrite.Core.Execution.Functions.Layer148;
+using Ferrite.Core.Execution.Functions.Layer148.Auth;
 using Ferrite.Core.Execution.Functions.Layer148.Help;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
@@ -151,6 +152,10 @@ public class ServerBuilder
         builder.RegisterType<GetConfigFunc>()
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.layer148_GetConfig))
+            .SingleInstance();
+        builder.RegisterType<SendCodeFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(148, Constructors.layer148_SendCode))
             .SingleInstance();
     }
 
