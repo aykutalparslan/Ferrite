@@ -81,7 +81,7 @@ namespace Ferrite.Transport
         {
             PooledArrayBufferWriter<byte> output = new();
             if (HeadersComplete && RequestLineComplete &&
-                RequestHeaders.Connection.ToString().ToLowerInvariant() == "upgrade" &&
+                RequestHeaders.Connection.ToString().ToLowerInvariant().Contains("upgrade") &&
                 RequestHeaders.Upgrade.ToString().ToLowerInvariant() == "websocket")
             {
                 var websocketKey = RequestHeaders.SecWebSocketKey.ToString();
