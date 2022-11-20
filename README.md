@@ -47,6 +47,10 @@ After the Android application is working as expected the development will focus 
 - Optimizations and benchmarks
 - Implementation of the missing features
 
+## Contributions
+
+The project is not open to contributions at this point unless they are very trivial bug fixes with only a couple of lines. 
+It is planned to open the project to contributions after the first stable release.
 
 ## License
 
