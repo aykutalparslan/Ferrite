@@ -127,6 +127,10 @@ public class TLSourceGenerator
         while (c != null)
         {
             c.Identifier = c.Identifier?.ToPascalCase();
+            if (c.Name == null)
+            {
+                if (c.Type != null) c.Type.Identifier += "Bare";
+            }
             c.ContainingNamespace = nameSpace;
             var ns = nameSpace;
             if (c.CombinatorType == CombinatorType.Constructor &&
@@ -149,21 +153,26 @@ public class TLSourceGenerator
                     _bareNamespaces.Add(c.Namespace);
                 }
             }
+            
+            if (_typeCount.ContainsKey(c.Identifier))
+            {
+                _typeCount[c.Identifier] = _typeCount[c.Identifier] + 1;
+            }
+            else
+            {
+                _typeCount.Add(c.Identifier, 1);
+            }
 
             if (c.Name != null && !_combinators.ContainsKey(c.Name))
             {
-                if (_typeCount.ContainsKey(c.Identifier))
-                {
-                    _typeCount[c.Identifier] = _typeCount[c.Identifier] + 1;
-                }
-                else
-                {
-                    _typeCount.Add(c.Identifier, 1);
-                }
-
                 combinators.Add(c);
                 _combinators.Add(c.Name, c);
             }
+            if(c.Name == null)
+            {
+                combinators.Add(c);
+            }
+            
 
             if (c.Arguments != null)
                 foreach (var arg in c.Arguments)
