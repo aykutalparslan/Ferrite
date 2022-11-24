@@ -23,10 +23,12 @@ using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using MessagePack;
+using MsgContainer = Ferrite.TL.mtproto.MsgContainer;
+using MsgsAck = Ferrite.TL.mtproto.MsgsAck;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
 
 namespace Ferrite.Core.RequestChain;
@@ -96,21 +98,32 @@ public class MsgContainerProcessor : ILinkedHandler
             var messages = GetContainedMessages(input);
             foreach (var message in messages)
             {
-                if (Next != null) await Next.Process(sender, message, ctx);
+                var (msgId, body) = GetMsgIdAndBody(message);
+                if (Next != null) await Next.Process(sender, body, ctx with{MessageId = msgId});
             }
+            input.Dispose();
         }
-
-        if (Next != null) await Next.Process(sender, input, ctx);
+        else if (Next != null) await Next.Process(sender, input, ctx);
         else input.Dispose();
+    }
+
+    private static ValueTuple<long, TLBytes> GetMsgIdAndBody(TLBytes input)
+    {
+        var message = new MessageBare(input.AsSpan());
+        var memoryOwner = UnmanagedMemoryPool<byte>.Shared.Rent(message.Body.Length);
+        message.Body.CopyTo(memoryOwner.Memory.Span);
+        var body = new TLBytes(memoryOwner, 0, message.Body.Length);
+        return (message.MsgId, body);
     }
 
     private static TLBytes[] GetContainedMessages(TLBytes input)
     {
         TL.slim.mtproto.MsgContainer container = new(input.AsSpan());
         var messages = new TLBytes[container.Messages.Count];
+        var messageVector = container.Messages;
         for (int i = 0; i < messages.Length; i++)
         {
-            var message = container.Messages.Read();
+            var message = messageVector.Read(MessageBare.Read);
             var memoryOwner = UnmanagedMemoryPool<byte>.Shared.Rent(message.Length);
             message.CopyTo(memoryOwner.Memory.Span);
             messages[i] = new TLBytes(memoryOwner, 0, message.Length);

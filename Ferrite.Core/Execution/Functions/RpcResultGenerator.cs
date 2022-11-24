@@ -16,24 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Services;
-using Ferrite.TL;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.mtproto;
 
-namespace Ferrite.Core.Execution.Functions.Layer148.Auth;
+namespace Ferrite.Core.Execution.Functions;
 
-public class SendCodeFunc : ITLFunction
+public class RpcResultGenerator
 {
-    private readonly IAuthService _auth;
-
-    public SendCodeFunc(IAuthService auth)
+    public static TLBytes Generate(TLBytes result, long reqMessageId)
     {
-        _auth = auth;
-    }
-    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
-    {
-        using var sentCode = await _auth.SendCode(q);
-        var rpcResult = RpcResultGenerator.Generate(sentCode, ctx.MessageId);
-        return rpcResult;
+        return (TLBytes)RpcResult.Builder()
+            .ReqMsgId(reqMessageId)
+            .Result(result.AsSpan())
+            .Build()
+            .TLBytes!;
     }
 }

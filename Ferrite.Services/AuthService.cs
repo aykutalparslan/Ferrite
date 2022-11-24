@@ -353,7 +353,7 @@ public class AuthService : IAuthService
     private static TLBytes GenerateSentCode(ReadOnlySpan<byte> phoneCodeHash)
     {
         return ((TLBytes)SentCode.Builder()
-            .Type(new CodeTypeSms().ToReadOnlySpan())
+            .Type(new SentCodeTypeSms(5).ToReadOnlySpan())
             .Timeout(PhoneCodeTimeout)
             .PhoneCodeHash(phoneCodeHash)
             .Build().TLBytes!);

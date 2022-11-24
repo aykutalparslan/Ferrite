@@ -57,7 +57,7 @@ public ref struct VectorOfLong
     
     public static Span<byte> Read(Span<byte> data, int offset)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        if (MemoryMarshal.Read<int>(data.Slice(offset, 4)) != unchecked((int)0x1cb5c415))
         {
             throw new InvalidOperationException();
         }
@@ -72,7 +72,7 @@ public ref struct VectorOfLong
 
     public static int ReadSize(Span<byte> data, int offset)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        if (MemoryMarshal.Read<int>(data.Slice(offset, 4)) != unchecked((int)0x1cb5c415))
         {
             throw new InvalidOperationException();
         }

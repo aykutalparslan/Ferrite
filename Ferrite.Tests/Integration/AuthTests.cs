@@ -68,7 +68,13 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     {
         using var client = new WTelegram.Client(Config, new MemoryStream());
         await client.ConnectAsync();
-        var code = await client.Invoke<Auth_SentCode>((IMethod<Auth_SentCode>) new Auth_SendCode()
+        /*var code = await client.Auth_SendCode(
+            "+15555555555",
+            11111,
+            "11111111111111111111111111111111",
+            new CodeSettings()
+        );*/
+        var code = await client.Invoke(new Auth_SendCode()
         {
             phone_number = "+15555555555",
             api_id = 11111,

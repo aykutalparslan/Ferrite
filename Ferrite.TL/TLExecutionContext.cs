@@ -19,27 +19,18 @@
 using System;
 namespace Ferrite.TL
 {
-    public class TLExecutionContext
+    public record TLExecutionContext(Dictionary<string, object> SessionData)
     {
-        public Dictionary<string, object> SessionData { get; set; }
+        public Dictionary<string, object> SessionData { get; set; } = SessionData;
         public long CurrentAuthKeyId => PermAuthKeyId != 0 ? PermAuthKeyId : AuthKeyId;
         public long AuthKeyId { get; set; }
         public long PermAuthKeyId { get; set; }
-        public long Salt { get; set; }
-        public long SessionId { get; set; }
-        public long MessageId { get; set; }
-        public int SequenceNo { get; set; }
+        public long Salt { get; set; } = 0;
+        public long SessionId { get; set; } = 0;
+        public long MessageId { get; set; } = 0;
+        public int SequenceNo { get; set; } = 0;
         public int? QuickAck { get; set; }
-        public string IP { get; set; }
-        public TLExecutionContext(Dictionary<string, object> sessionData)
-        {
-            SessionData = sessionData;
-            Salt = 0;
-            SessionId = 0;
-            MessageId = 0;
-            SequenceNo = 0;
-            IP = "";
-        }
+        public string IP { get; set; } = "";
     }
 }
 
