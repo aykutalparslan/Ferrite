@@ -25,6 +25,6 @@ public class MsgsAckFunc : ITLFunction
 {
     public ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        throw new NotImplementedException();
+        return default;
     }
 }

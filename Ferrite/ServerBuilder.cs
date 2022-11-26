@@ -139,6 +139,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.mtproto_SetClientDhParams))
             .SingleInstance();
+        builder.RegisterType<MsgsAckFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(148, Constructors.mtproto_MsgsAck))
+            .SingleInstance();
         builder.RegisterType<InitConnectionFunc>()
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.layer148_InitConnection))
