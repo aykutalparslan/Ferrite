@@ -32,7 +32,7 @@ dotnet run
 
 ## Roadmap
 
-A planned refactor is currently in progress. 
+A planned refactor is currently in progress(There's a release with the latest commits before this). 
 After the refactor, more unit and integration tests will be added before continuing development. 
 Future development will focus on getting the Android application to run in a stable state and the planned order of steps to achieve that are:
 - All settings screens should work on the Android application
