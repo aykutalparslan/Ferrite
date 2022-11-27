@@ -95,10 +95,21 @@ public class AuthService : IAuthService
         return await _unitOfWork.SaveAsync();
     }
 
-    public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
+    public async ValueTask<TLBytes> CancelCode(TLBytes q)
     {
-        _unitOfWork.PhoneCodeRepository.DeletePhoneCode(phoneNumber, phoneCodeHash);
-        return await _unitOfWork.SaveAsync();
+        var (phoneNumber, phoneCodeHash) = GetCancelCodeParameters(q);
+        var result = _unitOfWork.PhoneCodeRepository.DeletePhoneCode(phoneNumber, phoneCodeHash);
+        result = result && await _unitOfWork.SaveAsync();
+        return result ? (TLBytes)BoolTrue.Builder().Build().TLBytes! : 
+            (TLBytes)BoolFalse.Builder().Build().TLBytes!;
+    }
+    
+    private static ValueTuple<string, string> GetCancelCodeParameters(TLBytes q)
+    {
+        var cancelCode = new CancelCode(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(cancelCode.PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(cancelCode.PhoneCodeHash);
+        return (phoneNumber, phoneCodeHash);
     }
 
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)

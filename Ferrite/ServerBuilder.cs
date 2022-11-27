@@ -166,6 +166,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.layer148_ResendCode))
             .SingleInstance();
+        builder.RegisterType<CancelCodeFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(148, Constructors.layer148_CancelCode))
+            .SingleInstance();
     }
 
     private static void RegisterSchema(ContainerBuilder builder)

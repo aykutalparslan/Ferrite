@@ -41,7 +41,7 @@ public interface IAuthService
     public Task<string> RequestPasswordRecovery();
     public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings);
     public ValueTask<TLBytes> ResendCode(TLBytes q);
-    public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash);
+    public ValueTask<TLBytes> CancelCode(TLBytes q);
     public Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
     public Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
     public Task<LoginTokenDTO> ImportLoginToken(byte[] token);

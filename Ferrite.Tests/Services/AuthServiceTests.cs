@@ -110,4 +110,55 @@ public class AuthServiceTests
             .Build();
         return (TLBytes)sendCode.TLBytes!;
     }
+    
+    [Fact]
+    public async Task CancelCode_Returns_True()
+    {
+        using var mocker = AutoMock.GetLoose();
+        var unitOfWork = mocker.Mock<IUnitOfWork>();
+        var phoneCodeRepository = mocker.Mock<IPhoneCodeRepository>();
+        phoneCodeRepository.Setup(p =>
+                p.DeletePhoneCode(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(true);
+        unitOfWork.SetupGet(u => u.PhoneCodeRepository).Returns(phoneCodeRepository.Object);
+        unitOfWork.Setup(u => u.SaveAsync()).ReturnsAsync(true);
+        var authService = mocker.Create<AuthService>();
+        using var cancelCode = GenerateCancelCode();
+        using var result = await authService.CancelCode(cancelCode);
+        Assert.Equal(unchecked((int)0x997275b5), 
+            result.Constructor);
+        phoneCodeRepository.Verify(p=>p.DeletePhoneCode(
+            It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        unitOfWork.Verify(u=>u.SaveAsync(), Times.Once);
+    }
+    
+    [Fact]
+    public async Task CancelCode_Returns_False()
+    {
+        using var mocker = AutoMock.GetLoose();
+        var unitOfWork = mocker.Mock<IUnitOfWork>();
+        var phoneCodeRepository = mocker.Mock<IPhoneCodeRepository>();
+        phoneCodeRepository.Setup(p =>
+                p.DeletePhoneCode(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(false);
+        unitOfWork.SetupGet(u => u.PhoneCodeRepository).Returns(phoneCodeRepository.Object);
+        unitOfWork.Setup(u => u.SaveAsync()).ReturnsAsync(true);
+        var authService = mocker.Create<AuthService>();
+        using var cancelCode = GenerateCancelCode();
+        using var result = await authService.CancelCode(cancelCode);
+        Assert.Equal(unchecked((int)0xbc799737), 
+            result.Constructor);
+        phoneCodeRepository.Verify(p=>p.DeletePhoneCode(
+            It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        unitOfWork.Verify(u=>u.SaveAsync(), Times.Never);
+    }
+    
+    private TLBytes GenerateCancelCode()
+    {
+        var cancel = CancelCode.Builder()
+            .PhoneNumber("+15555555555"u8)
+            .PhoneCodeHash("test"u8)
+            .Build();
+        return (TLBytes)cancel.TLBytes!;
+    }
 }
