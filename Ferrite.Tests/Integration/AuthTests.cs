@@ -22,7 +22,6 @@ using TL;
 using TL.Methods;
 using WTelegram;
 using Xunit;
-using Authorization = TL.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
@@ -68,18 +67,31 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     {
         using var client = new WTelegram.Client(Config, new MemoryStream());
         await client.ConnectAsync();
-        /*var code = await client.Auth_SendCode(
-            "+15555555555",
-            11111,
-            "11111111111111111111111111111111",
-            new CodeSettings()
-        );*/
         var code = await client.Invoke(new Auth_SendCode()
         {
             phone_number = "+15555555555",
             api_id = 11111,
             api_hash = "11111111111111111111111111111111",
             settings = new CodeSettings()
+        });
+        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+    }
+    [Fact]
+    public async Task ResendCode_Returns_SentCode()
+    {
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
+        {
+            phone_number = "+15555555555",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        code = await client.Invoke(new Auth_ResendCode()
+        {
+            phone_number = "+15555555555",
+            phone_code_hash = code.phone_code_hash,
         });
         Assert.IsType<Auth_SentCodeTypeSms>(code.type);
     }

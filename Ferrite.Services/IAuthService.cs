@@ -40,7 +40,7 @@ public interface IAuthService
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
     public Task<string> RequestPasswordRecovery();
     public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings);
-    public Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash);
+    public ValueTask<TLBytes> ResendCode(TLBytes q);
     public Task<bool> CancelCode(string phoneNumber, string phoneCodeHash);
     public Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
     public Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
