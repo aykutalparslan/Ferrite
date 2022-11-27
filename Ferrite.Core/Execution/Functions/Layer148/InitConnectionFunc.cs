@@ -23,17 +23,16 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer146;
 
-namespace Ferrite.Core.Execution.Functions.Layer146;
+namespace Ferrite.Core.Execution.Functions.Layer148;
 
-public class InitConnection : ITLFunction
+public class InitConnectionFunc : ITLFunction
 {
     public IExecutionEngine? ExecutionEngine { get; set; }
     private readonly IRandomGenerator _random;
     private readonly IAuthService _auth;
 
-    public InitConnection(IRandomGenerator random, IAuthService auth)
+    public InitConnectionFunc(IRandomGenerator random, IAuthService auth)
     {
         _random = random;
         _auth = auth;
@@ -49,28 +48,28 @@ public class InitConnection : ITLFunction
 
     private static TLBytes GetQuery(TLBytes q)
     {
-        initConnection request = new(q.AsSpan());
-        var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.query.Length);
-        request.query.CopyTo(queryMemory.Memory.Span);
-        TLBytes query = new(queryMemory, 0, request.query.Length);
+        TL.slim.layer148.InitConnection request = new(q.AsSpan());
+        var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.Query.Length);
+        request.Query.CopyTo(queryMemory.Memory.Span);
+        TLBytes query = new(queryMemory, 0, request.Query.Length);
         return query;
     }
 
     private AppInfoDTO CreateAppInfo(TLBytes q, TLExecutionContext ctx)
     {
-        initConnection request = new(q.AsSpan());
+        TL.slim.layer148.InitConnection request = new(q.AsSpan());
         return new AppInfoDTO()
         {
             Hash = _random.NextLong(),
-            ApiId = request.api_id,
-            AppVersion = Encoding.UTF8.GetString(request.app_version),
+            ApiId = request.ApiId,
+            AppVersion = Encoding.UTF8.GetString(request.AppVersion),
             AuthKeyId = ctx.CurrentAuthKeyId,
-            DeviceModel = Encoding.UTF8.GetString(request.device_model),
+            DeviceModel = Encoding.UTF8.GetString(request.DeviceModel),
             IP = ctx.IP,
-            LangCode = Encoding.UTF8.GetString(request.lang_code),
-            LangPack = Encoding.UTF8.GetString(request.lang_pack),
-            SystemLangCode = Encoding.UTF8.GetString(request.lang_code),
-            SystemVersion = Encoding.UTF8.GetString(request.system_version)
+            LangCode = Encoding.UTF8.GetString(request.LangCode),
+            LangPack = Encoding.UTF8.GetString(request.LangPack),
+            SystemLangCode = Encoding.UTF8.GetString(request.LangCode),
+            SystemVersion = Encoding.UTF8.GetString(request.SystemVersion)
         };
     }
 }

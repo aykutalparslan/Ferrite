@@ -101,7 +101,7 @@ public class SendCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var sent = await _auth.SendCode(_phoneNumber, _apiId, _apiHash,
+        /*var sent = await _auth.SendCode(_phoneNumber, _apiId, _apiHash,
             new Data.Auth.CodeSettingsDTO());
         var sentCode = factory.Resolve<SentCodeImpl>();
         var codeType = factory.Resolve<SentCodeTypeSmsImpl>();
@@ -113,7 +113,8 @@ public class SendCode : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = sentCode;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

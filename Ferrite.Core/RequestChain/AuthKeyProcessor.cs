@@ -29,6 +29,7 @@ using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using MessagePack;
 using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
+using ReqPqMulti = Ferrite.TL.slim.mtproto.ReqPqMulti;
 using SetClientDhParams = Ferrite.TL.mtproto.SetClientDhParams;
 
 namespace Ferrite.Core.RequestChain;
@@ -68,7 +69,7 @@ public class AuthKeyProcessor : ILinkedHandler
         {
             return;
         }
-        if (input is ReqPqMulti reqPq &&
+        if (input is TL.mtproto.ReqPqMulti reqPq &&
             sender is MTProtoConnection connection)
         {
             var result = await reqPq.ExecuteAsync(ctx);
@@ -145,7 +146,7 @@ public class AuthKeyProcessor : ILinkedHandler
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         var constructor = MemoryMarshal.Read<int>(input.AsSpan());
-        if (constructor == Constructors.mtproto_req_pq_multi &&
+        if (constructor == Constructors.mtproto_ReqPqMulti &&
             sender is MTProtoConnection connection)
         {
             var result = await _api.Invoke(input, ctx);
@@ -160,7 +161,7 @@ public class AuthKeyProcessor : ILinkedHandler
             message.IsResponse = true;
             message.IsContentRelated = true;
             message.Data = result.Value.AsSpan().ToArray();
-            var nonce = new req_pq_multi(input.AsSpan()).nonce.ToArray();
+            var nonce = new ReqPqMulti(input.AsSpan()).Nonce.ToArray();
             await _sessionManager.AddAuthSessionAsync(nonce,
                 new AuthSessionState() { NodeId = _sessionManager.NodeId, SessionData = ctx.SessionData },
                 new ActiveSession(connection));
@@ -171,9 +172,9 @@ public class AuthKeyProcessor : ILinkedHandler
 
             _log.Information("Result for req_pq_multi sent.");
         }
-        else if (constructor == Constructors.mtproto_req_DH_params)
+        else if (constructor == Constructors.mtproto_ReqDhParams)
         {
-            var nonce = new req_DH_params(input.AsSpan()).nonce.ToArray();
+            var nonce = new TL.slim.mtproto.ReqDhParams(input.AsSpan()).Nonce.ToArray();
             var state = await _sessionManager.GetAuthSessionStateAsync(nonce);
             if (state == null)
             {
@@ -209,10 +210,9 @@ public class AuthKeyProcessor : ILinkedHandler
 
             _log.Information("Result for req_DH_params sent.");
         }
-        else if (constructor == Constructors.mtproto_set_client_DH_params)
+        else if (constructor == Constructors.mtproto_SetClientDhParams)
         {
-
-            var nonce = new set_client_DH_params(input.AsSpan()).nonce.ToArray();
+            var nonce = new TL.slim.mtproto.SetClientDhParams(input.AsSpan()).Nonce.ToArray();
             var state = await _sessionManager.GetAuthSessionStateAsync(nonce);
             if (state == null)
             {
@@ -228,7 +228,7 @@ public class AuthKeyProcessor : ILinkedHandler
             }
 
             ctx.SessionData = state.SessionData;
-            Services.MTProtoMessage message = new Services.MTProtoMessage();
+            MTProtoMessage message = new Services.MTProtoMessage();
             message.SessionId = ctx.SessionId;
             message.IsResponse = true;
             message.IsContentRelated = true;
@@ -247,8 +247,11 @@ public class AuthKeyProcessor : ILinkedHandler
 
             _log.Information("Result for set_client_DH_params sent.");
         }
-
-        input.Dispose();
+        else
+        {
+            if (Next != null) await Next.Process(sender, input, ctx);
+            else input.Dispose();
+        }
     }
 }
 

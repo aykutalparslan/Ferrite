@@ -664,8 +664,10 @@ namespace Ferrite.TLParser
                 if ((char.IsLetterOrDigit(_textWindow.Peek(count)) ||
                      _textWindow.Peek(count) == '_') &&
                     _textWindow.Peek(count + 1) == '.' &&
-                    char.IsDigit(_textWindow.Peek(count + 2)) &&
-                    _textWindow.Peek(count + 3) == '?')
+                    ((char.IsDigit(_textWindow.Peek(count + 2)) &&
+                    _textWindow.Peek(count + 3) == '?') || (char.IsDigit(_textWindow.Peek(count + 2)) &&
+                                                            char.IsDigit(_textWindow.Peek(count + 3)) &&
+                                                            _textWindow.Peek(count + 4) == '?')))
                 {
                     count++;
                     found = true;

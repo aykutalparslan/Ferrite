@@ -164,6 +164,7 @@ public class AuthorizationProcessor : ILinkedHandler
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
         if (Next != null) await Next.Process(sender, input, ctx);
+        else input.Dispose();
     }
 }
 

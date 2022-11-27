@@ -16,45 +16,31 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Buffers;
-using System.Collections;
-using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Ferrite.Utils;
 
 namespace Ferrite.TL.slim;
 
-public ref struct Vector
+public ref struct VectorBare
 {
     private Span<byte> _buff;
     private int _position;
     private int _offset;
-    public Vector()
+    public VectorBare()
     {
         _buff = new byte[512];
-        SetConstructor(unchecked((int)0x1cb5c415));
         SetCount(0);
-        _position = 8;
-        _offset = 8;
+        _position = 4;
+        _offset = 4;
     }
-    public Vector(Span<byte> buffer)
+    public VectorBare(Span<byte> buffer)
     {
-        if (MemoryMarshal.Read<int>(buffer) != unchecked((int)0x1cb5c415))
-        {
-            throw new InvalidOperationException();
-        }
         _buff = buffer;
-        _position = 8;
+        _position = 4;
         _offset = buffer.Length;
     }
-    public readonly int Constructor => MemoryMarshal.Read<int>(_buff);
-    private void SetConstructor(int constructor)
-    {
-        MemoryMarshal.Write(_buff[..4], ref constructor);
-    }
+    public readonly int Constructor => 0;
     public ReadOnlySpan<byte> ToReadOnlySpan() => _buff[.._offset];
-    public readonly int Count => MemoryMarshal.Read<int>(_buff.Slice(4, 4));
+    public readonly int Count => MemoryMarshal.Read<int>(_buff);
     public readonly int Length => _offset;
     private void SetCount(int count)
     {
@@ -63,12 +49,8 @@ public ref struct Vector
     
     public static Span<byte> Read(Span<byte> data, int offset)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
-        {
-            throw new InvalidOperationException();
-        }
-        int count = MemoryMarshal.Read<int>(data.Slice(offset + 4, 4));
-        int len = 8;
+        int count = MemoryMarshal.Read<int>(data.Slice(offset, 4));
+        int len = 4;
         for (int i = 0; i < count; i++)
         {
             var sizeReader = ObjectReader.GetObjectSizeReader(
@@ -78,24 +60,20 @@ public ref struct Vector
         return data.Slice(offset, len);
     }
 
-    public static int ReadSize(Span<byte> data, int offset)
+    public static int ReadSize(Span<byte> data, int offset, ObjectSizeReaderDelegate? sizeReader = null)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
-        {
-            throw new InvalidOperationException();
-        }
-        int count = MemoryMarshal.Read<int>(data.Slice(offset + 4, 4));
-        int len = 8;
+        int count = MemoryMarshal.Read<int>(data.Slice(offset, 4));
+        int len = 4;
         for (int i = 0; i < count; i++)
         {
-            var sizeReader = ObjectReader.GetObjectSizeReader(
+            sizeReader ??= ObjectReader.GetObjectSizeReader(
                 MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
-            if (sizeReader != null) len += sizeReader.Invoke(data, len);
+            if (sizeReader != null) len += sizeReader.Invoke(data, offset + len);
         }
         return len;
     }
     
-    public void AppendTLObject(ReadOnlySpan<byte> value)
+    public void Append(ReadOnlySpan<byte> value)
     {
         if (value.Length + _offset > _buff.Length)
         {
@@ -104,30 +82,16 @@ public ref struct Vector
             _buff = tmp;
         }
         value.CopyTo(_buff[_offset..]);
-        MemoryMarshal.Cast<byte, int>(_buff)[1]++;
         _offset += value.Length;
     }
-    public void AppendTLBytes(ReadOnlySpan<byte> value)
-    {
-        int len = BufferUtils.CalculateTLBytesLength(value.Length);
-        if (value.Length + len + _offset > _buff.Length)
-        {
-            var tmp = new byte[_buff.Length * 2];
-            _buff.CopyTo(tmp);
-            _buff = tmp;
-        }
-        int lenBytes = BufferUtils.WriteLenBytes(_buff, value, _offset);
-        value.CopyTo(_buff[(lenBytes + _offset)..]);
-        MemoryMarshal.Cast<byte, int>(_buff)[1]++;
-        _offset += len;
-    }
-    public Span<byte> ReadTLObject()
+    public ReadOnlySpan<byte> Read(ObjectReaderDelegate? reader = null)
     {
         if (_position == _offset)
         {
             throw new EndOfStreamException();
         }
-        ObjectReaderDelegate? reader = ObjectReader.GetObjectReader(
+
+        reader ??= ObjectReader.GetObjectReader(
             MemoryMarshal.Read<int>(_buff.Slice(_position, 4)));
         if (reader == null)
         {
@@ -138,19 +102,8 @@ public ref struct Vector
         _position += result.Length;
         return result;
     }
-    public Span<byte> ReadTLBytes()
-    {
-        if (_position == _offset)
-        {
-            throw new EndOfStreamException();
-        }
-        int bytesLength = BufferUtils.GetTLBytesLength(_buff, _position);
-        var result = BufferUtils.GetTLBytes(_buff, _position);
-        _position += bytesLength;
-        return result;
-    }
     public void Reset()
     {
-        _position = 8;
+        _position = 4;
     }
 }

@@ -16,23 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution;
+namespace Ferrite.Core.Execution.Functions.Layer148.Auth;
 
-public interface IExecutionEngine
+public class CancelCodeFunc : ITLFunction
 {
-    /// <summary>
-    /// Invokes a Function with the specified layer.
-    /// Function (functional combinator) is a combinator which may be computed (reduced)
-    /// on condition that the requisite number of arguments of requisite types are provided.
-    /// The result of the computation is an expression consisting of constructors
-    /// and base type values only.
-    /// </summary>
-    /// <param name="rpc">Serialized functional combinator.</param>
-    /// <param name="layer">Layer with which the function should be computed.</param>
-    /// <returns>TL Serialized result of the computation.</returns>
-    public ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 148);
-    public bool IsImplemented(int constructor, int layer = 148);
+    private readonly IAuthService _auth;
+
+    public CancelCodeFunc(IAuthService auth)
+    {
+        _auth = auth;
+    }
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    {
+        using var cancelCode = await _auth.CancelCode(q);
+        var rpcResult = RpcResultGenerator.Generate(cancelCode, ctx.MessageId);
+        return rpcResult;
+    }
 }

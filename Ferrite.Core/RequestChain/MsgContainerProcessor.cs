@@ -18,14 +18,17 @@
 using System;
 using System.Buffers;
 using Autofac;
+using DotNext.Buffers;
 using Ferrite.Core.Connection;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using MessagePack;
+using MsgContainer = Ferrite.TL.mtproto.MsgContainer;
+using MsgsAck = Ferrite.TL.mtproto.MsgsAck;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
 
 namespace Ferrite.Core.RequestChain;
@@ -90,7 +93,43 @@ public class MsgContainerProcessor : ILinkedHandler
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
-        if (Next != null) await Next.Process(sender, input, ctx);
+        if (input.Constructor == 0x73f1f8dc)//msg_container
+        {
+            var messages = GetContainedMessages(input);
+            foreach (var message in messages)
+            {
+                var (msgId, body) = GetMsgIdAndBody(message);
+                if (Next != null) await Next.Process(sender, body, ctx with{MessageId = msgId});
+            }
+            input.Dispose();
+        }
+        else if (Next != null) await Next.Process(sender, input, ctx);
+        else input.Dispose();
+    }
+
+    private static ValueTuple<long, TLBytes> GetMsgIdAndBody(TLBytes input)
+    {
+        var message = new MessageBare(input.AsSpan());
+        var memoryOwner = UnmanagedMemoryPool<byte>.Shared.Rent(message.Body.Length);
+        message.Body.CopyTo(memoryOwner.Memory.Span);
+        var body = new TLBytes(memoryOwner, 0, message.Body.Length);
+        return (message.MsgId, body);
+    }
+
+    private static TLBytes[] GetContainedMessages(TLBytes input)
+    {
+        TL.slim.mtproto.MsgContainer container = new(input.AsSpan());
+        var messages = new TLBytes[container.Messages.Count];
+        var messageVector = container.Messages;
+        for (int i = 0; i < messages.Length; i++)
+        {
+            var message = messageVector.Read(MessageBare.Read);
+            var memoryOwner = UnmanagedMemoryPool<byte>.Shared.Rent(message.Length);
+            message.CopyTo(memoryOwner.Memory.Span);
+            messages[i] = new TLBytes(memoryOwner, 0, message.Length);
+        }
+
+        return messages;
     }
 }
 

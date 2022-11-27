@@ -37,7 +37,7 @@ public class ExecutionEngine : IExecutionEngine
         _log = log;
     }
 
-    public async ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 146)
+    public async ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 148)
     {
         try
         {
@@ -46,9 +46,24 @@ public class ExecutionEngine : IExecutionEngine
         }
         catch (Exception e)
         {
-            _log.Error(e, e.Message);
+            _log.Error(e, $"#{rpc.Constructor.ToString("x")} is not registered for layer {layer}");
         }
 
         return null;
+    }
+
+    public bool IsImplemented(int constructor, int layer = 148)
+    {
+        try
+        {
+            var func = _functions[new FunctionKey(layer, constructor)];
+            return true;
+        }
+        catch (Exception e)
+        {
+            _log.Error(e, $"#{constructor.ToString("x")} is not registered for layer {layer}");
+        }
+
+        return false;
     }
 }

@@ -21,7 +21,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using Autofac;
 using Autofac.Core.Lifetime;
 using Autofac.Extras.Moq;
@@ -29,19 +31,16 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.currentLayer.storage;
-using Ferrite.TL.currentLayer.upload;
-using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer146;
-using Ferrite.TL.slim.layer146.storage;
-using Ferrite.TL.slim.layer146.upload;
-using Ferrite.TL.slim.mtproto;
+using Ferrite.TL.slim.layer148;
+using Ferrite.TL.slim.layer148.storage;
+using Ferrite.TL.slim.layer148.upload;
 using Ferrite.Utils;
 using Moq;
 using Xunit;
 using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
 using ResPQ = Ferrite.TL.mtproto.ResPQ;
+using RpcResult = Ferrite.TL.slim.mtproto.RpcResult;
 using VectorOfDouble = Ferrite.TL.VectorOfDouble;
 using VectorOfInt = Ferrite.TL.VectorOfInt;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
@@ -62,7 +61,7 @@ public class AllocationFreeSerializationTests
         tmp.EncryptedData = RandomNumberGenerator.GetBytes(278);
         tmp.PublicKeyFingerprint = 123741692374192L;
         byte[] data = tmp.TLBytes.ToArray();
-        using req_DH_params reqDhParams = new req_DH_params((byte[])tmp.Nonce,
+        using Ferrite.TL.slim.mtproto.ReqDhParams reqDhParams = new((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
         Assert.Equal(data.Length, reqDhParams.Length);
         Assert.Equal(data, reqDhParams.ToReadOnlySpan().ToArray());
@@ -86,7 +85,7 @@ public class AllocationFreeSerializationTests
         {
             fingerprints2.Append(f);
         }
-        using resPQ value = new resPQ((byte[])tmp.Nonce,
+        using Ferrite.TL.slim.mtproto.ResPQ value = new((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.Pq, fingerprints2);
         Assert.Equal(data.Length, value.Length);
         Assert.Equal(data, value.ToReadOnlySpan().ToArray());
@@ -111,13 +110,37 @@ public class AllocationFreeSerializationTests
         var vec = new Ferrite.TL.slim.Vector();
         foreach (var tmp in vecTmp)
         {
-            using var reqDhParams = new req_DH_params((byte[])tmp.Nonce,
+            using var reqDhParams = new Ferrite.TL.slim.mtproto.ReqDhParams((byte[])tmp.Nonce,
                 (byte[])tmp.ServerNonce, tmp.P, tmp.Q, tmp.PublicKeyFingerprint, tmp.EncryptedData);
             vec.AppendTLObject(reqDhParams.ToReadOnlySpan());
+        }
+        var actual = vec.ToReadOnlySpan().ToArray();
+        Assert.Equal(data.Length, vec.Length);
+        Assert.Equal(data, actual);
+    }
+    [Fact]
+    public void VectorOfDcOptions_Should_Serialize()
+    {
+        var container = BuildContainer();
+        var vecTmp = new Vector<Ferrite.TL.currentLayer.DcOption>(container.Resolve<ITLObjectFactory>());
+        for (int i = 0; i < 10; i++)
+        {
+            var tmp = new Ferrite.TL.currentLayer.DcOptionImpl(container.Resolve<ITLObjectFactory>());
+            tmp.IpAddress = "10.0.2.2";
+            tmp.Port = 5222;
+            vecTmp.Add(tmp);
+            var opt = tmp.TLBytes.ToArray();
+        }
+        byte[] data = vecTmp.TLBytes.ToArray();
+        var vec = new Ferrite.TL.slim.Vector();
+        foreach (var tmp in vecTmp)
+        {
+            using var dcOption = DcOption.Builder().IpAddress("10.0.2.2"u8).Port(5222).Build();
+            vec.AppendTLObject(dcOption.ToReadOnlySpan());
             
         }
         var actual = vec.ToReadOnlySpan().ToArray();
-        Assert.Equal(actual.Length, vec.Length);
+        Assert.Equal(data.Length, vec.Length);
         Assert.Equal(data, actual);
     }
     [Fact]
@@ -202,16 +225,16 @@ public class AllocationFreeSerializationTests
         var ga = RandomNumberGenerator.GetBytes(8);
         int serverTime = (int)DateTimeOffset.Now.ToUnixTimeSeconds();
 
-        using var actual = server_DH_inner_data.Builder()
-            .with_nonce(nonce)
-            .with_server_nonce(serverNonce)
-            .with_g(g)
-            .with_dh_prime(dhPrime)
-            .with_g_a(ga)
-            .with_server_time(serverTime)
+        using var actual = Ferrite.TL.slim.mtproto.ServerDhInnerData.Builder()
+            .Nonce(nonce)
+            .ServerNonce(serverNonce)
+            .G(g)
+            .DhPrime(dhPrime)
+            .GA(ga)
+            .ServerTime(serverTime)
             .Build();
         
-        using var expected = new server_DH_inner_data(
+        using var expected = new Ferrite.TL.slim.mtproto.ServerDhInnerData(
             nonce, 
             serverNonce, 
             g, 
@@ -219,12 +242,12 @@ public class AllocationFreeSerializationTests
             ga, 
             serverTime);
         
-        Assert.Equal(nonce, actual.nonce.ToArray());
-        Assert.Equal(serverNonce, actual.server_nonce.ToArray());
-        Assert.Equal(g, actual.g);
-        Assert.Equal(dhPrime, actual.dh_prime.ToArray());
-        Assert.Equal(ga, actual.g_a.ToArray());
-        Assert.Equal(serverTime, actual.server_time);
+        Assert.Equal(nonce, actual.Nonce.ToArray());
+        Assert.Equal(serverNonce, actual.ServerNonce.ToArray());
+        Assert.Equal(g, actual.G);
+        Assert.Equal(dhPrime, actual.DhPrime.ToArray());
+        Assert.Equal(ga, actual.GA.ToArray());
+        Assert.Equal(serverTime, actual.ServerTime);
         
         Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
             actual.ToReadOnlySpan().ToArray());
@@ -241,19 +264,19 @@ public class AllocationFreeSerializationTests
         int validSince = now;
         int validUntil = now + 1800;
         long saltValue = Random.Shared.NextInt64();
-        using future_salt salt1 = new future_salt(validSince, validUntil, saltValue);
+        using Ferrite.TL.slim.mtproto.FutureSalt salt1 = new(validSince, validUntil, saltValue);
         salts.Append(salt1.ToReadOnlySpan());
-        using future_salt salt2 = new future_salt(validSince+7200, 
+        using Ferrite.TL.slim.mtproto.FutureSalt salt2 = new(validSince+7200, 
             validUntil+7200, saltValue + 7200);
         salts.Append(salt2.ToReadOnlySpan());
 
-        using var actual = future_salts.Builder()
-            .with_req_msg_id(reqMsgId)
-            .with_now(now)
-            .with_salts(salts)
+        using var actual = Ferrite.TL.slim.mtproto.FutureSalts.Builder()
+            .ReqMsgId(reqMsgId)
+            .Now(now)
+            .Salts(salts)
             .Build();
 
-        using var expected = new future_salts(reqMsgId, now, salts);
+        using var expected = new Ferrite.TL.slim.mtproto.FutureSalts(reqMsgId, now, salts);
 
         Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
             actual.ToReadOnlySpan().ToArray());
@@ -271,14 +294,14 @@ public class AllocationFreeSerializationTests
         fingerprints.Append(135790L);
         fingerprints.Append(246810L);
 
-        using var actual = resPQ.Builder()
-            .with_nonce(nonce)
-            .with_server_nonce(serverNonce)
-            .with_pq(pq)
-            .with_server_public_key_fingerprints(fingerprints)
+        using var actual = Ferrite.TL.slim.mtproto.ResPQ.Builder()
+            .Nonce(nonce)
+            .ServerNonce(serverNonce)
+            .Pq(pq)
+            .ServerPublicKeyFingerprints(fingerprints)
             .Build();
 
-        using var expected = new resPQ(nonce, serverNonce, pq, fingerprints);
+        using var expected = new Ferrite.TL.slim.mtproto.ResPQ(nonce, serverNonce, pq, fingerprints);
 
         Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
             actual.ToReadOnlySpan().ToArray());
@@ -314,6 +337,15 @@ public class AllocationFreeSerializationTests
         builder.RegisterAssemblyTypes(tl)
             .Where(t => t.Namespace == "Ferrite.TL.mtproto")
             .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyOpenGenericTypes(tl)
+            .Where(t => t.Namespace == "Ferrite.TL")
+            .AsSelf();
+        builder.RegisterAssemblyTypes(tl)
+            .Where(t => t.Namespace != null && t.Namespace.StartsWith("Ferrite.TL.currentLayer"))
+            .AsSelf();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
@@ -326,17 +358,17 @@ public class AllocationFreeSerializationTests
     [Fact]
     public void Should_SerializeFileHeader()
     {
-        using var jpeg = new fileJpeg();
-        using var file = file_.Builder()
-            .with_type(jpeg.ToReadOnlySpan())
-            .with_mtime(0)
+        using var jpeg = new FileJpeg();
+        using var file = UploadFile.Builder()
+            .Type(jpeg.ToReadOnlySpan())
+            .Mtime(0)
             .Build();
-        using var rpcResult = rpc_result.Builder()
-            .with_req_msg_id(0)
-            .with_result(file.ToReadOnlySpan())
+        using var rpcResult = RpcResult.Builder()
+            .ReqMsgId(0)
+            .Result(file.ToReadOnlySpan())
             .Build();
         var actual = rpcResult.ToReadOnlySpan()[..24];
-        var rpcResult2 = new RpcResult(null);
+        var rpcResult2 = new Ferrite.TL.mtproto.RpcResult(null);
         rpcResult2.ReqMsgId = 0;
 
         byte[] expected = new byte[]

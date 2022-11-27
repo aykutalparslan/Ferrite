@@ -25,11 +25,16 @@ public class BufferUtils
 {
     public static int CalculateTLBytesLength(in int length)
     {
+        int result = 0;
         if (length < 254)
         {
-            return length + 1 + (4 - (length+ 1) % 4) % 4;
+            result = length + 1 + (4 - (length+ 1) % 4) % 4;
         }
-        return length + 4 + (4 - length % 4) % 4;
+        else
+        {
+            result = length + 4 + (4 - length % 4) % 4;   
+        }
+        return result;
     }
     public static int WriteLenBytes(Span<byte> buffer, ReadOnlySpan<byte> value, int offset)
     {

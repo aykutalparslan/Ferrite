@@ -18,6 +18,7 @@
 using System;
 using System.Buffers;
 using Ferrite.Core.Connection;
+using Ferrite.Core.Execution;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
@@ -37,12 +38,16 @@ public class MTProtoRequestProcessor : ILinkedHandler
     private readonly ITLObjectFactory _factory;
     private readonly ISessionService _sessionManager;
     private readonly IMessagePipe _pipe;
+    private readonly IExecutionEngine _api;
     private readonly ILogger _log;
-    public MTProtoRequestProcessor(ITLObjectFactory factory,ISessionService sessionManager, IMessagePipe pipe, ILogger log)
+    public MTProtoRequestProcessor(ITLObjectFactory factory, 
+        ISessionService sessionManager, IMessagePipe pipe, 
+        IExecutionEngine api, ILogger log)
     {
         _factory = factory;
         _sessionManager = sessionManager;
         _pipe = pipe;
+        _api = api;
         _log = log;
     }
     
@@ -203,7 +208,21 @@ public class MTProtoRequestProcessor : ILinkedHandler
 
     public async ValueTask Process(object? sender, TLBytes input, TLExecutionContext ctx)
     {
+        var result = await _api.Invoke(input, ctx);
+        if (result!=null && sender != null)
+        {
+            MTProtoMessage message = new()
+            {
+                MessageType = MTProtoMessageType.Encrypted,
+                SessionId = ctx.SessionId,
+                IsResponse = true,
+                IsContentRelated = true,
+                Data = result.Value.AsSpan().ToArray()
+            };
+            await ((MTProtoConnection)sender).SendAsync(message);
+        }
         if (Next != null) await Next.Process(sender, input, ctx);
+        else input.Dispose();
     }
 }
 

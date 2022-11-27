@@ -37,14 +37,14 @@ public class ExecutionEngineTests
     {
         var reqPqMulti = MemoryOwner<byte>.Allocate(4);
         BinaryPrimitives.WriteInt32LittleEndian(reqPqMulti.Span, 
-            Constructors.mtproto_req_pq_multi);
+            Constructors.mtproto_ReqPqMulti);
         using var tlBytes = new TLBytes(reqPqMulti, 0, 4);
 
         var reqPqMock = new Mock<ITLFunction>();
         using var autoMock = AutoMock.GetStrict(builder => 
             builder.RegisterInstance(reqPqMock.Object)
-                .Keyed<ITLFunction>(new FunctionKey(146, 
-                    Constructors.mtproto_req_pq_multi)));
+                .Keyed<ITLFunction>(new FunctionKey(148, 
+                    Constructors.mtproto_ReqPqMulti)));
 
         var engine = autoMock.Create<ExecutionEngine>();
         await engine.Invoke(tlBytes, 
@@ -62,7 +62,7 @@ public class ExecutionEngineTests
     {
         var reqPqMulti = MemoryOwner<byte>.Allocate(4);
         BinaryPrimitives.WriteInt32LittleEndian(reqPqMulti.Span,
-            Constructors.mtproto_req_pq_multi);
+            Constructors.mtproto_ReqPqMulti);
         using var tlBytes = new TLBytes(reqPqMulti, 0, 4);
 
         var reqPqMock = new Mock<ITLFunction>();
@@ -73,7 +73,7 @@ public class ExecutionEngineTests
         using var autoMock = AutoMock.GetStrict(builder =>
             builder.RegisterInstance(reqPqMock.Object)
                 .Keyed<ITLFunction>(new FunctionKey(146,
-                    Constructors.mtproto_req_pq_multi)));
+                    Constructors.mtproto_ReqPqMulti)));
         
         var loggerMock = autoMock.Mock<ILogger>();
         loggerMock.Setup(l => l.Error(It.IsAny<Exception>(), It.IsAny<string>()));

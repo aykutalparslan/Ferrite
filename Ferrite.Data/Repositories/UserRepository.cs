@@ -55,10 +55,12 @@ public class UserRepository : IUserRepository
         if (userBytes != null)
         {
             var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
-            _store.Delete(user.Id, user.Phone, user.Username ?? ""); //TODO: fix this by committing together with put
+            string oldUsername = user.Username ?? "";
+            if (username == oldUsername) return false;
             user.Username = username;
             userBytes = MessagePackSerializer.Serialize(user);
             _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
+            _store.Delete(user.Id, user.Phone, oldUsername);
             return true;
         }
 

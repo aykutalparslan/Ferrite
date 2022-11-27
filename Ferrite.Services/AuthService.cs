@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Text;
 using System.Threading.Tasks.Sources;
 using DotNext.IO;
 using Ferrite.Crypto;
@@ -23,6 +24,9 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.Services.Gateway;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer148.auth;
 using Ferrite.Utils;
 using xxHash;
 
@@ -35,19 +39,21 @@ public class AuthService : IAuthService
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUsersService _users;
+    private readonly IVerificationGateway _verificationGateway;
     private readonly ILogger _log;
-
     private const int PhoneCodeTimeout = 60;//seconds
 
     public AuthService(IRandomGenerator random, ISearchEngine search,
         IUnitOfWork unitOfWork, ICounterFactory counterFactory, 
-        IUsersService users, ILogger log)
+        IUsersService users, IVerificationGateway verificationGateway,
+        ILogger log)
     {
         _random = random;
         _search = search;
         _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
         _users = users;
+        _verificationGateway = verificationGateway;
         _log = log;
     }
 
@@ -89,10 +95,21 @@ public class AuthService : IAuthService
         return await _unitOfWork.SaveAsync();
     }
 
-    public async Task<bool> CancelCode(string phoneNumber, string phoneCodeHash)
+    public async ValueTask<TLBytes> CancelCode(TLBytes q)
     {
-        _unitOfWork.PhoneCodeRepository.DeletePhoneCode(phoneNumber, phoneCodeHash);
-        return await _unitOfWork.SaveAsync();
+        var (phoneNumber, phoneCodeHash) = GetCancelCodeParameters(q);
+        var result = _unitOfWork.PhoneCodeRepository.DeletePhoneCode(phoneNumber, phoneCodeHash);
+        result = result && await _unitOfWork.SaveAsync();
+        return result ? (TLBytes)BoolTrue.Builder().Build().TLBytes! : 
+            (TLBytes)BoolFalse.Builder().Build().TLBytes!;
+    }
+    
+    private static ValueTuple<string, string> GetCancelCodeParameters(TLBytes q)
+    {
+        var cancelCode = new CancelCode(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(cancelCode.PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(cancelCode.PhoneCodeHash);
+        return (phoneNumber, phoneCodeHash);
     }
 
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
@@ -284,24 +301,30 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public async Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash)
+    public async ValueTask<TLBytes> ResendCode(TLBytes q)
     {
+        var (phoneNumber, phoneCodeHash) = GetResendCodeParameters(q);
+    
         var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != null)
         {
-            Console.WriteLine("auth.sentCode=>" + phoneCode);
             _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, phoneCodeHash, phoneCode,
                 new TimeSpan(0, 0, PhoneCodeTimeout * 2));
             await _unitOfWork.SaveAsync();
-            return new SentCodeDTO()
-            {
-                CodeType = SentCodeType.Sms,
-                CodeLength = 5,
-                Timeout = PhoneCodeTimeout,
-                PhoneCodeHash = phoneCodeHash
-            };
+            await _verificationGateway.Resend(phoneNumber, phoneCode);
+
+            return GenerateSentCode(Encoding.UTF8.GetBytes(phoneCodeHash));
         }
-        return null;//this is tested
+
+        return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_EXPIRED"u8);
+    }
+    
+    private static ValueTuple<string, string> GetResendCodeParameters(TLBytes q)
+    {
+        var sendCode = new ResendCode(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(sendCode.PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(sendCode.PhoneCodeHash);
+        return (phoneNumber, phoneCodeHash);
     }
 
     public async Task<bool> ResetAuthorizations(long authKeyId)
@@ -324,22 +347,32 @@ public class AuthService : IAuthService
         return false;
     }
 
-    public async Task<SentCodeDTO> SendCode(string phoneNumber, int apiId, string apiHash, CodeSettingsDTO settings)
+    public async ValueTask<TLBytes> SendCode(TLBytes q)
     {
-        var code = _random.GetNext(10000, 99999);
-        Console.WriteLine("auth.sentCode=>" + code.ToString());
-        var codeBytes = BitConverter.GetBytes(code);
+        var (phoneNumber, apiId, apiHash) = GetSendCodeParameters(q);
+        var code = await _verificationGateway.SendSms(phoneNumber);
+        var codeBytes = Encoding.UTF8.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
+        
+        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code,
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
-        return new SentCodeDTO()
-        {
-            CodeType = SentCodeType.Sms,
-            CodeLength = 5,
-            Timeout = PhoneCodeTimeout,
-            PhoneCodeHash = hash
-        };
+        return GenerateSentCode(Encoding.UTF8.GetBytes(hash));
+    }
+    private static ValueTuple<string, int, string> GetSendCodeParameters(TLBytes q)
+    {
+        var sendCode = new SendCode(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(sendCode.PhoneNumber);
+        var apiHash = Encoding.UTF8.GetString(sendCode.ApiHash);
+        return (phoneNumber, sendCode.ApiId, apiHash);
+    }
+    private static TLBytes GenerateSentCode(ReadOnlySpan<byte> phoneCodeHash)
+    {
+        return ((TLBytes)SentCode.Builder()
+            .Type(new SentCodeTypeSms(5).ToReadOnlySpan())
+            .Timeout(PhoneCodeTimeout)
+            .PhoneCodeHash(phoneCodeHash)
+            .Build().TLBytes!);
     }
 
     public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)

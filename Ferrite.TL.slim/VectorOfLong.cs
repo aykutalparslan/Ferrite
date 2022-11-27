@@ -22,43 +22,42 @@ using System.Runtime.InteropServices;
 
 namespace Ferrite.TL.slim;
 
-public ref struct VectorOfDouble
+public ref struct VectorOfLong
 {
-    private Span<double> _buff;
+    private Span<long> _buff;
     private int _offset;
-    public VectorOfDouble()
+    public VectorOfLong()
     {
-        _buff = new double[32];
+        _buff = new long[32];
         SetConstructor(unchecked((int)0x1cb5c415));
         SetCount(0);
         _offset = 1;
     }
-    public VectorOfDouble(Span<byte> buffer)
+    public VectorOfLong(Span<byte> buffer)
     {
         if (MemoryMarshal.Read<int>(buffer[..4]) != unchecked((int)0x1cb5c415))
         {
             throw new InvalidOperationException();
         }
-
-        _buff = MemoryMarshal.Cast<byte, double>(buffer);
+        _buff = MemoryMarshal.Cast<byte,long>(buffer);
         _offset = 1;
     }
-    public readonly int Constructor => MemoryMarshal.Cast<double, int>(_buff)[0];
+    public readonly int Constructor => MemoryMarshal.Cast<long, int>(_buff)[0];
     private void SetConstructor(int constructor)
     {
-        MemoryMarshal.Cast<double, int>(_buff)[0] = constructor;
+        MemoryMarshal.Cast<long, int>(_buff)[0] = constructor;
     }
-    public ReadOnlySpan<byte> ToReadOnlySpan() => MemoryMarshal.Cast<double, byte>(_buff)[..Length];
-    public readonly int Count => MemoryMarshal.Cast<double, int>(_buff)[1];
+    public ReadOnlySpan<byte> ToReadOnlySpan() => MemoryMarshal.Cast<long, byte>(_buff)[..Length];
+    public readonly int Count => MemoryMarshal.Cast<long, int>(_buff)[1];
     public readonly int Length => _offset*8;
     private void SetCount(int count)
     {
-        MemoryMarshal.Cast<double, int>(_buff)[1] = count;
+        MemoryMarshal.Cast<long, int>(_buff)[1] = count;
     }
     
     public static Span<byte> Read(Span<byte> data, int offset)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        if (MemoryMarshal.Read<int>(data.Slice(offset,4)) != unchecked((int)0x1cb5c415))
         {
             throw new InvalidOperationException();
         }
@@ -73,7 +72,7 @@ public ref struct VectorOfDouble
 
     public static int ReadSize(Span<byte> data, int offset)
     {
-        if (MemoryMarshal.Read<int>(data[..4]) != unchecked((int)0x1cb5c415))
+        if (MemoryMarshal.Read<int>(data.Slice(offset,4)) != unchecked((int)0x1cb5c415))
         {
             throw new InvalidOperationException();
         }
@@ -81,16 +80,16 @@ public ref struct VectorOfDouble
         return 8 + count * 8;
     }
     
-    public void Append(double value)
+    public void Append(long value)
     {
         if (_buff.Length == _offset)
         {
-            var tmp = new Double[_buff.Length * 2];
+            var tmp = new long[_buff.Length * 2];
             _buff.CopyTo(tmp);
             _buff = tmp;
         }
-        MemoryMarshal.Cast<double, int>(_buff)[1]++;
+        MemoryMarshal.Cast<long, int>(_buff)[1]++;
         _buff[_offset++] = value;
     }
-    public ref readonly double this[int index] => ref _buff[1 + index];
+    public ref readonly long this[int index] => ref _buff[1 + index];
 }

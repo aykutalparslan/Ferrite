@@ -12,19 +12,19 @@ using DotNext.Buffers;
 
 namespace Ferrite.TL.slim;
 
-public readonly ref struct boolFalse
+public readonly ref struct BoolTrue
 {
     private readonly Span<byte> _buff;
     private readonly IMemoryOwner<byte>? _memory;
-    public boolFalse()
+    public BoolTrue()
     {
         var length = GetRequiredBufferSize();
         _memory = UnmanagedMemoryPool<byte>.Shared.Rent(length);
         _memory.Memory.Span.Clear();
         _buff = _memory.Memory.Span[..length];
-        SetConstructor(unchecked((int)0xbc799737));
+        SetConstructor(unchecked((int)0x997275b5));
     }
-    public boolFalse(Span<byte> buff)
+    public BoolTrue(Span<byte> buff)
     {
         _buff = buff;
     }
@@ -63,9 +63,9 @@ public readonly ref struct boolFalse
     }
     public ref struct TLObjectBuilder
     {
-        public boolFalse Build()
+        public BoolTrue Build()
         {
-            return new boolFalse();
+            return new BoolTrue();
         }
     }
 

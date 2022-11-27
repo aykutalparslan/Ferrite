@@ -38,6 +38,19 @@ public class ParserTests
         Assert.Equal("inputMediaUploadedDocument", combinator.Identifier);
         Assert.Equal(9, combinator.Arguments.Count);
     }
+    [Fact]
+    public void Parser_ShouldParse_DcOption()
+    {
+        Lexer lexer = new Lexer(
+            @"dcOption#18b7a10d flags:# ipv6:flags.0?true media_only:flags.1?true tcpo_only:flags.2?true cdn:flags.3?true static:flags.4?true this_port_only:flags.5?true id:int ip_address:string port:int secret:flags.10?bytes = DcOption;
+");
+        Parser parser = new Parser(lexer);
+        var combinator = parser.ParseCombinator();
+        
+        Assert.Equal(CombinatorType.Constructor, combinator.CombinatorType);
+        Assert.Equal("dcOption", combinator.Identifier);
+        Assert.Equal(11, combinator.Arguments.Count);
+    }
     
     [Fact]
     public void Parser_Should_ParseFunction()

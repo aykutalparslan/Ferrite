@@ -77,11 +77,12 @@ public class CancelCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var deleted = await _auth.CancelCode(_phoneNumber, _phoneCodeHash);
         result.Result = deleted ? new BoolTrue() : new BoolFalse();
-        return result;
+        return result;*/
+        return null;
     }
 
     public void Parse(ref SequenceReader buff)
