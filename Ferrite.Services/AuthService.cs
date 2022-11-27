@@ -24,6 +24,7 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.layer148.auth;
 using Ferrite.Utils;
@@ -38,19 +39,21 @@ public class AuthService : IAuthService
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IUsersService _users;
+    private readonly IVerificationGateway _verificationGateway;
     private readonly ILogger _log;
-
     private const int PhoneCodeTimeout = 60;//seconds
 
     public AuthService(IRandomGenerator random, ISearchEngine search,
         IUnitOfWork unitOfWork, ICounterFactory counterFactory, 
-        IUsersService users, ILogger log)
+        IUsersService users, IVerificationGateway verificationGateway,
+        ILogger log)
     {
         _random = random;
         _search = search;
         _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
         _users = users;
+        _verificationGateway = verificationGateway;
         _log = log;
     }
 
@@ -287,24 +290,30 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public async Task<SentCodeDTO> ResendCode(string phoneNumber, string phoneCodeHash)
+    public async ValueTask<TLBytes> ResendCode(TLBytes q)
     {
+        var (phoneNumber, phoneCodeHash) = GetResendCodeParameters(q);
+    
         var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != null)
         {
-            Console.WriteLine("auth.sentCode=>" + phoneCode);
             _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, phoneCodeHash, phoneCode,
                 new TimeSpan(0, 0, PhoneCodeTimeout * 2));
             await _unitOfWork.SaveAsync();
-            return new SentCodeDTO()
-            {
-                CodeType = SentCodeType.Sms,
-                CodeLength = 5,
-                Timeout = PhoneCodeTimeout,
-                PhoneCodeHash = phoneCodeHash
-            };
+            await _verificationGateway.Resend(phoneNumber, phoneCode);
+
+            return GenerateSentCode(Encoding.UTF8.GetBytes(phoneCodeHash));
         }
-        return null;//this is tested
+
+        return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_EXPIRED"u8);
+    }
+    
+    private static ValueTuple<string, string> GetResendCodeParameters(TLBytes q)
+    {
+        var sendCode = new ResendCode(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(sendCode.PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(sendCode.PhoneCodeHash);
+        return (phoneNumber, phoneCodeHash);
     }
 
     public async Task<bool> ResetAuthorizations(long authKeyId)
@@ -329,16 +338,12 @@ public class AuthService : IAuthService
 
     public async ValueTask<TLBytes> SendCode(TLBytes q)
     {
-#if DEBUG
-        var code = 12345;
-#else
-		var code = _random.GetNext(10000, 99999);
-#endif
-        _log.Information("auth.sentCode=>" + code);
-        var codeBytes = BitConverter.GetBytes(code);
-        var hash = codeBytes.GetXxHash64(1071).ToString("x");
         var (phoneNumber, apiId, apiHash) = GetSendCodeParameters(q);
-        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
+        var code = await _verificationGateway.SendSms(phoneNumber);
+        var codeBytes = Encoding.UTF8.GetBytes(code);
+        var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        
+        _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code,
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
         return GenerateSentCode(Encoding.UTF8.GetBytes(hash));

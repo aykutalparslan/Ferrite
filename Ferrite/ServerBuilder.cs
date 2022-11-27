@@ -33,6 +33,7 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Services;
+using Ferrite.Services.Gateway;
 using Ferrite.TL;
 using Ferrite.TL.ObjectMapper;
 using Ferrite.TL.slim;
@@ -161,6 +162,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.layer148_SendCode))
             .SingleInstance();
+        builder.RegisterType<ResendCodeFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(148, Constructors.layer148_ResendCode))
+            .SingleInstance();
     }
 
     private static void RegisterSchema(ContainerBuilder builder)
@@ -193,6 +198,8 @@ public class ServerBuilder
 
     private static void RegisterServices(ContainerBuilder builder)
     {
+        builder.RegisterType<VerificationGateway>()
+            .As<IVerificationGateway>().SingleInstance();
         builder.RegisterType<MTProtoService>().As<IMTProtoService>()
             .SingleInstance();
         builder.RegisterType<LangPackService>().As<ILangPackService>()

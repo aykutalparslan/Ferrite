@@ -77,7 +77,7 @@ public class ResendCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var sent = await _auth.ResendCode(_phoneNumber, _phoneCodeHash);
+        /*var sent = await _auth.ResendCode(_phoneNumber, _phoneCodeHash);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         if (sent == null)
@@ -96,7 +96,8 @@ public class ResendCode : ITLObject, ITLMethod
         sentCode.Timeout = sent.Timeout;
         sentCode.Type = codeType;
         result.Result = sentCode;
-        return result;
+        return result;*/
+        return null;
     }
 
     public void Parse(ref SequenceReader buff)
