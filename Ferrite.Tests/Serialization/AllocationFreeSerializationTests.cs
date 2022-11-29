@@ -309,6 +309,62 @@ public class AllocationFreeSerializationTests
         Assert.Equal(expected.TLBytes!.Value.AsSpan().ToArray(), 
             actual.TLBytes!.Value.AsSpan().ToArray());
     }
+    [Fact]
+    public void FluentAPI_Should_Mutate_resPQ()
+    {
+        var nonce = RandomNumberGenerator.GetBytes(16);
+        var serverNonce = RandomNumberGenerator.GetBytes(16);
+        var pq = RandomNumberGenerator.GetBytes(8);
+        Ferrite.TL.slim.VectorOfLong fingerprints = new Ferrite.TL.slim.VectorOfLong();
+        fingerprints.Append(135790L);
+        fingerprints.Append(246810L);
+
+        using var resPq = Ferrite.TL.slim.mtproto.ResPQ.Builder()
+            .Nonce(RandomNumberGenerator.GetBytes(16))
+            .ServerNonce(RandomNumberGenerator.GetBytes(16))
+            .Pq(RandomNumberGenerator.GetBytes(8))
+            .ServerPublicKeyFingerprints(fingerprints)
+            .Build();
+        
+        using var actual = resPq.Clone()
+            .Nonce(nonce)
+            .ServerNonce(serverNonce)
+            .Pq(pq)
+            .Build();
+        
+
+        using var expected = new Ferrite.TL.slim.mtproto.ResPQ(nonce, serverNonce, pq, fingerprints);
+
+        Assert.Equal(expected.ToReadOnlySpan().ToArray(), 
+            actual.ToReadOnlySpan().ToArray());
+        
+        Assert.Equal(expected.TLBytes!.Value.AsSpan().ToArray(), 
+            actual.TLBytes!.Value.AsSpan().ToArray());
+    }
+    
+    [Fact]
+    public void FluentAPI_Should_Mutate_user()
+    {
+        using var user = User.Builder()
+            .Id(123)
+            .Username("test"u8)
+            .Phone("111"u8)
+            .Premium(true)
+            .Build();
+
+        var userNew = user.Clone()
+            .Self(true)
+            .Build();
+        
+        Assert.Equal(user.Id, userNew.Id);
+        Assert.Equal(user.Username.ToArray(), userNew.Username.ToArray());
+        Assert.Equal(user.Phone.ToArray(), userNew.Phone.ToArray());
+        Assert.False(user.Self);
+        Assert.True(userNew.Self);
+        Assert.True(user.Premium);
+        Assert.True(userNew.Premium);
+    }
+    
     private static IContainer BuildContainer()
     {
         var logger = new Mock<ILogger>();

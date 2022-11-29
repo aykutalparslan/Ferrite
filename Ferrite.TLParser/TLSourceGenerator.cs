@@ -918,7 +918,7 @@ public readonly ref struct " + typeName + @"
             }
     }
 
-    private void GenerateProperties(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    private static void GenerateProperties(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
         int index = 1;
         if (combinator.Arguments != null)
@@ -1099,12 +1099,18 @@ public readonly ref struct " + typeName + @"
     }");
     }
 
-    private void GenerateBuilder(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    private static void GenerateBuilder(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
+        var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type?.Identifier);
         sb.Append(@"
     public ref struct TLObjectBuilder
     {
         public TLObjectBuilder(){}
+        public TLObjectBuilder(" + typeName + @" from)
+        {");   
+        GenerateBuilderCloneStatements(sb, combinator);
+        sb.Append( @"
+        }
 ");
         if (combinator.Arguments != null)
             foreach (var arg in combinator.Arguments)
@@ -1132,7 +1138,6 @@ public readonly ref struct " + typeName + @"
                 }
             }
 
-        var typeName = (combinator.Name != null ? combinator.Identifier : combinator.Type?.Identifier);
         sb.Append(@"
         public " + typeName + @" Build()
         {
@@ -1147,7 +1152,24 @@ public readonly ref struct " + typeName + @"
     {
         return new TLObjectBuilder();
     }
+    public TLObjectBuilder Clone()
+    {
+        return new TLObjectBuilder(this);
+    }
 ");
+    }
+    
+    private static void GenerateBuilderCloneStatements(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    {
+        if (combinator.Arguments == null) return;
+        foreach (var arg in combinator.Arguments)
+        {
+            if (arg.TypeTerm?.Identifier is not "true")
+            {
+                sb.Append(@"
+            _" + arg.Identifier + " = from." + arg.Identifier?.ToPascalCase() + ";");
+            }
+        }
     }
 
     private static void GenerateBuilderFlags(StringBuilder sb, SimpleArgumentSyntax arg)
@@ -1240,8 +1262,7 @@ public readonly ref struct " + typeName + @"
             foreach (var arg in combinator.Arguments)
             {
                 bool comma = --count != 0;
-
-
+                
                 if (arg.TypeTerm?.Identifier is "true")
                 {
                     sb.Append("_" + arg.ConditionalDefinition!.Identifier + "[" +
@@ -1258,7 +1279,7 @@ public readonly ref struct " + typeName + @"
         sb.Append(@");");
     }
 
-    private void GenerateGetOffset(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    private static void GenerateGetOffset(StringBuilder sb, CombinatorDeclarationSyntax combinator)
     {
         sb.Append(@"
     private static int GetOffset(int index, Span<byte> buffer)

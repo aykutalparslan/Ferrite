@@ -49,7 +49,7 @@ public ref struct VectorOfLong
     }
     public ReadOnlySpan<byte> ToReadOnlySpan() => MemoryMarshal.Cast<long, byte>(_buff)[..Length];
     public readonly int Count => MemoryMarshal.Cast<long, int>(_buff)[1];
-    public readonly int Length => _offset*8;
+    public readonly int Length => Count * 8 + 8;
     private void SetCount(int count)
     {
         MemoryMarshal.Cast<long, int>(_buff)[1] = count;

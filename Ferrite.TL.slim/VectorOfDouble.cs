@@ -50,7 +50,7 @@ public ref struct VectorOfDouble
     }
     public ReadOnlySpan<byte> ToReadOnlySpan() => MemoryMarshal.Cast<double, byte>(_buff)[..Length];
     public readonly int Count => MemoryMarshal.Cast<double, int>(_buff)[1];
-    public readonly int Length => _offset*8;
+    public readonly int Length => Count * 8 + 8;
     private void SetCount(int count)
     {
         MemoryMarshal.Cast<double, int>(_buff)[1] = count;
