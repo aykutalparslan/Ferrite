@@ -16,17 +16,14 @@
  *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using Xunit;
-using DotNext.Buffers;
-using DotNext.IO;
-using DotNext.Text;
-using Ferrite.TL;
-using System.Security.Cryptography;
 using System.Buffers;
 using System.Text;
+using DotNext.Buffers;
+using DotNext.IO;
+using Ferrite.Utils;
+using Xunit;
 
-namespace Ferrite.Utils
+namespace Ferrite.Tests.Utils
 {
     public class BufferExtensionsTests
     {
