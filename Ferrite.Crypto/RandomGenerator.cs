@@ -130,23 +130,19 @@ namespace Ferrite.Crypto
             return result.ToArray();
         }
 
-        private static int ModPow(int x, int y, int m)
+        // https://stackoverflow.com/a/5434148/2015348
+        // https://gist.github.com/bbarry/1068d17b49b0ff98bca5194d275896ed
+        private static long ModPow(long value, long exponent, long modulus)
         {
             long result = 1;
-            for (int i = 1; i <= y; i++)
+            while (exponent > 0)
             {
-                result = (result * x) % m;
+                if ((exponent & 1) == 1) result = result * value % modulus;
+                value = value * value % modulus;
+                exponent >>= 1;
             }
-            return (int)result;
-        }
-        private static int Pow(int x, int y)
-        {
-            int result = 1;
-            for (int i = 1; i <= y; i++)
-            {
-                result = (result * x);
-            }
-            return result;
+        
+            return (uint)result;
         }
         /// <summary>
         /// Implements the Miller-Rabin primality test algorithm from
