@@ -71,7 +71,7 @@ public class ContactsService : IContactsService
 
     public async Task<ImportedContactsDTO> ImportContacts(long authKeyId, ICollection<InputContactDTO> contacts)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         List<ImportedContactDTO> importedContacts = new();
         List<UserDTO> users = new();
         foreach (var c in contacts)
@@ -87,7 +87,8 @@ public class ContactsService : IContactsService
         }
 
         return new ImportedContactsDTO(importedContacts, new List<PopularContactDTO>(), 
-            new List<long>(), users);
+            new List<long>(), users);*/
+        throw new NotImplementedException();
     }
 
     public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUserDTO> id)
@@ -163,7 +164,7 @@ public class ContactsService : IContactsService
 
     public async Task<BlockedDTO> GetBlocked(long authKeyId, int offset, int limit)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var blockedPeers = _unitOfWork.BlockedPeersRepository.GetBlockedPeers(auth.UserId);
         List<UserDTO> users= new();
         foreach (var p in blockedPeers)
@@ -174,7 +175,8 @@ public class ContactsService : IContactsService
             }
         }
         //TODO: also fetch the chats from the db
-        return new BlockedDTO(blockedPeers.Count, blockedPeers,new List<ChatDTO>(), users);
+        return new BlockedDTO(blockedPeers.Count, blockedPeers,new List<ChatDTO>(), users);*/
+        throw new NotImplementedException();
     }
 
     public async Task<FoundDTO> Search(long authKeyId, string q, int limit)
@@ -198,7 +200,7 @@ public class ContactsService : IContactsService
 
     public async Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return new ServiceResult<ResolvedPeerDTO>(null, false, ErrorMessages.InvalidAuthKey);
@@ -212,7 +214,8 @@ public class ContactsService : IContactsService
         var peer = new PeerDTO(PeerType.User, peerUser.Id);
         var resolved = new ResolvedPeerDTO(peer, Array.Empty<ChatDTO>(), 
             new List<UserDTO>() { peerUser });
-        return new ServiceResult<ResolvedPeerDTO>(resolved, true, ErrorMessages.None);
+        return new ServiceResult<ResolvedPeerDTO>(resolved, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<TopPeersDTO> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls, bool forwardUsers,

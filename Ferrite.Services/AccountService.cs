@@ -86,7 +86,7 @@ public partial class AccountService : IAccountService
 
     public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } user )
         {
             var userNew = user with
@@ -100,7 +100,7 @@ public partial class AccountService : IAccountService
             await _search.IndexUser(new Data.Search.UserSearchModel(userNew.Id, userNew.Username, 
                 userNew.FirstName, userNew.LastName, userNew.Phone));
             return userNew;
-        }
+        }*/
 
         return null;
     }
@@ -145,7 +145,7 @@ public partial class AccountService : IAccountService
 
     public async Task<UserDTO?> UpdateUsername(long authKeyId, string username)
     {
-        if (!UsernameRegex.IsMatch(username))
+        /*if (!UsernameRegex.IsMatch(username))
         {
             return null;
         }
@@ -164,12 +164,13 @@ public partial class AccountService : IAccountService
         user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
                 user.FirstName, user.LastName, user.Phone));
-        return user;
+        return user;*/
+        return null;
     }
 
     public async Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
@@ -213,12 +214,13 @@ public partial class AccountService : IAccountService
             Users = users,
             Chats = chats
         };
-        return result;
+        return result;*/
+        return null;
     }
 
     public async Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return null;
@@ -260,12 +262,13 @@ public partial class AccountService : IAccountService
             Users = users,
             Chats = chats
         };
-        return result;
+        return result;*/
+        return null;
     }
 
     public async Task<bool> DeleteAccount(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
 
@@ -283,35 +286,38 @@ public partial class AccountService : IAccountService
         await _unitOfWork.SaveAsync();
         await _search.DeleteUser(user.Id);
         
-        return true;
+        return true;*/
+        return false;
     }
 
     public async Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return false;
         }
 
         _unitOfWork.UserRepository.UpdateAccountTTL(auth.UserId, accountDaysTTL);
-        return await _unitOfWork.SaveAsync();
+        return await _unitOfWork.SaveAsync();*/
+        return false;
     }
 
     public async Task<int> GetAccountTTL(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return 0;
         }
 
-        return _unitOfWork.UserRepository.GetAccountTTL(auth.UserId);
+        return _unitOfWork.UserRepository.GetAccountTTL(auth.UserId);*/
+        return 0;
     }
 
     public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
             return new ServiceResult<SentCodeDTO>(null, false, 
@@ -338,12 +344,13 @@ public partial class AccountService : IAccountService
             Timeout = PhoneCodeTimeout,
             PhoneCodeHash = hash
         };
-        return new ServiceResult<SentCodeDTO>(result, true, ErrorMessages.None);
+        return new ServiceResult<SentCodeDTO>(result, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
+        /*var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
             return new ServiceResult<UserDTO>(null, false, ErrorMessages.None);
@@ -364,7 +371,8 @@ public partial class AccountService : IAccountService
         await _unitOfWork.SaveAsync();
         user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         await _unitOfWork.SaveAsync();
-        return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);
+        return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)
@@ -375,7 +383,7 @@ public partial class AccountService : IAccountService
 
     public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
@@ -383,7 +391,8 @@ public partial class AccountService : IAccountService
             auths.Add(_unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId));
         }
 
-        return new AuthorizationsDTO(_unitOfWork.UserRepository.GetAccountTTL(auth.UserId), auths);
+        return new AuthorizationsDTO(_unitOfWork.UserRepository.GetAccountTTL(auth.UserId), auths);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)

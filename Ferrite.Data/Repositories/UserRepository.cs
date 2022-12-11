@@ -16,6 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Text;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer148;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -23,9 +26,9 @@ namespace Ferrite.Data.Repositories;
 public class UserRepository : IUserRepository
 {
     private readonly IKVStore _store;
-    private readonly IKVStore _storeTTL;
+    private readonly IKVStore _storeTtl;
 
-    public UserRepository(IKVStore store, IKVStore storeTTL)
+    public UserRepository(IKVStore store, IKVStore storeTtl)
     {
         _store = store;
         _store.SetSchema(new TableDefinition("ferrite", "users",
@@ -37,16 +40,18 @@ public class UserRepository : IUserRepository
                 new DataColumn { Name = "phone", Type = DataType.String }),
             new KeyDefinition("by_username",
                 new DataColumn { Name = "username", Type = DataType.String })));
-        _storeTTL = storeTTL;
-        _storeTTL.SetSchema(new TableDefinition("ferrite", "account_ttls",
+        _storeTtl = storeTtl;
+        _storeTtl.SetSchema(new TableDefinition("ferrite", "account_ttls",
             new KeyDefinition("pk",
                 new DataColumn { Name = "user_id", Type = DataType.Long })));
     }
 
-    public bool PutUser(UserDTO user)
+    public bool PutUser(TLBytes user)
     {
-        var userBytes = MessagePackSerializer.Serialize(user);
-        return _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
+        var u = new User(user.AsSpan());
+        return _store.Put(user.AsSpan().ToArray(),
+            u.Id, Encoding.UTF8.GetString(u.Phone),
+            u.Username.Length > 0 ? Encoding.UTF8.GetString(u.Username) : "");
     }
 
     public bool UpdateUsername(long userId, string username)
@@ -54,13 +59,14 @@ public class UserRepository : IUserRepository
         var userBytes = _store.Get(userId);
         if (userBytes != null)
         {
-            var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
-            string oldUsername = user.Username ?? "";
+            var user = new User(userBytes);
+            string oldUsername = user.Username.Length > 0 ? Encoding.UTF8.GetString(user.Username) : "";
             if (username == oldUsername) return false;
-            user.Username = username;
-            userBytes = MessagePackSerializer.Serialize(user);
-            _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
-            _store.Delete(user.Id, user.Phone, oldUsername);
+            string userPhone = Encoding.UTF8.GetString(user.Phone);
+            var userNew = user.Clone().Username(Encoding.UTF8.GetBytes(username)).Build();
+            _store.Put(userNew.TLBytes!.Value.AsSpan().ToArray(),
+                user.Id, userPhone, username);
+            _store.Delete(user.Id, userPhone, oldUsername);
             return true;
         }
 
@@ -72,34 +78,37 @@ public class UserRepository : IUserRepository
         var userBytes = _store.Get(userId);
         if (userBytes != null)
         {
-            var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
-            _store.Delete(user); //TODO: fix this by committing together with put
-            user.Phone = phone;
-            userBytes = MessagePackSerializer.Serialize(user);
-            _store.Put(userBytes, user.Id, user.Phone, user.Username ?? "");
+            var user = new User(userBytes);
+            string oldPhone = user.Phone.Length > 0 ? Encoding.UTF8.GetString(user.Phone) : "";
+            if (oldPhone == phone) return false;
+            var userNew = user.Clone().Phone(Encoding.UTF8.GetBytes(phone)).Build();
+            string username = user.Username.Length > 0 ? Encoding.UTF8.GetString(user.Username) : "";
+            _store.Put(userNew.TLBytes!.Value.AsSpan().ToArray(), 
+                user.Id, phone, username);
+            _store.Delete(user.Id, oldPhone, username);
             return true;
         }
 
         return false;
     }
 
-    public UserDTO? GetUser(long userId)
+    public TLBytes? GetUser(long userId)
     {
         var userBytes = _store.Get(userId);
         if (userBytes != null)
         {
-            return MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+            return new TLBytes(userBytes, 0, userBytes.Length);
         }
 
         return null;
     }
 
-    public UserDTO? GetUser(string phone)
+    public TLBytes? GetUser(string phone)
     {
         var userBytes = _store.GetBySecondaryIndex("by_phone", phone);
         if (userBytes != null)
         {
-            return MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+            return new TLBytes(userBytes, 0, userBytes.Length);
         }
 
         return null;
@@ -110,38 +119,38 @@ public class UserRepository : IUserRepository
         var userBytes = _store.GetBySecondaryIndex("by_phone", phone);
         if (userBytes != null)
         {
-            var user = MessagePackSerializer.Deserialize<UserDTO>(userBytes);
-            return user?.Id;
+            var user = new User(userBytes);
+            return user.Id;
         }
 
         return null;
     }
 
-    public UserDTO? GetUserByUsername(string username)
+    public TLBytes? GetUserByUsername(string username)
     {
         var userBytes = _store.GetBySecondaryIndex("by_username", username);
         if (userBytes != null)
         {
-            return MessagePackSerializer.Deserialize<UserDTO>(userBytes);
+            return new TLBytes(userBytes, 0, userBytes.Length);
         }
 
         return null;
     }
 
-    public bool DeleteUser(UserDTO user)
+    public bool DeleteUser(long userId)
     {
-        return _store.Delete(user.Id); // delete by prefix as this is less error prone
+        return _store.Delete(userId); // delete by prefix
     }
 
-    public bool UpdateAccountTTL(long userId, int accountDaysTTL)
+    public bool UpdateAccountTtl(long userId, int accountDaysTtl)
     {
-        var expire = DateTimeOffset.Now.AddDays(accountDaysTTL).ToUnixTimeSeconds();
-        return _storeTTL.Put(BitConverter.GetBytes(expire), userId);
+        var expire = DateTimeOffset.Now.AddDays(accountDaysTtl).ToUnixTimeSeconds();
+        return _storeTtl.Put(BitConverter.GetBytes(expire), userId);
     }
 
-    public int GetAccountTTL(long userId)
+    public int GetAccountTtl(long userId)
     {
-        var val = _storeTTL.Get(userId);
+        var val = _storeTtl.Get(userId);
         if (val == null) return 365;
         var expire = BitConverter.ToInt64(val);
         var expireDays = DateTimeOffset.FromUnixTimeSeconds(expire) - DateTimeOffset.Now;

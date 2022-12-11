@@ -50,7 +50,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
             return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
         List<MessageDTO> messages = new List<MessageDTO>();
@@ -75,12 +75,13 @@ public class MessagesService : IMessagesService
         }
 
         return new ServiceResult<MessagesDTO>(new MessagesDTO(MessagesType.Messages, messages, 
-            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
+            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
     {
-        if (peer.InputPeerType == InputPeerType.Self)
+        /*if (peer.InputPeerType == InputPeerType.Self)
         {
             var settings = new Data.PeerSettingsDTO(false, false, false, 
                 false, false, false, 
@@ -101,7 +102,8 @@ public class MessagesService : IMessagesService
             return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), users)
                 , true, ErrorMessages.None);
         }
-        return new ServiceResult<PeerSettingsDTO>(null, false, ErrorMessages.PeerIdInvalid);
+        return new ServiceResult<PeerSettingsDTO>(null, false, ErrorMessages.PeerIdInvalid);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<UpdateShortSentMessageDTO>> SendMessage(long authKeyId, bool noWebpage, bool silent, bool background, bool clearDraft, bool noForwards,
@@ -568,7 +570,7 @@ public class MessagesService : IMessagesService
     private async Task PopulateLists(Dictionary<long, UserDTO> userList, long userId, MessageDTO m, Dictionary<long, PeerDTO> peerList,
         Dictionary<long, int> topMessages)
     {
-        if (!userList.ContainsKey(userId))
+        /*if (!userList.ContainsKey(userId))
         {
             userList.Add(userId, _unitOfWork.UserRepository.GetUser(m.PeerId.PeerId));
         }
@@ -585,14 +587,15 @@ public class MessagesService : IMessagesService
         else if (topMessages[userId] < m.Id)
         {
             topMessages[userId] = m.Id;
-        }
+        }*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<MessagesDTO>> GetHistory(long authKeyId, InputPeerDTO peer, int offsetId, 
         int offsetDate, int addOffset, int limit, long maxId,
         long minId, long hash)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, 
             PeerFromInputPeer(peer, peer.InputPeerType == InputPeerType.Self ? auth.UserId : 0));
         List<MessageDTO> messagesList = new();
@@ -614,13 +617,15 @@ public class MessagesService : IMessagesService
 
         var messagesResult = new MessagesDTO(MessagesType.Messages,
             messagesList, Array.Empty<ChatDTO>(), userList.Values);
-        return new ServiceResult<MessagesDTO>(messagesResult, true, ErrorMessages.None);
+        return new ServiceResult<MessagesDTO>(messagesResult, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<MessagesDTO>> Search(long authKeyId, InputPeerDTO peer, string q, 
         InputPeerDTO? fromId, int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, 
         int offsetId, int addOffset, int limit, long maxId, long minId, long hash)
     {
+        /*
         //TODO: debug and fix this
         var searchResults =  await _search.SearchMessages(q);
         //TODO: implement a proper search with pagination
@@ -641,7 +646,8 @@ public class MessagesService : IMessagesService
         }
 
         return new ServiceResult<MessagesDTO>(new MessagesDTO(MessagesType.Messages, messages, 
-            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
+            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)

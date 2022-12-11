@@ -27,44 +27,52 @@ namespace Ferrite.TL.slim;
 /// </summary>
 public readonly struct TLBytes: IDisposable
 {
-    private readonly IMemoryOwner<byte> _memory;
+    private readonly IMemoryOwner<byte>? _memoryOwner;
+    private readonly Memory<byte> _memory;
     private readonly int _offset;
     private readonly int _length;
-    public TLBytes(IMemoryOwner<byte> memory, int offset, int length)
+    public TLBytes(IMemoryOwner<byte> memoryOwner, int offset, int length)
     {
-        _memory = memory;
+        _memoryOwner = memoryOwner;
+        _memory = _memoryOwner.Memory;
         _offset = offset;
         _length = length;
     }
-    public int Constructor => MemoryMarshal.Read<int>(_memory.Memory.Span[_offset..]);
+    public TLBytes(Memory<byte> memory, int offset, int length)
+    {
+        _memory = memory;
+        _offset = 0;
+        _length = memory.Length;
+    }
+    public int Constructor => MemoryMarshal.Read<int>(_memory.Span[_offset..]);
     public Span<byte> AsSpan()
     {
-        if (_offset == 0 && _length == _memory.Memory.Span.Length)
+        if (_offset == 0 && _length == _memory.Span.Length)
         {
-            return _memory.Memory.Span;
+            return _memory.Span;
         }
-        if (_memory.Memory.Span.Length < _offset + _length)
+        if (_memory.Span.Length < _offset + _length)
         {
             return new Span<byte>();
         }
-        var slice = _memory.Memory.Span.Slice(_offset, _length);
+        var slice = _memory.Span.Slice(_offset, _length);
         return slice;
     }
     public Memory<byte> AsMemory()
     {
-        if (_offset == 0 && _length == _memory.Memory.Span.Length)
+        if (_offset == 0 && _length == _memory.Span.Length)
         {
-            return _memory.Memory;
+            return _memory;
         }
-        if (_memory.Memory.Span.Length < _offset + _length)
+        if (_memory.Span.Length < _offset + _length)
         {
             return new Memory<byte>();
         }
-        var slice = _memory.Memory.Slice(_offset, _length);
+        var slice = _memory.Slice(_offset, _length);
         return slice;
     }
     public void Dispose()
     {
-        _memory.Dispose();
+        _memoryOwner?.Dispose();
     }
 }

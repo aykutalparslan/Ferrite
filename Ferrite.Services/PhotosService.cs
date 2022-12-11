@@ -47,7 +47,7 @@ public class PhotosService : IPhotosService
     }
     public async Task<ServiceResult<PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
             return new ServiceResult<PhotoDTO>(null, false, ErrorMessages.InvalidAuthKey);
@@ -73,12 +73,13 @@ public class PhotosService : IPhotosService
         await _unitOfWork.SaveAsync();
         var photo = new PhotoDTO(photoInner, new[] { user });
         
-        return new ServiceResult<PhotoDTO>(photo, true, ErrorMessages.None);
+        return new ServiceResult<PhotoDTO>(photo, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo, InputFileDTO? video, double? videoStartTimestamp)
     {
-        var saveResult = await _upload.SaveFile(photo);
+        /*var saveResult = await _upload.SaveFile(photo);
         if (!saveResult.Success)
         {
             return new ServiceResult<PhotoDTO>(null, false, saveResult.ErrorMessage);
@@ -111,7 +112,8 @@ public class PhotosService : IPhotosService
         user.Min = true;
         user.Self = true;
         var result = new PhotoDTO(processResult.Result, new[] { user });
-        return new ServiceResult<PhotoDTO>(result, true, ErrorMessages.None);
+        return new ServiceResult<PhotoDTO>(result, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date)
@@ -280,7 +282,7 @@ public class PhotosService : IPhotosService
     }
     public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null) return new PhotosDTO(Array.Empty<Data.PhotoDTO>(), Array.Empty<UserDTO>());
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
         if(user == null) return new PhotosDTO(Array.Empty<Data.PhotoDTO>(), Array.Empty<UserDTO>());
@@ -309,7 +311,8 @@ public class PhotosService : IPhotosService
                         t.Sizes)).ToList();
             photos.Add(p with{Sizes = thumbs});
         }
-        return new PhotosDTO(photos, new List<UserDTO> { user });
+        return new PhotosDTO(photos, new List<UserDTO> { user });*/
+        throw new NotImplementedException();
     }
 
     public async Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto)

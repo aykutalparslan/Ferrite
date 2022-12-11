@@ -166,12 +166,13 @@ public class UserService : IUsersService
 
     private UserDTO? GetUserInternal(long userId)
     {
-        var user = _unitOfWork.UserRepository.GetUser(userId);
+        /*var user = _unitOfWork.UserRepository.GetUser(userId);
         if (user != null)
         {
             user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
         }
-        return user;
+        return user;*/
+        return null;
     }
 
     public async Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors)

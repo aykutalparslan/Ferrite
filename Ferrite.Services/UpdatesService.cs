@@ -71,7 +71,7 @@ public class UpdatesService : IUpdatesService
     public async Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date, 
         int qts, int? ptsTotalLimit = null)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null) return new ServiceResult<DifferenceDTO>(null, false, ErrorMessages.InvalidAuthKey);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int currentPts = await updatesCtx.Pts();
@@ -96,12 +96,13 @@ public class UpdatesService : IUpdatesService
         var difference = new DifferenceDTO(messages, Array.Empty<EncryptedMessageDTO>(),
             Array.Empty<UpdateBase>(), Array.Empty<ChatDTO>(),
             users, state);
-        return new ServiceResult<DifferenceDTO>(difference, true, ErrorMessages.None);
+        return new ServiceResult<DifferenceDTO>(difference, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> EnqueueUpdate(long userId, UpdateBase update)
     {
-        var user = _unitOfWork.UserRepository.GetUser(userId);
+        /*var user = _unitOfWork.UserRepository.GetUser(userId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(user.Phone);
         //TODO: we should be able to get the active sessions by the userId
         foreach (var a in authorizations)
@@ -160,7 +161,8 @@ public class UpdatesService : IUpdatesService
             }
         }
 
-        return true;
+        return true;*/
+        return false;
     }
 
     public async Task<int> IncrementUpdatesSequence(long authKeyId)

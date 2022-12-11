@@ -345,6 +345,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
+    <ProjectReference Include="..\Ferrite.TL.slim\Ferrite.TL.slim.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
   </ItemGroup>
 </Project>

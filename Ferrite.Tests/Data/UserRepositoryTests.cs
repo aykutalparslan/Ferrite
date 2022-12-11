@@ -16,20 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.TL.slim;
+namespace Ferrite.Tests.Data;
 
-namespace Ferrite.Data.Repositories;
-
-public interface IUserRepository
+public class UserRepositoryTests
 {
-    public bool PutUser(TLBytes user);
-    public bool UpdateUsername(long userId, string username);
-    public bool UpdateUserPhone(long userId, string phone);
-    public TLBytes? GetUser(long userId);
-    public TLBytes? GetUser(string phone);
-    public long? GetUserId(string phone);
-    public TLBytes? GetUserByUsername(string username);
-    public bool DeleteUser(long userId);
-    public bool UpdateAccountTtl(long userId, int accountDaysTTL);
-    public int GetAccountTtl(long userId);
+    
 }

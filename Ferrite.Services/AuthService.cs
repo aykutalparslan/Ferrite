@@ -427,7 +427,7 @@ public class AuthService : IAuthService
     public async Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber,
         string phoneCodeHash, string firstName, string lastName)
     {
-        _log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
+        /*_log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
         long userId = await _userIdCnt.IncrementAndGet();
         if(userId == 0)
         {
@@ -492,7 +492,8 @@ public class AuthService : IAuthService
                     Empty = true
                 }
             }
-        };
+        };*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> SaveAppInfo(AppInfoDTO info)

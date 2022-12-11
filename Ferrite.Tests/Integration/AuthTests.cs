@@ -22,6 +22,7 @@ using TL;
 using TL.Methods;
 using WTelegram;
 using Xunit;
+using Authorization = TL.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
@@ -113,5 +114,25 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             phone_code_hash = code.phone_code_hash,
         });
         Assert.True(result);
+    }
+    [Fact]
+    public async Task SignUp_Returns_Authorization()
+    {
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
+        {
+            phone_number = "+15555555555",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var result = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+15555555555",
+            phone_code_hash = code.phone_code_hash,
+        });
+        Assert.IsType<Auth_Authorization>(result);
+        Assert.IsType<User>(((Auth_Authorization)result).user);
     }
 }
