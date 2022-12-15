@@ -22,7 +22,6 @@ using TL;
 using TL.Methods;
 using WTelegram;
 using Xunit;
-using Authorization = TL.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
@@ -56,83 +55,107 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             default: return null;
         }
     }
+
     [Fact]
     public async Task CreatesAuthKey()
     {
-        using var client = new WTelegram.Client(Config, new MemoryStream());
-        await client.ConnectAsync();
-        Assert.NotNull(client.TLConfig);
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            Assert.NotNull(client.TLConfig);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
     }
+
     [Fact]
     public async Task SendCode_Returns_SentCode()
     {
-        using var client = new WTelegram.Client(Config, new MemoryStream());
-        await client.ConnectAsync();
-        var code = await client.Invoke(new Auth_SendCode()
+        async Task RunTest()
         {
-            phone_number = "+15555555555",
-            api_id = 11111,
-            api_hash = "11111111111111111111111111111111",
-            settings = new CodeSettings()
-        });
-        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+15555555555",
+                api_id = 11111,
+                api_hash = "11111111111111111111111111111111",
+                settings = new CodeSettings()
+            });
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
     }
+
     [Fact]
     public async Task ResendCode_Returns_SentCode()
     {
-        using var client = new WTelegram.Client(Config, new MemoryStream());
-        await client.ConnectAsync();
-        var code = await client.Invoke(new Auth_SendCode()
+        async Task RunTest()
         {
-            phone_number = "+15555555555",
-            api_id = 11111,
-            api_hash = "11111111111111111111111111111111",
-            settings = new CodeSettings()
-        });
-        code = await client.Invoke(new Auth_ResendCode()
-        {
-            phone_number = "+15555555555",
-            phone_code_hash = code.phone_code_hash,
-        });
-        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+15555555555",
+                api_id = 11111,
+                api_hash = "11111111111111111111111111111111",
+                settings = new CodeSettings()
+            });
+            code = await client.Invoke(new Auth_ResendCode()
+            {
+                phone_number = "+15555555555",
+                phone_code_hash = code.phone_code_hash,
+            });
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
     }
+
     [Fact]
     public async Task CancelCode_Returns_True()
     {
-        using var client = new WTelegram.Client(Config, new MemoryStream());
-        await client.ConnectAsync();
-        var code = await client.Invoke(new Auth_SendCode()
+        async Task RunTest()
         {
-            phone_number = "+15555555555",
-            api_id = 11111,
-            api_hash = "11111111111111111111111111111111",
-            settings = new CodeSettings()
-        });
-        var result = await client.Invoke(new Auth_CancelCode()
-        {
-            phone_number = "+15555555555",
-            phone_code_hash = code.phone_code_hash,
-        });
-        Assert.True(result);
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+15555555555",
+                api_id = 11111,
+                api_hash = "11111111111111111111111111111111",
+                settings = new CodeSettings()
+            });
+            var result = await client.Invoke(new Auth_CancelCode()
+            {
+                phone_number = "+15555555555",
+                phone_code_hash = code.phone_code_hash,
+            });
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
     }
     [Fact]
     public async Task SignUp_Returns_Authorization()
     {
-        using var client = new WTelegram.Client(Config, new MemoryStream());
-        await client.ConnectAsync();
-        var code = await client.Invoke(new Auth_SendCode()
+        async Task RunTest()
         {
-            phone_number = "+15555555555",
-            api_id = 11111,
-            api_hash = "11111111111111111111111111111111",
-            settings = new CodeSettings()
-        });
-        var result = await client.Invoke(new Auth_SignIn()
-        {
-            phone_number = "+15555555555",
-            phone_code_hash = code.phone_code_hash,
-        });
-        Assert.IsType<Auth_Authorization>(result);
-        Assert.IsType<User>(((Auth_Authorization)result).user);
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode() { phone_number = "+15555555555", api_id = 11111, api_hash = "11111111111111111111111111111111", settings = new CodeSettings() });
+            var result = await client.Invoke(new Auth_SignIn() { phone_number = "+15555555555", phone_code_hash = code.phone_code_hash, });
+            Assert.IsType<Auth_Authorization>(result);
+            Assert.IsType<User>(((Auth_Authorization)result).user);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
     }
 }
