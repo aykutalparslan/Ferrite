@@ -74,26 +74,7 @@ public class LocalFileOwnerTests
         
         Assert.Equal(randomBytes, actual);
         
-        if(Directory.Exists("object-metadata"+pathSuffix)) DeleteDirectory("object-metadata"+pathSuffix);
-        if(Directory.Exists("ferrite-files"+pathSuffix)) DeleteDirectory("ferrite-files"+pathSuffix);
-    }
-    //From: https://stackoverflow.com/a/329502/2015348
-    private static void DeleteDirectory(string target_dir)
-    {
-        string[] files = Directory.GetFiles(target_dir);
-        string[] dirs = Directory.GetDirectories(target_dir);
-
-        foreach (string file in files)
-        {
-            File.SetAttributes(file, FileAttributes.Normal);
-            File.Delete(file);
-        }
-
-        foreach (string dir in dirs)
-        {
-            DeleteDirectory(dir);
-        }
-
-        Directory.Delete(target_dir, false);
+        if(Directory.Exists("object-metadata"+pathSuffix)) Util.DeleteDirectory("object-metadata"+pathSuffix);
+        if(Directory.Exists("ferrite-files"+pathSuffix)) Util.DeleteDirectory("ferrite-files"+pathSuffix);
     }
 }
