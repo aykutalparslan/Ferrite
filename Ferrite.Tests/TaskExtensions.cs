@@ -20,6 +20,7 @@ namespace Ferrite.Tests;
 
 public static class TaskExtensions
 {
+    //https://devblogs.microsoft.com/pfxteam/crafting-a-task-timeoutafter-method/
     public static async Task TimeoutAfter(this Task task, int millisecondsTimeout)
     {
         if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout))) 
