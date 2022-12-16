@@ -22,9 +22,9 @@ public class LocalUnitOfWork : IUnitOfWork
 {
     private readonly RocksDBContext _rocksdb;
 
-    public LocalUnitOfWork()
+    public LocalUnitOfWork(string path = "rocksdb-data")
     {
-        _rocksdb = new RocksDBContext("rocksdb-data");
+        _rocksdb = new RocksDBContext(path);
         AuthKeyRepository = new AuthKeyRepository(new RocksDBKVStore(_rocksdb), new InMemoryStore());
         AuthorizationRepository =
             new AuthorizationRepository(new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb));

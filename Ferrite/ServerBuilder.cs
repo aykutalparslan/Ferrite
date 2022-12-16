@@ -44,9 +44,9 @@ namespace Ferrite;
 
 public class ServerBuilder
 {
-    public static IFerriteServer BuildServer(string ipAddress, int port)
+    public static IFerriteServer BuildServer(string ipAddress, int port, string path = "data")
     {
-        IContainer container = BuildContainer(ipAddress, port);
+        IContainer container = BuildContainer(ipAddress, port, path);
 
         var scope = container.BeginLifetimeScope();
 
@@ -64,14 +64,14 @@ public class ServerBuilder
         
         return scope.Resolve<IFerriteServer>();
     }
-    private static IContainer BuildContainer(string ipAddress, int port)
+    private static IContainer BuildContainer(string ipAddress, int port, string path)
     {
         var builder = new ContainerBuilder();
         RegisterPrimitives(builder);
         RegisterServices(builder);
         RegisterSchema(builder);
         RegisterCoreComponents(builder);
-        RegisterLocalDataStores(builder);
+        RegisterLocalDataStores(builder, path);
         builder.Register(c=> new DataCenter(ipAddress, port, false))
             .As<IDataCenter>().SingleInstance();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
@@ -86,20 +86,24 @@ public class ServerBuilder
         builder.RegisterType<KeyProvider>().As<IKeyProvider>().SingleInstance();
     }
 
-    private static void RegisterLocalDataStores(ContainerBuilder builder)
+    private static void RegisterLocalDataStores(ContainerBuilder builder, string path)
     {
+        if (!Directory.Exists(path))
+        {
+            Directory.CreateDirectory(path);
+        }
         builder.Register(_ => new LocalPipe())
             .As<IMessagePipe>().SingleInstance();
-        builder.Register(_ => new LocalObjectStore("uploaded-files"))
+        builder.Register(_ => new LocalObjectStore(Path.Combine(path, "uploaded-files")))
             .As<IObjectStore>().SingleInstance();
-        builder.Register(_ => new LuceneSearchEngine("lucene-index-data"))
+        builder.Register(_ => new LuceneSearchEngine(Path.Combine(path, "lucene-index-data")))
             .As<ISearchEngine>().SingleInstance();
-        builder.Register(_ => new FasterCounterFactory("faster-counter-data"))
+        builder.Register(_ => new FasterCounterFactory(Path.Combine(path, "faster-counter-data")))
             .As<ICounterFactory>().SingleInstance();
-        builder.Register(_ => new FasterUpdatesContextFactory("faster-updates-data"))
+        builder.Register(_ => new FasterUpdatesContextFactory(Path.Combine(path,"faster-updates-data")))
             .As<IUpdatesContextFactory>().SingleInstance();
-        builder.RegisterType<LocalUnitOfWork>().As<IUnitOfWork>()
-            .SingleInstance();
+        builder.Register(_ => new LocalUnitOfWork(Path.Combine(path, "rocksdb-data")))
+            .As<IUnitOfWork>().SingleInstance();
     }
 
     private static void RegisterCoreComponents(ContainerBuilder builder)

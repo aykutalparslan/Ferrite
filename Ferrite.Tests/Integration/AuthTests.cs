@@ -29,8 +29,11 @@ public class AuthTests
 {
     static AuthTests()
     {
-        IFerriteServer ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52222);
-        _ = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52222), default);
+        var path = "auth-test-data";
+        Util.DeleteDirectory(path);
+        Directory.CreateDirectory(path);
+        var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52222, path);
+        var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52222), default);
         Client.LoadPublicKey(@"-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEAt1YElR7/5enRYr788g210K6QZzUAmaithnSzmQsKb+XL5KhQHrJw
 VNMINO17SkB6i4fxG7ydDyFDbLA0Ls6jQZ0mX33Gl8vYWsczPbkbqzs9N6GkOo10
@@ -41,6 +44,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
 -----END RSA PUBLIC KEY-----
 ");
     }
+
     private static string Config(string what)
     {
         switch (what)
@@ -100,14 +104,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555555",
+                phone_number = "+15555555556",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
             });
             code = await client.Invoke(new Auth_ResendCode()
             {
-                phone_number = "+15555555555",
+                phone_number = "+15555555556",
                 phone_code_hash = code.phone_code_hash,
             });
             Assert.IsType<Auth_SentCodeTypeSms>(code.type);
@@ -126,14 +130,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555555",
+                phone_number = "+15555555557",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
             });
             var result = await client.Invoke(new Auth_CancelCode()
             {
-                phone_number = "+15555555555",
+                phone_number = "+15555555557",
                 phone_code_hash = code.phone_code_hash,
             });
             Assert.True(result);
@@ -151,7 +155,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555555", 
+                phone_number = "+15555555558", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
@@ -160,12 +164,66 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             {
                 await client.Invoke(new Auth_SignUp()
                 {
-                    phone_number = "+15555555555",
+                    phone_number = "+15555555558",
                     phone_code_hash = code.phone_code_hash,
                     first_name = "aaa",
                     last_name = "bbb",
                 });
             });
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    [Fact]
+    public async Task SignIn_Returns_SignUpRequired()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+15555555559", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            var result = await client.Invoke(new Auth_SignUp()
+            {
+                phone_number = "+15555555559",
+                phone_code_hash = code.phone_code_hash,
+                first_name = "aaa",
+                last_name = "bbb",
+            });
+            Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    [Fact]
+    public async Task SignUp_Returns_Authorization()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+15555555560", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            var result = await client.Invoke(new Auth_SignUp()
+            {
+                phone_number = "+15555555560",
+                phone_code_hash = code.phone_code_hash,
+                first_name = "aaa",
+                last_name = "bbb",
+            });
+            Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
         }
 
         Task testTask = RunTest();
