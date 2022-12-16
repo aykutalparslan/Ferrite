@@ -26,6 +26,7 @@ using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer148;
 using Ferrite.TL.slim.layer148.auth;
 using Ferrite.Utils;
 using xxHash;
@@ -377,32 +378,23 @@ public class AuthService : IAuthService
 
     public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
     {
-        _log.Debug($"*** Sign In for authKey with Id: {authKeyId} ***");
+        /*_log.Debug($"*** Sign In for authKey with Id: {authKeyId} ***");
         var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
-            return new AuthorizationDTO()
-            {
-                AuthorizationType = AuthorizationType.PhoneCodeInvalid,
-            };
+            return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_INVALID"u8);
         }
         _unitOfWork.SignInRepository.PutSignIn(authKeyId, phoneNumber, phoneCodeHash);
         await _unitOfWork.SaveAsync();
         var userId = _unitOfWork.UserRepository.GetUserId(phoneNumber);
         if(userId == null)
         {
-            return new AuthorizationDTO()
-            {
-                AuthorizationType = AuthorizationType.SignUpRequired,
-            };
+            return GenerateSignUpRequired();
         }
         var user = _users.GetUser((long)userId);
         if(user == null)
         {
-            return new AuthorizationDTO()
-            {
-                AuthorizationType = AuthorizationType.SignUpRequired,
-            };
+            return GenerateSignUpRequired();
         }
         user.Self = true;
         user.Min = true;
@@ -421,14 +413,22 @@ public class AuthService : IAuthService
         {
             AuthorizationType = AuthorizationType.Authorization,
             User = user,
-        };
+        };*/
+        throw new NotImplementedException();
     }
 
-    public async Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber,
-        string phoneCodeHash, string firstName, string lastName)
+    private TLBytes GenerateSignUpRequired()
     {
-        /*_log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
+        var signupRequired = AuthorizationSignUpRequired.Builder().Build();
+        return signupRequired.TLBytes!.Value;
+    }
+
+    public async Task<TLBytes> SignUp(long authKeyId, TLBytes q)
+    {
+        _log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
         long userId = await _userIdCnt.IncrementAndGet();
+        var signUpParameters = GetSignUpParameters(q);
+        var (phoneNumber, phoneCodeHash, firstName, lastName) = signUpParameters;
         if(userId == 0)
         {
             userId = await _userIdCnt.IncrementAndGet();
@@ -437,63 +437,60 @@ public class AuthService : IAuthService
         var signedInAuthKeyId = _unitOfWork.SignInRepository.GetSignIn(phoneNumber, phoneCodeHash);
         if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {
-            return new AuthorizationDTO()
-            {
-                AuthorizationType = AuthorizationType.PhoneCodeInvalid,
-            };
+            return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_INVALID"u8);
         } 
         var codeBytes = BitConverter.GetBytes(int.Parse(phoneCode));
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
         if (phoneCodeHash != hash)
         {
-            return new AuthorizationDTO()
-            {
-                AuthorizationType = AuthorizationType.PhoneCodeInvalid,
-            };
+            return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_INVALID"u8);
         }
-        var user = new UserDTO()
-        {
-            Id = userId,
-            Phone = phoneNumber,
-            FirstName = firstName,
-            LastName = lastName,
-            AccessHash = _random.NextLong(),
-            Photo = new UserProfilePhotoDTO()
-            {
-                Empty = true
-            }
-        };
-        _unitOfWork.UserRepository.PutUser(user);
-        await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
-            user.FirstName, user.LastName, user.Phone));
+        
+        using var user = SaveUser(userId, phoneNumber, firstName, lastName);
+        await _search.IndexUser(new Data.Search.UserSearchModel(userId, "", 
+            firstName, lastName, phoneNumber));
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
-            UserId = user.Id,
+            UserId = userId,
             ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
         await _unitOfWork.SaveAsync();
-        return new AuthorizationDTO()
-        {
-            AuthorizationType = AuthorizationType.Authorization,
-            User = new UserDTO()
-            {
-                Id = user.Id,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                Phone = user.Phone,
-                Status = UserStatusDTO.Empty,
-                Self = true,
-                Photo = new UserProfilePhotoDTO()
-                {
-                    Empty = true
-                }
-            }
-        };*/
-        throw new NotImplementedException();
+        return GenerateAuthorization(user);
+    }
+    
+    private static ValueTuple<string, string, string, string> GetSignUpParameters(TLBytes q)
+    {
+        var signUp = new SignUp(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(signUp.PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(signUp.PhoneCodeHash);
+        var firstName = Encoding.UTF8.GetString(signUp.FirstName);
+        var lastName = Encoding.UTF8.GetString(signUp.LastName);
+        return (phoneNumber, phoneCodeHash, firstName, lastName);
+    }
+
+    private TLBytes GenerateAuthorization(TLBytes user)
+    {
+        var authorization = AuthAuthorization.Builder().User(user.AsSpan()).Build();
+        return authorization.TLBytes!.Value;
+    }
+
+    private TLBytes SaveUser(long userId ,string phoneNumber, string firstName, string lastName)
+    {
+        using var photo = UserProfilePhotoEmpty.Builder().Build();
+        var user = User.Builder()
+            .Id(userId)
+            .Phone(Encoding.UTF8.GetBytes(phoneNumber))
+            .FirstName(Encoding.UTF8.GetBytes(firstName))
+            .LastName(Encoding.UTF8.GetBytes(lastName))
+            .AccessHash(_random.NextLong())
+            .Photo(photo.TLBytes!.Value.AsSpan())
+            .Build();
+        _unitOfWork.UserRepository.PutUser(user.TLBytes!.Value);
+        return user.TLBytes!.Value;
     }
 
     public async Task<bool> SaveAppInfo(AppInfoDTO info)

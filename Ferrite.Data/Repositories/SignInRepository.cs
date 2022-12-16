@@ -37,6 +37,7 @@ public class SignInRepository : ISignInRepository
 
     public long GetSignIn(string phoneNumber, string phoneCodeHash)
     {
-        return BitConverter.ToInt64(_store.Get(phoneNumber, phoneCodeHash));
+        var result = _store.Get(phoneNumber, phoneCodeHash);
+        return result != null ? BitConverter.ToInt64(result) : 0;
     }
 }

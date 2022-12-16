@@ -29,7 +29,7 @@ public interface IAuthService
     public Task<AppInfoDTO?> GetAppInfo(long authKeyId);
     public Task<bool> IsAuthorized(long authKeyId);
     public ValueTask<TLBytes> SendCode(TLBytes q);
-    public Task<AuthorizationDTO> SignUp(long authKeyId, string phoneNumber, string phoneCodeHash, string firstName, string lastName);
+    public Task<TLBytes> SignUp(long authKeyId, TLBytes q);
     public Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
     public Task<LoggedOutDTO?> LogOut(long authKeyId);
     public Task<bool> ResetAuthorizations(long authKeyId);

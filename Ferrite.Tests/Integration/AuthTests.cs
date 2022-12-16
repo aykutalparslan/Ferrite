@@ -143,16 +143,29 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         await testTask.TimeoutAfter(4000);
     }
     [Fact]
-    public async Task SignUp_Returns_Authorization()
+    public async Task SignUp_Returns_RpcError()
     {
         async Task RunTest()
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode() { phone_number = "+15555555555", api_id = 11111, api_hash = "11111111111111111111111111111111", settings = new CodeSettings() });
-            var result = await client.Invoke(new Auth_SignIn() { phone_number = "+15555555555", phone_code_hash = code.phone_code_hash, });
-            Assert.IsType<Auth_Authorization>(result);
-            Assert.IsType<User>(((Auth_Authorization)result).user);
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+15555555555", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            await Assert.ThrowsAsync<RpcException>(async () =>
+            {
+                await client.Invoke(new Auth_SignUp()
+                {
+                    phone_number = "+15555555555",
+                    phone_code_hash = code.phone_code_hash,
+                    first_name = "aaa",
+                    last_name = "bbb",
+                });
+            });
         }
 
         Task testTask = RunTest();

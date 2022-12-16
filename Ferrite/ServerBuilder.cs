@@ -170,6 +170,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.layer148_CancelCode))
             .SingleInstance();
+        builder.RegisterType<SignUpFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(148, Constructors.layer148_SignUp))
+            .SingleInstance();
     }
 
     private static void RegisterSchema(ContainerBuilder builder)
