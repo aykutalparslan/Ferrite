@@ -34,6 +34,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TLParser", "Ferrite
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ferrite.TL.slim", "Ferrite.TL.slim\Ferrite.TL.slim.csproj", "{21EF4764-AF52-440A-84C1-996C19F63283}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WTelegramClient", "WTelegramClient\src\WTelegramClient.csproj", "{43113245-3ECC-4891-8A20-63255F0E8D41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,6 +86,10 @@ Global
 		{21EF4764-AF52-440A-84C1-996C19F63283}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21EF4764-AF52-440A-84C1-996C19F63283}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21EF4764-AF52-440A-84C1-996C19F63283}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43113245-3ECC-4891-8A20-63255F0E8D41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43113245-3ECC-4891-8A20-63255F0E8D41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43113245-3ECC-4891-8A20-63255F0E8D41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43113245-3ECC-4891-8A20-63255F0E8D41}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

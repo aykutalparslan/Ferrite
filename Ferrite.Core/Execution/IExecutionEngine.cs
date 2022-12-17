@@ -23,6 +23,7 @@ namespace Ferrite.Core.Execution;
 
 public interface IExecutionEngine
 {
+    protected const int DefaultLayer = 150;
     /// <summary>
     /// Invokes a Function with the specified layer.
     /// Function (functional combinator) is a combinator which may be computed (reduced)
@@ -33,6 +34,6 @@ public interface IExecutionEngine
     /// <param name="rpc">Serialized functional combinator.</param>
     /// <param name="layer">Layer with which the function should be computed.</param>
     /// <returns>TL Serialized result of the computation.</returns>
-    public ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = 148);
-    public bool IsImplemented(int constructor, int layer = 148);
+    public ValueTask<TLBytes?> Invoke(TLBytes rpc, TLExecutionContext ctx, int layer = DefaultLayer);
+    public bool IsImplemented(int constructor, int layer = DefaultLayer);
 }

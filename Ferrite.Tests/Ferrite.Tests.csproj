@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.1" />
-    <PackageReference Include="WTelegramClient" Version="3.1.2" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -43,6 +42,7 @@
     <ProjectReference Include="..\Ferrite.Crypto\Ferrite.Crypto.csproj" />
     <ProjectReference Include="..\Ferrite.Core\Ferrite.Core.csproj" />
     <ProjectReference Include="..\Ferrite.Utils\Ferrite.Utils.csproj" />
+    <ProjectReference Include="..\WTelegramClient\src\WTelegramClient.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="PQ\" />

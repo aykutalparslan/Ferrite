@@ -112,7 +112,8 @@ public class TLSourceGenerator
                     arg.Identifier == "out" || arg.Identifier == "length" ||
                     arg.Identifier == "static" || arg.Identifier == "params" ||
                     arg.Identifier == "default" || arg.Identifier == "public" ||
-                    arg.Identifier == "readonly" || arg.Identifier == "private")
+                    arg.Identifier == "readonly" || arg.Identifier == "private" ||
+                    arg.Identifier == "short")
                 {
                     arg.Identifier += "Property";
                 }

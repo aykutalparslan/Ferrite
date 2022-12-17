@@ -24,9 +24,9 @@ using Ferrite.Core.Connection;
 using Ferrite.Core.Connection.TransportFeatures;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
-using Ferrite.Core.Execution.Functions.Layer148;
-using Ferrite.Core.Execution.Functions.Layer148.Auth;
-using Ferrite.Core.Execution.Functions.Layer148.Help;
+using Ferrite.Core.Execution.Functions.Layer150;
+using Ferrite.Core.Execution.Functions.Layer150.Auth;
+using Ferrite.Core.Execution.Functions.Layer150.Help;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
@@ -44,6 +44,7 @@ namespace Ferrite;
 
 public class ServerBuilder
 {
+    private const int DefaultLayer = 150;
     public static IFerriteServer BuildServer(string ipAddress, int port, string path = "data")
     {
         IContainer container = BuildContainer(ipAddress, port, path);
@@ -132,55 +133,75 @@ public class ServerBuilder
 
     private static void RegisterApiLayers(ContainerBuilder builder)
     {
-        builder.RegisterType<ReqPQFunc>()
+        RegisterMTProtoMethods(builder);
+        RegisterBaseMethods(builder);
+        RegisterHelpMethods(builder);
+        RegisterAuthMethods(builder);
+    }
+
+    private static void RegisterAuthMethods(ContainerBuilder builder)
+    {
+        builder.RegisterType<SendCodeFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.mtproto_ReqPqMulti))
+                new FunctionKey(DefaultLayer, Constructors.layer150_SendCode))
             .SingleInstance();
-        builder.RegisterType<ReqDhParamsFunc>()
+        builder.RegisterType<ResendCodeFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.mtproto_ReqDhParams))
+                new FunctionKey(DefaultLayer, Constructors.layer150_ResendCode))
             .SingleInstance();
-        builder.RegisterType<SetClientDhParamsFunc>()
+        builder.RegisterType<CancelCodeFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.mtproto_SetClientDhParams))
+                new FunctionKey(DefaultLayer, Constructors.layer150_CancelCode))
             .SingleInstance();
-        builder.RegisterType<MsgsAckFunc>()
+        builder.RegisterType<SignUpFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.mtproto_MsgsAck))
+                new FunctionKey(DefaultLayer, Constructors.layer150_SignUp))
             .SingleInstance();
+        builder.RegisterType<SignInFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_SignIn))
+            .SingleInstance();
+    }
+
+    private static void RegisterHelpMethods(ContainerBuilder builder)
+    {
+        builder.RegisterType<GetConfigFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_GetConfig))
+            .SingleInstance();
+    }
+
+    private static void RegisterBaseMethods(ContainerBuilder builder)
+    {
         builder.RegisterType<InitConnectionFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_InitConnection))
+                new FunctionKey(DefaultLayer, Constructors.layer150_InitConnection))
             .SingleInstance()
             .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies);
         builder.RegisterType<InvokeWithLayerFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_InvokeWithLayer))
+                new FunctionKey(DefaultLayer, Constructors.layer150_InvokeWithLayer))
             .SingleInstance()
             .PropertiesAutowired(PropertyWiringOptions.AllowCircularDependencies);
-        builder.RegisterType<GetConfigFunc>()
+    }
+
+    private static void RegisterMTProtoMethods(ContainerBuilder builder)
+    {
+        builder.RegisterType<ReqPQFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_GetConfig))
+                new FunctionKey(DefaultLayer, Constructors.mtproto_ReqPqMulti))
             .SingleInstance();
-        builder.RegisterType<SendCodeFunc>()
+        builder.RegisterType<ReqDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_SendCode))
+                new FunctionKey(DefaultLayer, Constructors.mtproto_ReqDhParams))
             .SingleInstance();
-        builder.RegisterType<ResendCodeFunc>()
+        builder.RegisterType<SetClientDhParamsFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_ResendCode))
+                new FunctionKey(DefaultLayer, Constructors.mtproto_SetClientDhParams))
             .SingleInstance();
-        builder.RegisterType<CancelCodeFunc>()
+        builder.RegisterType<MsgsAckFunc>()
             .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_CancelCode))
-            .SingleInstance();
-        builder.RegisterType<SignUpFunc>()
-            .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_SignUp))
-            .SingleInstance();
-        builder.RegisterType<SignInFunc>()
-            .Keyed<ITLFunction>(
-                new FunctionKey(148, Constructors.layer148_SignIn))
+                new FunctionKey(DefaultLayer, Constructors.mtproto_MsgsAck))
             .SingleInstance();
     }
 
