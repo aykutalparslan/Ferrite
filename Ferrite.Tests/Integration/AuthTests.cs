@@ -25,6 +25,8 @@ using Xunit;
 
 namespace Ferrite.Tests.Integration;
 
+// Includes a modified portion of:
+// https://github.com/wiz0u/WTelegramClient/blob/e7ec282ac10afe4769b2af2d383efdf201af1348/src/Client.cs
 public class AuthTests
 {
     static AuthTests()
@@ -324,6 +326,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+
     [Fact]
     public async Task Should_ExportAndImport_Authorization()
     {
