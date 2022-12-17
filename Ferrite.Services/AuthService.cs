@@ -105,13 +105,15 @@ public class AuthService : IAuthService
             (TLBytes)BoolFalse.Builder().Build().TLBytes!;
     }
     
-    private static ValueTuple<string, string> GetCancelCodeParameters(TLBytes q)
+    private static CancelCodeParameters GetCancelCodeParameters(TLBytes q)
     {
         var cancelCode = new CancelCode(q.AsSpan());
         var phoneNumber = Encoding.UTF8.GetString(cancelCode.PhoneNumber);
         var phoneCodeHash = Encoding.UTF8.GetString(cancelCode.PhoneCodeHash);
-        return (phoneNumber, phoneCodeHash);
+        return new CancelCodeParameters(phoneNumber, phoneCodeHash);
     }
+
+    private readonly record struct CancelCodeParameters(string PhoneNumber, string PhoneCodeHash);
 
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1)
     {
@@ -320,13 +322,15 @@ public class AuthService : IAuthService
         return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_EXPIRED"u8);
     }
     
-    private static ValueTuple<string, string> GetResendCodeParameters(TLBytes q)
+    private static ResendCodeParameters GetResendCodeParameters(TLBytes q)
     {
         var sendCode = new ResendCode(q.AsSpan());
         var phoneNumber = Encoding.UTF8.GetString(sendCode.PhoneNumber);
         var phoneCodeHash = Encoding.UTF8.GetString(sendCode.PhoneCodeHash);
-        return (phoneNumber, phoneCodeHash);
+        return new ResendCodeParameters(phoneNumber, phoneCodeHash);
     }
+    
+    private readonly record struct ResendCodeParameters(string PhoneNumber, string PhoneCodeHash);
 
     public async Task<bool> ResetAuthorizations(long authKeyId)
     {
@@ -352,21 +356,30 @@ public class AuthService : IAuthService
     {
         var (phoneNumber, apiId, apiHash) = GetSendCodeParameters(q);
         var code = await _verificationGateway.SendSms(phoneNumber);
-        var codeBytes = Encoding.UTF8.GetBytes(code);
-        var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        var hash = GeneratePhoneCodeHash(code);
         
         _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code,
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
         return GenerateSentCode(Encoding.UTF8.GetBytes(hash));
     }
-    private static ValueTuple<string, int, string> GetSendCodeParameters(TLBytes q)
+
+    private string GeneratePhoneCodeHash(string code)
+    {
+        var codeBytes = Encoding.UTF8.GetBytes(code);
+        return codeBytes.GetXxHash64(1071).ToString("x");
+    }
+
+    private static SendCodeParameters GetSendCodeParameters(TLBytes q)
     {
         var sendCode = new SendCode(q.AsSpan());
         var phoneNumber = Encoding.UTF8.GetString(sendCode.PhoneNumber);
         var apiHash = Encoding.UTF8.GetString(sendCode.ApiHash);
-        return (phoneNumber, sendCode.ApiId, apiHash);
+        return new SendCodeParameters(phoneNumber, sendCode.ApiId, apiHash);
     }
+    
+    private readonly record struct SendCodeParameters(string PhoneNumber, int ApiId, string PhoneCodeHash);
+    
     private static TLBytes GenerateSentCode(ReadOnlySpan<byte> phoneCodeHash)
     {
         return ((TLBytes)SentCode.Builder()
@@ -376,9 +389,11 @@ public class AuthService : IAuthService
             .Build().TLBytes!);
     }
 
-    public async Task<AuthorizationDTO> SignIn(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    public async Task<TLBytes> SignIn(long authKeyId, TLBytes q)
     {
-        /*_log.Debug($"*** Sign In for authKey with Id: {authKeyId} ***");
+        var signInParameters = GetSignInParameters(q);
+        var (phoneNumber, phoneCodeHash, phoneCode) = signInParameters;
+        _log.Debug($"*** Sign In for authKey with Id: {authKeyId} ***");
         var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (code != phoneCode)
         {
@@ -391,31 +406,47 @@ public class AuthService : IAuthService
         {
             return GenerateSignUpRequired();
         }
-        var user = _users.GetUser((long)userId);
+        var user = _unitOfWork.UserRepository.GetUser(userId.Value);
         if(user == null)
         {
             return GenerateSignUpRequired();
         }
-        user.Self = true;
-        user.Min = true;
-        user.ApplyMinPhoto = true;
+
+        user = SetUserAttributes(user.Value);
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
             Phone = phoneNumber,
-            UserId = user.Id,
+            UserId = userId.Value,
             ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
         });
         await _unitOfWork.SaveAsync();
-        return new AuthorizationDTO()
-        {
-            AuthorizationType = AuthorizationType.Authorization,
-            User = user,
-        };*/
-        throw new NotImplementedException();
+        return GenerateAuthorization(user.Value);
     }
+
+    private TLBytes SetUserAttributes(TLBytes user)
+    {
+        using (user)
+        {
+            var u = new User(user.AsSpan());
+            var userModified = u.Clone()
+                .Self(true).Build();
+            return userModified.TLBytes!.Value;
+        }
+    }
+
+    private static SignInParameters GetSignInParameters(TLBytes q)
+    {
+        var signIn = new SignIn(q.AsSpan());
+        var phoneNumber = Encoding.UTF8.GetString(signIn.PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(signIn.PhoneCodeHash);
+        var phoneCode = Encoding.UTF8.GetString(signIn.PhoneCode);
+        return new SignInParameters(phoneNumber, phoneCodeHash, phoneCode);
+    }
+
+    private readonly record struct SignInParameters(string PhoneNumber, string PhoneCodeHash, string PhoneCode);
 
     private TLBytes GenerateSignUpRequired()
     {
@@ -428,32 +459,33 @@ public class AuthService : IAuthService
         _log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
         long userId = await _userIdCnt.IncrementAndGet();
         var signUpParameters = GetSignUpParameters(q);
-        var (phoneNumber, phoneCodeHash, firstName, lastName) = signUpParameters;
         if(userId == 0)
         {
             userId = await _userIdCnt.IncrementAndGet();
         }
-        var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
-        var signedInAuthKeyId = _unitOfWork.SignInRepository.GetSignIn(phoneNumber, phoneCodeHash);
+        var phoneCode = _unitOfWork.PhoneCodeRepository.GetPhoneCode(signUpParameters.PhoneNumber, 
+            signUpParameters.PhoneCodeHash);
+        var signedInAuthKeyId = _unitOfWork.SignInRepository.GetSignIn(signUpParameters.PhoneNumber, 
+            signUpParameters.PhoneCodeHash);
         if(phoneCode == null || signedInAuthKeyId != authKeyId)
         {
             return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_INVALID"u8);
-        } 
-        var codeBytes = BitConverter.GetBytes(int.Parse(phoneCode));
-        var hash = codeBytes.GetXxHash64(1071).ToString("x");
-        if (phoneCodeHash != hash)
+        }
+        var hash = GeneratePhoneCodeHash(phoneCode);
+        if (signUpParameters.PhoneCodeHash != hash)
         {
             return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_INVALID"u8);
         }
         
-        using var user = SaveUser(userId, phoneNumber, firstName, lastName);
+        using var user = SaveUser(userId, signUpParameters.PhoneNumber, 
+            signUpParameters.FirstName, signUpParameters.LastName);
         await _search.IndexUser(new Data.Search.UserSearchModel(userId, "", 
-            firstName, lastName, phoneNumber));
+            signUpParameters.FirstName, signUpParameters.LastName, signUpParameters.PhoneNumber));
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
         {
             AuthKeyId = authKeyId,
-            Phone = phoneNumber,
+            Phone = signUpParameters.PhoneNumber,
             UserId = userId,
             ApiLayer = authKeyDetails?.ApiLayer ?? -1,
             LoggedIn = true
@@ -462,15 +494,18 @@ public class AuthService : IAuthService
         return GenerateAuthorization(user);
     }
     
-    private static ValueTuple<string, string, string, string> GetSignUpParameters(TLBytes q)
+    private static SignUpParameters GetSignUpParameters(TLBytes q)
     {
         var signUp = new SignUp(q.AsSpan());
         var phoneNumber = Encoding.UTF8.GetString(signUp.PhoneNumber);
         var phoneCodeHash = Encoding.UTF8.GetString(signUp.PhoneCodeHash);
         var firstName = Encoding.UTF8.GetString(signUp.FirstName);
         var lastName = Encoding.UTF8.GetString(signUp.LastName);
-        return (phoneNumber, phoneCodeHash, firstName, lastName);
+        return new SignUpParameters(phoneNumber, phoneCodeHash, firstName, lastName);
     }
+
+    private readonly record struct SignUpParameters(string PhoneNumber, 
+        string PhoneCodeHash, string FirstName, string LastName);
 
     private TLBytes GenerateAuthorization(TLBytes user)
     {

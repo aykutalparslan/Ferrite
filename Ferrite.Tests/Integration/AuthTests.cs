@@ -189,12 +189,12 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
-            var result = await client.Invoke(new Auth_SignUp()
+            var result = await client.Invoke(new Auth_SignIn()
             {
                 phone_number = "+15555555559",
                 phone_code_hash = code.phone_code_hash,
-                first_name = "aaa",
-                last_name = "bbb",
+                phone_code = "12345",
+                flags = Auth_SignIn.Flags.has_phone_code
             });
             Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
         }
@@ -216,6 +216,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
+            var signIn = await client.Invoke(new Auth_SignIn()
+            {
+                phone_number = "+15555555560",
+                phone_code_hash = code.phone_code_hash,
+                phone_code = "12345",
+                flags = Auth_SignIn.Flags.has_phone_code
+            });
+            Assert.IsType<Auth_AuthorizationSignUpRequired>(signIn);
             var result = await client.Invoke(new Auth_SignUp()
             {
                 phone_number = "+15555555560",
@@ -223,7 +231,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
                 first_name = "aaa",
                 last_name = "bbb",
             });
-            Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
+            Assert.IsType<Auth_Authorization>(result);
         }
 
         Task testTask = RunTest();

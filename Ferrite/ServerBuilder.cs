@@ -178,6 +178,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(148, Constructors.layer148_SignUp))
             .SingleInstance();
+        builder.RegisterType<SignInFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(148, Constructors.layer148_SignIn))
+            .SingleInstance();
     }
 
     private static void RegisterSchema(ContainerBuilder builder)

@@ -55,33 +55,6 @@ namespace Ferrite.Tests.TL;
 public class AuthTests
 {
     [Fact]
-    public async Task SignIn_Returns_SignUpRequired()
-    {
-        var builder = GetBuilder();
-        var auth = new Mock<IAuthService>();
-        auth.Setup(x => x.SignIn(It.IsAny<long>(), 
-            It.IsAny<string>(), It.IsAny<string>(), 
-            It.IsAny<string>())).ReturnsAsync(() => new Ferrite.Data.Auth.AuthorizationDTO()
-        {
-            AuthorizationType = AuthorizationType.SignUpRequired
-        });
-        builder.RegisterMock(auth);
-        var container = builder.Build();
-        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
-        var signIn = factory.Resolve<SignIn>();
-        signIn.PhoneCode = "12345";
-        signIn.PhoneCodeHash = "acabadef";
-        signIn.PhoneNumber = "5554443322";
-        var result = await signIn.ExecuteAsync(new TLExecutionContext(new Dictionary<string, object>())
-        {
-            MessageId = 1223
-        });
-        Assert.IsType<RpcResult>(result);
-        var rslt = (RpcResult)result;
-        Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<AuthorizationSignUpRequiredImpl>(rslt.Result);
-    }
-    [Fact]
     public async Task Logout_Returns_LoggedOut()
     {
         var builder = GetBuilder();

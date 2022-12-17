@@ -94,7 +94,7 @@ public class SignIn : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var signInResult = await _auth.SignIn(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId
+        /*var signInResult = await _auth.SignIn(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId
             , _phoneNumber, _phoneCodeHash, _phoneCode);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
@@ -118,7 +118,8 @@ public class SignIn : ITLObject, ITLMethod
             authorization.User = user;
             result.Result = authorization;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
