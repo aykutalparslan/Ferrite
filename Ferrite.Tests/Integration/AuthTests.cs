@@ -61,6 +61,22 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             default: return null;
         }
     }
+    
+    private static string ConfigPfs(string what)
+    {
+        switch (what)
+        {
+            case "server_address": return "127.0.0.1:52222";
+            case "api_id": return "11111";
+            case "api_hash": return "11111111111111111111111111111111";
+            case "phone_number": return "+15555555555";
+            case "verification_code": return "12345";
+            case "first_name": return "aaa";
+            case "last_name": return "bbb";
+            case "pfs_enabled": return "yes";
+            default: return null;
+        }
+    }
 
     [Fact]
     public async Task CreatesAuthKey()
@@ -86,6 +102,27 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             var code = await client.Invoke(new Auth_SendCode()
             {
                 phone_number = "+15555555555",
+                api_id = 11111,
+                api_hash = "11111111111111111111111111111111",
+                settings = new CodeSettings()
+            });
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task SendCode_Returns_SentCode_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555555",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
@@ -122,6 +159,32 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task ResendCode_Returns_SentCode_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555556",
+                api_id = 11111,
+                api_hash = "11111111111111111111111111111111",
+                settings = new CodeSettings()
+            });
+            code = await client.Invoke(new Auth_ResendCode()
+            {
+                phone_number = "+25555555556",
+                phone_code_hash = code.phone_code_hash,
+            });
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
 
     [Fact]
     public async Task CancelCode_Returns_True()
@@ -148,6 +211,33 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task CancelCode_Returns_True_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555557",
+                api_id = 11111,
+                api_hash = "11111111111111111111111111111111",
+                settings = new CodeSettings()
+            });
+            var result = await client.Invoke(new Auth_CancelCode()
+            {
+                phone_number = "+25555555557",
+                phone_code_hash = code.phone_code_hash,
+            });
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
     [Fact]
     public async Task SignUp_Returns_RpcError()
     {
@@ -177,6 +267,37 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task SignUp_Returns_RpcError_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555558", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            await Assert.ThrowsAsync<RpcException>(async () =>
+            {
+                await client.Invoke(new Auth_SignUp()
+                {
+                    phone_number = "+25555555558",
+                    phone_code_hash = code.phone_code_hash,
+                    first_name = "aaa",
+                    last_name = "bbb",
+                });
+            });
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
     [Fact]
     public async Task SignIn_Returns_SignUpRequired()
     {
@@ -204,6 +325,35 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task SignIn_Returns_SignUpRequired_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555559", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            var result = await client.Invoke(new Auth_SignIn()
+            {
+                phone_number = "+25555555559",
+                phone_code_hash = code.phone_code_hash,
+                phone_code = "12345",
+                flags = Auth_SignIn.Flags.has_phone_code
+            });
+            Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
     [Fact]
     public async Task SignUp_Returns_Authorization()
     {
@@ -212,6 +362,21 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
             var result = await SignUpInternal(client, "+15555555560");
+            Assert.IsType<Auth_Authorization>(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task SignUp_Returns_Authorization_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var result = await SignUpInternal(client, "+25555555560");
             Assert.IsType<Auth_Authorization>(result);
         }
 
@@ -297,6 +462,56 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     }
     
     [Fact]
+    public async Task SignIn_Returns_Authorization_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555561", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            var signIn = await client.Invoke(new Auth_SignIn()
+            {
+                phone_number = "+25555555561",
+                phone_code_hash = code.phone_code_hash,
+                phone_code = "12345",
+                flags = Auth_SignIn.Flags.has_phone_code
+            });
+            var signUp = await client.Invoke(new Auth_SignUp()
+            {
+                phone_number = "+25555555561",
+                phone_code_hash = code.phone_code_hash,
+                first_name = "aaa",
+                last_name = "bbb",
+            });
+            Assert.IsType<Auth_Authorization>(signUp);
+            code = await client.Invoke(new Auth_SendCode()
+            {
+                phone_number = "+25555555561", 
+                api_id = 11111, 
+                api_hash = "11111111111111111111111111111111", 
+                settings = new CodeSettings()
+            });
+            signIn = await client.Invoke(new Auth_SignIn()
+            {
+                phone_number = "+25555555561",
+                phone_code_hash = code.phone_code_hash,
+                phone_code = "12345",
+                flags = Auth_SignIn.Flags.has_phone_code
+            });
+            Assert.IsType<Auth_Authorization>(signIn);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
     public async Task Logout_Returns_LoggedOut()
     {
         async Task RunTest()
@@ -311,6 +526,23 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task Logout_Returns_LoggedOut_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await SignUpInternal(client, "+25555555561");
+            var logout = await client.Invoke(new Auth_LogOut());
+            Assert.IsType<Auth_LoggedOut>(logout);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
     [Fact]
     public async Task ResetAuthorizations_Returns_True()
     {
@@ -319,6 +551,22 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
             var auth = await SignUpInternal(client, "+15555555562");
+            var result = await client.Invoke(new Auth_ResetAuthorizations());
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ResetAuthorizations_Returns_True_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await SignUpInternal(client, "+25555555562");
             var result = await client.Invoke(new Auth_ResetAuthorizations());
             Assert.True(result);
         }
@@ -335,6 +583,30 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
             var auth = await SignUpInternal(client, "+15555555563");
+            var exportResult = await client.Invoke(new Auth_ExportAuthorization()
+            {
+                dc_id = 5,
+            });
+            Assert.IsType<Auth_ExportedAuthorization>(exportResult);
+            var importResult = await client.Invoke(new Auth_ImportAuthorization()
+            {
+                bytes = exportResult.bytes,
+            });
+            Assert.IsType<Auth_Authorization>(importResult);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task Should_ExportAndImport_Authorization_Pfs()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await SignUpInternal(client, "+25555555563");
             var exportResult = await client.Invoke(new Auth_ExportAuthorization()
             {
                 dc_id = 5,
