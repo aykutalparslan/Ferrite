@@ -122,7 +122,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555555",
+                phone_number = "+25555555556",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
@@ -143,14 +143,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555556",
+                phone_number = "+15555555557",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
             });
             code = await client.Invoke(new Auth_ResendCode()
             {
-                phone_number = "+15555555556",
+                phone_number = "+15555555557",
                 phone_code_hash = code.phone_code_hash,
             });
             Assert.IsType<Auth_SentCodeTypeSms>(code.type);
@@ -169,14 +169,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555556",
+                phone_number = "+25555555558",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
             });
             code = await client.Invoke(new Auth_ResendCode()
             {
-                phone_number = "+25555555556",
+                phone_number = "+25555555558",
                 phone_code_hash = code.phone_code_hash,
             });
             Assert.IsType<Auth_SentCodeTypeSms>(code.type);
@@ -195,14 +195,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555557",
+                phone_number = "+15555555559",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
             });
             var result = await client.Invoke(new Auth_CancelCode()
             {
-                phone_number = "+15555555557",
+                phone_number = "+15555555559",
                 phone_code_hash = code.phone_code_hash,
             });
             Assert.True(result);
@@ -221,14 +221,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555557",
+                phone_number = "+25555555560",
                 api_id = 11111,
                 api_hash = "11111111111111111111111111111111",
                 settings = new CodeSettings()
             });
             var result = await client.Invoke(new Auth_CancelCode()
             {
-                phone_number = "+25555555557",
+                phone_number = "+25555555560",
                 phone_code_hash = code.phone_code_hash,
             });
             Assert.True(result);
@@ -247,7 +247,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555558", 
+                phone_number = "+15555555561", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
@@ -256,7 +256,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             {
                 await client.Invoke(new Auth_SignUp()
                 {
-                    phone_number = "+15555555558",
+                    phone_number = "+15555555561",
                     phone_code_hash = code.phone_code_hash,
                     first_name = "aaa",
                     last_name = "bbb",
@@ -277,7 +277,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555558", 
+                phone_number = "+25555555562", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
@@ -286,7 +286,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             {
                 await client.Invoke(new Auth_SignUp()
                 {
-                    phone_number = "+25555555558",
+                    phone_number = "+25555555562",
                     phone_code_hash = code.phone_code_hash,
                     first_name = "aaa",
                     last_name = "bbb",
@@ -307,14 +307,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555559", 
+                phone_number = "+15555555563", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
             var result = await client.Invoke(new Auth_SignIn()
             {
-                phone_number = "+15555555559",
+                phone_number = "+15555555563",
                 phone_code_hash = code.phone_code_hash,
                 phone_code = "12345",
                 flags = Auth_SignIn.Flags.has_phone_code
@@ -335,14 +335,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555559", 
+                phone_number = "+25555555564", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
             var result = await client.Invoke(new Auth_SignIn()
             {
-                phone_number = "+25555555559",
+                phone_number = "+25555555564",
                 phone_code_hash = code.phone_code_hash,
                 phone_code = "12345",
                 flags = Auth_SignIn.Flags.has_phone_code
@@ -361,7 +361,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var result = await SignUpInternal(client, "+15555555560");
+            var result = await SignUpInternal(client, "+15555555565");
             Assert.IsType<Auth_Authorization>(result);
         }
 
@@ -376,7 +376,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var result = await SignUpInternal(client, "+25555555560");
+            var result = await SignUpInternal(client, "+25555555566");
             Assert.IsType<Auth_Authorization>(result);
         }
 
@@ -420,21 +420,21 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555561", 
+                phone_number = "+15555555567", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
             var signIn = await client.Invoke(new Auth_SignIn()
             {
-                phone_number = "+15555555561",
+                phone_number = "+15555555567",
                 phone_code_hash = code.phone_code_hash,
                 phone_code = "12345",
                 flags = Auth_SignIn.Flags.has_phone_code
             });
             var signUp = await client.Invoke(new Auth_SignUp()
             {
-                phone_number = "+15555555561",
+                phone_number = "+15555555567",
                 phone_code_hash = code.phone_code_hash,
                 first_name = "aaa",
                 last_name = "bbb",
@@ -442,14 +442,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.IsType<Auth_Authorization>(signUp);
             code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+15555555561", 
+                phone_number = "+15555555567", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
             signIn = await client.Invoke(new Auth_SignIn()
             {
-                phone_number = "+15555555561",
+                phone_number = "+15555555567",
                 phone_code_hash = code.phone_code_hash,
                 phone_code = "12345",
                 flags = Auth_SignIn.Flags.has_phone_code
@@ -470,21 +470,21 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555561", 
+                phone_number = "+25555555568", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
             var signIn = await client.Invoke(new Auth_SignIn()
             {
-                phone_number = "+25555555561",
+                phone_number = "+25555555568",
                 phone_code_hash = code.phone_code_hash,
                 phone_code = "12345",
                 flags = Auth_SignIn.Flags.has_phone_code
             });
             var signUp = await client.Invoke(new Auth_SignUp()
             {
-                phone_number = "+25555555561",
+                phone_number = "+25555555568",
                 phone_code_hash = code.phone_code_hash,
                 first_name = "aaa",
                 last_name = "bbb",
@@ -492,14 +492,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.IsType<Auth_Authorization>(signUp);
             code = await client.Invoke(new Auth_SendCode()
             {
-                phone_number = "+25555555561", 
+                phone_number = "+25555555568", 
                 api_id = 11111, 
                 api_hash = "11111111111111111111111111111111", 
                 settings = new CodeSettings()
             });
             signIn = await client.Invoke(new Auth_SignIn()
             {
-                phone_number = "+25555555561",
+                phone_number = "+25555555568",
                 phone_code_hash = code.phone_code_hash,
                 phone_code = "12345",
                 flags = Auth_SignIn.Flags.has_phone_code
@@ -518,7 +518,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555561");
+            var auth = await SignUpInternal(client, "+15555555569");
             var logout = await client.Invoke(new Auth_LogOut());
             Assert.IsType<Auth_LoggedOut>(logout);
         }
@@ -534,7 +534,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+25555555561");
+            var auth = await SignUpInternal(client, "+25555555570");
             var logout = await client.Invoke(new Auth_LogOut());
             Assert.IsType<Auth_LoggedOut>(logout);
         }
@@ -550,7 +550,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555562");
+            var auth = await SignUpInternal(client, "+15555555571");
             var result = await client.Invoke(new Auth_ResetAuthorizations());
             Assert.True(result);
         }
@@ -566,7 +566,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+25555555562");
+            var auth = await SignUpInternal(client, "+25555555572");
             var result = await client.Invoke(new Auth_ResetAuthorizations());
             Assert.True(result);
         }
@@ -582,7 +582,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555563");
+            var auth = await SignUpInternal(client, "+15555555573");
             var exportResult = await client.Invoke(new Auth_ExportAuthorization()
             {
                 dc_id = 5,
@@ -596,7 +596,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         }
 
         Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        await testTask.TimeoutAfter(8000);
     }
     
     [Fact]
@@ -606,7 +606,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+25555555563");
+            var auth = await SignUpInternal(client, "+25555555574");
             var exportResult = await client.Invoke(new Auth_ExportAuthorization()
             {
                 dc_id = 5,

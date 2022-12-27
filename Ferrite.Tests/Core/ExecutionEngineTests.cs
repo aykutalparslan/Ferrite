@@ -41,7 +41,7 @@ public class ExecutionEngineTests
         using var tlBytes = new TLBytes(reqPqMulti, 0, 4);
 
         var reqPqMock = new Mock<ITLFunction>();
-        using var autoMock = AutoMock.GetStrict(builder => 
+        using var autoMock = AutoMock.GetLoose(builder => 
             builder.RegisterInstance(reqPqMock.Object)
                 .Keyed<ITLFunction>(new FunctionKey(148, 
                     Constructors.mtproto_ReqPqMulti)));
@@ -70,7 +70,7 @@ public class ExecutionEngineTests
                 It.IsAny<TLExecutionContext>()))
             .Throws<Exception>().Verifiable("it does not work");
 
-        using var autoMock = AutoMock.GetStrict(builder =>
+        using var autoMock = AutoMock.GetLoose(builder =>
             builder.RegisterInstance(reqPqMock.Object)
                 .Keyed<ITLFunction>(new FunctionKey(146,
                     Constructors.mtproto_ReqPqMulti)));

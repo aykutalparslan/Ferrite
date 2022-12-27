@@ -99,7 +99,7 @@ public class ReqPqMulti : ITLObject, ITLMethod
 
         int a = randomGenerator.GetRandomPrime();
         int b = randomGenerator.GetRandomPrime();
-        BigInteger pq = new BigInteger(a) * b;
+        BigInteger pq = BigInteger.Multiply(new BigInteger(a), b);
         if (a < b)
         {
             ctx.SessionData.Add("p", a);
