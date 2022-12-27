@@ -341,7 +341,7 @@ public class PqTests
         var key = keyProvider.GetKey(keyProvider.GetRSAFingerprints()[0]);
         BigInteger modulus = new BigInteger(key.PublicKeyParameters.Modulus, true, true);
         BigInteger numEncrypted = new BigInteger(keyAesEncrypted, true, true);
-        while (numEncrypted >= modulus)
+        while (numEncrypted.CompareTo(modulus) >= 0)
         {
             keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
             numEncrypted = new BigInteger(keyAesEncrypted, true, true);
@@ -397,22 +397,22 @@ public class PqTests
         switch ((int)context.SessionData["g"])
         {
             case 2:
-                mod_ok = prime % 8 == 7u;
+                mod_ok = BigInteger.Remainder(prime, 8) == 7u;
                 break;
             case 3:
-                mod_ok = prime % 3 == 2u;
+                mod_ok = BigInteger.Remainder(prime, 3) == 2u;
                 break;
             case 4:
                 mod_ok = true;
                 break;
             case 5:
-                mod_ok = (mod_r = (uint)(prime % 5)) == 1u || mod_r == 4u;
+                mod_ok = (mod_r = (uint)BigInteger.Remainder(prime, 5)) == 1u || mod_r == 4u;
                 break;
             case 6:
-                mod_ok = (mod_r = (uint)(prime % 24)) == 19u || mod_r == 23u;
+                mod_ok = (mod_r = (uint)(BigInteger.Remainder(prime, 24))) == 19u || mod_r == 23u;
                 break;
             case 7:
-                mod_ok = (mod_r = (uint)(prime % 7)) == 3u || mod_r == 5u || mod_r == 6u;
+                mod_ok = (mod_r = (uint)(BigInteger.Remainder(prime, 7))) == 3u || mod_r == 5u || mod_r == 6u;
                 break;
             default:
                 mod_ok = false;
@@ -483,7 +483,7 @@ public class PqTests
         var key = keyProvider.GetKey(keyProvider.GetRSAFingerprints()[0]);
         BigInteger modulus = new BigInteger(key.PublicKeyParameters.Modulus, true, true);
         BigInteger numEncrypted = new BigInteger(keyAesEncrypted, true, true);
-        while (numEncrypted >= modulus)
+        while (numEncrypted.CompareTo(modulus) >= 0)
         {
             keyAesEncrypted = encrypt(dataWithPadding, dataPadReversed);
             numEncrypted = new BigInteger(keyAesEncrypted, true, true);
@@ -533,22 +533,22 @@ public class PqTests
         switch ((int)context.SessionData["g"])
         {
             case 2:
-                mod_ok = prime % 8 == 7u;
+                mod_ok = BigInteger.Remainder(prime, 8) == 7u;
                 break;
             case 3:
-                mod_ok = prime % 3 == 2u;
+                mod_ok = BigInteger.Remainder(prime, 3) == 2u;
                 break;
             case 4:
                 mod_ok = true;
                 break;
             case 5:
-                mod_ok = (mod_r = (uint)(prime % 5)) == 1u || mod_r == 4u;
+                mod_ok = (mod_r = (uint)(BigInteger.Remainder(prime, 5))) == 1u || mod_r == 4u;
                 break;
             case 6:
-                mod_ok = (mod_r = (uint)(prime % 24)) == 19u || mod_r == 23u;
+                mod_ok = (mod_r = (uint)(BigInteger.Remainder(prime, 24))) == 19u || mod_r == 23u;
                 break;
             case 7:
-                mod_ok = (mod_r = (uint)(prime % 7)) == 3u || mod_r == 5u || mod_r == 6u;
+                mod_ok = (mod_r = (uint)(BigInteger.Remainder(prime, 7))) == 3u || mod_r == 5u || mod_r == 6u;
                 break;
             default:
                 mod_ok = false;
@@ -591,13 +591,13 @@ public class PqTests
         context.SessionData.Add("q", 0x53911073);
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
-        BigInteger max = prime - min;
-        BigInteger a = random.GetRandomInteger(2, prime - 2);
+        BigInteger max = BigInteger.Subtract(prime, min);
+        BigInteger a = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
         BigInteger g = new BigInteger(gs[random.GetRandomNumber(gs.Length)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
-        while (g_a <= min || g_a >= max)
+        while (g_a.CompareTo(min) <= 0 || g_a.CompareTo(max) >= 0)
         {
-            a = random.GetRandomInteger(2, prime - 2);
+            a = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
             g_a = BigInteger.ModPow(g, a, prime);
         }
 
@@ -607,11 +607,11 @@ public class PqTests
         byte[] newNonce = RandomNumberGenerator.GetBytes(32);
         context.SessionData.Add("new_nonce", nn);
 
-        BigInteger b = random.GetRandomInteger(2, prime - 2);
+        BigInteger b = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
         BigInteger g_b = BigInteger.ModPow(g, b, prime);
-        while (g_a <= min || g_a >= max)
+        while (g_a.CompareTo(min) <= 0 || g_a.CompareTo(max) >= 0)
         {
-            b = random.GetRandomInteger(2, prime - 2);
+            b = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
             g_b = BigInteger.ModPow(g, b, prime);
         }
 
@@ -691,13 +691,13 @@ public class PqTests
         context.SessionData.Add("q", 0x53911073);
         BigInteger prime = BigInteger.Parse("0" + dhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
-        BigInteger max = prime - min;
-        BigInteger a = random.GetRandomInteger(2, prime - 2);
+        BigInteger max = BigInteger.Subtract(prime, min);
+        BigInteger a = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
         BigInteger g = new BigInteger(gs[random.GetRandomNumber(gs.Length)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
-        while (g_a <= min || g_a >= max)
+        while (g_a.CompareTo(min) <= 0 || g_a.CompareTo(max) >= 0)
         {
-            a = random.GetRandomInteger(2, prime - 2);
+            a = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
             g_a = BigInteger.ModPow(g, a, prime);
         }
 
@@ -707,11 +707,11 @@ public class PqTests
         byte[] newNonce = RandomNumberGenerator.GetBytes(32);
         context.SessionData.Add("new_nonce", nn);
 
-        BigInteger b = random.GetRandomInteger(2, prime - 2);
+        BigInteger b = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
         BigInteger g_b = BigInteger.ModPow(g, b, prime);
-        while (g_a <= min || g_a >= max)
+        while (g_a.CompareTo(min) <= 0 || g_a.CompareTo(max) >= 0)
         {
-            b = random.GetRandomInteger(2, prime - 2);
+            b = random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
             g_b = BigInteger.ModPow(g, b, prime);
         }
 

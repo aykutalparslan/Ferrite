@@ -215,7 +215,7 @@ namespace Ferrite.Crypto
         // https://stackoverflow.com/a/48855115/2015348
         private static BigInteger RandomInRange(RandomNumberGenerator rng, BigInteger min, BigInteger max)
         {
-            if (min > max)
+            if (min.CompareTo(max) > 0)
             {
                 var buff = min;
                 min = max;
@@ -223,11 +223,11 @@ namespace Ferrite.Crypto
             }
 
             // offset to set min = 0
-            BigInteger offset = -min;
+            BigInteger offset = BigInteger.Negate(min);
             min = 0;
-            max += offset;
+            max = BigInteger.Add(max, offset);
 
-            var value = randomInRangeFromZeroToPositive(rng, max) - offset;
+            var value = BigInteger.Subtract(randomInRangeFromZeroToPositive(rng, max), offset);
             return value;
         }
 
@@ -265,7 +265,7 @@ namespace Ferrite.Crypto
                 value = new BigInteger(bytes);
 
                 // `value > max` 50% of the times, in which case the fastest way to keep the distribution uniform is to try again
-            } while (value > max);
+            } while (value.CompareTo(max) > 0);
 
             return value;
         }

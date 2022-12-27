@@ -162,5 +162,21 @@ public class MTProtoService : IMTProtoService
         var success = _unitOfWork.AuthKeyRepository.DeleteAuthKey(authKeyId);
         return success && await _unitOfWork.SaveAsync();
     }
+
+    public async Task<KeyStatus> GetKeyStatus(long keyId)
+    {
+        if (await _unitOfWork.AuthKeyRepository.GetAuthKeyAsync(keyId) != null)
+        {
+            return KeyStatus.Perm;
+        }
+
+        if (await _unitOfWork.TempAuthKeyRepository.GetTempAuthKeyAsync(keyId) != null &&
+            await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(keyId) != null)
+        {
+            return KeyStatus.TempBound;
+        }
+
+        return KeyStatus.TempUnbound;
+    }
 }
 

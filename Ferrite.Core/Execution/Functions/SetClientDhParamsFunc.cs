@@ -88,8 +88,8 @@ public class SetClientDhParamsFunc : ITLFunction
                 .Concat(new byte[1] { 2 }).Concat(authKeyAuxHash).ToArray())
             .Skip(4).ToArray();
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
-        BigInteger max = prime - min;
-        if (g_b <= min || g_b >= max || failed)
+        BigInteger max = BigInteger.Subtract(prime, min);
+        if (g_b.CompareTo(min) <= 0 || g_b.CompareTo(max) >= 0 || failed)
         {
             var dhGenFail = new DhGenFail(sessionNonce, sessionServerNonce, newNonceHash3);
             return dhGenFail.TLBytes;

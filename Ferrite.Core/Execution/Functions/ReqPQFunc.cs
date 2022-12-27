@@ -69,7 +69,7 @@ public class ReqPQFunc : ITLFunction
         }
         int a = _randomGenerator.GetRandomPrime();
         int b = _randomGenerator.GetRandomPrime();
-        BigInteger pq = new BigInteger(a) * b;
+        BigInteger pq = BigInteger.Multiply(new BigInteger(a), b);
         if (a < b)
         {
             ctx.SessionData.Add("p", a);

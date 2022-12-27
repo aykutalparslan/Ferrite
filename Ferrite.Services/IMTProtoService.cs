@@ -38,5 +38,6 @@ public interface IMTProtoService
     public ValueTask<long?> GetBoundAuthKeyAsync(long tempAuthKeyId);
     public long? GetBoundAuthKey(long tempAuthKeyId);
     public Task<bool> DestroyAuthKeyAsync(long authKeyId);
+    public Task<KeyStatus> GetKeyStatus(long keyId);
 }
 

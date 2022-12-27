@@ -213,13 +213,13 @@ public class ReqDhParamsFunc : ITLFunction
     {
         BigInteger prime = BigInteger.Parse("0"+DhPrime, NumberStyles.HexNumber);
         BigInteger min = BigInteger.Pow(new BigInteger(2), 2048 - 64);
-        BigInteger max = prime - min;
-        BigInteger a = _random.GetRandomInteger(2, prime - 2);
+        BigInteger max = BigInteger.Subtract(prime, min);
+        BigInteger a = _random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
         BigInteger g = new BigInteger(_gs[_random.GetRandomNumber(_gs.Length)]);
         BigInteger g_a = BigInteger.ModPow(g, a, prime);
-        while (g_a <= min || g_a >= max)
+        while (g_a.CompareTo(min) <= 0 || g_a.CompareTo(max) >= 0)
         {
-            a = _random.GetRandomInteger(2, prime - 2);
+            a = _random.GetRandomInteger(2, BigInteger.Subtract(prime, 2));
             g_a = BigInteger.ModPow(g, a, prime);
         }
         
