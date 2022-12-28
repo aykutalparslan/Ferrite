@@ -596,7 +596,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         }
 
         Task testTask = RunTest();
-        await testTask.TimeoutAfter(8000);
+        await testTask.TimeoutAfter(4000);
     }
     
     [Fact]
@@ -617,6 +617,23 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
                 bytes = exportResult.bytes,
             });
             Assert.IsType<Auth_Authorization>(importResult);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task DropTempAuthKeys_ShouldReturn_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await SignUpInternal(client, "+15555555575");
+            var dropResult = await client.Invoke(new Auth_DropTempAuthKeys()
+                { except_auth_keys = Array.Empty<long>() });
+            Assert.True(dropResult);
         }
 
         Task testTask = RunTest();
