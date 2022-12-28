@@ -23,6 +23,7 @@ using Ferrite.Core.Execution.Functions;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 
 namespace Ferrite.Core.Execution;
@@ -54,12 +55,18 @@ public class ExecutionEngine : IExecutionEngine
             keyStatus == KeyStatus.TempUnbound &&
             !IsTempKeyAllowed(rpc.Constructor))
         {
-            return null;
+            return RpcError.Builder()
+                .ErrorCode(401)
+                .ErrorMessage("AUTH_KEY_PERM_EMPTY"u8)
+                .Build().TLBytes;
         }
         if (RequiresAuthorization(rpc.Constructor) && 
             !await _auth.IsAuthorized(ctx.CurrentAuthKeyId))
         {
-            return null;
+            return RpcError.Builder()
+                .ErrorCode(401)
+                .ErrorMessage("AUTH_KEY_UNREGISTERED"u8)
+                .Build().TLBytes;
         }
         try
         {
