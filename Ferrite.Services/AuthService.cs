@@ -15,11 +15,8 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-using System;
-using System.Runtime.InteropServices;
+
 using System.Text;
-using System.Threading.Tasks.Sources;
-using DotNext.IO;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -41,21 +38,19 @@ public class AuthService : IAuthService
     private readonly ISearchEngine _search;
     private readonly IAtomicCounter _userIdCnt;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IUsersService _users;
     private readonly IVerificationGateway _verificationGateway;
     private readonly ILogger _log;
     private const int PhoneCodeTimeout = 60;//seconds
 
     public AuthService(IRandomGenerator random, ISearchEngine search,
-        IUnitOfWork unitOfWork, ICounterFactory counterFactory, 
-        IUsersService users, IVerificationGateway verificationGateway,
+        IUnitOfWork unitOfWork, ICounterFactory counterFactory,
+        IVerificationGateway verificationGateway,
         ILogger log)
     {
         _random = random;
         _search = search;
         _userIdCnt = counterFactory.GetCounter("counter_user_id");
         _unitOfWork = unitOfWork;
-        _users = users;
         _verificationGateway = verificationGateway;
         _log = log;
     }
@@ -207,53 +202,57 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds)
+    public async ValueTask<TLBytes> ExportLoginToken(long authKeyId, long sessionId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth!= null && auth.LoggedIn &&
-            _users.GetUser(auth.UserId) is UserDTO user)
+        if (auth is { LoggedIn: true })
         {
-            return new LoginTokenDTO()
+            using var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+            if (user != null)
             {
-                LoginTokenType = LoginTokenType.TokenSuccess,
-                Authorization = new AuthorizationDTO()
-                {
-                    AuthorizationType = AuthorizationType.Authorization,
-                    User = new UserDTO()
-                    {
-                        Id = user.Id,
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        Phone = user.Phone,
-                        Status = UserStatusDTO.Empty,
-                        Self = true,
-                        Photo = user.Photo
-                    }
-                }
-        };
+                using var authorization = GenerateAuthorization(user.Value);
+                return LoginTokenSuccess
+                    .Builder()
+                    .Authorization(authorization.AsSpan())
+                    .Build().TLBytes!.Value;
+            }
         }
         var token = _random.GetRandomBytes(16);
+        var tokenParameters = GetExportLoginTokenParameters(q);
         LoginViaQRDTO login = new LoginViaQRDTO()
         {
             Token = token,
             AuthKeyId = authKeyId,
             SessionId = sessionId,
             Status = false,
-            ExceptUserIds = exceptIds
+            ExceptUserIds = tokenParameters.ExceptIds
         };
         _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 30));
         await _unitOfWork.SaveAsync();
-        return new LoginTokenDTO()
-        {
-            LoginTokenType = LoginTokenType.Token,
-            Token = token,
-            Expires = 30
-        };
+        return LoginToken
+            .Builder()
+            .Token(token)
+            .Expires(30)
+            .Build().TLBytes!.Value;
     }
 
+    private readonly record struct ExportLoginTokenParameters(int ApiId, string ApiHash, ICollection<long> ExceptIds);
+
+    private static ExportLoginTokenParameters GetExportLoginTokenParameters(TLBytes q)
+    {
+        var exportRequest = new ExportLoginToken(q.AsSpan());
+        var apiHash = Encoding.UTF8.GetString(exportRequest.ApiHash);
+        var ids = new long[exportRequest.ExceptIds.Count];
+        for (int i = 0; i < exportRequest.ExceptIds.Count; i++)
+        {
+            ids[i] = exportRequest.ExceptIds[i];
+        }
+        return new ExportLoginTokenParameters(exportRequest.ApiId, apiHash, ids);
+    }
+    
     public async Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var exported = await _unitOfWork.AuthorizationRepository.GetExportedAuthorizationAsync(userId, bytes);
         
         if (auth != null && exported != null &&
@@ -281,7 +280,7 @@ public class AuthService : IAuthService
                     Photo = user.Photo
                 }
             };
-        }
+        }*/
         return new AuthorizationDTO()
         {
             AuthorizationType = AuthorizationType.AuthBytesInvalid
@@ -556,7 +555,12 @@ public class AuthService : IAuthService
 
     private TLBytes GenerateAuthorization(TLBytes user)
     {
-        var authorization = AuthAuthorization.Builder().User(user.AsSpan()).Build();
+        using var userModified = new User(user.AsSpan())
+            .Clone()
+            .Self(true)
+            .Build();
+        var authorization = AuthAuthorization.Builder()
+            .User(userModified.ToReadOnlySpan()).Build();
         return authorization.TLBytes!.Value;
     }
 

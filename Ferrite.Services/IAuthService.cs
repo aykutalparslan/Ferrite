@@ -43,7 +43,7 @@ public interface IAuthService
     public ValueTask<TLBytes> ResendCode(TLBytes q);
     public ValueTask<TLBytes> CancelCode(TLBytes q);
     public ValueTask<TLBytes> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
-    public Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
+    public ValueTask<TLBytes> ExportLoginToken(long authKeyId, long sessionId, TLBytes q);
     public Task<LoginTokenDTO> ImportLoginToken(byte[] token);
     public Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token);
     public Task<bool> CheckRecoveryPassword(string code);

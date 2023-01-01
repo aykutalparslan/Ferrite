@@ -177,6 +177,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_ResetAuthorizations))
             .SingleInstance();
+        builder.RegisterType<ExportLoginTokenFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_ExportLoginToken))
+            .SingleInstance();
     }
 
     private static void RegisterHelpMethods(ContainerBuilder builder)

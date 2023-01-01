@@ -94,7 +94,7 @@ public class ExportLoginToken : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var token = await _auth.ExportLoginToken(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, ctx.SessionId, _apiId, _apiHash, _exceptIds);
         if(token.LoginTokenType == LoginTokenType.TokenSuccess)
@@ -113,7 +113,8 @@ public class ExportLoginToken : ITLObject, ITLMethod
             resp.Token = token.Token;
             result.Result = resp;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
