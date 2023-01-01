@@ -65,7 +65,7 @@ public class ExportAuthorization : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var exported = await _service.ExportAuthorization(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _dcId);
+        /*var exported = await _service.ExportAuthorization(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _dcId);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         if (exported == null)
@@ -82,7 +82,8 @@ public class ExportAuthorization : ITLObject, ITLMethod
             resp.Bytes = exported.Bytes;
             result.Result = resp;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

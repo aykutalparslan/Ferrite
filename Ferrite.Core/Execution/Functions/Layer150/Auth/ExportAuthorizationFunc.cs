@@ -16,12 +16,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-namespace Ferrite.Core;
+using Ferrite.Services;
+using Ferrite.TL;
+using Ferrite.TL.slim;
 
-public interface IDataCenter
+namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+
+public class ExportAuthorizationFunc : ITLFunction
 {
-    public int Id { get; }
-    public string IpAddress { get; }
-    public int Port { get; }
-    public bool MediaOnly { get; }
+    private readonly IAuthService _auth;
+    private readonly IDataCenter _dc;
+
+    public ExportAuthorizationFunc(IAuthService auth, IDataCenter dc)
+    {
+        _auth = auth;
+        _dc = dc;
+    }
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    {
+        using var exportResult = await _auth.ExportAuthorization(ctx.CurrentAuthKeyId, _dc.Id, q);
+        var rpcResult = RpcResultGenerator.Generate(exportResult, ctx.MessageId);
+        return rpcResult;
+    }
 }

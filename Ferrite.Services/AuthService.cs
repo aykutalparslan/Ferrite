@@ -179,12 +179,16 @@ public class AuthService : IAuthService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId)
+    public async ValueTask<TLBytes> ExportAuthorization(long authKeyId, int currentDc, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return RpcErrorGenerator.GenerateError(400, 
+                "AUTH_KEY_UNREGISTERED"u8);
+        }
         var data = _random.GetRandomBytes(128);
-        //TODO: get current dc id
-        //auth, 1, dcId, data
+        var dcId = new ExportAuthorization(q.AsSpan()).DcId;
         _unitOfWork.AuthorizationRepository.PutExportedAuthorization(new ExportedAuthInfoDTO
         {
             Data = data,
@@ -192,14 +196,13 @@ public class AuthService : IAuthService
             Phone = auth.Phone,
             AuthKeyId = auth.AuthKeyId,
             NextDcId = dcId,
-            PreviousDcId = 1,
+            PreviousDcId = currentDc,
         });
         await _unitOfWork.SaveAsync();
-        return new ExportedAuthorizationDTO()
-        {
-            Id = auth.UserId,
-            Bytes = data
-        };
+        return ExportedAuthorization
+            .Builder()
+            .Id(auth.UserId)
+            .Bytes(data).Build().TLBytes!.Value;
     }
 
     public async ValueTask<TLBytes> ExportLoginToken(long authKeyId, long sessionId, TLBytes q)

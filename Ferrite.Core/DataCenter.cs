@@ -20,13 +20,15 @@ namespace Ferrite.Core;
 
 public class DataCenter : IDataCenter
 {
-    public DataCenter(string ipAddress, int port, bool mediaOnly)
+    public DataCenter(int id, string ipAddress, int port, bool mediaOnly)
     {
+        Id = id;
         IpAddress = ipAddress;
         Port = port;
         MediaOnly = mediaOnly;
     }
 
+    public int Id { get; }
     public string IpAddress { get; }
     public int Port { get; }
     public bool MediaOnly { get; }

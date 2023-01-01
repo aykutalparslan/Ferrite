@@ -73,7 +73,7 @@ public class ServerBuilder
         RegisterSchema(builder);
         RegisterCoreComponents(builder);
         RegisterLocalDataStores(builder, path);
-        builder.Register(c=> new DataCenter(ipAddress, port, false))
+        builder.Register(c=> new DataCenter(1, ipAddress, port, false))
             .As<IDataCenter>().SingleInstance();
         builder.RegisterType<SerilogLogger>().As<ILogger>().SingleInstance();
         var container = builder.Build();
@@ -180,6 +180,10 @@ public class ServerBuilder
         builder.RegisterType<ExportLoginTokenFunc>()
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_ExportLoginToken))
+            .SingleInstance();
+        builder.RegisterType<ExportAuthorizationFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_ExportAuthorization))
             .SingleInstance();
     }
 
