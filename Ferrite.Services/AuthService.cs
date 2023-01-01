@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks.Sources;
 using DotNext.IO;
@@ -28,6 +29,7 @@ using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.auth;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using xxHash;
 
@@ -89,11 +91,52 @@ public class AuthService : IAuthService
         return null;
     }
 
-    public async Task<bool> BindTempAuthKey(long tempAuthKeyId, long permAuthKeyId, int expiresAt)
+    public async Task<TLBytes> BindTempAuthKey(long sessionId, TLBytes q)
     {
-        _unitOfWork.BoundAuthKeyRepository.PutBoundAuthKey(tempAuthKeyId, 
-            permAuthKeyId, new TimeSpan(0, 0, expiresAt));
-        return await _unitOfWork.SaveAsync();
+        var bindParameters = GetBindTempAuthKeyParameters(sessionId, q);
+        if (bindParameters == null)
+        {
+            return RpcErrorGenerator.GenerateError(400, 
+                "ENCRYPTED_MESSAGE_INVALID"u8);
+        }
+
+        if (await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(bindParameters.Value.TempAuthKeyId) != null)
+        {
+            return RpcErrorGenerator.GenerateError(400, 
+                "TEMP_AUTH_KEY_ALREADY_BOUND"u8);
+        }
+        
+        _unitOfWork.BoundAuthKeyRepository.PutBoundAuthKey(bindParameters.Value.TempAuthKeyId, 
+            bindParameters.Value.PermAuthKeyId, 
+            new TimeSpan(0, 0, bindParameters.Value.ExpiresAt));
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+
+    private readonly record struct BindTempAuthKeyParameters(long TempAuthKeyId, long PermAuthKeyId, int ExpiresAt);
+
+    private BindTempAuthKeyParameters? GetBindTempAuthKeyParameters(long sessionId, TLBytes q)
+    {
+        using var bindRequest = new BindTempAuthKey(q.AsSpan());
+        var authKey = _unitOfWork.AuthKeyRepository.GetAuthKey(bindRequest.PermAuthKeyId);
+        if (authKey == null) return null;
+        Span<byte> encrypted = stackalloc byte[bindRequest.EncryptedMessage.Length];
+        bindRequest.EncryptedMessage.CopyTo(encrypted);
+        using var bindDataInner = DecryptBindingMessage(authKey, encrypted);
+        if (bindDataInner.PermAuthKeyId != bindRequest.PermAuthKeyId ||
+            bindDataInner.Nonce != bindRequest.Nonce ||
+            bindDataInner.TempSessionId != sessionId) return null;
+        return new BindTempAuthKeyParameters(bindDataInner.TempAuthKeyId, bindDataInner.PermAuthKeyId,
+            bindRequest.ExpiresAt);
+    }
+    
+    private BindAuthKeyInner DecryptBindingMessage(Span<byte> authKey, Span<byte> encrypted)
+    {
+        Span<byte> messageKey = encrypted.Slice(8, 16);
+        AesIgeV1 aesIge = new AesIgeV1(authKey, messageKey);
+        aesIge.Decrypt(encrypted[24..]);
+        return new BindAuthKeyInner(encrypted[(24 + 32)..]);
     }
 
     public async ValueTask<TLBytes> CancelCode(TLBytes q)

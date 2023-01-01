@@ -107,7 +107,7 @@ public class BindTempAuthKey : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var authKey = await _mtproto.GetAuthKeyAsync(_permAuthKeyId);
         var resp = factory.Resolve<RpcError>();
@@ -130,7 +130,8 @@ public class BindTempAuthKey : ITLObject, ITLMethod
         resp.ErrorCode = 400;
         resp.ErrorMessage = "ENCRYPTED_MESSAGE_INVALID";
         result.Result = resp;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     private BindAuthKeyInnerImpl DecryptBindingMessage(Span<byte> authKey)
