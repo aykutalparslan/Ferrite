@@ -81,7 +81,7 @@ public class ImportAuthorization : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var auth = await _service.ImportAuthorization(_id, ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _bytes);
         if(auth.AuthorizationType == Data.Auth.AuthorizationType.AuthBytesInvalid)
@@ -105,7 +105,8 @@ public class ImportAuthorization : ITLObject, ITLMethod
             authorization.User = user;
             result.Result = authorization;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

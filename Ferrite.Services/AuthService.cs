@@ -253,41 +253,33 @@ public class AuthService : IAuthService
         return new ExportLoginTokenParameters(exportRequest.ApiId, apiHash, ids);
     }
     
-    public async Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes)
+    public async ValueTask<TLBytes> ImportAuthorization(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var exported = await _unitOfWork.AuthorizationRepository.GetExportedAuthorizationAsync(userId, bytes);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var importParameters = GetImportAuthorizationParameters(q);
+        var exported = await _unitOfWork.AuthorizationRepository
+            .GetExportedAuthorizationAsync(importParameters.UserId, importParameters.Bytes);
         
         if (auth != null && exported != null &&
-            auth.Phone == exported.Phone && bytes.SequenceEqual(exported.Data))
+            auth.Phone == exported.Phone && importParameters.Bytes.SequenceEqual(exported.Data))
         {
-            var user = _users.GetUser(auth.UserId);
+            var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
             if(user == null)
             {
-                return new AuthorizationDTO()
-                {
-                    AuthorizationType = AuthorizationType.UserIdInvalid
-                };
+                return RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
             }
-            return new AuthorizationDTO()
-            {
-                AuthorizationType = AuthorizationType.Authorization,
-                User = new UserDTO()
-                {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Phone = user.Phone,
-                    Status = UserStatusDTO.Empty,
-                    Self = true,
-                    Photo = user.Photo
-                }
-            };
-        }*/
-        return new AuthorizationDTO()
-        {
-            AuthorizationType = AuthorizationType.AuthBytesInvalid
-        };
+
+            return GenerateAuthorization(user.Value);
+        }
+        return RpcErrorGenerator.GenerateError(400, "AUTH_BYTES_INVALID"u8);
+    }
+
+    private readonly record struct ImportAuthorizationParameters(long UserId, byte[] Bytes);
+
+    private static ImportAuthorizationParameters GetImportAuthorizationParameters(TLBytes q)
+    {
+        var importAuthorization = new ImportAuthorization(q.AsSpan());
+        return new ImportAuthorizationParameters(importAuthorization.Id, importAuthorization.Bytes.ToArray());
     }
 
     public Task<AuthorizationDTO> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken)

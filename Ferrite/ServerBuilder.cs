@@ -185,6 +185,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_ExportAuthorization))
             .SingleInstance();
+        builder.RegisterType<ImportAuthorizationFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_ImportAuthorization))
+            .SingleInstance();
     }
 
     private static void RegisterHelpMethods(ContainerBuilder builder)

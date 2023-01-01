@@ -384,7 +384,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         await testTask.TimeoutAfter(4000);
     }
 
-    private async Task<object?> SignUpInternal(Client client, string phoneNumber)
+    private async Task<Auth_AuthorizationBase?> SignUpInternal(Client client, string phoneNumber)
     {
         var code = await client.Invoke(new Auth_SendCode()
         {
@@ -590,6 +590,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.IsType<Auth_ExportedAuthorization>(exportResult);
             var importResult = await client.Invoke(new Auth_ImportAuthorization()
             {
+                id = ((Auth_Authorization)auth!).user.ID,
                 bytes = exportResult.bytes,
             });
             Assert.IsType<Auth_Authorization>(importResult);
@@ -614,6 +615,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.IsType<Auth_ExportedAuthorization>(exportResult);
             var importResult = await client.Invoke(new Auth_ImportAuthorization()
             {
+                id = ((Auth_Authorization)auth!).user.ID,
                 bytes = exportResult.bytes,
             });
             Assert.IsType<Auth_Authorization>(importResult);
@@ -622,7 +624,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
-    
+
     [Fact]
     public async Task DropTempAuthKeys_ShouldReturn_True()
     {
@@ -634,6 +636,33 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
 
             var dropResult = await client.Auth_DropTempAuthKeys();
             Assert.True(dropResult);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    [Fact]
+    public async Task ExportAndImport_Should_Throw()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(Config, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await SignUpInternal(client, "+15555555576");
+            var exportResult = await client.Invoke(new Auth_ExportAuthorization()
+            {
+                dc_id = 5,
+            });
+            Assert.IsType<Auth_ExportedAuthorization>(exportResult);
+            var importResult = 
+                await Assert.ThrowsAsync<RpcException>(async () =>
+                {
+                    await client.Invoke(new Auth_ImportAuthorization()
+                    {
+                        id = 0,
+                        bytes = exportResult.bytes,
+                    });
+                });
         }
 
         Task testTask = RunTest();

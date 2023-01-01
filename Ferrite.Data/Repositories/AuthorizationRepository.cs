@@ -109,6 +109,7 @@ public class AuthorizationRepository : IAuthorizationRepository
     public async ValueTask<ExportedAuthInfoDTO?> GetExportedAuthorizationAsync(long user_id, byte[] data)
     {
         var exportedBytes = await _storeExported.GetAsync(user_id, data);
+        if (exportedBytes == null) return null;
         var exportedInfo = MessagePackSerializer.Deserialize<ExportedAuthInfoDTO>(exportedBytes);
         return exportedInfo;
     }
