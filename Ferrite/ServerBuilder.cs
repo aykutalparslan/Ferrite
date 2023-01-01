@@ -173,6 +173,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_DropTempAuthKeys))
             .SingleInstance();
+        builder.RegisterType<ResetAuthorizationsFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_ResetAuthorizations))
+            .SingleInstance();
     }
 
     private static void RegisterHelpMethods(ContainerBuilder builder)
