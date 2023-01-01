@@ -535,7 +535,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
             var auth = await SignUpInternal(client, "+25555555570");
-            var logout = await client.Invoke(new Auth_LogOut());
+            var logout = await client.Auth_LogOut();
             Assert.IsType<Auth_LoggedOut>(logout);
         }
 
@@ -631,8 +631,8 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
             var auth = await SignUpInternal(client, "+15555555575");
-            var dropResult = await client.Invoke(new Auth_DropTempAuthKeys()
-                { except_auth_keys = Array.Empty<long>() });
+
+            var dropResult = await client.Auth_DropTempAuthKeys();
             Assert.True(dropResult);
         }
 

@@ -91,7 +91,7 @@ public class AuthService : IAuthService
         return null;
     }
 
-    public async Task<TLBytes> BindTempAuthKey(long sessionId, TLBytes q)
+    public async ValueTask<TLBytes> BindTempAuthKey(long sessionId, TLBytes q)
     {
         var bindParameters = GetBindTempAuthKeyParameters(sessionId, q);
         if (bindParameters == null)
@@ -168,7 +168,7 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys)
+    public async ValueTask<TLBytes> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys)
     {
         var tempKeys = _unitOfWork.BoundAuthKeyRepository.GetTempAuthKeys(authKeyId);
         foreach (var key in tempKeys)
@@ -179,7 +179,9 @@ public class AuthService : IAuthService
             }
         }
 
-        return await _unitOfWork.SaveAsync();
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId)
@@ -296,7 +298,7 @@ public class AuthService : IAuthService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> IsAuthorized(long authKeyId)
+    public async ValueTask<bool> IsAuthorized(long authKeyId)
     {
         if (authKeyId == 0)
         {
@@ -314,7 +316,7 @@ public class AuthService : IAuthService
         return authKeyDetails?.LoggedIn ?? false;
     }
 
-    public async Task<TLBytes> LogOut(long authKeyId)
+    public async ValueTask<TLBytes> LogOut(long authKeyId)
     {
         var futureAuthToken = _random.GetRandomBytes(32);
         var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
@@ -434,7 +436,7 @@ public class AuthService : IAuthService
             .Build().TLBytes!);
     }
 
-    public async Task<TLBytes> SignIn(long authKeyId, TLBytes q)
+    public async ValueTask<TLBytes> SignIn(long authKeyId, TLBytes q)
     {
         var signInParameters = GetSignInParameters(q);
         var (phoneNumber, phoneCodeHash, phoneCode) = signInParameters;
@@ -499,7 +501,7 @@ public class AuthService : IAuthService
         return signupRequired.TLBytes!.Value;
     }
 
-    public async Task<TLBytes> SignUp(long authKeyId, TLBytes q)
+    public async ValueTask<TLBytes> SignUp(long authKeyId, TLBytes q)
     {
         _log.Debug($"*** Sign Up for authKey with Id: {authKeyId} ***");
         long userId = await _userIdCnt.IncrementAndGet();
@@ -573,14 +575,14 @@ public class AuthService : IAuthService
         return user.TLBytes!.Value;
     }
 
-    public async Task<bool> SaveAppInfo(AppInfoDTO info)
+    public async ValueTask<bool> SaveAppInfo(AppInfoDTO info)
     {
         _unitOfWork.AppInfoRepository.PutAppInfo(info);
         _log.Debug($"=== Save App Info for authKey with Id: {info.AuthKeyId}");
         return await _unitOfWork.SaveAsync();
     }
 
-    public async Task<AppInfoDTO?> GetAppInfo(long authKeyId)
+    public async ValueTask<AppInfoDTO?> GetAppInfo(long authKeyId)
     {
         _log.Debug($"=== Get App Info for authKey with Id: {authKeyId}");
         return _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);

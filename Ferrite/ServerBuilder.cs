@@ -169,6 +169,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_LogOut))
             .SingleInstance();
+        builder.RegisterType<DropTempAuthKeysFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_DropTempAuthKeys))
+            .SingleInstance();
     }
 
     private static void RegisterHelpMethods(ContainerBuilder builder)

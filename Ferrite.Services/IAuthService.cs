@@ -25,24 +25,24 @@ namespace Ferrite.Services;
 
 public interface IAuthService
 {
-    public Task<bool> SaveAppInfo(AppInfoDTO info);
-    public Task<AppInfoDTO?> GetAppInfo(long authKeyId);
-    public Task<bool> IsAuthorized(long authKeyId);
+    public ValueTask<bool> SaveAppInfo(AppInfoDTO info);
+    public ValueTask<AppInfoDTO?> GetAppInfo(long authKeyId);
+    public ValueTask<bool> IsAuthorized(long authKeyId);
     public ValueTask<TLBytes> SendCode(TLBytes q);
-    public Task<TLBytes> SignUp(long authKeyId, TLBytes q);
-    public Task<TLBytes> SignIn(long authKeyId, TLBytes q);
-    public Task<TLBytes> LogOut(long authKeyId);
+    public ValueTask<TLBytes> SignUp(long authKeyId, TLBytes q);
+    public ValueTask<TLBytes> SignIn(long authKeyId, TLBytes q);
+    public ValueTask<TLBytes> LogOut(long authKeyId);
     public Task<bool> ResetAuthorizations(long authKeyId);
     public Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId);
     public Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes);
-    public Task<TLBytes> BindTempAuthKey(long sessionId, TLBytes q);
+    public ValueTask<TLBytes> BindTempAuthKey(long sessionId, TLBytes q);
     public Task<AuthorizationDTO> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
     public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
     public Task<string> RequestPasswordRecovery();
     public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings);
     public ValueTask<TLBytes> ResendCode(TLBytes q);
     public ValueTask<TLBytes> CancelCode(TLBytes q);
-    public Task<bool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
+    public ValueTask<TLBytes> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
     public Task<LoginTokenDTO> ExportLoginToken(long authKeyId, long sessionId, int apiId, string apiHash, ICollection<long> exceptIds);
     public Task<LoginTokenDTO> ImportLoginToken(byte[] token);
     public Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token);
