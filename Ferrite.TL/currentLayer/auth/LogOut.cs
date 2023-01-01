@@ -53,7 +53,7 @@ public class LogOut : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var loggedout = await _auth.LogOut(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         if (loggedout == null)
@@ -70,7 +70,8 @@ public class LogOut : ITLObject, ITLMethod
             logoutResult.FutureAuthToken = loggedout.FutureAuthToken;
         }
         result.Result =  logoutResult;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

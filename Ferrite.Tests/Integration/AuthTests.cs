@@ -519,7 +519,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
             var auth = await SignUpInternal(client, "+15555555569");
-            var logout = await client.Invoke(new Auth_LogOut());
+            var logout = await client.Auth_LogOut();
             Assert.IsType<Auth_LoggedOut>(logout);
         }
 

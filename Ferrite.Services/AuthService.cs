@@ -314,13 +314,15 @@ public class AuthService : IAuthService
         return authKeyDetails?.LoggedIn ?? false;
     }
 
-    public async Task<LoggedOutDTO?> LogOut(long authKeyId)
+    public async Task<TLBytes> LogOut(long authKeyId)
     {
         var futureAuthToken = _random.GetRandomBytes(32);
         var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if(info == null)
         {
-            return null;
+            return LoggedOut
+                .Builder()
+                .Build().TLBytes!.Value;
         }
         _unitOfWork.AuthorizationRepository.PutAuthorization(info with
         {
@@ -331,10 +333,10 @@ public class AuthService : IAuthService
         });
         _log.Debug($"Log Out for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
-        return new LoggedOutDTO()
-        {
-            FutureAuthToken = futureAuthToken
-        };
+        return LoggedOut
+            .Builder()
+            .FutureAuthToken(futureAuthToken)
+            .Build().TLBytes!.Value;
     }
 
     public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings)

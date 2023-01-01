@@ -55,66 +55,6 @@ namespace Ferrite.Tests.TL;
 public class AuthTests
 {
     [Fact]
-    public async Task Logout_Returns_LoggedOut()
-    {
-        var builder = GetBuilder();
-        var authStub = new Mock<IAuthService>();
-        authStub.Setup(x => x.LogOut(It.IsAny<long>())).ReturnsAsync((long authKeyId) =>
-            {
-                if(authKeyId == 0)
-                {
-                    return null;
-                }
-                return new Ferrite.Data.Auth.LoggedOutDTO()
-                {
-                    FutureAuthToken = new byte[] { 1, 2, 3 }
-                };
-            }
-        );
-        builder.RegisterMock(authStub);
-        var container = builder.Build();
-        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
-        var logout = factory.Resolve<LogOut>();
-        var ctx = new TLExecutionContext(new Dictionary<string, object>());
-        ctx.AuthKeyId = 111;
-        ctx.MessageId = 1223;
-        var result = await logout.ExecuteAsync(ctx);
-        Assert.IsType<RpcResult>(result);
-        var rslt = (RpcResult)result;
-        Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<LoggedOutImpl>(rslt.Result);
-    }
-    [Fact]
-    public async Task Logout_Returns_RpcError()
-    {
-        var builder = GetBuilder();
-        var authStub = new Mock<IAuthService>();
-        authStub.Setup(x => x.LogOut(It.IsAny<long>())).ReturnsAsync((long authKeyId) =>
-            {
-                if(authKeyId == 0)
-                {
-                    return null;
-                }
-                return new Ferrite.Data.Auth.LoggedOutDTO()
-                {
-                    FutureAuthToken = new byte[] { 1, 2, 3 }
-                };
-            }
-        );
-        builder.RegisterMock(authStub);
-        var container = builder.Build();
-        var factory = container.BeginLifetimeScope().Resolve<TLObjectFactory>();
-        var logout = factory.Resolve<LogOut>();
-        var ctx = new TLExecutionContext(new Dictionary<string, object>());
-        ctx.AuthKeyId = 0;
-        ctx.MessageId = 1223;
-        var result = await logout.ExecuteAsync(ctx);
-        Assert.IsType<RpcResult>(result);
-        var rslt = (RpcResult)result;
-        Assert.Equal(1223, rslt.ReqMsgId);
-        Assert.IsType<RpcError>(rslt.Result);
-    }
-    [Fact]
     public async Task ResetAuthorizations_Returns_True()
     {
         var builder = GetBuilder();

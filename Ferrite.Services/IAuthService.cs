@@ -31,7 +31,7 @@ public interface IAuthService
     public ValueTask<TLBytes> SendCode(TLBytes q);
     public Task<TLBytes> SignUp(long authKeyId, TLBytes q);
     public Task<TLBytes> SignIn(long authKeyId, TLBytes q);
-    public Task<LoggedOutDTO?> LogOut(long authKeyId);
+    public Task<TLBytes> LogOut(long authKeyId);
     public Task<bool> ResetAuthorizations(long authKeyId);
     public Task<ExportedAuthorizationDTO> ExportAuthorization(long authKeyId, int dcId);
     public Task<AuthorizationDTO> ImportAuthorization(long userId, long authKeyId, byte[] bytes);

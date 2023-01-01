@@ -165,6 +165,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_BindTempAuthKey))
             .SingleInstance();
+        builder.RegisterType<LogOutFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_LogOut))
+            .SingleInstance();
     }
 
     private static void RegisterHelpMethods(ContainerBuilder builder)
