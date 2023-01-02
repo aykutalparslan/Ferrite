@@ -32,7 +32,7 @@ public class AuthTests
     static AuthTests()
     {
         var path = "auth-test-data";
-        Util.DeleteDirectory(path);
+        if(Directory.Exists(path)) Util.DeleteDirectory(path);
         Directory.CreateDirectory(path);
         var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52222, path);
         var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52222), default);
