@@ -361,7 +361,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var result = await SignUpInternal(client, "+15555555565");
+            var result = await Helpers.SignUp(client, "+15555555565");
             Assert.IsType<Auth_Authorization>(result);
         }
 
@@ -376,39 +376,12 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var result = await SignUpInternal(client, "+25555555566");
+            var result = await Helpers.SignUp(client, "+25555555566");
             Assert.IsType<Auth_Authorization>(result);
         }
 
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
-    }
-
-    private async Task<Auth_AuthorizationBase?> SignUpInternal(Client client, string phoneNumber)
-    {
-        var code = await client.Invoke(new Auth_SendCode()
-        {
-            phone_number = phoneNumber, 
-            api_id = 11111, 
-            api_hash = "11111111111111111111111111111111", 
-            settings = new CodeSettings()
-        });
-        var signIn = await client.Invoke(new Auth_SignIn()
-        {
-            phone_number = phoneNumber,
-            phone_code_hash = code.phone_code_hash,
-            phone_code = "12345",
-            flags = Auth_SignIn.Flags.has_phone_code
-        });
-        Assert.IsType<Auth_AuthorizationSignUpRequired>(signIn);
-        var result = await client.Invoke(new Auth_SignUp()
-        {
-            phone_number = phoneNumber,
-            phone_code_hash = code.phone_code_hash,
-            first_name = "aaa",
-            last_name = "bbb",
-        });
-        return result;
     }
 
     [Fact]
@@ -518,7 +491,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555569");
+            var auth = await Helpers.SignUp(client, "+15555555569");
             var logout = await client.Auth_LogOut();
             Assert.IsType<Auth_LoggedOut>(logout);
         }
@@ -534,7 +507,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+25555555570");
+            var auth = await Helpers.SignUp(client, "+25555555570");
             var logout = await client.Auth_LogOut();
             Assert.IsType<Auth_LoggedOut>(logout);
         }
@@ -550,7 +523,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555571");
+            var auth = await Helpers.SignUp(client, "+15555555571");
             var result = await client.Invoke(new Auth_ResetAuthorizations());
             Assert.True(result);
         }
@@ -566,7 +539,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+25555555572");
+            var auth = await Helpers.SignUp(client, "+25555555572");
             var result = await client.Invoke(new Auth_ResetAuthorizations());
             Assert.True(result);
         }
@@ -582,7 +555,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555573");
+            var auth = await Helpers.SignUp(client, "+15555555573");
             var exportResult = await client.Invoke(new Auth_ExportAuthorization()
             {
                 dc_id = 5,
@@ -607,7 +580,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+25555555574");
+            var auth = await Helpers.SignUp(client, "+25555555574");
             var exportResult = await client.Invoke(new Auth_ExportAuthorization()
             {
                 dc_id = 5,
@@ -632,7 +605,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555575");
+            var auth = await Helpers.SignUp(client, "+15555555575");
 
             var dropResult = await client.Auth_DropTempAuthKeys();
             Assert.True(dropResult);
@@ -648,7 +621,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(Config, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await SignUpInternal(client, "+15555555576");
+            var auth = await Helpers.SignUp(client, "+15555555576");
             var exportResult = await client.Invoke(new Auth_ExportAuthorization()
             {
                 dc_id = 5,
