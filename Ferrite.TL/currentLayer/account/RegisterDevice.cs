@@ -136,7 +136,7 @@ public class RegisterDevice : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _account.RegisterDevice(new DeviceInfoDTO()
         {
@@ -149,7 +149,8 @@ public class RegisterDevice : ITLObject, ITLMethod
             OtherUserIds = _otherUids
         });
         result.Result = success ? new BoolTrue() : new BoolFalse();
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

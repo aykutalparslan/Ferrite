@@ -25,6 +25,7 @@ using Ferrite.Core.Connection.TransportFeatures;
 using Ferrite.Core.Execution;
 using Ferrite.Core.Execution.Functions;
 using Ferrite.Core.Execution.Functions.Layer150;
+using Ferrite.Core.Execution.Functions.Layer150.Account;
 using Ferrite.Core.Execution.Functions.Layer150.Auth;
 using Ferrite.Core.Execution.Functions.Layer150.Help;
 using Ferrite.Core.Framing;
@@ -137,6 +138,15 @@ public class ServerBuilder
         RegisterBaseMethods(builder);
         RegisterHelpMethods(builder);
         RegisterAuthMethods(builder);
+        RegisterAccountMethods(builder);
+    }
+
+    private static void RegisterAccountMethods(ContainerBuilder builder)
+    {
+        builder.RegisterType<RegisterDeviceFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_RegisterDevice))
+            .SingleInstance();
     }
 
     private static void RegisterAuthMethods(ContainerBuilder builder)

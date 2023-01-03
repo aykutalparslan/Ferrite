@@ -19,12 +19,13 @@
 using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
+using Ferrite.TL.slim;
 
 namespace Ferrite.Services;
 
 public interface IAccountService
 {
-    public Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo);
+    public ValueTask<TLBytes> RegisterDevice(long authKeyId, TLBytes q);
     public Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds);
     public Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings);
     public Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer);

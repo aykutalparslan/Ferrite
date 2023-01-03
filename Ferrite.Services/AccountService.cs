@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Text;
 using System.Text.RegularExpressions;
 using DotNext.Threading;
 using Ferrite.Crypto;
@@ -23,6 +24,8 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150.account;
 using xxHash;
 
 namespace Ferrite.Services;
@@ -40,10 +43,34 @@ public partial class AccountService : IAccountService
         _random = random;
         _unitOfWork = unitOfWork;
     }
-    public async Task<bool> RegisterDevice(DeviceInfoDTO deviceInfo)
+    public async ValueTask<TLBytes> RegisterDevice(long authKeyId, TLBytes q)
     {
+        var deviceInfo = GetDeviceInfo(authKeyId, q);
         _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
-        return await _unitOfWork.SaveAsync();
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+
+    private static DeviceInfoDTO GetDeviceInfo(long authKeyId, TLBytes q)
+    {
+        var registerDevice = new RegisterDevice(q.AsSpan());
+        var token = Encoding.UTF8.GetString(registerDevice.Token);
+        var uids = new long[registerDevice.OtherUids.Count];
+        for (int i = 0; i < registerDevice.OtherUids.Count; i++)
+        {
+            uids[i] = registerDevice.OtherUids[i];
+        }
+        return new DeviceInfoDTO()
+        {
+            AuthKeyId = authKeyId,
+            Token = token,
+            Secret = registerDevice.Secret.ToArray(),
+            AppSandbox = registerDevice.AppSandbox,
+            NoMuted = registerDevice.NoMuted,
+            TokenType = registerDevice.TokenType,
+            OtherUserIds = uids,
+        };
     }
 
     public async Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds)
