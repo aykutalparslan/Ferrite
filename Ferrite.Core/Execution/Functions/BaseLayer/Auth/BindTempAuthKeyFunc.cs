@@ -19,9 +19,8 @@
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150.auth;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
 public class BindTempAuthKeyFunc : ITLFunction
 {

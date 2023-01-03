@@ -24,7 +24,7 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150;
+namespace Ferrite.Core.Execution.Functions.BaseLayer;
 
 public class InitConnectionFunc : ITLFunction
 {

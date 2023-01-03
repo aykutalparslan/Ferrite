@@ -20,20 +20,20 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
-public class SignUpFunc : ITLFunction
+public class ResetAuthorizationsFunc : ITLFunction
 {
     private readonly IAuthService _auth;
 
-    public SignUpFunc(IAuthService auth)
+    public ResetAuthorizationsFunc(IAuthService auth)
     {
         _auth = auth;
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var cancelCode = await _auth.SignUp(ctx.AuthKeyId, q);
-        var rpcResult = RpcResultGenerator.Generate(cancelCode, ctx.MessageId);
+        using var resetResult = await _auth.ResetAuthorizations(ctx.CurrentAuthKeyId);
+        var rpcResult = RpcResultGenerator.Generate(resetResult, ctx.MessageId);
         return rpcResult;
     }
 }

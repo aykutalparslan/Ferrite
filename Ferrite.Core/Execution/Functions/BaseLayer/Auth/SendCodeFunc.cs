@@ -20,20 +20,20 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Account;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
-public class RegisterDeviceFunc : ITLFunction
+public class SendCodeFunc : ITLFunction
 {
-    private readonly IAccountService _account;
+    private readonly IAuthService _auth;
 
-    public RegisterDeviceFunc(IAccountService account)
+    public SendCodeFunc(IAuthService auth)
     {
-        _account = account;
+        _auth = auth;
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var register = await _account.RegisterDevice(ctx.CurrentAuthKeyId, q);
-        var rpcResult = RpcResultGenerator.Generate(register, ctx.MessageId);
+        using var sentCode = await _auth.SendCode(q);
+        var rpcResult = RpcResultGenerator.Generate(sentCode, ctx.MessageId);
         return rpcResult;
     }
 }

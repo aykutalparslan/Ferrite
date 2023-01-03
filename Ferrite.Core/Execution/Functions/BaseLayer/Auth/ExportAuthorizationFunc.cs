@@ -20,20 +20,22 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
-public class CancelCodeFunc : ITLFunction
+public class ExportAuthorizationFunc : ITLFunction
 {
     private readonly IAuthService _auth;
+    private readonly IDataCenter _dc;
 
-    public CancelCodeFunc(IAuthService auth)
+    public ExportAuthorizationFunc(IAuthService auth, IDataCenter dc)
     {
         _auth = auth;
+        _dc = dc;
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var cancelCode = await _auth.CancelCode(q);
-        var rpcResult = RpcResultGenerator.Generate(cancelCode, ctx.MessageId);
+        using var exportResult = await _auth.ExportAuthorization(ctx.CurrentAuthKeyId, _dc.Id, q);
+        var rpcResult = RpcResultGenerator.Generate(exportResult, ctx.MessageId);
         return rpcResult;
     }
 }

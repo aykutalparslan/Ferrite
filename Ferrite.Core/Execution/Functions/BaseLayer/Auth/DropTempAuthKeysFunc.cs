@@ -20,20 +20,20 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
-public class ResendCodeFunc : ITLFunction
+public class DropTempAuthKeysFunc : ITLFunction
 {
     private readonly IAuthService _auth;
 
-    public ResendCodeFunc(IAuthService auth)
+    public DropTempAuthKeysFunc(IAuthService auth)
     {
         _auth = auth;
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var sentCode = await _auth.ResendCode(q);
-        var rpcResult = RpcResultGenerator.Generate(sentCode, ctx.MessageId);
+        using var dropResult = await _auth.DropTempAuthKeys(ctx.CurrentAuthKeyId, Array.Empty<long>());
+        var rpcResult = RpcResultGenerator.Generate(dropResult, ctx.MessageId);
         return rpcResult;
     }
 }

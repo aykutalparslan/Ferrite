@@ -16,25 +16,27 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Services;
+using DotNext.Buffers;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer;
 
-public class ExportLoginTokenFunc : ITLFunction
+public class InvokeWithLayerFunc : ITLFunction
 {
-    private readonly IAuthService _auth;
-
-    public ExportLoginTokenFunc(IAuthService auth)
-    {
-        _auth = auth;
-    }
-
+    public IExecutionEngine? ExecutionEngine { get; set; }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var export = await _auth.ExportLoginToken(ctx.AuthKeyId, ctx.SessionId, q);
-        var rpcResult = RpcResultGenerator.Generate(export, ctx.MessageId);
-        return rpcResult;
+        var (query, layer) = GetQuery(q);
+        if (ExecutionEngine != null) return await ExecutionEngine.Invoke(query, ctx, layer);
+        return null;
+    }
+    private static ValueTuple<TLBytes, int> GetQuery(TLBytes q)
+    {
+        TL.slim.layer150.InvokeWithLayer request = new(q.AsSpan());
+        var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.Query.Length);
+        request.Query.CopyTo(queryMemory.Memory.Span);
+        TLBytes query = new(queryMemory, 0, request.Query.Length);
+        return (query, request.Layer);
     }
 }

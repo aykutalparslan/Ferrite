@@ -20,20 +20,20 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
-public class LogOutFunc : ITLFunction
+public class ImportAuthorizationFunc : ITLFunction
 {
     private readonly IAuthService _auth;
 
-    public LogOutFunc(IAuthService auth)
+    public ImportAuthorizationFunc(IAuthService auth)
     {
         _auth = auth;
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var logoutResult = await _auth.LogOut(ctx.CurrentAuthKeyId);
-        var rpcResult = RpcResultGenerator.Generate(logoutResult, ctx.MessageId);
+        using var importResult = await _auth.ImportAuthorization(ctx.CurrentAuthKeyId, q);
+        var rpcResult = RpcResultGenerator.Generate(importResult, ctx.MessageId);
         return rpcResult;
     }
 }

@@ -20,20 +20,20 @@ using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Core.Execution.Functions.Layer150.Auth;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 
-public class SendCodeFunc : ITLFunction
+public class SignUpFunc : ITLFunction
 {
     private readonly IAuthService _auth;
 
-    public SendCodeFunc(IAuthService auth)
+    public SignUpFunc(IAuthService auth)
     {
         _auth = auth;
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var sentCode = await _auth.SendCode(q);
-        var rpcResult = RpcResultGenerator.Generate(sentCode, ctx.MessageId);
+        using var cancelCode = await _auth.SignUp(ctx.AuthKeyId, q);
+        var rpcResult = RpcResultGenerator.Generate(cancelCode, ctx.MessageId);
         return rpcResult;
     }
 }
