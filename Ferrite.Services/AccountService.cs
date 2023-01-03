@@ -52,6 +52,29 @@ public partial class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
+    public async ValueTask<TLBytes> RegisterDeviceL57(long authKeyId, TLBytes q)
+    {
+        var deviceInfo = GetDeviceInfoL57(authKeyId, q);
+        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+    
+    private static DeviceInfoDTO GetDeviceInfoL57(long authKeyId, TLBytes q)
+    {
+        var registerDevice = new RegisterDeviceL57(q.AsSpan());
+        var token = Encoding.UTF8.GetString(registerDevice.Token);
+        return new DeviceInfoDTO()
+        {
+            AuthKeyId = authKeyId,
+            Token = token,
+            Secret = Array.Empty<byte>(),
+            TokenType = registerDevice.TokenType,
+            OtherUserIds = Array.Empty<long>(),
+        };
+    }
+
     private static DeviceInfoDTO GetDeviceInfo(long authKeyId, TLBytes q)
     {
         var registerDevice = new RegisterDevice(q.AsSpan());
