@@ -33,8 +33,8 @@ public class AccountTests
         var path = "account-test-data";
         if(Directory.Exists(path)) Util.DeleteDirectory(path);
         Directory.CreateDirectory(path);
-        var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52222, path);
-        var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52222), default);
+        var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52223, path);
+        var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52223), default);
         Client.LoadPublicKey(@"-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEAt1YElR7/5enRYr788g210K6QZzUAmaithnSzmQsKb+XL5KhQHrJw
 VNMINO17SkB6i4fxG7ydDyFDbLA0Ls6jQZ0mX33Gl8vYWsczPbkbqzs9N6GkOo10
@@ -46,17 +46,18 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
 ");
     }
 
-    private static string Config(string what)
+    private static string ConfigPfs(string what)
     {
         switch (what)
         {
-            case "server_address": return "127.0.0.1:52222";
+            case "server_address": return "127.0.0.1:52223";
             case "api_id": return "11111";
             case "api_hash": return "11111111111111111111111111111111";
             case "phone_number": return "+15555555555";
             case "verification_code": return "12345";
             case "first_name": return "aaa";
             case "last_name": return "bbb";
+            case "pfs_enabled": return "yes";
             default: return null;
         }
     }
@@ -66,7 +67,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     {
         async Task RunTest()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
             var auth = await Helpers.SignUp(client, "+15555555577");
             Assert.NotNull(client.TLConfig);
@@ -75,6 +76,25 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
                 "testtoken",
                 false,
                 RandomNumberGenerator.GetBytes(32),
+                Array.Empty<long>());
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task UnregisterDevice_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555578");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_UnregisterDevice(
+                2,
+                "testtoken",
                 Array.Empty<long>());
         }
 

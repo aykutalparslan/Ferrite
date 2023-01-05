@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 using DotNext.Threading;
@@ -96,10 +97,28 @@ public partial class AccountService : IAccountService
         };
     }
 
-    public async Task<bool> UnregisterDevice(long authKeyId, string token, ICollection<long> otherUserIds)
+    public async ValueTask<TLBytes> UnregisterDevice(long authKeyId, TLBytes q)
     {
-        _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(authKeyId, token, otherUserIds);
-        return await _unitOfWork.SaveAsync();
+        var unregisterReq = GetUnregisterDeviceParameters(q);
+        _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(authKeyId, unregisterReq.Token, unregisterReq.OtherUserIds);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+
+    private readonly record struct UnregisterDeviceParameters(int TokeyType, string Token, ICollection<long> OtherUserIds);
+
+    private static UnregisterDeviceParameters GetUnregisterDeviceParameters(TLBytes q)
+    {
+        var unregister = new UnregisterDevice(q.AsSpan());
+        var token = Encoding.UTF8.GetString(unregister.Token);
+        var uids = new long[unregister.OtherUids.Count];
+        for (int i = 0; i < unregister.OtherUids.Count; i++)
+        {
+            uids[i] = unregister.OtherUids[i];
+        }
+
+        return new UnregisterDeviceParameters(unregister.TokenType, token, uids);
     }
 
     public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
