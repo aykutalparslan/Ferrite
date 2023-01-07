@@ -158,10 +158,29 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555581");
+            var auth = await Helpers.SignUp(client, "+15555555580");
             Assert.NotNull(client.TLConfig);
+            var resultUpdate = await client.Account_UpdateNotifySettings(
+                new InputNotifyUsers(),
+                new InputPeerNotifySettings()
+                {
+                    flags = InputPeerNotifySettings.Flags.has_mute_until | InputPeerNotifySettings.Flags.has_silent,
+                    silent = true,
+                    mute_until = 12345,
+                });
+            Assert.True(resultUpdate);
+            var settings = await client.Account_GetNotifySettings(
+                new InputNotifyUsers());
+            Assert.IsType<PeerNotifySettings>(settings);
+            Assert.Equal(12345, settings.mute_until);
+            Assert.True(settings.silent);
             var result = await client.Account_ResetNotifySettings();
             Assert.True(result);
+            settings = await client.Account_GetNotifySettings(
+                new InputNotifyUsers());
+            Assert.IsType<PeerNotifySettings>(settings);
+            Assert.Equal(0, settings.mute_until);
+            Assert.False(settings.silent);
         }
 
         Task testTask = RunTest();

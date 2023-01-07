@@ -16,13 +16,9 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using System.Collections;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using DotNext;
-using DotNext.Buffers;
-using DotNext.Threading;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
@@ -35,7 +31,7 @@ using xxHash;
 
 namespace Ferrite.Services;
 
-public partial class AccountService : IAccountService
+public class AccountService : IAccountService
 {
     private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
@@ -294,10 +290,12 @@ public partial class AccountService : IAccountService
         return settings.First();
     }
 
-    public async Task<bool> ResetNotifySettings(long authKeyId)
+    public async ValueTask<TLBytes> ResetNotifySettings(long authKeyId)
     {
         _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(authKeyId);
-        return await _unitOfWork.SaveAsync();
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)

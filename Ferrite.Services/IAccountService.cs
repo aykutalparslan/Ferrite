@@ -30,7 +30,7 @@ public interface IAccountService
     public ValueTask<TLBytes> UnregisterDevice(long authKeyId, TLBytes q);
     public ValueTask<TLBytes> UpdateNotifySettings(long authKeyId, TLBytes q);
     public ValueTask<TLBytes> GetNotifySettings(long authKeyId, TLBytes q);
-    public Task<bool> ResetNotifySettings(long authKeyId);
+    public ValueTask<TLBytes> ResetNotifySettings(long authKeyId);
     public Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
     public Task<bool> UpdateStatus(long authKeyId, bool status);
     public Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason);
