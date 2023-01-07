@@ -17,8 +17,11 @@
 //
 
 using System.Collections;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using DotNext;
+using DotNext.Buffers;
 using DotNext.Threading;
 using Ferrite.Crypto;
 using Ferrite.Data;
@@ -26,6 +29,7 @@ using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.account;
 using xxHash;
 
@@ -106,7 +110,7 @@ public partial class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    private readonly record struct UnregisterDeviceParameters(int TokeyType, string Token, ICollection<long> OtherUserIds);
+    private readonly record struct UnregisterDeviceParameters(int TokenType, string Token, ICollection<long> OtherUserIds);
 
     private static UnregisterDeviceParameters GetUnregisterDeviceParameters(TLBytes q)
     {
@@ -121,15 +125,122 @@ public partial class AccountService : IAccountService
         return new UnregisterDeviceParameters(unregister.TokenType, token, uids);
     }
 
-    public async Task<bool> UpdateNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
+    public async ValueTask<TLBytes> UpdateNotifySettings(long authKeyId, TLBytes q)
     {
-        _unitOfWork.NotifySettingsRepository.PutNotifySettings(authKeyId, peer, settings);
-        return await _unitOfWork.SaveAsync();
+        var deviceInfo = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(authKeyId);
+        if (deviceInfo == null) return BoolFalse.Builder().Build().TLBytes!.Value;
+        using var notifySettingsParameters = GetUpdateNotifySettingsParameters(q);
+        _unitOfWork.NotifySettingsRepository.PutNotifySettings(authKeyId, 
+            notifySettingsParameters.NotifyPeerType, 
+            notifySettingsParameters.PeerType, 
+            notifySettingsParameters.PeerId,
+            deviceInfo.TokenType, notifySettingsParameters.PeerNotifySettings);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+
+    private readonly record struct UpdateNotifySettingsParameters(int NotifyPeerType, int PeerType, long PeerId,
+        TLBytes PeerNotifySettings) : IDisposable
+    {
+        public void Dispose()
+        {
+            PeerNotifySettings.Dispose();
+        }
+    }
+
+    private static UpdateNotifySettingsParameters GetUpdateNotifySettingsParameters(TLBytes q)
+    {
+        var settings = new UpdateNotifySettings(q.AsSpan());
+        int peerConstructor = MemoryMarshal.Read<int>(settings.Peer);
+        long peerId = 0;
+        InputNotifyPeerType notifyPeerType = InputNotifyPeerType.Users;;
+        InputPeerType peerType = InputPeerType.Empty;
+        switch (peerConstructor)
+        {
+            case Constructors.layer150_InputNotifyUsers:
+                notifyPeerType = InputNotifyPeerType.Users;
+                break;
+            case Constructors.layer150_InputNotifyChats:
+                notifyPeerType = InputNotifyPeerType.Chats;
+                break;
+            case Constructors.layer150_InputNotifyBroadcasts:
+                notifyPeerType = InputNotifyPeerType.Broadcasts;
+                break;
+            case Constructors.layer150_InputNotifyPeer:
+                notifyPeerType = InputNotifyPeerType.Peer;
+                var notifyPeer = new InputNotifyPeer(settings.Peer);
+                var (inputPeerType, id, accessHash) = GetPeerTypeAndId(notifyPeer.Peer);
+                peerType = inputPeerType;
+                peerId = id;
+                break;
+        }
+
+        var inputSettings = new InputPeerNotifySettings(settings.NotifySettings);
+        //TODO: add sound support
+        var peerNotifySettings = PeerNotifySettings
+            .Builder()
+            .Silent(inputSettings.Silent)
+            .MuteUntil(inputSettings.MuteUntil)
+            .ShowPreviews(inputSettings.ShowPreviews)
+            .Build().TLBytes!.Value;
+
+        return new UpdateNotifySettingsParameters((int)notifyPeerType, (int)peerType, peerId, peerNotifySettings);
+    }
+
+    private static (InputPeerType, long, long) GetPeerTypeAndId(Span<byte> bytes)
+    {
+        InputPeerType inputPeerType = InputPeerType.Empty;
+        int peerConstructor = MemoryMarshal.Read<int>(bytes);
+        long peerId = 0;
+        long accessHash = 0;
+        switch (peerConstructor)
+        {
+            case Constructors.layer150_InputPeerSelf:
+                inputPeerType = InputPeerType.Self;
+                break;
+            case Constructors.layer150_InputPeerChat:
+                inputPeerType = InputPeerType.Chat;
+                var chat = new InputPeerChat(bytes);
+                peerId = chat.ChatId;
+                break;
+            case Constructors.layer150_InputPeerUser:
+                inputPeerType = InputPeerType.User;
+                var user = new InputPeerUser(bytes);
+                peerId = user.UserId;
+                accessHash = user.AccessHash;
+                break;
+            case Constructors.layer150_InputPeerChannel:
+                inputPeerType = InputPeerType.Channel;
+                var channel = new InputPeerChannel(bytes);
+                peerId = channel.ChannelId;
+                accessHash = channel.AccessHash;
+                break;
+            case Constructors.layer150_InputPeerUserFromMessage:
+                inputPeerType = InputPeerType.User;
+                var userFromMessage = new InputPeerUserFromMessage(bytes);
+                var peer = new InputPeerUser(userFromMessage.Peer);
+                peerId = peer.UserId;
+                accessHash = peer.AccessHash;
+                break;
+            case Constructors.layer150_InputPeerChannelFromMessage:
+                inputPeerType = InputPeerType.User;
+                var channelFromMessage = new InputPeerUserFromMessage(bytes);
+                var peerChannel = new InputPeerChannel(channelFromMessage.Peer);
+                peerId = peerChannel.ChannelId;
+                accessHash = peerChannel.AccessHash;
+                break;
+            case Constructors.layer150_InputPeerEmpty:
+                inputPeerType = InputPeerType.Empty;
+                break;
+        }
+
+        return (inputPeerType, peerId, accessHash);
     }
 
     public async Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
     {
-        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
+        /*var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info != null && info.LangPack.ToLower().Contains("android"))
         {
@@ -144,7 +255,8 @@ public partial class AccountService : IAccountService
         {
             return new PeerNotifySettingsDTO();
         }
-        return settings.First(_ => _.DeviceType == deviceType);
+        return settings.First(_ => _.DeviceType == deviceType);*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> ResetNotifySettings(long authKeyId)

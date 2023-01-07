@@ -155,6 +155,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_UnregisterDevice))
             .SingleInstance();
+        builder.RegisterType<UpdateNotifySettingsFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_AccountUpdateNotifySettings))
+            .SingleInstance();
     }
 
     private static void RegisterAuthMethods(ContainerBuilder builder)

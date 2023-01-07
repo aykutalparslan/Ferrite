@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Runtime.InteropServices;
+using Ferrite.TL.slim;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -34,55 +36,22 @@ public class NotifySettingsRepository : INotifySettingsRepository
                 new DataColumn { Name = "peer_id", Type = DataType.Long },
                 new DataColumn { Name = "device_type", Type = DataType.Int })));
     }
-    public bool PutNotifySettings(long authKeyId, InputNotifyPeerDTO peer, PeerNotifySettingsDTO settings)
+    public bool PutNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType, TLBytes settings)
     {
-        var settingBytes = MessagePackSerializer.Serialize(settings);
-        long peerId = 0;
-        if (peer.Peer?.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
-        {
-            peerId = peer.Peer.UserId;
-        }
-        else if (peer.Peer?.InputPeerType == InputPeerType.Chat)
-        {
-            peerId = peer.Peer.ChatId;
-        }
-        else if (peer.Peer?.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
-        {
-            peerId = peer.Peer.ChannelId;
-        }
-        return _store.Put(settingBytes, authKeyId,
-            (int)peer.NotifyPeerType, peer.Peer != null ? (int)peer.Peer.InputPeerType : 0,
-            peerId, (int)settings.DeviceType);
+        var settingBytes = settings.AsSpan().ToArray();
+
+        return _store.Put(settingBytes, authKeyId, notifyPeerType, peerType, peerId, deviceType);
     }
 
-    public IReadOnlyCollection<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
+    public IReadOnlyCollection<TLBytes> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId)
     {
-        List<PeerNotifySettingsDTO> results = new();
-        long peerId = 0;
-        int inputPeerType = 0;
-        if (peer.Peer?.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
-        {
-            peerId = peer.Peer.UserId;
-            inputPeerType = (int)peer.Peer.InputPeerType;
-        }
-        else if (peer.Peer?.InputPeerType == InputPeerType.Chat)
-        {
-            peerId = peer.Peer.ChatId;
-            inputPeerType = (int)peer.Peer.InputPeerType;
-        }
-        else if (peer.Peer?.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
-        {
-            peerId = peer.Peer.ChannelId;
-            inputPeerType = (int)peer.Peer.InputPeerType;
-        }
-
+        List<TLBytes> results = new();
+       
         var iter = _store.Iterate(authKeyId,
-            (int)peer.NotifyPeerType, inputPeerType,
-            peerId);
+            notifyPeerType, peerType, peerId);
         foreach (var settingBytes in iter)
         {
-            var settings = MessagePackSerializer.Deserialize<PeerNotifySettingsDTO>(settingBytes);
-            results.Add(settings);
+            results.Add(new TLBytes(settingBytes.AsMemory(), 0, settingBytes.Length));
         }
 
         return results;

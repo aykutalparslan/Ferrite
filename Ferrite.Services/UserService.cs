@@ -127,7 +127,7 @@ public class UserService : IUsersService
 
     private PeerNotifySettingsDTO GetPeerNotifySettings(long authKeyId, UserDTO? user, DeviceType deviceType)
     {
-        if (user == null) return new PeerNotifySettingsDTO();
+        /*if (user == null) return new PeerNotifySettingsDTO();
         var settings = 
             _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
         {
@@ -142,7 +142,8 @@ public class UserService : IUsersService
         PeerNotifySettingsDTO notifySettings = notifySettings = settings.Count == 0
             ? new PeerNotifySettingsDTO()
             : settings.First(_ => _.DeviceType == deviceType);
-        return notifySettings;
+        return notifySettings;*/
+        throw new NotImplementedException();
     }
 
     private DeviceType GetDeviceType(long authKeyId)

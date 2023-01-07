@@ -101,4 +101,68 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task UpdateNotifySettings_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555579");
+            Assert.NotNull(client.TLConfig);
+            var registerResult = await client.Account_RegisterDevice(
+                2,
+                "testtoken",
+                false,
+                RandomNumberGenerator.GetBytes(32),
+                Array.Empty<long>());
+            var result = await client.Account_UpdateNotifySettings(
+                new InputNotifyUsers(),
+                new InputPeerNotifySettings());
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task GetNotifySettings_Returns_PeerNotifySettings()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555580");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_UpdateNotifySettings(
+                new InputNotifyUsers(),
+                new InputPeerNotifySettings());
+            Assert.True(result);
+            var settings = await client.Account_GetNotifySettings(
+                new InputNotifyUsers());
+            Assert.IsType<PeerNotifySettings>(settings);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ResetNotifySettings_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555581");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_ResetNotifySettings();
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
 }

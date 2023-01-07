@@ -466,7 +466,7 @@ public class MessagesService : IMessagesService
     private async Task GenerateDialogs(long authKeyId, Dictionary<long, PeerDTO> peerList, IUpdatesContext userCtx, AuthInfoDTO auth,
         Dictionary<long, int> topMessages, List<DialogDTO> userDialogs)
     {
-        foreach (var p in peerList.Values)
+        /*foreach (var p in peerList.Values)
         {
             if (p.PeerType == PeerType.User)
             {
@@ -492,7 +492,8 @@ public class MessagesService : IMessagesService
                 };
                 userDialogs.Add(dialog);
             }
-        }
+        }*/
+        throw new NotImplementedException();
     }
 
     private async Task ProcessMessages(IReadOnlyCollection<MessageDTO> messages, AuthInfoDTO auth, Dictionary<long, UserDTO> userList,
