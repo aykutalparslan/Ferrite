@@ -69,7 +69,7 @@ public class InitConnectionFunc : ITLFunction
             LangCode = Encoding.UTF8.GetString(request.LangCode),
             LangPack = Encoding.UTF8.GetString(request.LangPack),
             SystemLangCode = Encoding.UTF8.GetString(request.LangCode),
-            SystemVersion = Encoding.UTF8.GetString(request.SystemVersion)
+            SystemVersion = Encoding.UTF8.GetString(request.SystemVersion),
         };
     }
 }

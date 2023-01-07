@@ -69,7 +69,7 @@ public class GetNotifySettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         InputNotifyPeerDTO notifyPeer = _mapper.MapToDTO<InputNotifyPeer, InputNotifyPeerDTO>(_peer);
         
@@ -155,7 +155,8 @@ public class GetNotifySettings : ITLObject, ITLMethod
             }
         }
         result.Result = resp;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

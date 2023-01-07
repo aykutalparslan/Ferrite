@@ -111,12 +111,6 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var auth = await Helpers.SignUp(client, "+15555555579");
             Assert.NotNull(client.TLConfig);
-            var registerResult = await client.Account_RegisterDevice(
-                2,
-                "testtoken",
-                false,
-                RandomNumberGenerator.GetBytes(32),
-                Array.Empty<long>());
             var result = await client.Account_UpdateNotifySettings(
                 new InputNotifyUsers(),
                 new InputPeerNotifySettings());
@@ -138,11 +132,19 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.NotNull(client.TLConfig);
             var result = await client.Account_UpdateNotifySettings(
                 new InputNotifyUsers(),
-                new InputPeerNotifySettings());
+                new InputPeerNotifySettings()
+                {
+                    flags = InputPeerNotifySettings.Flags.has_mute_until | InputPeerNotifySettings.Flags.has_silent,
+                    silent = true,
+                    mute_until = 12345,
+                });
             Assert.True(result);
             var settings = await client.Account_GetNotifySettings(
                 new InputNotifyUsers());
             Assert.IsType<PeerNotifySettings>(settings);
+            Assert.Equal(12345, settings.mute_until);
+            Assert.True(settings.silent);
+            Assert.False(settings.show_previews);
         }
 
         Task testTask = RunTest();

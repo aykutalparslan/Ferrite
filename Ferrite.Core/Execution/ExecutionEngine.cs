@@ -70,12 +70,16 @@ public class ExecutionEngine : IExecutionEngine
         }
         try
         {
-            var func = _functions[new FunctionKey(layer, rpc.Constructor)];
-            return await func.Process(rpc, ctx);
+            _functions.TryGetValue(new FunctionKey(layer, rpc.Constructor), out var func);
+            if (func == null)
+            {
+                _log.Error($"#{rpc.Constructor.ToString("x")} is not found for layer {layer}");
+            }
+            return await func!.Process(rpc, ctx);
         }
         catch (Exception e)
         {
-            _log.Error(e, $"#{rpc.Constructor.ToString("x")} is not registered for layer {layer}");
+            _log.Error(e, $"#{rpc.Constructor.ToString("x")} for layer {layer} cannot be processed: {e.Message}");
         }
 
         return null;

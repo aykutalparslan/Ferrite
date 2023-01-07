@@ -43,12 +43,12 @@ public class NotifySettingsRepository : INotifySettingsRepository
         return _store.Put(settingBytes, authKeyId, notifyPeerType, peerType, peerId, deviceType);
     }
 
-    public IReadOnlyCollection<TLBytes> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId)
+    public IReadOnlyCollection<TLBytes> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType)
     {
         List<TLBytes> results = new();
        
         var iter = _store.Iterate(authKeyId,
-            notifyPeerType, peerType, peerId);
+            notifyPeerType, peerType, peerId, deviceType);
         foreach (var settingBytes in iter)
         {
             results.Add(new TLBytes(settingBytes.AsMemory(), 0, settingBytes.Length));

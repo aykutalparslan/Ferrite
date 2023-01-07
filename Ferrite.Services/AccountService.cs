@@ -127,14 +127,22 @@ public partial class AccountService : IAccountService
 
     public async ValueTask<TLBytes> UpdateNotifySettings(long authKeyId, TLBytes q)
     {
-        var deviceInfo = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(authKeyId);
-        if (deviceInfo == null) return BoolFalse.Builder().Build().TLBytes!.Value;
-        using var notifySettingsParameters = GetUpdateNotifySettingsParameters(q);
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
+        DeviceType deviceType = DeviceType.Other;
+        if (info != null && info.LangPack.ToLower().Contains("android"))
+        {
+            deviceType = DeviceType.Android;
+        }
+        else if (info != null && info.LangPack.ToLower().Contains("ios"))
+        {
+            deviceType = DeviceType.iOS;
+        }
+        using var notifySettingsParameters = GetUpdateNotifySettingsParameters(deviceType, q);
         _unitOfWork.NotifySettingsRepository.PutNotifySettings(authKeyId, 
             notifySettingsParameters.NotifyPeerType, 
             notifySettingsParameters.PeerType, 
             notifySettingsParameters.PeerId,
-            deviceInfo.TokenType, notifySettingsParameters.PeerNotifySettings);
+            (int)deviceType, notifySettingsParameters.PeerNotifySettings);
         var result = await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
@@ -149,12 +157,44 @@ public partial class AccountService : IAccountService
         }
     }
 
-    private static UpdateNotifySettingsParameters GetUpdateNotifySettingsParameters(TLBytes q)
+    private static UpdateNotifySettingsParameters GetUpdateNotifySettingsParameters(DeviceType deviceType, TLBytes q)
     {
         var settings = new UpdateNotifySettings(q.AsSpan());
-        int peerConstructor = MemoryMarshal.Read<int>(settings.Peer);
+        (var peerId, InputNotifyPeerType notifyPeerType, InputPeerType peerType) = GetNotifyPeerInfo(settings.Peer);
+
+        var inputSettings = new InputPeerNotifySettings(settings.NotifySettings);
+        var settingsBuilder = PeerNotifySettings
+            .Builder()
+            .Silent(inputSettings.Silent)
+            .MuteUntil(inputSettings.MuteUntil)
+            .ShowPreviews(inputSettings.ShowPreviews);
+        if (inputSettings.Flags[3])
+        {
+            switch (deviceType)
+            {
+                case DeviceType.Android:
+                    settingsBuilder = settingsBuilder.AndroidSound(inputSettings.Sound);
+                    break;
+                case DeviceType.iOS:
+                    settingsBuilder = settingsBuilder.IosSound(inputSettings.Sound);
+                    break;
+                default:
+                    settingsBuilder = settingsBuilder.OtherSound(inputSettings.Sound);
+                    break;
+            }
+        }
+
+        return new UpdateNotifySettingsParameters((int)notifyPeerType, 
+            (int)peerType, peerId, settingsBuilder.Build().TLBytes!.Value);
+    }
+
+    private static (long peerId, InputNotifyPeerType notifyPeerType, InputPeerType peerType) GetNotifyPeerInfo(
+        Span<byte> peer)
+    {
+        int peerConstructor = MemoryMarshal.Read<int>(peer);
         long peerId = 0;
-        InputNotifyPeerType notifyPeerType = InputNotifyPeerType.Users;;
+        InputNotifyPeerType notifyPeerType = InputNotifyPeerType.Users;
+        ;
         InputPeerType peerType = InputPeerType.Empty;
         switch (peerConstructor)
         {
@@ -169,23 +209,14 @@ public partial class AccountService : IAccountService
                 break;
             case Constructors.layer150_InputNotifyPeer:
                 notifyPeerType = InputNotifyPeerType.Peer;
-                var notifyPeer = new InputNotifyPeer(settings.Peer);
+                var notifyPeer = new InputNotifyPeer(peer);
                 var (inputPeerType, id, accessHash) = GetPeerTypeAndId(notifyPeer.Peer);
                 peerType = inputPeerType;
                 peerId = id;
                 break;
         }
 
-        var inputSettings = new InputPeerNotifySettings(settings.NotifySettings);
-        //TODO: add sound support
-        var peerNotifySettings = PeerNotifySettings
-            .Builder()
-            .Silent(inputSettings.Silent)
-            .MuteUntil(inputSettings.MuteUntil)
-            .ShowPreviews(inputSettings.ShowPreviews)
-            .Build().TLBytes!.Value;
-
-        return new UpdateNotifySettingsParameters((int)notifyPeerType, (int)peerType, peerId, peerNotifySettings);
+        return (peerId, notifyPeerType, peerType);
     }
 
     private static (InputPeerType, long, long) GetPeerTypeAndId(Span<byte> bytes)
@@ -238,9 +269,11 @@ public partial class AccountService : IAccountService
         return (inputPeerType, peerId, accessHash);
     }
 
-    public async Task<PeerNotifySettingsDTO> GetNotifySettings(long authKeyId, InputNotifyPeerDTO peer)
+    public async ValueTask<TLBytes> GetNotifySettings(long authKeyId, TLBytes q)
     {
-        /*var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
+        (var peerId, InputNotifyPeerType notifyPeerType, InputPeerType peerType) = 
+            GetNotifyPeerInfo(new GetNotifySettings(q.AsSpan()).Peer);
+        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = DeviceType.Other;
         if (info != null && info.LangPack.ToLower().Contains("android"))
         {
@@ -250,13 +283,15 @@ public partial class AccountService : IAccountService
         {
             deviceType = DeviceType.iOS;
         }
-        var settings = _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, peer);
-        if (settings == null || settings.Count == 0)
+
+        var settings = _unitOfWork
+            .NotifySettingsRepository.GetNotifySettings(authKeyId, 
+                (int)notifyPeerType, (int)peerType, peerId, (int)deviceType);
+        if (settings.Count == 0)
         {
-            return new PeerNotifySettingsDTO();
+            return PeerNotifySettings.Builder().Build().TLBytes!.Value;
         }
-        return settings.First(_ => _.DeviceType == deviceType);*/
-        throw new NotImplementedException();
+        return settings.First();
     }
 
     public async Task<bool> ResetNotifySettings(long authKeyId)

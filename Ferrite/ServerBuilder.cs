@@ -38,6 +38,7 @@ using Ferrite.Services.Gateway;
 using Ferrite.TL;
 using Ferrite.TL.ObjectMapper;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150.account;
 using Ferrite.Transport;
 using Ferrite.Utils;
 
@@ -158,6 +159,10 @@ public class ServerBuilder
         builder.RegisterType<UpdateNotifySettingsFunc>()
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_AccountUpdateNotifySettings))
+            .SingleInstance();
+        builder.RegisterType<GetNotifySettingsFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_GetNotifySettings))
             .SingleInstance();
     }
 

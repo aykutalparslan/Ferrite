@@ -16,13 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Services;
+using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Data.Repositories;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Account;
 
-public interface INotifySettingsRepository
+public class GetNotifySettingsFunc : ITLFunction
 {
-    public bool PutNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType, TLBytes settings);
-    public IReadOnlyCollection<TLBytes> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType);
-    public bool DeleteNotifySettings(long authKeyId);
+    private readonly IAccountService _account;
+
+    public GetNotifySettingsFunc(IAccountService account)
+    {
+        _account = account;
+    }
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    {
+        using var result = await _account.GetNotifySettings(ctx.CurrentAuthKeyId, q);
+        var rpcResult = RpcResultGenerator.Generate(result, ctx.MessageId);
+        return rpcResult;
+    }
 }

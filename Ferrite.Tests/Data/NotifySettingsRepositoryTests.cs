@@ -38,7 +38,7 @@ public class NotifySettingsRepositoryTests
         repo.PutNotifySettings(123, 0, 0, 
             0, 0, notifySettings.TLBytes!.Value);
         var settings = repo.GetNotifySettings(123,
-            0, 0, 0);
+            0, 0, 0, 0);
         Assert.Equal(1, settings.Count);
         Assert.Equal(notifySettings.TLBytes!.Value.AsSpan().ToArray(), 
             settings.First().AsSpan().ToArray());
@@ -60,7 +60,7 @@ public class NotifySettingsRepositoryTests
             0, 0, notifySettings.TLBytes!.Value);
         repo.DeleteNotifySettings(123);
         var settings = repo.GetNotifySettings(123,
-            0, 0, 0);
+            0, 0, 0, 0);
         Assert.Equal(0, settings.Count);
         Util.DeleteDirectory(path);
     }
