@@ -32,7 +32,7 @@ public class RegisterDeviceL57Func: ITLFunction
     }
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        using var register = await _account.RegisterDevice(ctx.CurrentAuthKeyId, q);
+        using var register = await _account.RegisterDeviceL57(ctx.CurrentAuthKeyId, q);
         var rpcResult = RpcResultGenerator.Generate(register, ctx.MessageId);
         return rpcResult;
     }
