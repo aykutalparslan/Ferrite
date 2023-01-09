@@ -44,7 +44,7 @@ public class DistributedUnitOfWork : IUnitOfWork
             new ServerSaltRepository(new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
         LoginTokenRepository = new LoginTokenRepository(new RedisDataStore(redisConfig));
         DeviceLockedRepository = new DeviceLockedRepository(new RedisDataStore(redisConfig));
-        UserRepository = new UserRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
+        UserRepository = new UserRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra),new CassandraKVStore(_cassandra));
         AppInfoRepository = new AppInfoRepository(new CassandraKVStore(_cassandra));
         DeviceInfoRepository =
             new DeviceInfoRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));

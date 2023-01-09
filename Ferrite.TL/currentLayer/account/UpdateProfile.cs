@@ -121,7 +121,7 @@ public class UpdateProfile : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var userNew = await _account.UpdateProfile(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _firstName, _lastName, _about);
         if (userNew == null)
@@ -135,7 +135,8 @@ public class UpdateProfile : ITLObject, ITLMethod
 
             result.Result = user;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

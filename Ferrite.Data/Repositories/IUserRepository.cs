@@ -32,4 +32,6 @@ public interface IUserRepository
     public bool DeleteUser(long userId);
     public bool UpdateAccountTtl(long userId, int accountDaysTTL);
     public int GetAccountTtl(long userId);
+    public bool PutAbout(long userId, string about);
+    public string? GetAbout(long userId);
 }

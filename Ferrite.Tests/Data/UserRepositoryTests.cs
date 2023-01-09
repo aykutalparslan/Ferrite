@@ -31,7 +31,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         using var user = User.Builder()
             .Id(123)
             .Username("test"u8)
@@ -51,7 +51,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx),new RocksDBKVStore(ctx));
         using var user = User.Builder()
             .Id(123)
             .Username("test"u8)
@@ -71,7 +71,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx),new RocksDBKVStore(ctx));
         using var user = User.Builder()
             .Id(123)
             .Username("test"u8)
@@ -90,7 +90,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx),new RocksDBKVStore(ctx));
         using var user = User.Builder()
             .Id(123)
             .Username("test"u8)
@@ -110,7 +110,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx),new RocksDBKVStore(ctx));
         using var user = User.Builder()
             .Id(123)
             .Username("test"u8)
@@ -132,7 +132,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx),new RocksDBKVStore(ctx));
         using var user = User.Builder()
             .Id(123)
             .Username("test"u8)
@@ -154,7 +154,7 @@ public class UserRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         UserRepository repo = new UserRepository(new RocksDBKVStore(ctx), 
-            new RocksDBKVStore(ctx));
+            new RocksDBKVStore(ctx),new RocksDBKVStore(ctx));
         repo.UpdateAccountTtl(123, 200);
         var ttl = repo.GetAccountTtl(123);
         Assert.Equal(199, ttl);

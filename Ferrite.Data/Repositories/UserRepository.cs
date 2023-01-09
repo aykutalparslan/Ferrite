@@ -26,8 +26,9 @@ public class UserRepository : IUserRepository
 {
     private readonly IKVStore _store;
     private readonly IKVStore _storeTtl;
+    private readonly IKVStore _storeAbout;
 
-    public UserRepository(IKVStore store, IKVStore storeTtl)
+    public UserRepository(IKVStore store, IKVStore storeTtl, IKVStore storeAbout)
     {
         _store = store;
         _store.SetSchema(new TableDefinition("ferrite", "users",
@@ -41,6 +42,10 @@ public class UserRepository : IUserRepository
                 new DataColumn { Name = "username", Type = DataType.String })));
         _storeTtl = storeTtl;
         _storeTtl.SetSchema(new TableDefinition("ferrite", "account_ttls",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long })));
+        _storeAbout = storeAbout;
+        _storeAbout.SetSchema(new TableDefinition("ferrite", "users_about",
             new KeyDefinition("pk",
                 new DataColumn { Name = "user_id", Type = DataType.Long })));
     }
@@ -154,5 +159,16 @@ public class UserRepository : IUserRepository
         var expire = BitConverter.ToInt64(val);
         var expireDays = DateTimeOffset.FromUnixTimeSeconds(expire) - DateTimeOffset.Now;
         return expireDays.Days;
+    }
+
+    public bool PutAbout(long userId, string about)
+    {
+        return _storeAbout.Put(Encoding.UTF8.GetBytes(about), userId);
+    }
+
+    public string? GetAbout(long userId)
+    {
+        var about = _storeAbout.Get(userId);
+        return about == null ? null : Encoding.UTF8.GetString(about);
     }
 }

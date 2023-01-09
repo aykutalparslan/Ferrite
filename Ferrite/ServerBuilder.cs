@@ -168,6 +168,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_ResetNotifySettings))
             .SingleInstance();
+        builder.RegisterType<UpdateProfileFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_UpdateProfile))
+            .SingleInstance();
     }
 
     private static void RegisterAuthMethods(ContainerBuilder builder)

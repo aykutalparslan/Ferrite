@@ -158,7 +158,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555580");
+            var auth = await Helpers.SignUp(client, "+15555555581");
             Assert.NotNull(client.TLConfig);
             var resultUpdate = await client.Account_UpdateNotifySettings(
                 new InputNotifyUsers(),
@@ -181,6 +181,25 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.IsType<PeerNotifySettings>(settings);
             Assert.Equal(0, settings.mute_until);
             Assert.False(settings.silent);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task UpdateProfile_Returns_User()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555582");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_UpdateProfile("xxx","yyy","zzz");
+            Assert.IsType<User>(result);
+            Assert.Equal("xxx", ((User)result).first_name);
+            Assert.Equal("yyy", ((User)result).last_name);
         }
 
         Task testTask = RunTest();

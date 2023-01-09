@@ -298,25 +298,44 @@ public class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<UserDTO?> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
+    public async Task<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } user )
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } u )
         {
-            var userNew = user with
-            {
-                FirstName = firstName ?? user.FirstName,
-                LastName = lastName ?? user.LastName,
-                About = about ?? user.About,
-            };
-            _unitOfWork.UserRepository.PutUser(userNew);
+            var user = ModifyUser(u, firstName, lastName);
+            _unitOfWork.UserRepository.PutUser(user);
+            var userInfo = GetUserInfo(user);
+            if (about != null) _unitOfWork.UserRepository.PutAbout(userInfo.UserId, about);
             await _unitOfWork.SaveAsync();
-            await _search.IndexUser(new Data.Search.UserSearchModel(userNew.Id, userNew.Username, 
-                userNew.FirstName, userNew.LastName, userNew.Phone));
-            return userNew;
-        }*/
+            await _search.IndexUser(new Data.Search.UserSearchModel(userInfo.UserId, userInfo.Username, 
+                userInfo.FirstName, userInfo.LastName, userInfo.Phone));
+            return user;
+        }
 
-        return null;
+        return RpcErrorGenerator.GenerateError(400,"FIRSTNAME_INVALID"u8);
+    }
+
+    private readonly record struct UserInfo(long UserId, string? Username, 
+        string? FirstName, string? LastName, string Phone);
+
+    private static UserInfo GetUserInfo(TLBytes u)
+    {
+        var user = new User(u.AsSpan());
+        string? username = user.Username.Length > 0 ? Encoding.UTF8.GetString(user.Username) : null;
+        string? firstname = user.FirstName.Length > 0 ? Encoding.UTF8.GetString(user.FirstName) : null;
+        string? lastname = user.LastName.Length > 0 ? Encoding.UTF8.GetString(user.LastName) : null;
+        string phone = Encoding.UTF8.GetString(user.Phone);
+        return new UserInfo(user.Id, username, firstname, lastname, phone);
+    }
+
+    private static TLBytes ModifyUser(TLBytes u, string? firstName, string? lastName)
+    {
+        var user = new User(u.AsSpan()).Clone();
+        if (firstName != null) user = user.FirstName(Encoding.UTF8.GetBytes(firstName));
+        if (lastName != null) user = user.LastName(Encoding.UTF8.GetBytes(lastName));
+        var userBytes = user.Build().ToReadOnlySpan().ToArray();
+        return new TLBytes(userBytes, 0, userBytes.Length);
     }
 
     public async Task<bool> UpdateStatus(long authKeyId, bool status)

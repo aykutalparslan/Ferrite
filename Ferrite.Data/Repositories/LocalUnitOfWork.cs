@@ -41,7 +41,7 @@ public class LocalUnitOfWork : IUnitOfWork
             new ServerSaltRepository(new InMemoryStore(), new InMemoryStore());
         LoginTokenRepository = new LoginTokenRepository(new InMemoryStore());
         DeviceLockedRepository = new DeviceLockedRepository(new InMemoryStore());
-        UserRepository = new UserRepository(new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb));
+        UserRepository = new UserRepository(new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb));
         AppInfoRepository = new AppInfoRepository(new RocksDBKVStore(_rocksdb));
         DeviceInfoRepository =
             new DeviceInfoRepository(new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb));
