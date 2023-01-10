@@ -298,7 +298,7 @@ public class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
+    public async ValueTask<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } u )
@@ -338,15 +338,17 @@ public class AccountService : IAccountService
         return new TLBytes(userBytes, 0, userBytes.Length);
     }
 
-    public async Task<bool> UpdateStatus(long authKeyId, bool status)
+    public async ValueTask<TLBytes> UpdateStatus(long authKeyId, bool status)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null)
         {
-            return _unitOfWork.UserStatusRepository.PutUserStatus(auth.UserId, status);
+            var result = _unitOfWork.UserStatusRepository.PutUserStatus(auth.UserId, status);
+            return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+                BoolFalse.Builder().Build().TLBytes!.Value;
         }
 
-        return false;
+        return BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason)
