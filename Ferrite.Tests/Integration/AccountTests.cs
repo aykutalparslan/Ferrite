@@ -246,4 +246,38 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task CheckUsername_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555586");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_CheckUsername("test123_");
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task CheckUsername_Returns_False()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555587");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_CheckUsername("test123.");
+            Assert.False(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
 }

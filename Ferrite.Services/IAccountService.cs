@@ -34,7 +34,7 @@ public interface IAccountService
     public ValueTask<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
     public ValueTask<TLBytes> UpdateStatus(long authKeyId, bool status);
     public ValueTask<TLBytes> ReportPeer(long authKeyId, TLBytes q);
-    public Task<bool> CheckUsername(string username);
+    public ValueTask<TLBytes> CheckUsername(string username);
     public Task<UserDTO?> UpdateUsername(long authKeyId, string username);
     public Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
     public Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key);

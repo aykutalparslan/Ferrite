@@ -386,20 +386,20 @@ public class AccountService : IAccountService
         return new ReportPeerParameters((int)type, id, reportReason.TLBytes!.Value);
     }
 
-    public async Task<bool> CheckUsername(string username)
+    public ValueTask<TLBytes> CheckUsername(string username)
     {
         if (!UsernameRegex.IsMatch(username))
         {
-            return false;
+            return ValueTask.FromResult(BoolFalse.Builder().Build().TLBytes!.Value);
         }
 
         var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user != null)
         {
-            return false;
+            return ValueTask.FromResult(BoolFalse.Builder().Build().TLBytes!.Value);
         }
 
-        return true;
+        return ValueTask.FromResult(BoolTrue.Builder().Build().TLBytes!.Value);
     }
 
     public async Task<UserDTO?> UpdateUsername(long authKeyId, string username)
