@@ -16,9 +16,11 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IReportReasonRepository
 {
-    public bool PutPeerReportReason(long reportedByUser, InputPeerDTO peer, ReportReason reason);
+    public bool PutPeerReportReason(long reportedByUser, int peerType, long peerId, TLBytes reason);
 }

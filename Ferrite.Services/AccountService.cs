@@ -25,6 +25,7 @@ using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.account;
 using xxHash;
@@ -351,15 +352,38 @@ public class AccountService : IAccountService
         return BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<bool> ReportPeer(long authKeyId, InputPeerDTO peer, ReportReason reason)
+    public async ValueTask<TLBytes> ReportPeer(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return false;
+            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
-        _unitOfWork.ReportReasonRepository.PutPeerReportReason(auth.UserId, peer, reason);
-        return await _unitOfWork.SaveAsync();
+
+        using var reason = GetReportPeerParameters( q);
+        _unitOfWork.ReportReasonRepository.PutPeerReportReason(auth.UserId, reason.PeerType, reason.PeerId, reason.Reason);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+
+    private readonly record struct ReportPeerParameters(int PeerType, long PeerId, TLBytes Reason): IDisposable
+    {
+        public void Dispose()
+        {
+            Reason.Dispose();
+        }
+    }
+
+    private static ReportPeerParameters GetReportPeerParameters(TLBytes q)
+    {
+        var reportPeer = new ReportPeer(q.AsSpan());
+        var (type, id, hash) = GetPeerTypeAndId(reportPeer.Peer);
+        var reportReason = ReportReasonWithMessage.Builder()
+            .ReportReason(reportPeer.Reason)
+            .Message(reportPeer.Message)
+            .Build();
+        return new ReportPeerParameters((int)type, id, reportReason.TLBytes!.Value);
     }
 
     public async Task<bool> CheckUsername(string username)

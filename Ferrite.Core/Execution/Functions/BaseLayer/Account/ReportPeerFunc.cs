@@ -16,25 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Services;
+using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Data.Repositories;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Account;
 
-public class ReportReasonRepository : IReportReasonRepository
+public class ReportPeerFunc : ITLFunction
 {
-    private readonly IKVStore _store;
-    public ReportReasonRepository(IKVStore store)
+    private readonly IAccountService _account;
+
+    public ReportPeerFunc(IAccountService account)
     {
-        _store = store;
-        _store.SetSchema(new TableDefinition("ferrite", "report_reasons",
-            new KeyDefinition("pk",
-                new DataColumn { Name = "reported_by", Type = DataType.Long },
-                new DataColumn { Name = "peer_type", Type = DataType.Int },
-                new DataColumn { Name = "peer_id", Type = DataType.Long })));
+        _account = account;
     }
-    public bool PutPeerReportReason(long reportedByUser, int peerType, long peerId, TLBytes reason)
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
-        return _store.Put(reason.AsSpan().ToArray(), reportedByUser,
-            peerType, peerId);
+        using var result = await _account.ReportPeer(ctx.CurrentAuthKeyId, q);
+        var rpcResult = RpcResultGenerator.Generate(result, ctx.MessageId);
+        return rpcResult;
     }
 }

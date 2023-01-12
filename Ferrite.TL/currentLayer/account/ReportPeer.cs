@@ -93,7 +93,7 @@ public class ReportPeer : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var inputPeer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
+        /*var inputPeer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
         var success = await _account.ReportPeer(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, inputPeer, _reason.Constructor switch
         {
             TLConstructor.InputReportReasonCopyright => Data.ReportReason.Copyright,
@@ -111,7 +111,8 @@ public class ReportPeer : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = success ? new BoolTrue() : new BoolFalse();
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

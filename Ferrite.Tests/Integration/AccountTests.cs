@@ -21,6 +21,7 @@ using System.Security.Cryptography;
 using TL;
 using WTelegram;
 using Xunit;
+using Authorization = TL.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
@@ -216,6 +217,29 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             var auth = await Helpers.SignUp(client, "+15555555583");
             Assert.NotNull(client.TLConfig);
             var result = await client.Account_UpdateStatus(false);
+            Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ReportPeer_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555584");
+            Assert.NotNull(client.TLConfig);
+            Assert.NotNull(auth);
+            var peer = ((Auth_Authorization)auth).user.ToInputPeer();
+            client.Dispose();
+            using var client2 = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client2.ConnectAsync();
+            auth = await Helpers.SignUp(client2, "+15555555585");
+            var result = await client2.Account_ReportPeer(peer, ReportReason.Spam, "test message");
             Assert.True(result);
         }
 
