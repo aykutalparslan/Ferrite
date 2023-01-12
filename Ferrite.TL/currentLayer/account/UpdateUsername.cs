@@ -69,7 +69,7 @@ public class UpdateUsername : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var user = await _account.UpdateUsername(ctx.PermAuthKeyId!=0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _username);
         if (user == null)
@@ -83,7 +83,8 @@ public class UpdateUsername : ITLObject, ITLMethod
 
         var userImpl = _mapper.MapToTLObject<User, UserDTO>(user);
         result.Result = userImpl;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

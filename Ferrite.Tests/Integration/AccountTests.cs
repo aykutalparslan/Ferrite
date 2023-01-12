@@ -280,4 +280,40 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task UpdateUsername_Updates_Username()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555588");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_UpdateUsername("test123_");
+            Assert.Equal("test123_", ((User)result).username);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task UpdateUsername_Throws()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555589");
+            Assert.NotNull(client.TLConfig);
+            await Assert.ThrowsAsync<RpcException>(async () =>
+            {
+                await client.Account_UpdateUsername("test123_.");
+            });
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
 }

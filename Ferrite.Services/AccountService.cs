@@ -402,29 +402,34 @@ public class AccountService : IAccountService
         return ValueTask.FromResult(BoolTrue.Builder().Build().TLBytes!.Value);
     }
 
-    public async Task<UserDTO?> UpdateUsername(long authKeyId, string username)
+    public async ValueTask<TLBytes> UpdateUsername(long authKeyId, string username)
     {
-        /*if (!UsernameRegex.IsMatch(username))
+        if (!UsernameRegex.IsMatch(username))
         {
-            return null;
+            return RpcErrorGenerator.GenerateError(400, "USERNAME_INVALID"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return null;
+            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
         var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user == null)
         {
             _unitOfWork.UserRepository.UpdateUsername(auth.UserId, username);
         }
+        else
+        {
+            return RpcErrorGenerator.GenerateError(400, "USERNAME_OCCUPIED"u8);
+        }
 
         await _unitOfWork.SaveAsync();
         user = _unitOfWork.UserRepository.GetUser(auth.UserId);
-        await _search.IndexUser(new Data.Search.UserSearchModel(user.Id, user.Username, 
-                user.FirstName, user.LastName, user.Phone));
-        return user;*/
-        return null;
+        if(user == null) return RpcErrorGenerator.GenerateError(400, "USERNAME_NOT_MODIFIED"u8);
+        var userInfo = GetUserInfo(user.Value);
+        await _search.IndexUser(new Data.Search.UserSearchModel(userInfo.UserId,
+            userInfo.Username, userInfo.FirstName, userInfo.LastName, userInfo.Phone));
+        return user.Value;
     }
 
     public async Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
