@@ -34,7 +34,7 @@ public class UpdateStatusFunc : ITLFunction
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
         using var result = await _account.UpdateStatus(ctx.CurrentAuthKeyId, 
-            new UpdateStatus(q.AsSpan()).Offline);
+            ((UpdateStatus)q).Offline);
         var rpcResult = RpcResultGenerator.Generate(result, ctx.MessageId);
         return rpcResult;
     }

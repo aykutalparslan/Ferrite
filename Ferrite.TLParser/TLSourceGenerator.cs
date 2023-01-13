@@ -394,6 +394,10 @@ public readonly ref struct " + typeName + @"
         GenerateGetOffset(sourceBuilder, combinator);
         GenerateBuilder(sourceBuilder, combinator);
         var str = @"
+    public static explicit operator "+ typeName +@"(TLBytes b) => new "+ typeName +@"(b.AsSpan());    
+
+    public static explicit operator "+ typeName +@"(Span<byte> b) => new "+ typeName +@"(b);
+
     public void Dispose()
     {
         _memory?.Dispose();
@@ -474,6 +478,11 @@ public readonly ref struct " + typeName + @"
         GenerateGetOffset(sourceBuilder, combinator);
         GenerateBuilder(sourceBuilder, combinator);
         var str = @"
+
+    public static explicit operator "+ typeName +@"(TLBytes b) => new "+ typeName +@"(b.AsSpan());    
+
+    public static explicit operator "+ typeName +@"(Span<byte> b) => new "+ typeName +@"(b);
+
     public void Dispose()
     {
         _memory?.Dispose();

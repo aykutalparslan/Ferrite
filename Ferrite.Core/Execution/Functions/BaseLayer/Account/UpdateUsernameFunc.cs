@@ -35,8 +35,7 @@ public class UpdateUsernameFunc : ITLFunction
     public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
     {
         using var result = await _account.UpdateUsername(ctx.CurrentAuthKeyId,
-            Encoding.UTF8.GetString(
-                new AccountCheckUsername(q.AsSpan()).Username));
+            Encoding.UTF8.GetString(((AccountCheckUsername)q).Username));
         var rpcResult = RpcResultGenerator.Generate(result, ctx.MessageId);
         return rpcResult;
     }
