@@ -16,7 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
+using System.Runtime.InteropServices;
+using Ferrite.TL.slim;
 
 namespace Ferrite.Data.Repositories;
 
@@ -32,28 +33,42 @@ public class PrivacyRulesRepository : IPrivacyRulesRepository
                 new DataColumn { Name = "privacy_key", Type = DataType.Int },
                 new DataColumn { Name = "privacy_rule_type", Type = DataType.Int })));
     }
-    public bool PutPrivacyRules(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
+    public bool PutPrivacyRules(long userId, InputPrivacyKey key, Vector rules)
     {
-        foreach (var rule in rules)
+        int count = rules.Count;
+        for(int i = 0 ; i < count; i++)
         {
-            var ruleBytes = MessagePackSerializer.Serialize(rule);
-            _store.Put(ruleBytes, userId, (int)key, (int)rule.PrivacyRuleType);
+            var rule = rules.ReadTLObject();
+            int constructor = MemoryMarshal.Read<int>(rule);
+            
+            _store.Put(rule.ToArray(), userId, (int)key, (int)GetPrivacyValueType(constructor));
         }
 
         return true;
     }
-
-    public ICollection<PrivacyRuleDTO> GetPrivacyRules(long userId, InputPrivacyKey key)
+    
+    private PrivacyRuleType GetPrivacyValueType(int constructor) => constructor switch
     {
-        List<PrivacyRuleDTO> rules = new();
+        Constructors.layer150_InputPrivacyValueAllowContacts => PrivacyRuleType.AllowContacts,
+        Constructors.layer150_InputPrivacyValueAllowUsers => PrivacyRuleType.AllowUsers,
+        Constructors.layer150_InputPrivacyValueDisallowContacts => PrivacyRuleType.DisallowContacts,
+        Constructors.layer150_InputPrivacyValueDisallowAll => PrivacyRuleType.DisallowAll,
+        Constructors.layer150_InputPrivacyValueDisallowUsers => PrivacyRuleType.DisallowUsers,
+        Constructors.layer150_InputPrivacyValueAllowChatParticipants => PrivacyRuleType.AllowChatParticipants,
+        Constructors.layer150_InputPrivacyValueDisallowChatParticipants => PrivacyRuleType.DisallowChatParticipants,
+        _ => PrivacyRuleType.AllowAll
+    };
+
+    public ValueTask<ICollection<TLBytes>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
+    {
+        List<TLBytes> rules = new();
         var iter = _store.Iterate(userId, (int)key);
         foreach (var ruleBytes in iter)
         {
-            var rule = MessagePackSerializer.Deserialize<PrivacyRuleDTO>(ruleBytes);
-            rules.Add(rule);
+            rules.Add(new TLBytes(ruleBytes, 0, ruleBytes.Length));
         }
 
-        return rules;
+        return new ValueTask<ICollection<TLBytes>>(rules);
     }
 
     public bool DeletePrivacyRules(long userId)

@@ -16,11 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IPrivacyRulesRepository
 {
-    public bool PutPrivacyRules(long userId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules);
-    public ICollection<PrivacyRuleDTO> GetPrivacyRules(long userId, InputPrivacyKey key);
+    public bool PutPrivacyRules(long userId, InputPrivacyKey key, Vector rules);
+    public ValueTask<ICollection<TLBytes>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
     public bool DeletePrivacyRules(long userId);
 }
