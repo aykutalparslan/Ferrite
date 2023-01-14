@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -30,20 +32,26 @@ public class ChatRepository : IChatRepository
             new KeyDefinition("pk",
                 new DataColumn { Name = "chat_id", Type = DataType.Long })));
     }
-    public bool PutChatAsync(ChatDTO chat)
+    public bool PutChat(TLBytes chat)
     {
-        var chatBytes = MessagePackSerializer.Serialize(chat);
-        return _store.Put(chatBytes, chat.Id);
+        long chatId = chat.Constructor switch
+        {
+            Constructors.layer150_Chat => ((Chat)chat).Id,
+            Constructors.layer150_ChatForbidden => ((ChatForbidden)chat).Id,
+            Constructors.layer150_Channel => ((Channel)chat).Id,
+            _ => 0
+        };
+        return _store.Put(chat.AsSpan().ToArray(), chatId);
     }
 
-    public ChatDTO? GetChat(long chatId)
+    public async ValueTask<TLBytes> GetChatAsync(long chatId)
     {
-        var chatBytes = _store.Get(chatId);
+        var chatBytes = await _store.GetAsync(chatId);
         if (chatBytes is { Length: > 0 })
         {
-            return MessagePackSerializer.Deserialize<ChatDTO>(chatBytes);
+            return new TLBytes(chatBytes, 0, chatBytes.Length);
         }
 
-        return null;
+        return TLBytes.Empty;
     }
 }

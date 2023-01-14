@@ -27,6 +27,7 @@ namespace Ferrite.TL.slim;
 /// </summary>
 public readonly struct TLBytes: IDisposable
 {
+    public static readonly TLBytes Empty = new (Array.Empty<byte>(), 0, 0);
     private readonly IMemoryOwner<byte>? _memoryOwner;
     private readonly Memory<byte> _memory;
     private readonly int _offset;

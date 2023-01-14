@@ -16,10 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IChatRepository
 {
-    public bool PutChatAsync(ChatDTO chat);
-    public ChatDTO? GetChat(long chatId);
+    public bool PutChat(TLBytes chat);
+    public ValueTask<TLBytes> GetChatAsync(long chatId);
 }
