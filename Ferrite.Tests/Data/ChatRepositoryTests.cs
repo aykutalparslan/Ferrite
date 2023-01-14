@@ -36,9 +36,15 @@ public class ChatRepositoryTests
             It.IsAny<long>())).Verifiable();
 
         var repo = mock.Create<ChatRepository>();
-        using var reportReason = InputReportReasonSpam.Builder().Build();
-        using var chat = ChatEmpty.Builder().Build();
-        repo.PutChat(chat.TLBytes!.Value);
+        using var chat = Chat.Builder()
+            .Id(123)
+            .Title("test"u8)
+            .Photo(ChatPhotoEmpty.Builder().Build().ToReadOnlySpan())
+            .ParticipantsCount(4)
+            .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+            .Version(5)
+            .Build().TLBytes!.Value;
+        repo.PutChat(chat);
         store.VerifyAll();
     }
     
