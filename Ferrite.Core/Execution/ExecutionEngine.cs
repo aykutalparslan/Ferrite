@@ -70,19 +70,21 @@ public class ExecutionEngine : IExecutionEngine
         }
         try
         {
-            _functions.TryGetValue(new FunctionKey(layer, rpc.Constructor), out var func);
-            if (func == null)
+            var found = _functions.TryGetValue(new FunctionKey(layer, rpc.Constructor), out var func);
+            if (!found)
             {
                 _log.Error($"#{rpc.Constructor.ToString("x")} is not found for layer {layer}");
+                var err = RpcErrorGenerator.GenerateError(500, "INTERNAL_SERVER_ERROR"u8);
+                return RpcResultGenerator.Generate(err, ctx.MessageId);
             }
             return await func!.Process(rpc, ctx);
         }
         catch (Exception e)
         {
             _log.Error(e, $"#{rpc.Constructor.ToString("x")} for layer {layer} cannot be processed: {e.Message}");
+            var err = RpcErrorGenerator.GenerateError(500, "INTERNAL_SERVER_ERROR"u8);
+            return RpcResultGenerator.Generate(err, ctx.MessageId);
         }
-
-        return null;
     }
 
     public bool IsImplemented(int constructor, int layer = IExecutionEngine.DefaultLayer)
