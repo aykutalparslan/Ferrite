@@ -636,28 +636,31 @@ public class AccountService : IAccountService
         return await GetPrivacyRulesInternal(auth, key);
     }
 
-    public async Task<bool> DeleteAccount(long authKeyId)
+    public async ValueTask<TLBytes> DeleteAccount(long authKeyId)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+        if(user == null) return BoolFalse.Builder().Build().TLBytes!.Value;
 
         foreach (var a in authorizations)
         {
             _unitOfWork.AuthorizationRepository.DeleteAuthorization(a.AuthKeyId);
             var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(a.AuthKeyId);
-             _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(a.AuthKeyId, device.Token, device.OtherUserIds);
+            if (device != null)
+            {
+                _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(a.AuthKeyId, device.Token, device.OtherUserIds);
+            }
             _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(a.AuthKeyId);
             await _unitOfWork.SaveAsync();
         }
 
-        _unitOfWork.PrivacyRulesRepository.DeletePrivacyRules(user.Id);
-        _unitOfWork.UserRepository.DeleteUser(user);
+        _unitOfWork.PrivacyRulesRepository.DeletePrivacyRules(((User)user).Id);
+        _unitOfWork.UserRepository.DeleteUser(((User)user).Id);
         await _unitOfWork.SaveAsync();
-        await _search.DeleteUser(user.Id);
+        await _search.DeleteUser(((User)user).Id);
         
-        return true;*/
-        return false;
+        return BoolTrue.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL)

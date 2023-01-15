@@ -196,6 +196,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_GetPrivacy))
             .SingleInstance();
+        builder.RegisterType<DeleteAccountFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_DeleteAccount))
+            .SingleInstance();
     }
 
     private static void RegisterAuthMethods(ContainerBuilder builder)

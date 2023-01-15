@@ -38,7 +38,7 @@ public interface IAccountService
     public ValueTask<TLBytes> UpdateUsername(long authKeyId, string username);
     public ValueTask<TLBytes> SetPrivacy(long authKeyId, TLBytes q);
     public ValueTask<TLBytes> GetPrivacy(long authKeyId, TLBytes q);
-    public Task<bool> DeleteAccount(long authKeyId);
+    public ValueTask<TLBytes> DeleteAccount(long authKeyId);
     public Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL);
     public Task<int> GetAccountTTL(long authKeyId);
     public Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings);

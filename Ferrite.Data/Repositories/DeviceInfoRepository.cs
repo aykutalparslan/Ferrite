@@ -58,6 +58,7 @@ public class DeviceInfoRepository : IDeviceInfoRepository
     public DeviceInfoDTO? GetDeviceInfo(long authKeyId)
     {
         var infoBytes = _store.Get(authKeyId);
+        if (infoBytes == null) return null;
         var info = MessagePackSerializer.Deserialize<DeviceInfoDTO>(infoBytes);
         return info;
     }

@@ -42,6 +42,18 @@ public class PrivacyRulesRepositoryTests
     }
     
     [Fact]
+    public void Deletes_PrivacyRules()
+    {
+        var mock = AutoMock.GetLoose();
+        var store = mock.Mock<IKVStore>();
+        store.Setup(x => x.Delete(It.IsAny<long>())).Verifiable();
+
+        var repo = mock.Create<PrivacyRulesRepository>();
+        repo.DeletePrivacyRules(1);
+        store.VerifyAll();
+    }
+    
+    [Fact]
     public async Task PutsAndGets_PrivacyRules()
     {
         string path = "test-" + Random.Shared.Next();
