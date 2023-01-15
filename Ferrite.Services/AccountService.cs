@@ -432,55 +432,196 @@ public class AccountService : IAccountService
         return user.Value;
     }
 
-    public async Task<PrivacyRulesDTO?> SetPrivacy(long authKeyId, InputPrivacyKey key, ICollection<PrivacyRuleDTO> rules)
+    public async ValueTask<TLBytes> SetPrivacy(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return null;
-        }
-
-        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(auth.UserId, key, rules);
-        await _unitOfWork.SaveAsync();
-        var savedRules = _unitOfWork.PrivacyRulesRepository.GetPrivacyRules(auth.UserId, key);
-        List<PrivacyRuleDTO> privacyRules = new();
-        List<UserDTO> users = new();
-        List<ChatDTO> chats = new();
-        foreach (var r in savedRules)
-        {
-            privacyRules.Add(r);
-            if (r.PrivacyRuleType is PrivacyRuleType.AllowUsers or PrivacyRuleType.DisallowUsers)
-            {
-                foreach (var id in r.Peers)
-                {
-                    if (_unitOfWork.UserRepository.GetUser(id) is { } user)
-                    {
-                        users.Add(user);
-                    }  
-                }
-            } 
-            else if (r.PrivacyRuleType is PrivacyRuleType.AllowChatParticipants
-                       or PrivacyRuleType.DisallowChatParticipants)
-            {
-                foreach (var id in r.Peers)
-                {
-                    if (_unitOfWork.ChatRepository.GetChat(id) is { } chat)
-                    {
-                        chats.Add(chat);
-                    }  
-                }
-            }
+            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
         
-        PrivacyRulesDTO result = new PrivacyRulesDTO()
-        {
-            Rules = privacyRules,
-            Users = users,
-            Chats = chats
-        };
-        return result;*/
-        return null;
+        int keyConstructor = MemoryMarshal.Read<int>(((SetPrivacy)q).Key);
+        var key = GetPrivacyKey(keyConstructor);
+        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(auth.UserId, 
+            key, ToPrivacyRuleVector(((SetPrivacy)q).Rules));
+        await _unitOfWork.SaveAsync();
+        return await GetPrivacyRulesInternal(auth, key);
     }
+
+    private async Task<TLBytes> GetPrivacyRulesInternal(AuthInfoDTO auth, InputPrivacyKey key)
+    {
+        var savedRules = await _unitOfWork.PrivacyRulesRepository.GetPrivacyRulesAsync(auth.UserId, key);
+        List<TLBytes> users = new();
+        foreach (var id in GetUserIds(savedRules))
+        {
+            if (_unitOfWork.UserRepository.GetUser(id) is { } user)
+            {
+                users.Add(user);
+            }
+        }
+
+        List<TLBytes> chats = new();
+        foreach (var id in GetChatIds(savedRules))
+        {
+            if (await _unitOfWork.ChatRepository.GetChatAsync(id) is { } chat)
+            {
+                chats.Add(chat);
+            }
+        }
+
+        return PrivacyRules.Builder()
+            .Rules(GenerateVector(savedRules))
+            .Users(GenerateVector(users))
+            .Chats(GenerateVector(chats))
+            .Build().TLBytes!.Value;
+    }
+
+    private Vector ToPrivacyRuleVector(Vector rules)
+    {
+        Vector result = new Vector();
+        for (int i = 0; i < rules.Count; i++)
+        {
+            var rule = ToPrivacyValue(rules.ReadTLObject());
+            result.AppendTLObject(rule);
+        }
+
+        return result;
+    }
+    
+    private ReadOnlySpan<byte> ToPrivacyValue(Span<byte> inputPrivacyValue)
+    {
+        int constructor = MemoryMarshal.Read<int>(inputPrivacyValue);
+        switch (constructor)
+        {
+            case Constructors.layer150_InputPrivacyValueAllowContacts:
+                return PrivacyValueAllowContacts.Builder().Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueAllowAll:
+                return PrivacyValueAllowAll.Builder().Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueAllowUsers:
+                var allowUsers = (InputPrivacyValueAllowUsers)inputPrivacyValue;
+                var userVector = allowUsers.Users;
+                VectorOfLong userIds = new();
+                for (int i = 0; i < userVector.Count; i++)
+                {
+                    var user = userVector.ReadTLObject();
+                    userIds.Append(GetUserId(user));
+                }
+                return PrivacyValueAllowUsers.Builder().Users(userIds).Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueDisallowContacts:
+                return PrivacyValueDisallowContacts.Builder().Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueDisallowAll:
+                return PrivacyValueDisallowAll.Builder().Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueDisallowUsers:
+                var disallowUsers = (InputPrivacyValueDisallowUsers)inputPrivacyValue;
+                var userVector2 = disallowUsers.Users;
+                VectorOfLong userIds2 = new();
+                for (int i = 0; i < userVector2.Count; i++)
+                {
+                    var user = userVector2.ReadTLObject();
+                    userIds2.Append(GetUserId(user));
+                }
+                return PrivacyValueDisallowUsers.Builder().Users(userIds2).Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueAllowChatParticipants:
+                var chats = ((InputPrivacyValueAllowChatParticipants)inputPrivacyValue).Chats;
+                return PrivacyValueAllowChatParticipants.Builder().Chats(chats).Build().ToReadOnlySpan();
+            case Constructors.layer150_InputPrivacyValueDisallowChatParticipants:
+                var chats2 = ((InputPrivacyValueDisallowChatParticipants)inputPrivacyValue).Chats;
+                return PrivacyValueDisallowChatParticipants.Builder().Chats(chats2).Build().ToReadOnlySpan();
+            default:
+                throw new ArgumentException();
+        }
+    }
+
+    private Vector GenerateVector(ICollection<TLBytes> rules)
+    {
+        var vec = new Vector();
+        foreach (var r in rules)
+        {
+            vec.AppendTLObject(r.AsSpan());
+        }
+
+        return vec;
+    }
+    
+    private ICollection<long> GetUserIds(ICollection<TLBytes> rules)
+    {
+        List<long> users = new();
+        foreach (var r in rules)
+        {
+            switch (r.Constructor)
+            {
+                case Constructors.layer150_PrivacyValueAllowUsers:
+                    var v = ((PrivacyValueAllowUsers)r).Users;
+                    for (int i = 0; i < v.Count; i++)
+                    {
+                        users.Add(v[i]);
+                    }
+                    break;
+                case Constructors.layer150_PrivacyValueDisallowUsers:
+                    var v2 = ((PrivacyValueDisallowUsers)r).Users;
+                    for (int i = 0; i < v2.Count; i++)
+                    {
+                        users.Add(v2[i]);
+                    }
+                    break;
+            }
+        }
+
+        return users;
+    }
+    
+    private ICollection<long> GetChatIds(ICollection<TLBytes> rules)
+    {
+        List<long> chats = new();
+        foreach (var r in rules)
+        {
+            switch (r.Constructor)
+            {
+                case Constructors.layer150_PrivacyValueAllowChatParticipants:
+                    var v = ((PrivacyValueAllowChatParticipants)r).Chats;
+                    for (int i = 0; i < v.Count; i++)
+                    {
+                        chats.Add(v[i]);
+                    }
+                    break;
+                case Constructors.layer150_PrivacyValueDisallowChatParticipants:
+                    var v2 = ((PrivacyValueDisallowChatParticipants)r).Chats;
+                    for (int i = 0; i < v2.Count; i++)
+                    {
+                        chats.Add(v2[i]);
+                    }
+                    break;
+            }
+        }
+
+        return chats;
+    }
+
+    private long GetUserId(Span<byte> inputUser)
+    {
+        int constructor = MemoryMarshal.Read<int>(inputUser);
+        switch (constructor)
+        {
+            case Constructors.layer150_InputUser:
+                return ((InputUser)inputUser).UserId;
+            case Constructors.layer150_InputPeerUserFromMessage:
+                return ((InputPeerUserFromMessage)inputUser).UserId;
+            default:
+                return 0;
+        }
+    }
+
+    private InputPrivacyKey GetPrivacyKey(int constructor) => constructor switch
+    {
+        Constructors.layer150_InputPrivacyKeyStatusTimestamp => Data.InputPrivacyKey.StatusTimestamp,
+        Constructors.layer150_InputPrivacyKeyChatInvite => Data.InputPrivacyKey.ChatInvite,
+        Constructors.layer150_InputPrivacyKeyPhoneCall => Data.InputPrivacyKey.PhoneCall,
+        Constructors.layer150_InputPrivacyKeyPhoneP2P => Data.InputPrivacyKey.PhoneP2P,
+        Constructors.layer150_InputPrivacyKeyForwards => Data.InputPrivacyKey.Forwards,
+        Constructors.layer150_InputPrivacyKeyProfilePhoto => Data.InputPrivacyKey.ProfilePhoto,
+        Constructors.layer150_InputPrivacyKeyPhoneNumber => Data.InputPrivacyKey.PhoneNumber,
+        _ => Data.InputPrivacyKey.AddedByPhone
+    };
 
     public async Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key)
     {

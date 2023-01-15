@@ -82,7 +82,7 @@ public class SetPrivacy : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var authKeyId = ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId;
+        /*var authKeyId = ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId;
         var privacyRules = await _accountService.SetPrivacy(authKeyId, GetPrivacyKey(), GetPrivacyRules());
         var rulesResult = factory.Resolve<PrivacyRulesImpl>();
         var ruleList = factory.Resolve<Vector<PrivacyRule>>();
@@ -107,7 +107,8 @@ public class SetPrivacy : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = rulesResult;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
     
     private List<PrivacyRuleDTO> GetPrivacyRules()

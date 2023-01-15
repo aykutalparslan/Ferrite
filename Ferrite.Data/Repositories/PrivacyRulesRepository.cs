@@ -49,13 +49,13 @@ public class PrivacyRulesRepository : IPrivacyRulesRepository
     
     private PrivacyRuleType GetPrivacyValueType(int constructor) => constructor switch
     {
-        Constructors.layer150_InputPrivacyValueAllowContacts => PrivacyRuleType.AllowContacts,
-        Constructors.layer150_InputPrivacyValueAllowUsers => PrivacyRuleType.AllowUsers,
-        Constructors.layer150_InputPrivacyValueDisallowContacts => PrivacyRuleType.DisallowContacts,
-        Constructors.layer150_InputPrivacyValueDisallowAll => PrivacyRuleType.DisallowAll,
-        Constructors.layer150_InputPrivacyValueDisallowUsers => PrivacyRuleType.DisallowUsers,
-        Constructors.layer150_InputPrivacyValueAllowChatParticipants => PrivacyRuleType.AllowChatParticipants,
-        Constructors.layer150_InputPrivacyValueDisallowChatParticipants => PrivacyRuleType.DisallowChatParticipants,
+        Constructors.layer150_PrivacyValueAllowContacts => PrivacyRuleType.AllowContacts,
+        Constructors.layer150_PrivacyValueAllowUsers => PrivacyRuleType.AllowUsers,
+        Constructors.layer150_PrivacyValueDisallowContacts => PrivacyRuleType.DisallowContacts,
+        Constructors.layer150_PrivacyValueDisallowAll => PrivacyRuleType.DisallowAll,
+        Constructors.layer150_PrivacyValueDisallowUsers => PrivacyRuleType.DisallowUsers,
+        Constructors.layer150_PrivacyValueAllowChatParticipants => PrivacyRuleType.AllowChatParticipants,
+        Constructors.layer150_PrivacyValueDisallowChatParticipants => PrivacyRuleType.DisallowChatParticipants,
         _ => PrivacyRuleType.AllowAll
     };
 
