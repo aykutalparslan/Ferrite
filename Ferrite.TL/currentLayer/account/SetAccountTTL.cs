@@ -65,12 +65,13 @@ public class SetAccountTTL : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _accountService.SetAccountTTL(ctx.PermAuthKeyId!=0 ? 
             ctx.PermAuthKeyId : ctx.AuthKeyId, ((AccountDaysTTLImpl)_ttl).Days);
         result.Result = success ? new BoolTrue() : new BoolFalse();
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

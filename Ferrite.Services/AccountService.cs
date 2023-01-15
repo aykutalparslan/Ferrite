@@ -663,17 +663,18 @@ public class AccountService : IAccountService
         return BoolTrue.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL)
+    public async ValueTask<TLBytes> SetAccountTTL(long authKeyId, int accountDaysTtl)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return false;
+            return BoolFalse.Builder().Build().TLBytes!.Value;
         }
 
-        _unitOfWork.UserRepository.UpdateAccountTTL(auth.UserId, accountDaysTTL);
-        return await _unitOfWork.SaveAsync();*/
-        return false;
+        _unitOfWork.UserRepository.UpdateAccountTtl(auth.UserId, accountDaysTtl);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<int> GetAccountTTL(long authKeyId)
