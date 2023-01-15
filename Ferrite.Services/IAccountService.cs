@@ -37,7 +37,7 @@ public interface IAccountService
     public ValueTask<TLBytes> CheckUsername(string username);
     public ValueTask<TLBytes> UpdateUsername(long authKeyId, string username);
     public ValueTask<TLBytes> SetPrivacy(long authKeyId, TLBytes q);
-    public Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key);
+    public ValueTask<TLBytes> GetPrivacy(long authKeyId, TLBytes q);
     public Task<bool> DeleteAccount(long authKeyId);
     public Task<bool> SetAccountTTL(long authKeyId, int accountDaysTTL);
     public Task<int> GetAccountTTL(long authKeyId);

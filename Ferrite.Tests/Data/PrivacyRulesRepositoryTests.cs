@@ -50,7 +50,7 @@ public class PrivacyRulesRepositoryTests
         repo.PutPrivacyRules(1, InputPrivacyKey.PhoneCall, GenerateRules());
         var rulesFromRepo = await repo.GetPrivacyRulesAsync(1, InputPrivacyKey.PhoneCall);
         Assert.Equal(2, rulesFromRepo.Count);
-        Assert.Equal(InputPrivacyValueAllowContacts.Builder().Build().ToReadOnlySpan().ToArray(), 
+        Assert.Equal(PrivacyValueAllowContacts.Builder().Build().ToReadOnlySpan().ToArray(), 
             rulesFromRepo.First().AsSpan().ToArray());
         Util.DeleteDirectory(path);
     }
@@ -58,8 +58,8 @@ public class PrivacyRulesRepositoryTests
     private Vector GenerateRules()
     {
         var rules = new Vector();
-        rules.AppendTLObject(InputPrivacyValueAllowContacts.Builder().Build().ToReadOnlySpan());
-        rules.AppendTLObject(InputPrivacyValueDisallowAll.Builder().Build().ToReadOnlySpan());
+        rules.AppendTLObject(PrivacyValueAllowContacts.Builder().Build().ToReadOnlySpan());
+        rules.AppendTLObject(PrivacyValueDisallowAll.Builder().Build().ToReadOnlySpan());
         return rules;
     }
 }

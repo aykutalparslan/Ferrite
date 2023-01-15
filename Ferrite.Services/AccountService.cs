@@ -623,52 +623,17 @@ public class AccountService : IAccountService
         _ => Data.InputPrivacyKey.AddedByPhone
     };
 
-    public async Task<PrivacyRulesDTO?> GetPrivacy(long authKeyId, InputPrivacyKey key)
+    public async ValueTask<TLBytes> GetPrivacy(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return null;
+            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
         
-        var savedRules = _unitOfWork.PrivacyRulesRepository.GetPrivacyRules(auth.UserId, key);
-        List<PrivacyRuleDTO> privacyRules = new();
-        List<UserDTO> users = new();
-        List<ChatDTO> chats = new();
-        foreach (var r in savedRules)
-        {
-            privacyRules.Add(r);
-            if (r.PrivacyRuleType is PrivacyRuleType.AllowUsers or PrivacyRuleType.DisallowUsers)
-            {
-                foreach (var id in r.Peers)
-                {
-                    if (_unitOfWork.UserRepository.GetUser(id) is { } user)
-                    {
-                        users.Add(user);
-                    }  
-                }
-            }
-            else if (r.PrivacyRuleType is PrivacyRuleType.AllowChatParticipants
-                     or PrivacyRuleType.DisallowChatParticipants)
-            {
-                foreach (var id in r.Peers)
-                {
-                    if (_unitOfWork.ChatRepository.GetChat(id) is { } chat)
-                    {
-                        chats.Add(chat);
-                    }  
-                }
-            }
-        }
-        
-        PrivacyRulesDTO result = new PrivacyRulesDTO()
-        {
-            Rules = privacyRules,
-            Users = users,
-            Chats = chats
-        };
-        return result;*/
-        return null;
+        int keyConstructor = MemoryMarshal.Read<int>(((GetPrivacy)q).Key);
+        var key = GetPrivacyKey(keyConstructor);
+        return await GetPrivacyRulesInternal(auth, key);
     }
 
     public async Task<bool> DeleteAccount(long authKeyId)

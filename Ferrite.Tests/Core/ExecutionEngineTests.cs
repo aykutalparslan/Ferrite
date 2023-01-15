@@ -85,7 +85,7 @@ public class ExecutionEngineTests
                     new Dictionary<string, object>()));
 
         loggerMock.Verify(x =>
-                x.Error(It.IsAny<Exception>(), It.IsAny<string>()),
+                x.Error(It.IsAny<string>()),
             Times.Once);
     }
 }

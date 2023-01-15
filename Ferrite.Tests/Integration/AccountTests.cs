@@ -338,4 +338,28 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task GetPrivacy_Returns_PrivacyRules()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555591");
+            Assert.NotNull(client.TLConfig);
+            List<InputPrivacyRule> rules = new();
+            rules.Add(new InputPrivacyValueAllowAll());
+            var result = await client.Account_SetPrivacy(InputPrivacyKey.PhoneCall, rules.ToArray());
+            Assert.NotNull(result);
+            Assert.Single(result.rules);
+            Assert.IsType<PrivacyValueAllowAll>(result.rules[0]);
+            result = await client.Account_GetPrivacy(InputPrivacyKey.PhoneCall);
+            Assert.Single(result.rules);
+            Assert.IsType<PrivacyValueAllowAll>(result.rules[0]);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
 }
