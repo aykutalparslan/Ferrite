@@ -677,16 +677,16 @@ public class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<int> GetAccountTTL(long authKeyId)
+    public async ValueTask<TLBytes> GetAccountTTL(long authKeyId)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return 0;
+            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
 
-        return _unitOfWork.UserRepository.GetAccountTTL(auth.UserId);*/
-        return 0;
+        var ttlDays = _unitOfWork.UserRepository.GetAccountTtl(auth.UserId);
+        return AccountDaysTTL.Builder().Days(ttlDays).Build().TLBytes!.Value;
     }
 
     public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)

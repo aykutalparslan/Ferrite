@@ -387,10 +387,29 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555592");
+            var auth = await Helpers.SignUp(client, "+15555555593");
             Assert.NotNull(client.TLConfig);
             var result = await client.Account_SetAccountTTL(new AccountDaysTTL(){days = 123});
             Assert.True(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task GetAccountTtl_Returns_AccountDaysTTL()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555594");
+            Assert.NotNull(client.TLConfig);
+            var result = await client.Account_SetAccountTTL(new AccountDaysTTL(){days = 123});
+            Assert.True(result);
+            var ttl = await client.Account_GetAccountTTL();
+            Assert.Equal(122, ttl.days);
         }
 
         Task testTask = RunTest();

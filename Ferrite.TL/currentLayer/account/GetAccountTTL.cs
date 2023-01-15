@@ -53,14 +53,15 @@ public class GetAccountTTL : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var daysTTL = await _accountService.GetAccountTTL(ctx.PermAuthKeyId!=0 ? 
             ctx.PermAuthKeyId : ctx.AuthKeyId);
         var ttl = factory.Resolve<AccountDaysTTLImpl>();
         ttl.Days = daysTTL;
         result.Result = ttl;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
