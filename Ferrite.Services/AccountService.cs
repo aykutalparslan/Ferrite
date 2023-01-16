@@ -838,10 +838,12 @@ public class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<bool> GetContactSignUpNotification(long authKeyId)
+    public async ValueTask<TLBytes> GetContactSignUpNotification(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        return _unitOfWork.SignUpNotificationRepository.GetSignUpNotification(auth.UserId);
+        var result = !_unitOfWork.SignUpNotificationRepository.GetSignUpNotification(auth.UserId);
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
