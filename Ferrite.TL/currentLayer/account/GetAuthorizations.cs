@@ -53,7 +53,7 @@ public class GetAuthorizations : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _accountService.GetAuthorizations(ctx.PermAuthKeyId != 0 ? 
+        /*var serviceResult = await _accountService.GetAuthorizations(ctx.PermAuthKeyId != 0 ? 
             ctx.PermAuthKeyId : ctx.AuthKeyId);
         
         var result = factory.Resolve<RpcResult>();
@@ -85,7 +85,8 @@ public class GetAuthorizations : ITLObject, ITLMethod
 
         authorizations.Authorizations = authList;
         result.Result = authorizations;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

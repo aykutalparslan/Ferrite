@@ -32,7 +32,8 @@ public class AuthorizationRepository : IAuthorizationRepository
                 new DataColumn { Name = "auth_key_id", Type = DataType.Long },
                 new DataColumn { Name = "phone", Type = DataType.String }),
             new KeyDefinition("by_phone",
-                new DataColumn { Name = "phone", Type = DataType.String })));
+                new DataColumn { Name = "phone", Type = DataType.String },
+                new DataColumn { Name = "auth_key_id", Type = DataType.Long })));
         _storeExported = storeExported;
         _storeExported.SetSchema(new TableDefinition("ferrite", "exported_authorizations",
             new KeyDefinition("pk",

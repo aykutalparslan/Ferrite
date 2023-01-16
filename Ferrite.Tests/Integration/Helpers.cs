@@ -51,4 +51,23 @@ internal class Helpers
         });
         return result;
     }
+    
+    internal static async Task<Auth_AuthorizationBase?> SignIn(Client client, string phoneNumber)
+    {
+        var code = await client.Invoke(new Auth_SendCode()
+        {
+            phone_number = phoneNumber, 
+            api_id = 11111, 
+            api_hash = "11111111111111111111111111111111", 
+            settings = new CodeSettings()
+        });
+        var signIn = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = phoneNumber,
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        return signIn;
+    }
 }

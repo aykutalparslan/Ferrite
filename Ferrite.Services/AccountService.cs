@@ -763,18 +763,45 @@ public class AccountService : IAccountService
              BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)
+    public async ValueTask<TLBytes> GetAuthorizations(long authKeyId)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
         List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
         {
-            auths.Add(_unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId));
+            var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId);
+            if (authorization != null) auths.Add(authorization);
         }
 
-        return new AuthorizationsDTO(_unitOfWork.UserRepository.GetAccountTTL(auth.UserId), auths);*/
-        throw new NotImplementedException();
+        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(auth.UserId), auths);
+    }
+
+    private TLBytes GenerateAuthorizations(int ttl, List<AppInfoDTO> auths)
+    {
+        Vector authVector = new();
+        foreach (var a in auths)
+        {
+            var auth = Authorization.Builder()
+                .Hash(a.Hash)
+                .DeviceModel(Encoding.UTF8.GetBytes(a.DeviceModel))
+                .Platform("Unknown"u8)
+                .SystemVersion(Encoding.UTF8.GetBytes(a.SystemVersion))
+                .ApiId(a.ApiId)
+                .AppName("Unknown"u8)
+                .AppVersion(Encoding.UTF8.GetBytes(a.AppVersion))
+                .DateCreated((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+                .DateActive((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+                .Ip(Encoding.UTF8.GetBytes(a.IP))
+                .Country("Turkey"u8)
+                .Region("Unknown"u8)
+                .Build();
+            authVector.AppendTLObject(auth.ToReadOnlySpan());
+        }
+        return Authorizations.Builder()
+            .AuthorizationTtlDays(ttl)
+            .AuthorizationsProperty(authVector)
+            .Build().TLBytes!.Value;
     }
 
     public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)
