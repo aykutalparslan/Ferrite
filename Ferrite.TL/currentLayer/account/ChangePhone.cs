@@ -93,7 +93,7 @@ public class ChangePhone : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var serviceResult = await _accountService.ChangePhone(ctx.PermAuthKeyId!=0 ? 
             ctx.PermAuthKeyId : ctx.AuthKeyId, _phoneNumber, _phoneCodeHash, _phoneCode);
@@ -109,7 +109,8 @@ public class ChangePhone : ITLObject, ITLMethod
             var userImpl = _mapper.MapToTLObject<User, UserDTO>(serviceResult.Result);
             result.Result = userImpl;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

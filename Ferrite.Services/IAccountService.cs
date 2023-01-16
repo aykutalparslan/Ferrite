@@ -42,7 +42,7 @@ public interface IAccountService
     public ValueTask<TLBytes> SetAccountTTL(long authKeyId, int accountDaysTTL);
     public ValueTask<TLBytes> GetAccountTTL(long authKeyId);
     public ValueTask<TLBytes> SendChangePhoneCode(long authKeyId, TLBytes q);
-    public Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode);
+    public ValueTask<TLBytes> ChangePhone(long authKeyId, TLBytes q);
     public Task<bool> UpdateDeviceLocked(long authKeyId, int period);
     public Task<AuthorizationsDTO> GetAuthorizations(long authKeyId);
     public Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash);

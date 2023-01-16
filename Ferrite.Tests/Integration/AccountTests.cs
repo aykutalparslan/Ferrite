@@ -425,11 +425,75 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             await client.ConnectAsync();
             var auth = await Helpers.SignUp(client, "+15555555595");
             Assert.NotNull(client.TLConfig);
-            var code = await client.Account_SendChangePhoneCode("+15555555595", new CodeSettings());
+            var code = await client.Account_SendChangePhoneCode("+15555555596", new CodeSettings());
             Assert.IsType<Auth_SentCodeTypeSms>(code.type);
         }
 
         Task testTask = RunTest();
         await testTask.TimeoutAfter(8000);
+    }
+    
+    [Fact]
+    public async Task ChangePhone_Returns_User()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555597");
+            Assert.NotNull(client.TLConfig);
+            var code = await client.Account_SendChangePhoneCode("+15555555598", new CodeSettings());
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+            var result = await client.Account_ChangePhone("+15555555598",
+                code.phone_code_hash, "12345");
+            Assert.Equal("+15555555598", ((User)result).phone);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ChangePhone_WithInvalidPhoneCode_Throws()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555599");
+            Assert.NotNull(client.TLConfig);
+            var code = await client.Account_SendChangePhoneCode("+15555555600", new CodeSettings());
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+            await Assert.ThrowsAsync<RpcException>(async () =>
+            {
+                var result = await client.Account_ChangePhone("+15555555600",
+                    code.phone_code_hash, "11111");
+            });
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ChangePhone_WithInvalidPhoneCodeHash_Throws()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555601");
+            Assert.NotNull(client.TLConfig);
+            var code = await client.Account_SendChangePhoneCode("+15555555602", new CodeSettings());
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+            await Assert.ThrowsAsync<RpcException>(async () =>
+            {
+                var result = await client.Account_ChangePhone("+15555555602",
+                    "aaaaaaaaaaaaaaaa", "12345");
+            });
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
     }
 }

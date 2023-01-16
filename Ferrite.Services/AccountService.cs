@@ -22,8 +22,8 @@ using System.Text.RegularExpressions;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Account;
-using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
+using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
@@ -38,13 +38,15 @@ public class AccountService : IAccountService
     private readonly ISearchEngine _search;
     private readonly IRandomGenerator _random;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IVerificationGateway _verificationGateway;
     private static Regex UsernameRegex = new Regex("(^[a-zA-Z0-9_]{5,32}$)", RegexOptions.Compiled);
     private const int PhoneCodeTimeout = 60;//seconds
-    public AccountService(ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork)
+    public AccountService(ISearchEngine search, IRandomGenerator random, IUnitOfWork unitOfWork, IVerificationGateway verificationGateway)
     {
         _search = search;
         _random = random;
         _unitOfWork = unitOfWork;
+        _verificationGateway = verificationGateway;
     }
     public async ValueTask<TLBytes> RegisterDevice(long authKeyId, TLBytes q)
     {
@@ -699,45 +701,46 @@ public class AccountService : IAccountService
         }
         var phoneNumber = Encoding.UTF8.GetString(((SendChangePhoneCode)q).PhoneNumber);
         var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
-        if (user is not {})
+        if (user != null)
         {
             return RpcErrorGenerator.GenerateError(406, "PHONE_NUMBER_OCCUPIED"u8);
         }
         
-        var code = _random.GetNext(10000, 99999);
+        var code = await _verificationGateway.SendSms(phoneNumber);
         Console.WriteLine("auth.sentCode=>" + code.ToString());
-        var codeBytes = BitConverter.GetBytes(code);
-        var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        var hash = GeneratePhoneCodeHash(code);
         
         _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
-        var result = new SentCodeDTO()
-        {
-            CodeType = SentCodeType.Sms,
-            CodeLength = 5,
-            Timeout = PhoneCodeTimeout,
-            PhoneCodeHash = hash
-        };
         return SentCode.Builder()
             .Type(SentCodeTypeSms.Builder().Build().ToReadOnlySpan())
             .PhoneCodeHash(Encoding.UTF8.GetBytes(hash))
             .Timeout(PhoneCodeTimeout)
             .Build().TLBytes!.Value;
     }
-
-    public async Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
+    
+    private string GeneratePhoneCodeHash(string code)
     {
-        /*var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
+        var codeBytes = Encoding.UTF8.GetBytes(code);
+        return codeBytes.GetXxHash64(1071).ToString("x");
+    }
+
+    public async ValueTask<TLBytes> ChangePhone(long authKeyId, TLBytes q)
+    {
+        var phoneNumber = Encoding.UTF8.GetString(((ChangePhone)q).PhoneNumber);
+        var phoneCodeHash = Encoding.UTF8.GetString(((ChangePhone)q).PhoneCodeHash);
+        var phoneCode = Encoding.UTF8.GetString(((ChangePhone)q).PhoneCode);
+        var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
-            return new ServiceResult<UserDTO>(null, false, ErrorMessages.None);
+            return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_EXPIRED"u8);
         }
 
         var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != null)
         {
-            return new ServiceResult<UserDTO>(null, false, ErrorMessages.PhoneNumberOccupied);
+            return RpcErrorGenerator.GenerateError(400, "PHONE_NUMBER_OCCUPIED"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
@@ -749,8 +752,7 @@ public class AccountService : IAccountService
         await _unitOfWork.SaveAsync();
         user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         await _unitOfWork.SaveAsync();
-        return new ServiceResult<UserDTO>(user, true, ErrorMessages.None);*/
-        throw new NotImplementedException();
+        return user!.Value;
     }
 
     public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)

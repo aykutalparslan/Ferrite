@@ -212,6 +212,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_SendChangePhoneCode))
             .SingleInstance();
+        builder.RegisterType<ChangePhoneFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_ChangePhone))
+            .SingleInstance();
     }
 
     private static void RegisterAuthMethods(ContainerBuilder builder)
