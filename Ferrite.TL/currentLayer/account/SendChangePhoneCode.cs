@@ -78,7 +78,7 @@ public class SendChangePhoneCode : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var serviceResult = await _accountService.SendChangePhoneCode(ctx.PermAuthKeyId!=0 ? 
             ctx.PermAuthKeyId : ctx.AuthKeyId, _phoneNumber, new Data.Auth.CodeSettingsDTO());
@@ -102,7 +102,8 @@ public class SendChangePhoneCode : ITLObject, ITLMethod
 
             result.Result = sentCode;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

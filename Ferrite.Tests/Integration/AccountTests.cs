@@ -415,4 +415,21 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Task testTask = RunTest();
         await testTask.TimeoutAfter(4000);
     }
+    
+    [Fact]
+    public async Task SendChangePhoneCode_Returns_SentCode()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555595");
+            Assert.NotNull(client.TLConfig);
+            var code = await client.Account_SendChangePhoneCode("+15555555595", new CodeSettings());
+            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(8000);
+    }
 }

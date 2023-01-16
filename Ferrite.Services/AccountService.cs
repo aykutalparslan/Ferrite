@@ -28,6 +28,7 @@ using Ferrite.TL.slim;
 using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.account;
+using Ferrite.TL.slim.layer150.auth;
 using xxHash;
 
 namespace Ferrite.Services;
@@ -689,25 +690,25 @@ public class AccountService : IAccountService
         return AccountDaysTTL.Builder().Days(ttlDays).Build().TLBytes!.Value;
     }
 
-    public async Task<ServiceResult<SentCodeDTO>> SendChangePhoneCode(long authKeyId, string phoneNumber, CodeSettingsDTO settings)
+    public async ValueTask<TLBytes> SendChangePhoneCode(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
-            return new ServiceResult<SentCodeDTO>(null, false, 
-                ErrorMessages.FreshChangePhoneForbidden);
+            return RpcErrorGenerator.GenerateError(406, "FRESH_CHANGE_PHONE_FORBIDDEN"u8);
         }
+        var phoneNumber = Encoding.UTF8.GetString(((SendChangePhoneCode)q).PhoneNumber);
         var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
-        if (user != new UserDTO())
+        if (user is not {})
         {
-            return new ServiceResult<SentCodeDTO>(null, false, 
-                ErrorMessages.PhoneNumberOccupied);
+            return RpcErrorGenerator.GenerateError(406, "PHONE_NUMBER_OCCUPIED"u8);
         }
         
         var code = _random.GetNext(10000, 99999);
         Console.WriteLine("auth.sentCode=>" + code.ToString());
         var codeBytes = BitConverter.GetBytes(code);
         var hash = codeBytes.GetXxHash64(1071).ToString("x");
+        
         _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
@@ -718,8 +719,11 @@ public class AccountService : IAccountService
             Timeout = PhoneCodeTimeout,
             PhoneCodeHash = hash
         };
-        return new ServiceResult<SentCodeDTO>(result, true, ErrorMessages.None);*/
-        throw new NotImplementedException();
+        return SentCode.Builder()
+            .Type(SentCodeTypeSms.Builder().Build().ToReadOnlySpan())
+            .PhoneCodeHash(Encoding.UTF8.GetBytes(hash))
+            .Timeout(PhoneCodeTimeout)
+            .Build().TLBytes!.Value;
     }
 
     public async Task<ServiceResult<UserDTO>> ChangePhone(long authKeyId, string phoneNumber, string phoneCodeHash, string phoneCode)
