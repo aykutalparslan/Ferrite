@@ -236,6 +236,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_GetContactSignUpNotification))
             .SingleInstance();
+        builder.RegisterType<ChangeAuthorizationSettingsFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_ChangeAuthorizationSettings))
+            .SingleInstance();
     }
 
     private static void RegisterAuthMethods(ContainerBuilder builder)

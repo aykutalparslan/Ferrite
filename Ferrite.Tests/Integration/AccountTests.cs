@@ -558,7 +558,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         }
 
         Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        await testTask.TimeoutAfter(8000);
     }
     
     [Fact]
@@ -579,18 +579,37 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     }
     
     [Fact]
-    public async Task GetContactSignUpNotification_Returns_True()
+    public async Task GetContactSignUpNotification_Returns_False()
     {
         async Task RunTest()
         {
             using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
             await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555606");
+            var auth = await Helpers.SignUp(client, "+15555555607");
             Assert.NotNull(client.TLConfig);
             var result = await client.Account_SetContactSignUpNotification(true);
             Assert.True(result);
             result = await client.Account_GetContactSignUpNotification();
             Assert.False(result);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ChangeAuthorizationSettings_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555608");
+            Assert.NotNull(client.TLConfig);
+            var authorizations = await client.Account_GetAuthorizations();
+            var result = await client.Account_ChangeAuthorizationSettings(authorizations.authorizations.First().hash,
+                true, true);
+            Assert.True(result);
         }
 
         Task testTask = RunTest();

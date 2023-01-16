@@ -48,6 +48,6 @@ public interface IAccountService
     public ValueTask<TLBytes> ResetAuthorization(long authKeyId, long hash);
     public ValueTask<TLBytes> SetContactSignUpNotification(long authKeyId, bool silent);
     public ValueTask<TLBytes> GetContactSignUpNotification(long authKeyId);
-    public Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
+    public ValueTask<TLBytes> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled,bool callRequestsDisabled);
 }

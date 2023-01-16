@@ -846,13 +846,13 @@ public class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
+    public async ValueTask<TLBytes> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled, bool callRequestsDisabled)
     {
         var appAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if(appAuthKeyId == null)
         {
-            return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
+            return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
         var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
         var success = _unitOfWork.AppInfoRepository.PutAppInfo(info with
@@ -860,7 +860,8 @@ public class AccountService : IAccountService
             EncryptedRequestsDisabled = encryptedRequestsDisabled,
             CallRequestsDisabled = callRequestsDisabled
         });
-        await _unitOfWork.SaveAsync();
-        return new ServiceResult<bool>(success, success, ErrorMessages.None);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 }

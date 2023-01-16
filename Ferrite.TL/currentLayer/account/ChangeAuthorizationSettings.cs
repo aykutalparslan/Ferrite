@@ -111,7 +111,7 @@ public class ChangeAuthorizationSettings : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _account.ChangeAuthorizationSettings(ctx.AuthKeyId, _hash, 
+        /*var serviceResult = await _account.ChangeAuthorizationSettings(ctx.AuthKeyId, _hash, 
             _encryptedRequestsDisabled, _callRequestsDisabled);
         var rpcResult = factory.Resolve<RpcResult>();
         rpcResult.ReqMsgId = ctx.MessageId;
@@ -125,7 +125,8 @@ public class ChangeAuthorizationSettings : ITLObject, ITLMethod
         {
             rpcResult.Result = serviceResult.Result ? new BoolTrue() : new BoolFalse();
         }
-        return rpcResult;
+        return rpcResult;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
