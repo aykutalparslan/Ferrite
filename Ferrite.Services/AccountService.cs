@@ -755,10 +755,12 @@ public class AccountService : IAccountService
         return user!.Value;
     }
 
-    public async Task<bool> UpdateDeviceLocked(long authKeyId, int period)
+    public async ValueTask<TLBytes> UpdateDeviceLocked(long authKeyId, int period)
     {
          _unitOfWork.DeviceLockedRepository.PutDeviceLocked(authKeyId, TimeSpan.FromSeconds(period));
-         return await _unitOfWork.SaveAsync();
+         var result = await _unitOfWork.SaveAsync();
+         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<AuthorizationsDTO> GetAuthorizations(long authKeyId)
