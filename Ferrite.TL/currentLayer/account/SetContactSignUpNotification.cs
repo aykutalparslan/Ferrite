@@ -65,11 +65,12 @@ public class SetContactSignUpNotification : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var success = await _account.SetContactSignUpNotification(ctx.CurrentAuthKeyId, Silent);
         result.Result = success ? new BoolTrue() : new BoolFalse();
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

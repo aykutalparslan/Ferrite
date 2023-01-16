@@ -46,7 +46,7 @@ public interface IAccountService
     public ValueTask<TLBytes> UpdateDeviceLocked(long authKeyId, int period);
     public ValueTask<TLBytes> GetAuthorizations(long authKeyId);
     public ValueTask<TLBytes> ResetAuthorization(long authKeyId, long hash);
-    public Task<bool> SetContactSignUpNotification(long authKeyId, bool silent);
+    public ValueTask<TLBytes> SetContactSignUpNotification(long authKeyId, bool silent);
     public Task<bool> GetContactSignUpNotification(long authKeyId);
     public Task<ServiceResult<bool>> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled,bool callRequestsDisabled);

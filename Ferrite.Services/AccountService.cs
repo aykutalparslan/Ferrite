@@ -829,11 +829,13 @@ public class AccountService : IAccountService
             BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
-    public async Task<bool> SetContactSignUpNotification(long authKeyId, bool silent)
+    public async ValueTask<TLBytes> SetContactSignUpNotification(long authKeyId, bool silent)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(auth.UserId, silent);
-        return await _unitOfWork.SaveAsync();
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<bool> GetContactSignUpNotification(long authKeyId)
