@@ -21,6 +21,7 @@ using System.Security.Cryptography;
 using TL;
 using WTelegram;
 using Xunit;
+using Authorization = Ferrite.TL.slim.layer150.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
@@ -527,6 +528,33 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             Assert.NotNull(client2.TLConfig);
             var result = await client.Account_GetAuthorizations();
             Assert.Equal(2, result.authorizations.Length);
+        }
+
+        Task testTask = RunTest();
+        await testTask.TimeoutAfter(4000);
+    }
+    
+    [Fact]
+    public async Task ResetAuthorization_Returns_True()
+    {
+        async Task RunTest()
+        {
+            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client.ConnectAsync();
+            var auth = await Helpers.SignUp(client, "+15555555605");
+            Assert.NotNull(client.TLConfig);
+            using var client2 = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await client2.ConnectAsync();
+            var auth2 = await Helpers.SignIn(client2, "+15555555605");
+            Assert.NotNull(client2.TLConfig);
+            var authorizations = await client.Account_GetAuthorizations();
+            Assert.Equal(2, authorizations.authorizations.Length);
+            var hash = authorizations.authorizations[0].hash;
+            var result = await client.Account_ResetAuthorization(authorizations.authorizations[1].hash);
+            Assert.True(result);
+            authorizations = await client.Account_GetAuthorizations();
+            Assert.Single(authorizations.authorizations);
+            Assert.Equal(hash, authorizations.authorizations[0].hash);
         }
 
         Task testTask = RunTest();

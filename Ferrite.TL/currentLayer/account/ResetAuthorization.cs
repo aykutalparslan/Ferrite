@@ -65,7 +65,7 @@ public class ResetAuthorization : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var serviceResult = await _accountService.ResetAuthorization(ctx.PermAuthKeyId!=0 ? 
             ctx.PermAuthKeyId : ctx.AuthKeyId, _hash);
@@ -80,7 +80,8 @@ public class ResetAuthorization : ITLObject, ITLMethod
         {
             result.Result = serviceResult.Success ? new BoolTrue() : new BoolFalse();
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

@@ -770,6 +770,7 @@ public class AccountService : IAccountService
         List<AppInfoDTO> auths = new();
         foreach (var a in authorizations)
         {
+            if(!a.LoggedIn) continue;
             var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId);
             if (authorization != null) auths.Add(authorization);
         }
@@ -804,31 +805,28 @@ public class AccountService : IAccountService
             .Build().TLBytes!.Value;
     }
 
-    public async Task<ServiceResult<bool>> ResetAuthorization(long authKeyId, long hash)
+    public async ValueTask<TLBytes> ResetAuthorization(long authKeyId, long hash)
     {
         var sessAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if (sessAuthKeyId == null)
         {
-            return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
+            return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
         {
-            return new ServiceResult<bool>(false, false, ErrorMessages.FreshResetAuthorizationForbidden);
+            return RpcErrorGenerator.GenerateError(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN"u8);
         }
         var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)sessAuthKeyId);
         if(info == null)
         {
-            return new ServiceResult<bool>(false, false, ErrorMessages.HashInvalid);
+            return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
-        _unitOfWork.AuthorizationRepository.PutAuthorization(info with
-        {
-            Phone = "",
-            UserId = 0,
-            LoggedIn = false
-        });
-        await _unitOfWork.SaveAsync();
-        return new ServiceResult<bool>(true, true, ErrorMessages.None);
+
+        _unitOfWork.AuthorizationRepository.DeleteAuthorization(info.AuthKeyId);
+        var result = await _unitOfWork.SaveAsync();
+        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
+            BoolFalse.Builder().Build().TLBytes!.Value;
     }
 
     public async Task<bool> SetContactSignUpNotification(long authKeyId, bool silent)
