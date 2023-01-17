@@ -16,6 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
+using Ferrite.TL.slim.layer150;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -32,47 +35,45 @@ public class UserStatusRepository : IUserStatusRepository
     }
     public bool PutUserStatus(long userId, bool status)
     {
-        UserStatusDTO userStatus = new UserStatusDTO()
-        {
-            Status = status ? UserStatusType.Online : UserStatusType.Offline,
-            WasOnline = (int)DateTimeOffset.Now.ToUnixTimeSeconds(),
-            Expires = 10,
-        };
-        var serialized = MessagePackSerializer.Serialize(userStatus);
-        return _store.Put(serialized, userId);
+        var statusBytes = UserStatusFull.Builder()
+                .Status(status)
+                .WasOnline((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+                .Expires(10)
+                .Build().TLBytes!.Value;
+        return _store.Put(statusBytes.AsSpan().ToArray(), userId);
     }
 
-    public UserStatusDTO GetUserStatus(long userId)
+    public async ValueTask<TLBytes> GetUserStatusAsync(long userId)
     {
-        var serialized = _store.Get(userId);
+        var serialized = await _store.GetAsync(userId);
         if (serialized == null)
         {
-            return UserStatusDTO.Empty;
+            return UserStatusEmpty.Builder().Build().TLBytes!.Value;
         }
-        var userStatus = MessagePackSerializer.Deserialize<UserStatusDTO>(serialized);
-        if (userStatus.Status == UserStatusType.Offline)
+
+        var userStatus = new TLBytes(serialized, 0, 0);
+        if (!((UserStatusFull)userStatus).Status)
         {
             return userStatus;
         }
-        if (userStatus.WasOnline + userStatus.Expires < DateTimeOffset.Now.ToUnixTimeSeconds())
+
+        int wasOnline = ((UserStatusFull)userStatus).WasOnline;
+        if (wasOnline + ((UserStatusFull)userStatus).Expires < DateTimeOffset.Now.ToUnixTimeSeconds())
         {
             return userStatus;
         }
-        else if(userStatus.WasOnline < DateTimeOffset.Now.AddDays(-1).ToUnixTimeSeconds())
+        if(wasOnline < DateTimeOffset.Now.AddDays(-1).ToUnixTimeSeconds())
         {
-            return UserStatusDTO.Recently;
+            return UserStatusRecently.Builder().Build().TLBytes!.Value;
         }
-        else if(userStatus.WasOnline < DateTimeOffset.Now.AddDays(-7).ToUnixTimeSeconds())
+        if(wasOnline < DateTimeOffset.Now.AddDays(-7).ToUnixTimeSeconds())
         {
-            return UserStatusDTO.LastWeek;
+            return UserStatusLastWeek.Builder().Build().TLBytes!.Value;
         }
-        else if(userStatus.WasOnline < DateTimeOffset.Now.AddDays(-30).ToUnixTimeSeconds())
+        if(wasOnline < DateTimeOffset.Now.AddDays(-30).ToUnixTimeSeconds())
         {
-            return UserStatusDTO.LastMonth;
+            return UserStatusLastMonth.Builder().Build().TLBytes!.Value;
         }
-        else
-        {
-            return userStatus with { Status = UserStatusType.Offline };
-        }
+        return UserStatusOffline.Builder().WasOnline(wasOnline).Build().TLBytes!.Value;
     }
 }

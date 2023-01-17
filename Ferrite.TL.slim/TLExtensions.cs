@@ -16,14 +16,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
-using Ferrite.TL.slim;
+namespace Ferrite.TL.slim;
 
-namespace Ferrite.Services;
-
-public interface IUsersService
+public static class TLExtensions
 {
-    public ValueTask<TLBytes> GetUsers(long authKeyId, TLBytes q);
-    public Task<ServiceResult<Ferrite.Data.Users.UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id);
-    public Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors);
+    public static Vector ToVector(this ICollection<TLBytes> rules)
+    {
+        var vec = new Vector();
+        foreach (var r in rules)
+        {
+            vec.AppendTLObject(r.AsSpan());
+        }
+
+        return vec;
+    }
 }

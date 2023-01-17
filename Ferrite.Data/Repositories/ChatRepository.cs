@@ -44,7 +44,7 @@ public class ChatRepository : IChatRepository
         return _store.Put(chat.AsSpan().ToArray(), chatId);
     }
 
-    public async ValueTask<TLBytes> GetChatAsync(long chatId)
+    public async ValueTask<TLBytes?> GetChatAsync(long chatId)
     {
         var chatBytes = await _store.GetAsync(chatId);
         if (chatBytes is { Length: > 0 })
@@ -52,6 +52,6 @@ public class ChatRepository : IChatRepository
             return new TLBytes(chatBytes, 0, chatBytes.Length);
         }
 
-        return TLBytes.Empty;
+        return null;
     }
 }

@@ -69,7 +69,7 @@ public class GetUsers : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var inputUsers = new List<InputUserDTO>();
         foreach (var u in _id)
@@ -96,7 +96,8 @@ public class GetUsers : ITLObject, ITLMethod
             err.ErrorMessage = serviceResult.ErrorMessage.Message;
             result.Result = err;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

@@ -473,9 +473,9 @@ public class AccountService : IAccountService
         }
 
         return PrivacyRules.Builder()
-            .Rules(GenerateVector(savedRules))
-            .Users(GenerateVector(users))
-            .Chats(GenerateVector(chats))
+            .Rules(savedRules.ToVector())
+            .Users(users.ToVector())
+            .Chats(chats.ToVector())
             .Build().TLBytes!.Value;
     }
 
@@ -533,17 +533,6 @@ public class AccountService : IAccountService
             default:
                 throw new ArgumentException();
         }
-    }
-
-    private Vector GenerateVector(ICollection<TLBytes> rules)
-    {
-        var vec = new Vector();
-        foreach (var r in rules)
-        {
-            vec.AppendTLObject(r.AsSpan());
-        }
-
-        return vec;
     }
     
     private ICollection<long> GetUserIds(ICollection<TLBytes> rules)

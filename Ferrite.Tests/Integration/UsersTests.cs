@@ -17,7 +17,10 @@
 // 
 
 using System.Net;
+using System.Security.Cryptography;
+using TL;
 using WTelegram;
+using Xunit;
 
 namespace Ferrite.Tests.Integration;
 
@@ -57,5 +60,39 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             case "pfs_enabled": return "yes";
             default: return null;
         }
+    }
+
+    [Fact]
+    public async Task GetUsers_Returns_Users()
+    {
+
+        List<InputUserBase> inputUsers = new();
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555609");
+        inputUsers.Add(new InputUser(((Auth_Authorization)auth!).user.ID,
+            ((User)((Auth_Authorization)auth!).user).access_hash));
+        Assert.NotNull(client.TLConfig);
+        client.Dispose();
+        using var client2 = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client2.ConnectAsync();
+        auth = await Helpers.SignUp(client2, "+15555555610");
+        Assert.NotNull(client2.TLConfig);
+        inputUsers.Add(new InputUser(((Auth_Authorization)auth!).user.ID,
+            ((User)((Auth_Authorization)auth!).user).access_hash));
+        client2.Dispose();
+        using var client3 = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client3.ConnectAsync();
+        auth = await Helpers.SignUp(client3, "+15555555611");
+        Assert.NotNull(client3.TLConfig);
+        inputUsers.Add(new InputUser(((Auth_Authorization)auth!).user.ID,
+            ((User)((Auth_Authorization)auth!).user).access_hash));
+        client3.Dispose();
+        using var client4 = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client4.ConnectAsync();
+        auth = await Helpers.SignUp(client4, "+15555555612");
+        Assert.NotNull(client4.TLConfig);
+        var users = await client4.Users_GetUsers(inputUsers.ToArray());
+        Assert.Equal(3, users.Length);
     }
 }

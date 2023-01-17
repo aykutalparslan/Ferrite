@@ -23,5 +23,5 @@ namespace Ferrite.Data.Repositories;
 public interface IChatRepository
 {
     public bool PutChat(TLBytes chat);
-    public ValueTask<TLBytes> GetChatAsync(long chatId);
+    public ValueTask<TLBytes?> GetChatAsync(long chatId);
 }

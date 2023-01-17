@@ -16,9 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Runtime.InteropServices;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Users;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.users;
 using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
 
 namespace Ferrite.Services;
@@ -30,29 +34,56 @@ public class UserService : IUsersService
     {
         _unitOfWork = unitOfWork;
     }
-    public async Task<ServiceResult<ICollection<UserDTO>>> GetUsers(long authKeyId, ICollection<InputUserDTO> id)
+    public async ValueTask<TLBytes> GetUsers(long authKeyId, TLBytes q)
     {
-        List<UserDTO> users = new();
-        foreach (var u in id)
+        List<long> userIds = GetUserIds(q);
+        List<TLBytes> users = await GetUsersFromRepo(userIds);
+        var usersBytes = users.ToVector().ToReadOnlySpan().ToArray();
+        return new TLBytes(usersBytes, 0, usersBytes.Length);
+    }
+
+    private async ValueTask<List<TLBytes>> GetUsersFromRepo(List<long> userIds)
+    {
+        List<TLBytes> result = new();
+        foreach (var u in userIds)
         {
-            if (u.UserId == 0) continue;
-            var user = GetUserInternal(u.UserId);
+            var user = await GetUserInternal(u);
             if (user != null)
             {
-                users.Add(user);
+                result.Add(user.Value);
             }
         }
 
-        return new ServiceResult<ICollection<UserDTO>>(users, true, ErrorMessages.None);
+        return result;
     }
-    public UserDTO? GetUser(long userId)
+
+    private List<long> GetUserIds(TLBytes q)
     {
-        return GetUserInternal(userId);
+        List<long> ids = new();
+        var users = ((GetUsers)q).Id;
+        for (int i = 0; i < users.Count; i++)
+        {
+            var user = users.ReadTLObject();
+            int constructor = MemoryMarshal.Read<int>(user);
+            switch (constructor)
+            {
+                case Constructors.layer150_InputUser:
+                    var inputUser = (InputUser)user;
+                    ids.Add(inputUser.UserId);
+                    break;
+                case Constructors.layer150_InputPeerUserFromMessage:
+                    var inputUserFromMessage = (InputPeerUserFromMessage)user;
+                    ids.Add(inputUserFromMessage.UserId);
+                    break;
+            }
+        }
+
+        return ids;
     }
 
     public async Task<ServiceResult<UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id)
     {
-        var userId = id.UserId;
+        /*var userId = id.UserId;
         bool self = false;
         if (id.InputUserType == InputUserType.Self)
         {
@@ -74,7 +105,8 @@ public class UserService : IUsersService
                 }}), true, ErrorMessages.None);
         }
 
-        return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);
+        return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);*/
+        throw new NotImplementedException();
     }
 
     private Data.UserFullDTO CreteFullUser(InputUserDTO id, UserDTO user, PeerNotifySettingsDTO notifySettings)
@@ -165,15 +197,12 @@ public class UserService : IUsersService
         return deviceType;
     }
 
-    private UserDTO? GetUserInternal(long userId)
+    private async ValueTask<TLBytes?> GetUserInternal(long userId)
     {
-        /*var user = _unitOfWork.UserRepository.GetUser(userId);
-        if (user != null)
-        {
-            user.Status = _unitOfWork.UserStatusRepository.GetUserStatus(user.Id);
-        }
-        return user;*/
-        return null;
+        var user = _unitOfWork.UserRepository.GetUser(userId);
+        if (user == null) return null;
+        var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(((User)user).Id);
+        return ((User)user).Clone().Status(status.AsSpan()).Build().TLBytes!.Value;
     }
 
     public async Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors)

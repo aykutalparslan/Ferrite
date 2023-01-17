@@ -16,10 +16,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IUserStatusRepository
 {
     public bool PutUserStatus(long userId, bool status);
-    public UserStatusDTO GetUserStatus(long userId);
+    public ValueTask<TLBytes> GetUserStatusAsync(long userId);
 }

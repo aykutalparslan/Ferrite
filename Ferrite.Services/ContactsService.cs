@@ -43,7 +43,7 @@ public class ContactsService : IContactsService
 
     public async Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
         var result =  new List<ContactStatusDTO>();
         foreach (var c in contactList)
@@ -52,7 +52,8 @@ public class ContactsService : IContactsService
             var contactStatus = new ContactStatusDTO(c.UserId, status);
             result.Add(contactStatus);
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)

@@ -64,7 +64,7 @@ public class ChatRepositoryTests
             .Build().TLBytes!.Value;
         repo.PutChat(chat);
         var chatFromRepo = await repo.GetChatAsync(123);
-        Assert.Equal(chat.AsSpan().ToArray(), chatFromRepo.AsSpan().ToArray());
+        Assert.Equal(chat.AsSpan().ToArray(), chatFromRepo!.Value.AsSpan().ToArray());
         Util.DeleteDirectory(path);
     }
 }

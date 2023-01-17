@@ -16,14 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
+using Ferrite.Services;
+using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Services;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Users;
 
-public interface IUsersService
+public class GetUsersFunc : ITLFunction
 {
-    public ValueTask<TLBytes> GetUsers(long authKeyId, TLBytes q);
-    public Task<ServiceResult<Ferrite.Data.Users.UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id);
-    public Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors);
+    private readonly IUsersService _users;
+
+    public GetUsersFunc(IUsersService users)
+    {
+        _users = users;
+    }
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    {
+        using var result = await _users.GetUsers(ctx.CurrentAuthKeyId, q);
+        var rpcResult = RpcResultGenerator.Generate(result, ctx.MessageId);
+        return rpcResult;
+    }
 }
