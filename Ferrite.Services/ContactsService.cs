@@ -57,7 +57,7 @@ public class ContactsService : IContactsService
 
     public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
         List<UserDTO> userList = new List<UserDTO>();
         foreach (var c in contactList)
@@ -66,7 +66,8 @@ public class ContactsService : IContactsService
             if(user != null) userList.Add(user);
         }
 
-        return new ContactsDTO(contactList, contactList.Count, userList);
+        return new ContactsDTO(contactList, contactList.Count, userList);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ImportedContactsDTO> ImportContacts(long authKeyId, ICollection<InputContactDTO> contacts)
@@ -181,7 +182,7 @@ public class ContactsService : IContactsService
 
     public async Task<FoundDTO> Search(long authKeyId, string q, int limit)
     {
-        var searchResults = await _search.SearchUser(q, limit);
+        /*var searchResults = await _search.SearchUser(q, limit);
         List<PeerDTO> peers = new();
         List<UserDTO> users = new();
         foreach (var u in searchResults)
@@ -195,7 +196,8 @@ public class ContactsService : IContactsService
         }
 
         return new FoundDTO(Array.Empty<PeerDTO>(), peers,
-            Array.Empty<ChatDTO>(), users);
+            Array.Empty<ChatDTO>(), users);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username)
