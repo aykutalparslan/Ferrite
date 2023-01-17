@@ -81,564 +81,427 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     [Fact]
     public async Task CreatesAuthKey()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            Assert.NotNull(client.TLConfig);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        Assert.NotNull(client.TLConfig);
     }
 
     [Fact]
     public async Task SendCode_Returns_SentCode()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+15555555555",
-                api_id = 11111,
-                api_hash = "11111111111111111111111111111111",
-                settings = new CodeSettings()
-            });
-            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+15555555555",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
     }
-    
+
     [Fact]
     public async Task SendCode_Returns_SentCode_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+25555555556",
-                api_id = 11111,
-                api_hash = "11111111111111111111111111111111",
-                settings = new CodeSettings()
-            });
-            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+25555555556",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
     }
 
     [Fact]
     public async Task ResendCode_Returns_SentCode()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+15555555557",
-                api_id = 11111,
-                api_hash = "11111111111111111111111111111111",
-                settings = new CodeSettings()
-            });
-            code = await client.Invoke(new Auth_ResendCode()
-            {
-                phone_number = "+15555555557",
-                phone_code_hash = code.phone_code_hash,
-            });
-            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+15555555557",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        code = await client.Invoke(new Auth_ResendCode()
+        {
+            phone_number = "+15555555557",
+            phone_code_hash = code.phone_code_hash,
+        });
+        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
     }
-    
+
     [Fact]
     public async Task ResendCode_Returns_SentCode_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+25555555558",
-                api_id = 11111,
-                api_hash = "11111111111111111111111111111111",
-                settings = new CodeSettings()
-            });
-            code = await client.Invoke(new Auth_ResendCode()
-            {
-                phone_number = "+25555555558",
-                phone_code_hash = code.phone_code_hash,
-            });
-            Assert.IsType<Auth_SentCodeTypeSms>(code.type);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+25555555558",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        code = await client.Invoke(new Auth_ResendCode()
+        {
+            phone_number = "+25555555558",
+            phone_code_hash = code.phone_code_hash,
+        });
+        Assert.IsType<Auth_SentCodeTypeSms>(code.type);
     }
 
     [Fact]
     public async Task CancelCode_Returns_True()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+15555555559",
-                api_id = 11111,
-                api_hash = "11111111111111111111111111111111",
-                settings = new CodeSettings()
-            });
-            var result = await client.Invoke(new Auth_CancelCode()
-            {
-                phone_number = "+15555555559",
-                phone_code_hash = code.phone_code_hash,
-            });
-            Assert.True(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+15555555559",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var result = await client.Invoke(new Auth_CancelCode()
+        {
+            phone_number = "+15555555559",
+            phone_code_hash = code.phone_code_hash,
+        });
+        Assert.True(result);
     }
-    
+
     [Fact]
     public async Task CancelCode_Returns_True_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+25555555560",
-                api_id = 11111,
-                api_hash = "11111111111111111111111111111111",
-                settings = new CodeSettings()
-            });
-            var result = await client.Invoke(new Auth_CancelCode()
-            {
-                phone_number = "+25555555560",
-                phone_code_hash = code.phone_code_hash,
-            });
-            Assert.True(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+25555555560",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var result = await client.Invoke(new Auth_CancelCode()
+        {
+            phone_number = "+25555555560",
+            phone_code_hash = code.phone_code_hash,
+        });
+        Assert.True(result);
     }
-    
+
     [Fact]
     public async Task SignUp_Returns_RpcError()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
+            phone_number = "+15555555561",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        await Assert.ThrowsAsync<RpcException>(async () =>
+        {
+            await client.Invoke(new Auth_SignUp()
             {
-                phone_number = "+15555555561", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
+                phone_number = "+15555555561",
+                phone_code_hash = code.phone_code_hash,
+                first_name = "aaa",
+                last_name = "bbb",
             });
-            await Assert.ThrowsAsync<RpcException>(async () =>
-            {
-                await client.Invoke(new Auth_SignUp()
-                {
-                    phone_number = "+15555555561",
-                    phone_code_hash = code.phone_code_hash,
-                    first_name = "aaa",
-                    last_name = "bbb",
-                });
-            });
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        });
     }
-    
+
     [Fact]
     public async Task SignUp_Returns_RpcError_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
+            phone_number = "+25555555562",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        await Assert.ThrowsAsync<RpcException>(async () =>
+        {
+            await client.Invoke(new Auth_SignUp()
             {
-                phone_number = "+25555555562", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
+                phone_number = "+25555555562",
+                phone_code_hash = code.phone_code_hash,
+                first_name = "aaa",
+                last_name = "bbb",
             });
-            await Assert.ThrowsAsync<RpcException>(async () =>
-            {
-                await client.Invoke(new Auth_SignUp()
-                {
-                    phone_number = "+25555555562",
-                    phone_code_hash = code.phone_code_hash,
-                    first_name = "aaa",
-                    last_name = "bbb",
-                });
-            });
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        });
     }
-    
+
     [Fact]
     public async Task SignIn_Returns_SignUpRequired()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+15555555563", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
-            });
-            var result = await client.Invoke(new Auth_SignIn()
-            {
-                phone_number = "+15555555563",
-                phone_code_hash = code.phone_code_hash,
-                phone_code = "12345",
-                flags = Auth_SignIn.Flags.has_phone_code
-            });
-            Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+15555555563",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var result = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+15555555563",
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
     }
-    
+
     [Fact]
     public async Task SignIn_Returns_SignUpRequired_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+25555555564", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
-            });
-            var result = await client.Invoke(new Auth_SignIn()
-            {
-                phone_number = "+25555555564",
-                phone_code_hash = code.phone_code_hash,
-                phone_code = "12345",
-                flags = Auth_SignIn.Flags.has_phone_code
-            });
-            Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+25555555564",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var result = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+25555555564",
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        Assert.IsType<Auth_AuthorizationSignUpRequired>(result);
     }
-    
+
     [Fact]
     public async Task SignUp_Returns_Authorization()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var result = await Helpers.SignUp(client, "+15555555565");
-            Assert.IsType<Auth_Authorization>(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var result = await Helpers.SignUp(client, "+15555555565");
+        Assert.IsType<Auth_Authorization>(result);
     }
-    
+
     [Fact]
     public async Task SignUp_Returns_Authorization_Pfs()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var result = await Helpers.SignUp(client, "+25555555566");
-            Assert.IsType<Auth_Authorization>(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var result = await Helpers.SignUp(client, "+25555555566");
+        Assert.IsType<Auth_Authorization>(result);
     }
 
     [Fact]
     public async Task SignIn_Returns_Authorization()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+15555555567", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
-            });
-            var signIn = await client.Invoke(new Auth_SignIn()
-            {
-                phone_number = "+15555555567",
-                phone_code_hash = code.phone_code_hash,
-                phone_code = "12345",
-                flags = Auth_SignIn.Flags.has_phone_code
-            });
-            var signUp = await client.Invoke(new Auth_SignUp()
-            {
-                phone_number = "+15555555567",
-                phone_code_hash = code.phone_code_hash,
-                first_name = "aaa",
-                last_name = "bbb",
-            });
-            Assert.IsType<Auth_Authorization>(signUp);
-            code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+15555555567", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
-            });
-            signIn = await client.Invoke(new Auth_SignIn()
-            {
-                phone_number = "+15555555567",
-                phone_code_hash = code.phone_code_hash,
-                phone_code = "12345",
-                flags = Auth_SignIn.Flags.has_phone_code
-            });
-            Assert.IsType<Auth_Authorization>(signIn);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+15555555567",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var signIn = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+15555555567",
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        var signUp = await client.Invoke(new Auth_SignUp()
+        {
+            phone_number = "+15555555567",
+            phone_code_hash = code.phone_code_hash,
+            first_name = "aaa",
+            last_name = "bbb",
+        });
+        Assert.IsType<Auth_Authorization>(signUp);
+        code = await client.Invoke(new Auth_SendCode()
+        {
+            phone_number = "+15555555567",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        signIn = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+15555555567",
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        Assert.IsType<Auth_Authorization>(signIn);
     }
-    
+
     [Fact]
     public async Task SignIn_Returns_Authorization_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var code = await client.Invoke(new Auth_SendCode()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+25555555568", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
-            });
-            var signIn = await client.Invoke(new Auth_SignIn()
-            {
-                phone_number = "+25555555568",
-                phone_code_hash = code.phone_code_hash,
-                phone_code = "12345",
-                flags = Auth_SignIn.Flags.has_phone_code
-            });
-            var signUp = await client.Invoke(new Auth_SignUp()
-            {
-                phone_number = "+25555555568",
-                phone_code_hash = code.phone_code_hash,
-                first_name = "aaa",
-                last_name = "bbb",
-            });
-            Assert.IsType<Auth_Authorization>(signUp);
-            code = await client.Invoke(new Auth_SendCode()
-            {
-                phone_number = "+25555555568", 
-                api_id = 11111, 
-                api_hash = "11111111111111111111111111111111", 
-                settings = new CodeSettings()
-            });
-            signIn = await client.Invoke(new Auth_SignIn()
-            {
-                phone_number = "+25555555568",
-                phone_code_hash = code.phone_code_hash,
-                phone_code = "12345",
-                flags = Auth_SignIn.Flags.has_phone_code
-            });
-            Assert.IsType<Auth_Authorization>(signIn);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            phone_number = "+25555555568",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        var signIn = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+25555555568",
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        var signUp = await client.Invoke(new Auth_SignUp()
+        {
+            phone_number = "+25555555568",
+            phone_code_hash = code.phone_code_hash,
+            first_name = "aaa",
+            last_name = "bbb",
+        });
+        Assert.IsType<Auth_Authorization>(signUp);
+        code = await client.Invoke(new Auth_SendCode()
+        {
+            phone_number = "+25555555568",
+            api_id = 11111,
+            api_hash = "11111111111111111111111111111111",
+            settings = new CodeSettings()
+        });
+        signIn = await client.Invoke(new Auth_SignIn()
+        {
+            phone_number = "+25555555568",
+            phone_code_hash = code.phone_code_hash,
+            phone_code = "12345",
+            flags = Auth_SignIn.Flags.has_phone_code
+        });
+        Assert.IsType<Auth_Authorization>(signIn);
     }
-    
+
     [Fact]
     public async Task Logout_Returns_LoggedOut()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555569");
-            var logout = await client.Auth_LogOut();
-            Assert.IsType<Auth_LoggedOut>(logout);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555569");
+        var logout = await client.Auth_LogOut();
+        Assert.IsType<Auth_LoggedOut>(logout);
     }
-    
+
     [Fact]
     public async Task Logout_Returns_LoggedOut_Pfs()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+25555555570");
-            var logout = await client.Auth_LogOut();
-            Assert.IsType<Auth_LoggedOut>(logout);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+25555555570");
+        var logout = await client.Auth_LogOut();
+        Assert.IsType<Auth_LoggedOut>(logout);
     }
-    
+
     [Fact]
     public async Task ResetAuthorizations_Returns_True()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555571");
-            var result = await client.Invoke(new Auth_ResetAuthorizations());
-            Assert.True(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555571");
+        var result = await client.Invoke(new Auth_ResetAuthorizations());
+        Assert.True(result);
     }
-    
+
     [Fact]
     public async Task ResetAuthorizations_Returns_True_Pfs()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+25555555572");
-            var result = await client.Invoke(new Auth_ResetAuthorizations());
-            Assert.True(result);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+25555555572");
+        var result = await client.Invoke(new Auth_ResetAuthorizations());
+        Assert.True(result);
     }
 
     [Fact]
     public async Task Should_ExportAndImport_Authorization()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555573");
+        var exportResult = await client.Invoke(new Auth_ExportAuthorization()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555573");
-            var exportResult = await client.Invoke(new Auth_ExportAuthorization()
-            {
-                dc_id = 5,
-            });
-            Assert.IsType<Auth_ExportedAuthorization>(exportResult);
-            var importResult = await client.Invoke(new Auth_ImportAuthorization()
-            {
-                id = ((Auth_Authorization)auth!).user.ID,
-                bytes = exportResult.bytes,
-            });
-            Assert.IsType<Auth_Authorization>(importResult);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            dc_id = 5,
+        });
+        Assert.IsType<Auth_ExportedAuthorization>(exportResult);
+        var importResult = await client.Invoke(new Auth_ImportAuthorization()
+        {
+            id = ((Auth_Authorization)auth!).user.ID,
+            bytes = exportResult.bytes,
+        });
+        Assert.IsType<Auth_Authorization>(importResult);
     }
-    
+
     [Fact]
     public async Task Should_ExportAndImport_Authorization_Pfs()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+25555555574");
+        var exportResult = await client.Invoke(new Auth_ExportAuthorization()
         {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+25555555574");
-            var exportResult = await client.Invoke(new Auth_ExportAuthorization()
-            {
-                dc_id = 5,
-            });
-            Assert.IsType<Auth_ExportedAuthorization>(exportResult);
-            var importResult = await client.Invoke(new Auth_ImportAuthorization()
-            {
-                id = ((Auth_Authorization)auth!).user.ID,
-                bytes = exportResult.bytes,
-            });
-            Assert.IsType<Auth_Authorization>(importResult);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            dc_id = 5,
+        });
+        Assert.IsType<Auth_ExportedAuthorization>(exportResult);
+        var importResult = await client.Invoke(new Auth_ImportAuthorization()
+        {
+            id = ((Auth_Authorization)auth!).user.ID,
+            bytes = exportResult.bytes,
+        });
+        Assert.IsType<Auth_Authorization>(importResult);
     }
 
     [Fact]
     public async Task DropTempAuthKeys_ShouldReturn_True()
     {
-        async Task RunTest()
-        {
-            using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555575");
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555575");
 
-            var dropResult = await client.Auth_DropTempAuthKeys();
-            Assert.True(dropResult);
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+        var dropResult = await client.Auth_DropTempAuthKeys();
+        Assert.True(dropResult);
     }
+
     [Fact]
     public async Task ExportAndImport_Should_Throw()
     {
-        async Task RunTest()
+        using var client = new WTelegram.Client(Config, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555576");
+        var exportResult = await client.Invoke(new Auth_ExportAuthorization()
         {
-            using var client = new WTelegram.Client(Config, new MemoryStream());
-            await client.ConnectAsync();
-            var auth = await Helpers.SignUp(client, "+15555555576");
-            var exportResult = await client.Invoke(new Auth_ExportAuthorization()
+            dc_id = 5,
+        });
+        Assert.IsType<Auth_ExportedAuthorization>(exportResult);
+        var importResult =
+            await Assert.ThrowsAsync<RpcException>(async () =>
             {
-                dc_id = 5,
-            });
-            Assert.IsType<Auth_ExportedAuthorization>(exportResult);
-            var importResult = 
-                await Assert.ThrowsAsync<RpcException>(async () =>
+                await client.Invoke(new Auth_ImportAuthorization()
                 {
-                    await client.Invoke(new Auth_ImportAuthorization()
-                    {
-                        id = 0,
-                        bytes = exportResult.bytes,
-                    });
+                    id = 0,
+                    bytes = exportResult.bytes,
                 });
-        }
-
-        Task testTask = RunTest();
-        await testTask.TimeoutAfter(4000);
+            });
     }
 }
