@@ -19,8 +19,8 @@
 using System.Security.Cryptography;
 using Autofac.Extras.Moq;
 using Ferrite.Data.Repositories;
-using Ferrite.TL;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Moq;
 using Xunit;
@@ -122,6 +122,129 @@ public class PhotoRepositoryTests
         var photo = repo.GetProfilePhoto(111, 123);
         Assert.NotNull(photo);
         Assert.Equal(photoBytes1, photo.Value.AsSpan().ToArray());
+        Util.DeleteDirectory(path);
+    }
+    
+    [Fact]
+    public void Puts_Thumbnail()
+    {
+        var photoSize = PhotoSize.Builder()
+            .Size(128)
+            .H(100)
+            .W(100)
+            .Type("s"u8)
+            .Build();
+        var thumbnail = Thumbnail.Builder()
+            .PhotoSize(photoSize.ToReadOnlySpan())
+            .FileId(123)
+            .ThumbFileId(456)
+            .Build();
+        var thumbnailBytes = thumbnail.ToReadOnlySpan().ToArray();
+        
+        var mock = AutoMock.GetLoose();
+        var store = mock.Mock<IKVStore>();
+        store.Setup(x => x.Put(thumbnailBytes, 
+            (long)123, (long)456, "s")).Verifiable();
+        var repo = mock.Create<PhotoRepository>();
+        repo.PutThumbnail(new TLBytes(thumbnailBytes, 0, thumbnailBytes.Length));
+        store.VerifyAll();
+    }
+    
+    [Fact]
+    public void PutsAndGets_ProfilePhotoWithSizes()
+    {
+        string path = "test-" + Random.Shared.Next();
+        var ctx = new RocksDBContext(path);
+        var repo = new PhotoRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
+        
+        var referenceBytes1 = RandomNumberGenerator.GetBytes(16);
+        var date1 = DateTimeOffset.Now;
+        
+        repo.PutProfilePhoto(111, 123, 1234, referenceBytes1, date1);
+        
+        var photoSize1 = PhotoSize.Builder()
+            .Size(128)
+            .H(100)
+            .W(100)
+            .Type("s"u8)
+            .Build();
+        var thumbnail1 = Thumbnail.Builder()
+            .PhotoSize(photoSize1.ToReadOnlySpan())
+            .FileId(123)
+            .ThumbFileId(456)
+            .Build();
+        var thumbnailBytes1 = thumbnail1.ToReadOnlySpan().ToArray();
+        repo.PutThumbnail(new TLBytes(thumbnailBytes1, 0, thumbnailBytes1.Length));
+        
+        var photoSize2 = PhotoSize.Builder()
+            .Size(258)
+            .H(320)
+            .W(320)
+            .Type("m"u8)
+            .Build();
+        var thumbnail2 = Thumbnail.Builder()
+            .PhotoSize(photoSize2.ToReadOnlySpan())
+            .FileId(123)
+            .ThumbFileId(789)
+            .Build();
+        var thumbnailBytes2 = thumbnail2.ToReadOnlySpan().ToArray();
+        repo.PutThumbnail(new TLBytes(thumbnailBytes2, 0, thumbnailBytes2.Length));
+        var photoSizes = new Vector();
+        photoSizes.AppendTLObject(photoSize1.ToReadOnlySpan());
+        photoSizes.AppendTLObject(photoSize2.ToReadOnlySpan());
+        var photo = Photo.Builder()
+            .Id(123)
+            .AccessHash(1234)
+            .FileReference(referenceBytes1)
+            .Date((int)date1.ToUnixTimeSeconds())
+            .DcId(2)
+            .Sizes(photoSizes).Build().ToReadOnlySpan().ToArray();
+        var profilePhoto = repo.GetProfilePhoto(111, 123);
+        Assert.Equal(photo, profilePhoto!.Value.AsSpan().ToArray());
+        
+        Util.DeleteDirectory(path);
+    }
+    
+    [Fact]
+    public void PutsAndGets_Thumbnails()
+    {
+        string path = "test-" + Random.Shared.Next();
+        var ctx = new RocksDBContext(path);
+        var repo = new PhotoRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
+        
+        var photoSize1 = PhotoSize.Builder()
+            .Size(128)
+            .H(100)
+            .W(100)
+            .Type("s"u8)
+            .Build();
+        var thumbnail1 = Thumbnail.Builder()
+            .PhotoSize(photoSize1.ToReadOnlySpan())
+            .FileId(123)
+            .ThumbFileId(456)
+            .Build();
+        var thumbnailBytes1 = thumbnail1.ToReadOnlySpan().ToArray();
+        repo.PutThumbnail(new TLBytes(thumbnailBytes1, 0, thumbnailBytes1.Length));
+        
+        var photoSize2 = PhotoSize.Builder()
+            .Size(258)
+            .H(320)
+            .W(320)
+            .Type("m"u8)
+            .Build();
+        var thumbnail2 = Thumbnail.Builder()
+            .PhotoSize(photoSize2.ToReadOnlySpan())
+            .FileId(123)
+            .ThumbFileId(789)
+            .Build();
+        var thumbnailBytes2 = thumbnail2.ToReadOnlySpan().ToArray();
+        repo.PutThumbnail(new TLBytes(thumbnailBytes2, 0, thumbnailBytes2.Length));
+
+        var thumbs = repo.GetThumbnails(123);
+        Assert.Equal(2, thumbs.Count);
+        Assert.Equal(thumbnailBytes1, thumbs[0].AsSpan().ToArray());
+        Assert.Equal(thumbnailBytes2, thumbs[1].AsSpan().ToArray());
+        
         Util.DeleteDirectory(path);
     }
 }
