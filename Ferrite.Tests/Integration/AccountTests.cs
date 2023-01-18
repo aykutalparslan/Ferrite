@@ -34,7 +34,7 @@ public class AccountTests
         var path = "account-test-data";
         if(Directory.Exists(path)) Util.DeleteDirectory(path);
         Directory.CreateDirectory(path);
-        var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52223, path);
+        var ferriteServer = ServerBuilder.BuildServer("127.0.0.1", 52223, path);
         var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52223), default);
         Client.LoadPublicKey(@"-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEAt1YElR7/5enRYr788g210K6QZzUAmaithnSzmQsKb+XL5KhQHrJw
@@ -409,7 +409,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var hash = authorizations.authorizations[0].hash;
         var result = await client.Account_ResetAuthorization(authorizations.authorizations[1].hash);
         Assert.True(result);
-        authorizations = await client.Account_GetAuthorizations();
+        authorizations = await client2.Account_GetAuthorizations();
         Assert.Single(authorizations.authorizations);
         Assert.Equal(hash, authorizations.authorizations[0].hash);
     }

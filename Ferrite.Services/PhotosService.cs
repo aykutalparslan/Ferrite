@@ -240,7 +240,7 @@ public class PhotosService : IPhotosService
     private async Task GenerateThumbnail(IUnmanagedMemoryOwner<byte> imageData,
         UploadedFileInfoDTO file, int w, string type, ImageFilter filter, List<ThumbnailDTO> thumbnails)
     {
-        var thumbnail = _photoProcessor.GenerateThumbnail(imageData.Span, w, filter);
+        /*var thumbnail = _photoProcessor.GenerateThumbnail(imageData.Span, w, filter);
         var thumbId = _random.NextLong();
         await _objectStore.SaveFilePart(thumbId, 0, new MemoryStream(thumbnail));
         _unitOfWork.FileInfoRepository.PutFilePart(new FilePartDTO(thumbId, 0, thumbnail.Length));
@@ -250,7 +250,8 @@ public class PhotosService : IPhotosService
             thumbnail.Length, w, w, null, null);
         thumbnails.Add(thumb);
         _unitOfWork.PhotoRepository.PutThumbnail(thumb);
-        await _unitOfWork.SaveAsync();
+        await _unitOfWork.SaveAsync();*/
+        throw new NotImplementedException();
     }
 
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos)
@@ -317,7 +318,7 @@ public class PhotosService : IPhotosService
 
     public async Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto)
     {
-        if (inputPhoto.Empty)
+        /*if (inputPhoto.Empty)
         {
             return new Data.PhotoDTO(true, false, (long)inputPhoto.Id!,
                 null, null, null, null, 
@@ -353,6 +354,7 @@ public class PhotosService : IPhotosService
         return new Data.PhotoDTO(false, false, (long)inputPhoto.Id!,
             file.AccessHash, reference.ReferenceBytes, 
             (int)file.SavedOn.ToUnixTimeSeconds(), thumbs, 
-            null, 2);
+            null, 2);*/
+        throw new NotImplementedException();
     }
 }

@@ -16,17 +16,24 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.Services;
+using Ferrite.TL;
 using Ferrite.TL.slim;
 
-namespace Ferrite.Data.Repositories;
+namespace Ferrite.Core.Execution.Functions.BaseLayer.Users;
 
-public interface IPhotoRepository
+public class GetFullUserFunc : ITLFunction
 {
-    public bool PutProfilePhoto(long userId, long fileId, long accessHash,
-        byte[] referenceBytes, DateTimeOffset date);
-    public bool DeleteProfilePhoto(long userId, long fileId);
-    public IReadOnlyList<TLBytes> GetProfilePhotos(long userId);
-    public TLBytes? GetProfilePhoto(long userId, long fileId);
-    public bool PutThumbnail(TLBytes thumbnail);
-    public IReadOnlyList<TLBytes> GetThumbnails(long photoId);
+    private readonly IUsersService _users;
+
+    public GetFullUserFunc(IUsersService users)
+    {
+        _users = users;
+    }
+    public async ValueTask<TLBytes?> Process(TLBytes q, TLExecutionContext ctx)
+    {
+        using var result = await _users.GetFullUser(ctx.CurrentAuthKeyId, q);
+        var rpcResult = RpcResultGenerator.Generate(result, ctx.MessageId);
+        return rpcResult;
+    }
 }

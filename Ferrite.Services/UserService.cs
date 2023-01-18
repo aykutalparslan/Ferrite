@@ -17,6 +17,7 @@
 // 
 
 using System.Runtime.InteropServices;
+using System.Text;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Users;
@@ -64,118 +65,125 @@ public class UserService : IUsersService
         for (int i = 0; i < users.Count; i++)
         {
             var user = users.ReadTLObject();
-            int constructor = MemoryMarshal.Read<int>(user);
-            switch (constructor)
-            {
-                case Constructors.layer150_InputUser:
-                    var inputUser = (InputUser)user;
-                    ids.Add(inputUser.UserId);
-                    break;
-                case Constructors.layer150_InputPeerUserFromMessage:
-                    var inputUserFromMessage = (InputPeerUserFromMessage)user;
-                    ids.Add(inputUserFromMessage.UserId);
-                    break;
-            }
+            var (userId, constructor) = GetUserId(user);
+            ids.Add(userId);
         }
 
         return ids;
     }
 
-    public async Task<ServiceResult<UserFullDTO>> GetFullUser(long authKeyId, InputUserDTO id)
+    private static (long, int) GetUserId(Span<byte> user)
     {
-        /*var userId = id.UserId;
+        int constructor = MemoryMarshal.Read<int>(user);
+        long userId = 0;
+        switch (constructor)
+        {
+            case Constructors.layer150_InputUser:
+                var inputUser = (InputUser)user;
+                userId = inputUser.UserId;
+                break;
+            case Constructors.layer150_InputPeerUserFromMessage:
+                var inputUserFromMessage = (InputPeerUserFromMessage)user;
+                userId = inputUserFromMessage.UserId;
+                break;
+        }
+
+        return (userId, constructor);
+    }
+
+    public async ValueTask<TLBytes> GetFullUser(long authKeyId, TLBytes q)
+    {
+        var (userId, constructor) = GetUserId(((GetFullUser)q).Id);
         bool self = false;
-        if (id.InputUserType == InputUserType.Self)
+        if (constructor == Constructors.layer150_InputUserSelf)
         {
             var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
             userId = auth.UserId;
             self = true;
         }
-        UserDTO? user = GetUserInternal(userId);
+        var user = await GetUserInternal(userId);
         DeviceType deviceType = GetDeviceType(authKeyId);
-        PeerNotifySettingsDTO notifySettings = GetPeerNotifySettings(authKeyId, user, deviceType);
+        var notifySettings = GetPeerNotifySettings(authKeyId, user, deviceType);
 
         if (user != null)
         {
-            Data.UserFullDTO fullUser = CreteFullUser(id, user, notifySettings);
-            return new ServiceResult<UserFullDTO>(new UserFullDTO(fullUser, new List<ChatDTO>(), 
-                new List<UserDTO>(){user with
-                {
-                    Self = self
-                }}), true, ErrorMessages.None);
+            return CreteFullUser(user.Value, notifySettings);
         }
 
-        return new ServiceResult<UserFullDTO>(null, false, ErrorMessages.UserIdInvalid);*/
-        throw new NotImplementedException();
+        return RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
     }
 
-    private Data.UserFullDTO CreteFullUser(InputUserDTO id, UserDTO user, PeerNotifySettingsDTO notifySettings)
+    private TLBytes CreteFullUser(TLBytes userBytes, TLBytes notifySettings)
     {
-        var profilePhoto = _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, user.Photo.PhotoId);
-        if (profilePhoto != null)
+        var user = ((User)userBytes);
+        var photoConstructor = MemoryMarshal.Read<int>(user.Photo);
+        long photoId = photoConstructor == Constructors.layer150_UserProfilePhotoEmpty 
+            ? 0 
+            : ((UserProfilePhoto)user.Photo).PhotoId;
+        var profilePhoto = photoConstructor == Constructors.layer150_UserProfilePhotoEmpty
+            ? PhotoEmpty.Builder().Build().TLBytes
+            : _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, photoId);
+        var settings = GeneratePeerSettings(user.Self);
+        var about = _unitOfWork.UserRepository.GetAbout(user.Id);
+        var userfull = UserFull.Builder()
+            .Id(user.Id)
+            .Blocked(false)
+            .Settings(settings.AsSpan())
+            .NotifySettings(notifySettings.AsSpan())
+            .PhoneCallsAvailable(true)
+            .PhoneCallsPrivate(true)
+            .CommonChatsCount(0)
+            .ProfilePhoto(profilePhoto!.Value.AsSpan());
+        if (about != null)
         {
-            profilePhoto = profilePhoto with
-            {
-                Sizes = _unitOfWork.PhotoRepository
-                    .GetThumbnails(profilePhoto.Id).Select(t =>
-                        new PhotoSizeDTO(PhotoSizeType.Default,
-                            t.Type,
-                            t.Width,
-                            t.Height,
-                            t.Size,
-                            t.Bytes,
-                            t.Sizes)).ToList()
-            };
-        }
-        
-        PeerSettingsDTO settingsDto = GeneratePeerSettings(id);
-        var fullUser = new Ferrite.Data.UserFullDTO
-        {
-            About = user.About,
-            Blocked = false,
-            Id = user.Id,
-            Settings = settingsDto,
-            NotifySettings = notifySettings,
-            PhoneCallsAvailable = true,
-            PhoneCallsPrivate = true,
-            CommonChatsCount = 0,
-            ProfilePhoto = profilePhoto,
-        };
-        return fullUser;
-    }
-
-    private static PeerSettingsDTO GeneratePeerSettings(InputUserDTO id)
-    {
-        PeerSettingsDTO settingsDto = new PeerSettingsDTO(true, true, true, false, false,
-            false, false, false, false, null, null, null);
-        if (id.InputUserType == InputUserType.Self)
-        {
-            settingsDto = new PeerSettingsDTO(false, false, false, false, false,
-                false, false, false, false, null, null, null);
+            userfull = userfull.About(Encoding.UTF8.GetBytes(about));
         }
 
-        return settingsDto;
+        var result = UsersUserFull.Builder()
+            .FullUser(userfull.Build().ToReadOnlySpan())
+            .Users(new Vector())
+            .Chats(new Vector());
+        return result.Build().TLBytes!.Value;
     }
 
-    private PeerNotifySettingsDTO GetPeerNotifySettings(long authKeyId, UserDTO? user, DeviceType deviceType)
+    private static TLBytes GeneratePeerSettings(bool self)
     {
-        /*if (user == null) return new PeerNotifySettingsDTO();
-        var settings = 
-            _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, new InputNotifyPeerDTO
-        {
-            NotifyPeerType = InputNotifyPeerType.Peer,
-            Peer = new InputPeerDTO
-            {
-                UserId = user.Id,
-                AccessHash = user.AccessHash,
-                InputPeerType = InputPeerType.User
-            }
-        });
-        PeerNotifySettingsDTO notifySettings = notifySettings = settings.Count == 0
-            ? new PeerNotifySettingsDTO()
-            : settings.First(_ => _.DeviceType == deviceType);
-        return notifySettings;*/
-        throw new NotImplementedException();
+        var settings = self
+            ? PeerSettings.Builder()
+                .ReportSpam(false)
+                .AddContact(false)
+                .BlockContact(false)
+                .ShareContact(false)
+                .NeedContactsException(false)
+                .ReportGeo(false)
+                .Autoarchived(false)
+                .InviteMembers(false)
+                .RequestChatBroadcast(false).Build()
+            : PeerSettings.Builder()
+                .ReportSpam(true)
+                .AddContact(true)
+                .BlockContact(true)
+                .ShareContact(false)
+                .NeedContactsException(false)
+                .ReportGeo(false)
+                .Autoarchived(false)
+                .InviteMembers(false)
+                .RequestChatBroadcast(false).Build();
+
+        return settings.TLBytes!.Value;
+    }
+
+    private TLBytes GetPeerNotifySettings(long authKeyId, TLBytes? user, DeviceType deviceType)
+    {
+        if (user == null) return PeerNotifySettings.Builder().Build().TLBytes!.Value;
+        var settings =
+            _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, (int)InputNotifyPeerType.Peer,
+                (int)InputPeerType.User, ((User)user).Id, (int)deviceType);
+
+        var notifySettings = settings.Count == 0
+            ? PeerNotifySettings.Builder().Build().TLBytes!.Value
+            : settings.First();
+        return notifySettings;
     }
 
     private DeviceType GetDeviceType(long authKeyId)
@@ -202,11 +210,7 @@ public class UserService : IUsersService
         var user = _unitOfWork.UserRepository.GetUser(userId);
         if (user == null) return null;
         var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(((User)user).Id);
-        return ((User)user).Clone().Status(status.AsSpan()).Build().TLBytes!.Value;
-    }
-
-    public async Task<ServiceResult<bool>> SetSecureValueErrors(long authKeyId, InputUserDTO id, ICollection<SecureValueErrorDTO> errors)
-    {
-        throw new NotImplementedException();
+        var result = ((User)user).Clone().Status(status.AsSpan()).Build().TLBytes!.Value;
+        return result;
     }
 }

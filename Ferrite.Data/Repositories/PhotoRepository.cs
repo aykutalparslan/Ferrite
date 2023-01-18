@@ -16,7 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
+using System.Text;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
@@ -38,14 +41,17 @@ public class PhotoRepository : IPhotoRepository
                 new DataColumn { Name = "thumb_file_id", Type = DataType.Long },
                 new DataColumn { Name = "thumb_type", Type = DataType.String })));
     }
-    public bool PutProfilePhoto(long userId, long fileId, long accessHash, byte[] referenceBytes, DateTime date)
+    public bool PutProfilePhoto(long userId, long fileId, long accessHash, byte[] referenceBytes, DateTimeOffset date)
     {
-        PhotoDTO photo = new PhotoDTO(false, false, fileId, accessHash, referenceBytes,
-            (int)DateTimeOffset.Now.ToUnixTimeSeconds(), 
-            null, 
-            null, 2);
-        var photoBytes = MessagePackSerializer.Serialize(photo);
-        return _store.Put(photoBytes, userId, fileId);
+        var photoBytes = Photo.Builder()
+            .Id(fileId)
+            .AccessHash(accessHash)
+            .FileReference(referenceBytes)
+            .Date((int)date.ToUnixTimeSeconds())
+            .DcId(2)
+            .Sizes(new Vector()).Build().TLBytes!.Value;
+        
+        return _store.Put(photoBytes.AsSpan().ToArray(), userId, fileId);
     }
 
     public bool DeleteProfilePhoto(long userId, long fileId)
@@ -53,64 +59,57 @@ public class PhotoRepository : IPhotoRepository
         return _store.Delete(userId, fileId);
     }
 
-    public IReadOnlyCollection<PhotoDTO> GetProfilePhotos(long userId)
+    public IReadOnlyList<TLBytes> GetProfilePhotos(long userId)
     {
-        List<PhotoDTO> photos = new();
+        List<TLBytes> photos = new();
         var iter = _store.Iterate(userId);
         foreach (var photoBytes in iter)
         {
-            var photo = MessagePackSerializer.Deserialize<PhotoDTO>(photoBytes);
-            var iterThumb = _storeThumb.Iterate(photo.Id);
-            List<PhotoSizeDTO> photoSizes = new();
-            foreach (var thumbBytes in iterThumb)
-            {
-                var thumb = MessagePackSerializer.Deserialize<ThumbnailDTO>(thumbBytes);
-                PhotoSizeDTO size = new PhotoSizeDTO(PhotoSizeType.Default,
-                    thumb.Type, thumb.Width, thumb.Height, 
-                    thumb.Size, thumb.Bytes, thumb.Sizes);
-            }
-
-            photo = photo with { Sizes = photoSizes };
-            photos.Add(photo);
+            var photoSizes = GetPhotoSizes(((Photo)photoBytes.AsSpan()).Id);
+            var photo = ((Photo)photoBytes.AsSpan()).Clone().Sizes(photoSizes).Build();
+            photos.Add(photo.TLBytes!.Value);
         }
 
         return photos;
     }
 
-    public PhotoDTO? GetProfilePhoto(long userId, long fileId)
+    public TLBytes? GetProfilePhoto(long userId, long fileId)
     {
         var photoBytes = _store.Get(userId, fileId);
         if (photoBytes == null) return null;
-        var photo = MessagePackSerializer.Deserialize<PhotoDTO>(photoBytes);
-        var iterThumb = _storeThumb.Iterate(fileId);
-        List<PhotoSizeDTO> photoSizes = new();
+        var photoSizes = GetPhotoSizes(((Photo)photoBytes.AsSpan()).Id);
+        var photo = ((Photo)photoBytes.AsSpan()).Clone().Sizes(photoSizes).Build();
+        return photo.TLBytes!.Value;
+    }
+    
+    private Vector GetPhotoSizes(long photoId)
+    {
+        var iterThumb = _storeThumb.Iterate(photoId);
+        Vector photoSizes = new();
         foreach (var thumbBytes in iterThumb)
         {
-            var thumb = MessagePackSerializer.Deserialize<ThumbnailDTO>(thumbBytes);
-            PhotoSizeDTO size = new PhotoSizeDTO(PhotoSizeType.Default,
-                thumb.Type, thumb.Width, thumb.Height, 
-                thumb.Size, thumb.Bytes, thumb.Sizes);
+            var thumb = (Thumbnail)thumbBytes.AsSpan();
+            photoSizes.AppendTLObject(thumb.PhotoSize);
         }
 
-        photo = photo with { Sizes = photoSizes };
-        return photo;
+        return photoSizes;
     }
 
-    public bool PutThumbnail(ThumbnailDTO thumbnail)
+    public bool PutThumbnail(TLBytes thumbnail)
     {
-        var thumbBytes = MessagePackSerializer.Serialize(thumbnail);
-        return _storeThumb.Put(thumbBytes, thumbnail.FileId,
-            thumbnail.ThumbnailFileId, thumbnail.Type);
+        var thumb = (Thumbnail)thumbnail;
+        var photoSize = (PhotoSize)thumb.PhotoSize.ToArray().AsSpan();
+        return _storeThumb.Put(thumbnail.AsSpan().ToArray(), thumb.FileId,
+            thumb.ThumbFileId, Encoding.UTF8.GetString(photoSize.Type));
     }
 
-    public IReadOnlyCollection<ThumbnailDTO> GetThumbnails(long photoId)
+    public IReadOnlyList<TLBytes> GetThumbnails(long photoId)
     {
-        List<ThumbnailDTO> thumbs = new();
+        List<TLBytes> thumbs = new();
         var iter = _storeThumb.Iterate(photoId);
         foreach (var thumbBytes in iter)
         {
-            var thumb = MessagePackSerializer.Deserialize<ThumbnailDTO>(thumbBytes);
-            thumbs.Add(thumb);
+            thumbs.Add(new TLBytes(thumbBytes, 0, thumbBytes.Length));
         }
 
         return thumbs;

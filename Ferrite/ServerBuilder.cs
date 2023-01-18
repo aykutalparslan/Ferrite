@@ -150,6 +150,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_GetUsers))
             .SingleInstance();
+        builder.RegisterType<GetFullUserFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_GetFullUser))
+            .SingleInstance();
     }
 
     private static void RegisterAccountMethods(ContainerBuilder builder)

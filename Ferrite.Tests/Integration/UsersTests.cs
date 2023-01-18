@@ -33,7 +33,7 @@ public class UsersTests
         var path = "users-test-data";
         if(Directory.Exists(path)) Util.DeleteDirectory(path);
         Directory.CreateDirectory(path);
-        var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52224, path);
+        var ferriteServer = ServerBuilder.BuildServer("127.0.0.1", 52224, path);
         var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52224), default);
         Client.LoadPublicKey(@"-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEAt1YElR7/5enRYr788g210K6QZzUAmaithnSzmQsKb+XL5KhQHrJw
@@ -94,5 +94,20 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Assert.NotNull(client4.TLConfig);
         var users = await client4.Users_GetUsers(inputUsers.ToArray());
         Assert.Equal(3, users.Length);
+    }
+    
+    [Fact]
+    public async Task GetFullUser_Returns_UserFull()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555613");
+        var inputUser = new InputUser(((Auth_Authorization)auth!).user.ID,
+            ((User)((Auth_Authorization)auth!).user).access_hash);
+        Assert.NotNull(client.TLConfig);
+        var update = await client.Account_UpdateProfile(about: "fullUserAbout");
+        var user = await client.Users_GetFullUser(inputUser);
+        Assert.IsType<Users_UserFull>(user);
+        Assert.Equal("fullUserAbout", user.full_user.about);
     }
 }

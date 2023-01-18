@@ -102,7 +102,7 @@ public class UploadService : IUploadService
     public async Task<ServiceResult<IFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 
         string thumbSize, int offset, int limit, long regMsgId, bool precise = false, bool cdnSupported = false)
     {
-        var reference = _unitOfWork.FileInfoRepository.GetFileReference(fileReference);
+        /*var reference = _unitOfWork.FileInfoRepository.GetFileReference(fileReference);
         if (reference.IsBigfile)
         {
             var thumbs = _unitOfWork.PhotoRepository.GetThumbnails(fileId);
@@ -136,7 +136,8 @@ public class UploadService : IUploadService
             var owner = _objectStore.GetFileOwner(file, offset, limit, regMsgId, 
                 GenerateStreamHeader(regMsgId, StreamFileType.Jpeg));
             return new ServiceResult<IFileOwner>(owner, true, ErrorMessages.None);
-        }
+        }*/
+        throw new NotImplementedException();
     }
     private static byte[] GenerateStreamHeader(long reqMsgId, StreamFileType fileType)
     {

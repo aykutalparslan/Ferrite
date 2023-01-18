@@ -34,7 +34,7 @@ public class AuthTests
         var path = "auth-test-data";
         if(Directory.Exists(path)) Util.DeleteDirectory(path);
         Directory.CreateDirectory(path);
-        var ferriteServer = ServerBuilder.BuildServer("10.0.2.2", 52222, path);
+        var ferriteServer = ServerBuilder.BuildServer("127.0.0.1", 52222, path);
         var serverTask = ferriteServer.StartAsync(new IPEndPoint(IPAddress.Any, 52222), default);
         Client.LoadPublicKey(@"-----BEGIN RSA PUBLIC KEY-----
 MIIBCgKCAQEAt1YElR7/5enRYr788g210K6QZzUAmaithnSzmQsKb+XL5KhQHrJw
