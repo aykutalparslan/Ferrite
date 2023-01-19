@@ -24,6 +24,7 @@ using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.auth;
 using Ferrite.TL.slim.mtproto;
@@ -59,7 +60,9 @@ public class AuthService : IAuthService
     {
         var t = _unitOfWork.LoginTokenRepository.GetLoginToken(token);
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth != null && t != null&& t.ExceptUserIds.Contains(auth.UserId))
+        if (auth == null) return null;
+        var userId = ((AuthInfo)auth).UserId;
+        if (t != null && t.ExceptUserIds.Contains(userId))
         {
             var login = new LoginViaQRDTO()
             {
@@ -67,18 +70,17 @@ public class AuthService : IAuthService
                 SessionId = t.SessionId,
                 Token = t.Token,
                 ExceptUserIds = t.ExceptUserIds,
-                AcceptedByUserId = auth.UserId,
+                AcceptedByUserId = userId,
                 Status = true
             };
             _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 60));
-            _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
-            {
-                AuthKeyId = t.AuthKeyId,
-                Phone = auth.Phone,
-                UserId = auth.UserId,
-                ApiLayer = -1,
-                LoggedIn = true
-            });
+            _unitOfWork.AuthorizationRepository.PutAuthorization(AuthInfo.Builder()
+                .AuthKeyId(t.AuthKeyId)
+                .Phone(((AuthInfo)auth).Phone)
+                .UserId(userId)
+                .ApiLayer(-1)
+                .LoggedIn(true)
+                .Build().TLBytes!.Value);
             await _unitOfWork.SaveAsync();
             var app = _unitOfWork.AppInfoRepository.GetAppInfo(t.AuthKeyId);
             return app;
@@ -189,28 +191,27 @@ public class AuthService : IAuthService
         }
         var data = _random.GetRandomBytes(128);
         var dcId = new ExportAuthorization(q.AsSpan()).DcId;
-        _unitOfWork.AuthorizationRepository.PutExportedAuthorization(new ExportedAuthInfoDTO
-        {
-            Data = data,
-            UserId = auth.UserId,
-            Phone = auth.Phone,
-            AuthKeyId = auth.AuthKeyId,
-            NextDcId = dcId,
-            PreviousDcId = currentDc,
-        });
+        _unitOfWork.AuthorizationRepository.PutExportedAuthorization(ExportedAuthInfo.Builder()
+            .Data(data)
+            .UserId(((AuthInfo)auth).UserId)
+            .Phone(((AuthInfo)auth).Phone)
+            .AuthKeyId(((AuthInfo)auth).AuthKeyId)
+            .NextDcId(dcId)
+            .PreviousDcId(currentDc)
+            .Build().TLBytes!.Value);
         await _unitOfWork.SaveAsync();
         return ExportedAuthorization
             .Builder()
-            .Id(auth.UserId)
+            .Id(((AuthInfo)auth).UserId)
             .Bytes(data).Build().TLBytes!.Value;
     }
 
     public async ValueTask<TLBytes> ExportLoginToken(long authKeyId, long sessionId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth is { LoggedIn: true })
+        if (auth != null && ((AuthInfo)auth).LoggedIn)
         {
-            using var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+            using var user = _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId);
             if (user != null)
             {
                 using var authorization = GenerateAuthorization(user.Value);
@@ -261,9 +262,10 @@ public class AuthService : IAuthService
             .GetExportedAuthorizationAsync(importParameters.UserId, importParameters.Bytes);
         
         if (auth != null && exported != null &&
-            auth.Phone == exported.Phone && importParameters.Bytes.SequenceEqual(exported.Data))
+            ((AuthInfo)auth).Phone.SequenceEqual(((ExportedAuthInfo)exported).Phone) && 
+            importParameters.Bytes.AsSpan().SequenceEqual(((ExportedAuthInfo)exported).Data))
         {
-            var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+            var user = _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId);
             if(user == null)
             {
                 return RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
@@ -298,16 +300,16 @@ public class AuthService : IAuthService
         {
             return false;
         }
+
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (authKeyDetails == null)
+        if (authKeyDetails != null) return ((AuthInfo)authKeyDetails).LoggedIn;
+        var permAuthKey = await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(authKeyId);
+        if (permAuthKey != null)
         {
-            var permAuthKey = await _unitOfWork.BoundAuthKeyRepository.GetBoundAuthKeyAsync(authKeyId);
-            if (permAuthKey != null)
-            {
-                authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)permAuthKey);
-            }
+            authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)permAuthKey);
         }
-        return authKeyDetails?.LoggedIn ?? false;
+
+        return authKeyDetails != null && ((AuthInfo)authKeyDetails).LoggedIn;
     }
 
     public async ValueTask<TLBytes> LogOut(long authKeyId)
@@ -320,13 +322,8 @@ public class AuthService : IAuthService
                 .Builder()
                 .Build().TLBytes!.Value;
         }
-        _unitOfWork.AuthorizationRepository.PutAuthorization(info with
-        {
-            FutureAuthToken = futureAuthToken,
-            Phone = "",
-            UserId = 0,
-            LoggedIn = false
-        });
+
+        _unitOfWork.AuthorizationRepository.DeleteAuthorization(((AuthInfo)info).AuthKeyId);
         _log.Debug($"Log Out for authKey with Id: {authKeyId}");
         await _unitOfWork.SaveAsync();
         return LoggedOut
@@ -378,10 +375,12 @@ public class AuthService : IAuthService
         var currentAuth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (currentAuth != null)
         {
-            var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(currentAuth.Phone);
+            var authorizations = await _unitOfWork
+                .AuthorizationRepository.GetAuthorizationsAsync(
+                    Encoding.UTF8.GetString(((AuthInfo)currentAuth).Phone));
             foreach (var auth in authorizations)
             {
-                if(auth.AuthKeyId != authKeyId)
+                if(((AuthInfo)auth).AuthKeyId != authKeyId)
                 {
                     _unitOfWork.AuthorizationRepository.DeleteAuthorization(authKeyId);
                 }
@@ -455,14 +454,14 @@ public class AuthService : IAuthService
 
         user = SetUserAttributes(user.Value);
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
-        {
-            AuthKeyId = authKeyId,
-            Phone = phoneNumber,
-            UserId = userId.Value,
-            ApiLayer = authKeyDetails?.ApiLayer ?? -1,
-            LoggedIn = true
-        });
+        var apiLayer = authKeyDetails != null ? ((AuthInfo)authKeyDetails).ApiLayer : -1;
+        _unitOfWork.AuthorizationRepository.PutAuthorization(AuthInfo.Builder()
+            .AuthKeyId(authKeyId)
+            .Phone(Encoding.UTF8.GetBytes(phoneNumber))
+            .UserId(userId.Value)
+            .ApiLayer(apiLayer)
+            .LoggedIn(true)
+            .Build().TLBytes!.Value);
         await _unitOfWork.SaveAsync();
         return GenerateAuthorization(user.Value);
     }
@@ -523,14 +522,14 @@ public class AuthService : IAuthService
         await _search.IndexUser(new Data.Search.UserSearchModel(userId, "", 
             signUpParameters.FirstName, signUpParameters.LastName, signUpParameters.PhoneNumber));
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        _unitOfWork.AuthorizationRepository.PutAuthorization(new AuthInfoDTO()
-        {
-            AuthKeyId = authKeyId,
-            Phone = signUpParameters.PhoneNumber,
-            UserId = userId,
-            ApiLayer = authKeyDetails?.ApiLayer ?? -1,
-            LoggedIn = true
-        });
+        var apiLayer = authKeyDetails != null ? ((AuthInfo)authKeyDetails).ApiLayer : -1;
+        _unitOfWork.AuthorizationRepository.PutAuthorization(AuthInfo.Builder()
+            .AuthKeyId(authKeyId)
+            .Phone(Encoding.UTF8.GetBytes(signUpParameters.PhoneNumber))
+            .UserId(userId)
+            .ApiLayer(apiLayer)
+            .LoggedIn(true)
+            .Build().TLBytes!.Value);
         await _unitOfWork.SaveAsync();
         return GenerateAuthorization(user);
     }

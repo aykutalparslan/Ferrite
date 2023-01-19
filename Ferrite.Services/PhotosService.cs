@@ -256,7 +256,7 @@ public class PhotosService : IPhotosService
 
     public async Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos)
     {
-        List<long> result = new();
+        /*List<long> result = new();
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var photo in photos)
         {
@@ -279,7 +279,8 @@ public class PhotosService : IPhotosService
         }
 
         await _unitOfWork.SaveAsync();
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
     public async Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit)
     {

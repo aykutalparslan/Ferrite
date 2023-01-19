@@ -16,17 +16,19 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IAuthorizationRepository
 {
-    public bool PutAuthorization(AuthInfoDTO info);
-    public AuthInfoDTO? GetAuthorization(long authKeyId);
-    public ValueTask<AuthInfoDTO?> GetAuthorizationAsync(long authKeyId);
-    public IReadOnlyCollection<AuthInfoDTO> GetAuthorizations(string phone);
-    public ValueTask<IReadOnlyCollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone);
+    public bool PutAuthorization(TLBytes info);
+    public TLBytes? GetAuthorization(long authKeyId);
+    public ValueTask<TLBytes?> GetAuthorizationAsync(long authKeyId);
+    public IReadOnlyList<TLBytes> GetAuthorizations(string phone);
+    public ValueTask<IReadOnlyList<TLBytes>> GetAuthorizationsAsync(string phone);
     public bool DeleteAuthorization(long authKeyId);
-    public bool PutExportedAuthorization(ExportedAuthInfoDTO exportedInfo);
-    public ExportedAuthInfoDTO? GetExportedAuthorization(long user_id, byte[] data);
-    public ValueTask<ExportedAuthInfoDTO?> GetExportedAuthorizationAsync(long user_id, byte[] data);
+    public bool PutExportedAuthorization(TLBytes exportedInfo);
+    public TLBytes? GetExportedAuthorization(long userId, byte[] data);
+    public ValueTask<TLBytes?> GetExportedAuthorizationAsync(long userId, byte[] data);
 }

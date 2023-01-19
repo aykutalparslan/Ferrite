@@ -16,6 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Text;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -40,53 +43,48 @@ public class AuthorizationRepository : IAuthorizationRepository
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "data", Type = DataType.Bytes })));
     }
-    public bool PutAuthorization(AuthInfoDTO info)
+    public bool PutAuthorization(TLBytes info)
     {
-        var infoBytes = MessagePackSerializer.Serialize(info);
-        return _store.Put(infoBytes, info.AuthKeyId, info.Phone);
+        var authInfo = (AuthInfo)info;
+        return _store.Put(info.AsSpan().ToArray(), authInfo.AuthKeyId, Encoding.UTF8.GetString(authInfo.Phone));
     }
 
-    public AuthInfoDTO? GetAuthorization(long authKeyId)
+    public TLBytes? GetAuthorization(long authKeyId)
     {
         var infoBytes = _store.Get(authKeyId);
         if (infoBytes == null) return null;
-        AuthInfoDTO info = MessagePackSerializer.Deserialize<AuthInfoDTO>(infoBytes);
-        return info;
+        return new TLBytes(infoBytes, 0, infoBytes.Length);
     }
 
-    public ValueTask<AuthInfoDTO?> GetAuthorizationAsync(long authKeyId)
+    public async ValueTask<TLBytes?> GetAuthorizationAsync(long authKeyId)
     {
-        return new ValueTask<AuthInfoDTO?>(GetAuthorization(authKeyId));
+        var infoBytes =  await _store.GetAsync(authKeyId);
+        if (infoBytes == null) return null;
+        return new TLBytes(infoBytes, 0, infoBytes.Length);
     }
 
-    public IReadOnlyCollection<AuthInfoDTO> GetAuthorizations(string phone)
+    public IReadOnlyList<TLBytes> GetAuthorizations(string phone)
     {
-        List<AuthInfoDTO> infoDTOs = new List<AuthInfoDTO>();
-        var authorizations = _store.IterateBySecondaryIndex("by_id", phone);
+        List<TLBytes> infos = new();
+        var authorizations = _store.IterateBySecondaryIndex("by_phone", phone);
         foreach (var auth in authorizations)
         {
-            var info = MessagePackSerializer.Deserialize<AuthInfoDTO>(auth);
-            infoDTOs.Add(info);
+            infos.Add(new TLBytes(auth, 0, auth.Length));
         }
 
-        return infoDTOs;
+        return infos;
     }
 
-    public async ValueTask<IReadOnlyCollection<AuthInfoDTO>> GetAuthorizationsAsync(string phone)
+    public async ValueTask<IReadOnlyList<TLBytes>> GetAuthorizationsAsync(string phone)
     {
-        List<AuthInfoDTO> infoDTOs = new List<AuthInfoDTO>();
+        List<TLBytes> infos = new();
         var authorizations = _store.IterateBySecondaryIndexAsync("by_phone", phone);
-        if (authorizations == null) return infoDTOs;
         await foreach (var auth in authorizations)
         {
-            if (auth != null)
-            {
-                var info = MessagePackSerializer.Deserialize<AuthInfoDTO>(auth);
-                infoDTOs.Add(info);
-            }
+            infos.Add(new TLBytes(auth, 0, auth.Length));
         }
 
-        return infoDTOs;
+        return infos;
     }
 
     public bool DeleteAuthorization(long authKeyId)
@@ -94,24 +92,23 @@ public class AuthorizationRepository : IAuthorizationRepository
         return _store.Delete(authKeyId);
     }
 
-    public bool PutExportedAuthorization(ExportedAuthInfoDTO exportedInfo)
+    public bool PutExportedAuthorization(TLBytes exportedInfo)
     {
-        var exportedBytes = MessagePackSerializer.Serialize(exportedInfo);
-        return _storeExported.Put(exportedBytes, exportedInfo.UserId, exportedInfo.Data);
+        var exported = (ExportedAuthInfo)exportedInfo;
+        return _storeExported.Put(exportedInfo.AsSpan().ToArray(), exported.UserId, exported.Data.ToArray());
     }
 
-    public ExportedAuthInfoDTO? GetExportedAuthorization(long user_id, byte[] data)
+    public TLBytes? GetExportedAuthorization(long userId, byte[] data)
     {
-        var exportedBytes = _storeExported.Get(user_id, data);
-        var exportedInfo = MessagePackSerializer.Deserialize<ExportedAuthInfoDTO>(exportedBytes);
-        return exportedInfo;
-    }
-
-    public async ValueTask<ExportedAuthInfoDTO?> GetExportedAuthorizationAsync(long user_id, byte[] data)
-    {
-        var exportedBytes = await _storeExported.GetAsync(user_id, data);
+        var exportedBytes = _storeExported.Get(userId, data);
         if (exportedBytes == null) return null;
-        var exportedInfo = MessagePackSerializer.Deserialize<ExportedAuthInfoDTO>(exportedBytes);
-        return exportedInfo;
+        return new TLBytes(exportedBytes, 0 , exportedBytes.Length);
+    }
+
+    public async ValueTask<TLBytes?> GetExportedAuthorizationAsync(long userId, byte[] data)
+    {
+        var exportedBytes = await _storeExported.GetAsync(userId, data);
+        if (exportedBytes == null) return null;
+        return new TLBytes(exportedBytes, 0 , exportedBytes.Length);
     }
 }

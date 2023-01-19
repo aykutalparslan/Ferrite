@@ -110,7 +110,7 @@ public class MessagesService : IMessagesService
         InputPeerDTO peer, string message, long randomId, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var senderCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
@@ -129,7 +129,8 @@ public class MessagesService : IMessagesService
 
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
-            true, ErrorMessages.None);
+            true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<UpdateShortSentMessageDTO>> SendMedia(long authKeyId, bool silent, 
@@ -137,7 +138,7 @@ public class MessagesService : IMessagesService
         int? replyToMsgId, InputMediaDTO media, string message, long randomId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var senderCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
@@ -245,7 +246,8 @@ public class MessagesService : IMessagesService
 
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
-            true, ErrorMessages.None);
+            true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     private static void SetMediaPhoto(MessageDTO outgoingMessage, PhotoDTO photo)
@@ -261,7 +263,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
@@ -285,14 +287,15 @@ public class MessagesService : IMessagesService
                     , ptsCount), true, ErrorMessages.None);
         }
 
-        throw new NotSupportedException();
+        throw new NotSupportedException();*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<AffectedHistoryDTO>> DeleteHistory(long authKeyId, InputPeerDTO peer, 
         int maxId, int? minDate = null, int? maxDate = null,
         bool justClear = false, bool revoke = false)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
@@ -310,7 +313,8 @@ public class MessagesService : IMessagesService
                 ErrorMessages.None);
         }
 
-        throw new NotSupportedException();
+        throw new NotSupportedException();*/
+        throw new NotImplementedException();
     }
     private async Task<int> SaveMessage(IUpdatesContext senderCtx, AuthInfoDTO auth, MessageDTO outgoingMessage, PeerDTO from,
         PeerDTO to)
@@ -427,7 +431,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         foreach (var m in id)
         {
@@ -440,14 +444,15 @@ public class MessagesService : IMessagesService
         //TODO: add support for revoke
         
         return new ServiceResult<AffectedMessagesDTO>(new AffectedMessagesDTO(pts, 1), true,
-            ErrorMessages.None);
+            ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<DialogsDTO>> GetDialogs(long authKeyId, int offsetDate, int offsetId, 
         InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId);
         List<DialogDTO> userDialogs = new();
@@ -460,7 +465,8 @@ public class MessagesService : IMessagesService
         var dialogs = new DialogsDTO(DialogsType.Dialogs, userDialogs, 
             messages, Array.Empty<ChatDTO>(),
             userList.Values, null);
-        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
+        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     private async Task GenerateDialogs(long authKeyId, Dictionary<long, PeerDTO> peerList, IUpdatesContext userCtx, AuthInfoDTO auth,
@@ -524,7 +530,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<PeerDialogsDTO>> GetPeerDialogs(long authKeyId, IEnumerable<InputDialogPeerDTO> peers)
     {
-        var auth = _unitOfWork.AuthorizationRepository.GetAuthorization(authKeyId);
+        /*var auth = _unitOfWork.AuthorizationRepository.GetAuthorization(authKeyId);
         if (auth == null) return new ServiceResult<PeerDialogsDTO>(null, 
             false, ErrorMessages.InvalidAuthKey);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
@@ -565,7 +571,8 @@ public class MessagesService : IMessagesService
         var dialogs = new PeerDialogsDTO(userDialogs, 
             messageList, Array.Empty<ChatDTO>(),
             userList.Values, await _updates.GetState(authKeyId));
-        return new ServiceResult<PeerDialogsDTO>(dialogs, true, ErrorMessages.None);
+        return new ServiceResult<PeerDialogsDTO>(dialogs, true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     private async Task PopulateLists(Dictionary<long, UserDTO> userList, long userId, MessageDTO m, Dictionary<long, PeerDTO> peerList,
@@ -653,14 +660,14 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
     {
-        var peerDTO = PeerFromInputPeer(peer);
+        /*var peerDTO = PeerFromInputPeer(peer);
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (peerDTO.PeerType == PeerType.User)
         {
             var update = new UpdateUserTypingDTO(auth.UserId, action);
             _updates.EnqueueUpdate(peerDTO.PeerId, update);
             return new ServiceResult<bool>(true, true, ErrorMessages.None);
-        }
+        }*/
         throw new NotImplementedException();
     }
 

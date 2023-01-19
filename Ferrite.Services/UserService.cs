@@ -99,7 +99,7 @@ public class UserService : IUsersService
         if (constructor == Constructors.layer150_InputUserSelf)
         {
             var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-            userId = auth.UserId;
+            userId = ((AuthInfo)auth).UserId;
             self = true;
         }
         var user = await GetUserInternal(userId);

@@ -409,7 +409,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var hash = authorizations.authorizations[0].hash;
         var result = await client.Account_ResetAuthorization(authorizations.authorizations[1].hash);
         Assert.True(result);
-        authorizations = await client2.Account_GetAuthorizations();
+        authorizations = await client.Account_GetAuthorizations();
         Assert.Single(authorizations.authorizations);
         Assert.Equal(hash, authorizations.authorizations[0].hash);
     }

@@ -307,7 +307,7 @@ public class AccountService : IAccountService
     public async ValueTask<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth != null && _unitOfWork.UserRepository.GetUser(auth.UserId) is { } u )
+        if (auth != null && _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId) is { } u )
         {
             var user = ModifyUser(u, firstName, lastName);
             _unitOfWork.UserRepository.PutUser(user);
@@ -349,7 +349,7 @@ public class AccountService : IAccountService
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null)
         {
-            var result = _unitOfWork.UserStatusRepository.PutUserStatus(auth.UserId, status);
+            var result = _unitOfWork.UserStatusRepository.PutUserStatus(((AuthInfo)auth).UserId, status);
             return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
                 BoolFalse.Builder().Build().TLBytes!.Value;
         }
@@ -366,7 +366,7 @@ public class AccountService : IAccountService
         }
 
         using var reason = GetReportPeerParameters( q);
-        _unitOfWork.ReportReasonRepository.PutPeerReportReason(auth.UserId, reason.PeerType, reason.PeerId, reason.Reason);
+        _unitOfWork.ReportReasonRepository.PutPeerReportReason(((AuthInfo)auth).UserId, reason.PeerType, reason.PeerId, reason.Reason);
         var result = await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
@@ -421,7 +421,7 @@ public class AccountService : IAccountService
         var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user == null)
         {
-            _unitOfWork.UserRepository.UpdateUsername(auth.UserId, username);
+            _unitOfWork.UserRepository.UpdateUsername(((AuthInfo)auth).UserId, username);
         }
         else
         {
@@ -429,7 +429,7 @@ public class AccountService : IAccountService
         }
 
         await _unitOfWork.SaveAsync();
-        user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+        user = _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId);
         if(user == null) return RpcErrorGenerator.GenerateError(400, "USERNAME_NOT_MODIFIED"u8);
         var userInfo = GetUserInfo(user.Value);
         await _search.IndexUser(new Data.Search.UserSearchModel(userInfo.UserId,
@@ -447,15 +447,15 @@ public class AccountService : IAccountService
         
         int keyConstructor = MemoryMarshal.Read<int>(((SetPrivacy)q).Key);
         var key = GetPrivacyKey(keyConstructor);
-        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(auth.UserId, 
+        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(((AuthInfo)auth).UserId, 
             key, ToPrivacyRuleVector(((SetPrivacy)q).Rules));
         await _unitOfWork.SaveAsync();
-        return await GetPrivacyRulesInternal(auth, key);
+        return await GetPrivacyRulesInternal(auth.Value, key);
     }
 
-    private async Task<TLBytes> GetPrivacyRulesInternal(AuthInfoDTO auth, InputPrivacyKey key)
+    private async Task<TLBytes> GetPrivacyRulesInternal(TLBytes auth, InputPrivacyKey key)
     {
-        var savedRules = await _unitOfWork.PrivacyRulesRepository.GetPrivacyRulesAsync(auth.UserId, key);
+        var savedRules = await _unitOfWork.PrivacyRulesRepository.GetPrivacyRulesAsync(((AuthInfo)auth).UserId, key);
         List<TLBytes> users = new();
         foreach (var id in GetUserIds(savedRules))
         {
@@ -627,25 +627,28 @@ public class AccountService : IAccountService
         
         int keyConstructor = MemoryMarshal.Read<int>(((GetPrivacy)q).Key);
         var key = GetPrivacyKey(keyConstructor);
-        return await GetPrivacyRulesInternal(auth, key);
+        return await GetPrivacyRulesInternal(auth.Value, key);
     }
 
     public async ValueTask<TLBytes> DeleteAccount(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
-        var user = _unitOfWork.UserRepository.GetUser(auth.UserId);
+        var authorizations = await _unitOfWork
+            .AuthorizationRepository
+            .GetAuthorizationsAsync(Encoding.UTF8.GetString(((AuthInfo)auth).Phone));
+        var user = _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId);
         if(user == null) return BoolFalse.Builder().Build().TLBytes!.Value;
 
         foreach (var a in authorizations)
         {
-            _unitOfWork.AuthorizationRepository.DeleteAuthorization(a.AuthKeyId);
-            var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(a.AuthKeyId);
+            var keyId = ((AuthInfo)a).AuthKeyId;
+            _unitOfWork.AuthorizationRepository.DeleteAuthorization(keyId);
+            var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(keyId);
             if (device != null)
             {
-                _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(a.AuthKeyId, device.Token, device.OtherUserIds);
+                _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(keyId, device.Token, device.OtherUserIds);
             }
-            _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(a.AuthKeyId);
+            _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(keyId);
             await _unitOfWork.SaveAsync();
         }
 
@@ -665,7 +668,7 @@ public class AccountService : IAccountService
             return BoolFalse.Builder().Build().TLBytes!.Value;
         }
 
-        _unitOfWork.UserRepository.UpdateAccountTtl(auth.UserId, accountDaysTtl);
+        _unitOfWork.UserRepository.UpdateAccountTtl(((AuthInfo)auth).UserId, accountDaysTtl);
         var result = await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
@@ -679,14 +682,14 @@ public class AccountService : IAccountService
             return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
 
-        var ttlDays = _unitOfWork.UserRepository.GetAccountTtl(auth.UserId);
+        var ttlDays = _unitOfWork.UserRepository.GetAccountTtl(((AuthInfo)auth).UserId);
         return AccountDaysTTL.Builder().Days(ttlDays).Build().TLBytes!.Value;
     }
 
     public async ValueTask<TLBytes> SendChangePhoneCode(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
+        if (DateTime.Now - DateTimeOffset.FromUnixTimeSeconds(((AuthInfo)auth).LoggedInAt) < new TimeSpan(1, 0, 0))
         {
             return RpcErrorGenerator.GenerateError(406, "FRESH_CHANGE_PHONE_FORBIDDEN"u8);
         }
@@ -734,12 +737,16 @@ public class AccountService : IAccountService
             return RpcErrorGenerator.GenerateError(400, "PHONE_NUMBER_OCCUPIED"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
+        var authorizations = await _unitOfWork
+            .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(((AuthInfo)auth).Phone));
         foreach (var authorization in authorizations)
         {
-            _unitOfWork.AuthorizationRepository.PutAuthorization(authorization with { Phone = phoneNumber });
+            _unitOfWork.AuthorizationRepository.PutAuthorization(((AuthInfo)authorization)
+                .Clone()
+                .Phone(Encoding.UTF8.GetBytes(phoneNumber))
+                .Build().TLBytes!.Value);
         }
-        _unitOfWork.UserRepository.UpdateUserPhone(auth.UserId, phoneNumber);
+        _unitOfWork.UserRepository.UpdateUserPhone(((AuthInfo)auth).UserId, phoneNumber);
         await _unitOfWork.SaveAsync();
         user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         await _unitOfWork.SaveAsync();
@@ -757,16 +764,17 @@ public class AccountService : IAccountService
     public async ValueTask<TLBytes> GetAuthorizations(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
+        var authorizations = await _unitOfWork
+            .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(((AuthInfo)auth).Phone));
         List<TLBytes> infos = new();
         foreach (var a in authorizations)
         {
-            if(!a.LoggedIn) continue;
-            var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId);
+            if(!((AuthInfo)a).LoggedIn) continue;
+            var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(((AuthInfo)a).AuthKeyId);
             if (authorization != null) infos.Add(authorization.Value);
         }
 
-        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(auth.UserId), infos);
+        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(((AuthInfo)auth).UserId), infos);
     }
 
     private TLBytes GenerateAuthorizations(int ttl, List<TLBytes> infos)
@@ -805,7 +813,7 @@ public class AccountService : IAccountService
             return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (DateTime.Now - auth.LoggedInAt < new TimeSpan(1, 0, 0))
+        if (DateTime.Now - DateTimeOffset.FromUnixTimeSeconds(((AuthInfo)auth).LoggedInAt) < new TimeSpan(1, 0, 0))
         {
             return RpcErrorGenerator.GenerateError(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN"u8);
         }
@@ -815,7 +823,7 @@ public class AccountService : IAccountService
             return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
 
-        _unitOfWork.AuthorizationRepository.DeleteAuthorization(info.AuthKeyId);
+        _unitOfWork.AuthorizationRepository.DeleteAuthorization(sessAuthKeyId.Value);
         var result = await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
@@ -824,7 +832,7 @@ public class AccountService : IAccountService
     public async ValueTask<TLBytes> SetContactSignUpNotification(long authKeyId, bool silent)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(auth.UserId, silent);
+        _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(((AuthInfo)auth).UserId, silent);
         var result = await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
@@ -833,7 +841,7 @@ public class AccountService : IAccountService
     public async ValueTask<TLBytes> GetContactSignUpNotification(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var result = !_unitOfWork.SignUpNotificationRepository.GetSignUpNotification(auth.UserId);
+        var result = !_unitOfWork.SignUpNotificationRepository.GetSignUpNotification(((AuthInfo)auth).UserId);
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
     }

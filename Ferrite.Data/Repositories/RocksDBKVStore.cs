@@ -179,10 +179,14 @@ public class RocksDBKVStore : IKVStore
         return _context.Iterate(key.ArrayValue).FirstOrDefault();
     }
 
-    public ValueTask<byte[]?> GetAsync(params object[] keys)
+    public async ValueTask<byte[]?> GetAsync(params object[] keys)
     {
         var key = MemcomparableKey.Create(_table.FullName, keys);
-        return new ValueTask<byte[]?>(_context.Get(key.Value));
+        if (keys.Length == _table.PrimaryKey.Columns.Count)
+        {
+            return _context.Get(key.Value);
+        }
+        return _context.Iterate(key.ArrayValue).FirstOrDefault();
     }
 
     public byte[]? GetBySecondaryIndex(string indexName, params object[] keys)

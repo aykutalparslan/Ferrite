@@ -95,19 +95,20 @@ public class ContactsService : IContactsService
 
     public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUserDTO> id)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var c in id)
         {
             _unitOfWork.ContactsRepository.DeleteContact(auth.UserId, c.UserId);
         }
 
         await _unitOfWork.SaveAsync();
-        return null;
+        return null;*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> DeleteByPhones(long authKeyId, ICollection<string> phones)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var p in phones)
         {
             var userId = _unitOfWork.UserRepository.GetUserId(p);
@@ -118,7 +119,8 @@ public class ContactsService : IContactsService
             }
         }
 
-        return true;
+        return true;*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> Block(long authKeyId, InputUserDTO id)
@@ -128,7 +130,7 @@ public class ContactsService : IContactsService
 
     public async Task<bool> Block(long authKeyId, InputPeerDTO id)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
             _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.ChannelId, PeerType.Channel);
@@ -142,12 +144,13 @@ public class ContactsService : IContactsService
             _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.ChatId, PeerType.Chat);
         }
 
-        return await _unitOfWork.SaveAsync();
+        return await _unitOfWork.SaveAsync();*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> Unblock(long authKeyId, InputPeerDTO id)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
         {
             _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.ChannelId, PeerType.Channel);
@@ -161,7 +164,8 @@ public class ContactsService : IContactsService
             _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.ChatId, PeerType.Chat);
         }
 
-        return await _unitOfWork.SaveAsync();
+        return await _unitOfWork.SaveAsync();*/
+        throw new NotImplementedException();
     }
 
     public async Task<BlockedDTO> GetBlocked(long authKeyId, int offset, int limit)
@@ -234,16 +238,18 @@ public class ContactsService : IContactsService
 
     public async Task<bool> ResetSaved(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.ContactsRepository.DeleteContacts(auth.UserId);
-        return await _unitOfWork.SaveAsync();
+        return await _unitOfWork.SaveAsync();*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<ICollection<SavedContactDTO>>> GetSaved(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         return new ServiceResult<ICollection<SavedContactDTO>>(_unitOfWork.ContactsRepository.GetSavedContacts(auth.UserId),
-                true, ErrorMessages.None);
+                true, ErrorMessages.None);*/
+        throw new NotImplementedException();
     }
 
     public async Task<bool> ToggleTopPeers(long authKeyId, bool enabled)

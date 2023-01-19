@@ -48,11 +48,12 @@ public class UpdatesService : IUpdatesService
 
     public async Task<StateDTO> GetState(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         StateDTO state = await GetStateInternal(updatesCtx);
         _log.Debug($"/// State is {state} ///");
-        return state;
+        return state;*/
+        throw new NotImplementedException();
     }
 
     private async Task<StateDTO> GetStateInternal(IUpdatesContext updatesCtx)
@@ -167,9 +168,10 @@ public class UpdatesService : IUpdatesService
 
     public async Task<int> IncrementUpdatesSequence(long authKeyId)
     {
-        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
-        return await updatesCtx.IncrementSeq();
+        return await updatesCtx.IncrementSeq();*/
+        throw new NotImplementedException();
     }
 }
 
