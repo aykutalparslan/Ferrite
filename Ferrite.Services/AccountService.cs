@@ -128,15 +128,7 @@ public class AccountService : IAccountService
     public async ValueTask<TLBytes> UpdateNotifySettings(long authKeyId, TLBytes q)
     {
         var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
-        DeviceType deviceType = DeviceType.Other;
-        if (info != null && info.LangPack.ToLower().Contains("android"))
-        {
-            deviceType = DeviceType.Android;
-        }
-        else if (info != null && info.LangPack.ToLower().Contains("ios"))
-        {
-            deviceType = DeviceType.iOS;
-        }
+        DeviceType deviceType = GetDeviceType(info);
         using var notifySettingsParameters = GetUpdateNotifySettingsParameters(deviceType, q);
         _unitOfWork.NotifySettingsRepository.PutNotifySettings(authKeyId, 
             notifySettingsParameters.NotifyPeerType, 
@@ -146,6 +138,24 @@ public class AccountService : IAccountService
         var result = await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
+    }
+
+    private DeviceType GetDeviceType(TLBytes? info)
+    {
+        DeviceType deviceType = DeviceType.Other;
+        var langPack = info != null 
+            ? Encoding.UTF8.GetString(((AppInfo)info).LangPack).ToLower()
+            : "";
+        if (langPack.Contains("android"))
+        {
+            deviceType = DeviceType.Android;
+        }
+        else if (langPack.Contains("ios"))
+        {
+            deviceType = DeviceType.iOS;
+        }
+
+        return deviceType;
     }
 
     private readonly record struct UpdateNotifySettingsParameters(int NotifyPeerType, int PeerType, long PeerId,
@@ -274,15 +284,7 @@ public class AccountService : IAccountService
         (var peerId, InputNotifyPeerType notifyPeerType, InputPeerType peerType) = 
             GetNotifyPeerInfo(new GetNotifySettings(q.AsSpan()).Peer);
         var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
-        DeviceType deviceType = DeviceType.Other;
-        if (info != null && info.LangPack.ToLower().Contains("android"))
-        {
-            deviceType = DeviceType.Android;
-        }
-        else if (info != null && info.LangPack.ToLower().Contains("ios"))
-        {
-            deviceType = DeviceType.iOS;
-        }
+        DeviceType deviceType = GetDeviceType(info);
 
         var settings = _unitOfWork
             .NotifySettingsRepository.GetNotifySettings(authKeyId, 
@@ -756,33 +758,34 @@ public class AccountService : IAccountService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(auth.Phone);
-        List<AppInfoDTO> auths = new();
+        List<TLBytes> infos = new();
         foreach (var a in authorizations)
         {
             if(!a.LoggedIn) continue;
             var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(a.AuthKeyId);
-            if (authorization != null) auths.Add(authorization);
+            if (authorization != null) infos.Add(authorization.Value);
         }
 
-        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(auth.UserId), auths);
+        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(auth.UserId), infos);
     }
 
-    private TLBytes GenerateAuthorizations(int ttl, List<AppInfoDTO> auths)
+    private TLBytes GenerateAuthorizations(int ttl, List<TLBytes> infos)
     {
         Vector authVector = new();
-        foreach (var a in auths)
+        foreach (var info in infos)
         {
+            var a = (AppInfo)info;
             var auth = Authorization.Builder()
                 .Hash(a.Hash)
-                .DeviceModel(Encoding.UTF8.GetBytes(a.DeviceModel))
+                .DeviceModel(a.DeviceModel)
                 .Platform("Unknown"u8)
-                .SystemVersion(Encoding.UTF8.GetBytes(a.SystemVersion))
+                .SystemVersion(a.SystemVersion)
                 .ApiId(a.ApiId)
                 .AppName("Unknown"u8)
-                .AppVersion(Encoding.UTF8.GetBytes(a.AppVersion))
+                .AppVersion(a.AppVersion)
                 .DateCreated((int)DateTimeOffset.Now.ToUnixTimeSeconds())
                 .DateActive((int)DateTimeOffset.Now.ToUnixTimeSeconds())
-                .Ip(Encoding.UTF8.GetBytes(a.IP))
+                .Ip(a.Ip)
                 .Country("Turkey"u8)
                 .Region("Unknown"u8)
                 .Build();
@@ -844,13 +847,15 @@ public class AccountService : IAccountService
             return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
         var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
-        var success = _unitOfWork.AppInfoRepository.PutAppInfo(info with
-        {
-            EncryptedRequestsDisabled = encryptedRequestsDisabled,
-            CallRequestsDisabled = callRequestsDisabled
-        });
-        var result = await _unitOfWork.SaveAsync();
+        if (info == null) return BoolFalse.Builder().Build().TLBytes!.Value;
+        var infoModified = ((AppInfo)info).Clone()
+            .EncryptedRequestsDisabled(encryptedRequestsDisabled)
+            .CallRequestsDisabled(callRequestsDisabled)
+            .Build().TLBytes!.Value;
+        var success = _unitOfWork.AppInfoRepository.PutAppInfo(infoModified);
+        var result = success && await _unitOfWork.SaveAsync();
         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
             BoolFalse.Builder().Build().TLBytes!.Value;
+
     }
 }

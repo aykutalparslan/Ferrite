@@ -23,6 +23,7 @@ using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 
 namespace Ferrite.Core.Execution.Functions.BaseLayer;
 
@@ -55,21 +56,20 @@ public class InitConnectionFunc : ITLFunction
         return query;
     }
 
-    private AppInfoDTO CreateAppInfo(TLBytes q, TLExecutionContext ctx)
+    private TLBytes CreateAppInfo(TLBytes q, TLExecutionContext ctx)
     {
-        TL.slim.layer150.InitConnection request = new(q.AsSpan());
-        return new AppInfoDTO()
-        {
-            Hash = _random.NextLong(),
-            ApiId = request.ApiId,
-            AppVersion = Encoding.UTF8.GetString(request.AppVersion),
-            AuthKeyId = ctx.CurrentAuthKeyId,
-            DeviceModel = Encoding.UTF8.GetString(request.DeviceModel),
-            IP = ctx.IP,
-            LangCode = Encoding.UTF8.GetString(request.LangCode),
-            LangPack = Encoding.UTF8.GetString(request.LangPack),
-            SystemLangCode = Encoding.UTF8.GetString(request.LangCode),
-            SystemVersion = Encoding.UTF8.GetString(request.SystemVersion),
-        };
+        var request = (TL.slim.layer150.InitConnection)q;
+        return AppInfo.Builder()
+            .Hash(_random.NextLong())
+            .ApiId(request.ApiId)
+            .AppVersion(request.AppVersion)
+            .AuthKeyId(ctx.CurrentAuthKeyId)
+            .DeviceModel(request.DeviceModel)
+            .Ip(Encoding.UTF8.GetBytes(ctx.IP))
+            .LangCode(request.LangCode)
+            .LangPack(request.LangPack)
+            .SystemLangCode(request.LangCode)
+            .SystemVersion(request.SystemVersion)
+            .Build().TLBytes!.Value;
     }
 }

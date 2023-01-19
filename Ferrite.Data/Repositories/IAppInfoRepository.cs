@@ -16,12 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IAppInfoRepository
 {
-    public bool PutAppInfo(AppInfoDTO appInfo);
-    public AppInfoDTO? GetAppInfo(long authKeyId);
-    public AppInfoDTO? GetAppInfoByAppHash(long hash);
+    public bool PutAppInfo(TLBytes appInfo);
+    public TLBytes? GetAppInfo(long authKeyId);
+    public TLBytes? GetAppInfoByAppHash(long hash);
     public long? GetAuthKeyIdByAppHash(long hash);
 }

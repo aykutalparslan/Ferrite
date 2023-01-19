@@ -201,7 +201,7 @@ public class InitConnection : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        _ = _auth.SaveAppInfo(new Data.AppInfoDTO()
+        /*_ = _auth.SaveAppInfo(new Data.AppInfoDTO()
         {
             Hash = _random.NextLong(),
             ApiId = _apiId,
@@ -213,7 +213,7 @@ public class InitConnection : ITLObject, ITLMethod
             LangPack = _langPack,
             SystemLangCode = _systemLangCode,
             SystemVersion = _systemVersion
-        });
+        });*/
         //if ((int)ctx.SessionData["layer"] != 139)
         //{
         //    var err = factory.Resolve<RpcError>();

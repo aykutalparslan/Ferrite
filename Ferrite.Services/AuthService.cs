@@ -55,7 +55,7 @@ public class AuthService : IAuthService
         _log = log;
     }
 
-    public async Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token)
+    public async Task<TLBytes?> AcceptLoginToken(long authKeyId, byte[] token)
     {
         var t = _unitOfWork.LoginTokenRepository.GetLoginToken(token);
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
@@ -574,16 +574,14 @@ public class AuthService : IAuthService
         return user.TLBytes!.Value;
     }
 
-    public async ValueTask<bool> SaveAppInfo(AppInfoDTO info)
+    public async ValueTask<bool> SaveAppInfo(TLBytes info)
     {
         _unitOfWork.AppInfoRepository.PutAppInfo(info);
-        _log.Debug($"=== Save App Info for authKey with Id: {info.AuthKeyId}");
         return await _unitOfWork.SaveAsync();
     }
 
-    public async ValueTask<AppInfoDTO?> GetAppInfo(long authKeyId)
+    public async ValueTask<TLBytes?> GetAppInfo(long authKeyId)
     {
-        _log.Debug($"=== Get App Info for authKey with Id: {authKeyId}");
         return _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
     }
 }

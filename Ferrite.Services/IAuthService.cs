@@ -25,8 +25,8 @@ namespace Ferrite.Services;
 
 public interface IAuthService
 {
-    public ValueTask<bool> SaveAppInfo(AppInfoDTO info);
-    public ValueTask<AppInfoDTO?> GetAppInfo(long authKeyId);
+    public ValueTask<bool> SaveAppInfo(TLBytes info);
+    public ValueTask<TLBytes?> GetAppInfo(long authKeyId);
     public ValueTask<bool> IsAuthorized(long authKeyId);
     public ValueTask<TLBytes> SendCode(TLBytes q);
     public ValueTask<TLBytes> SignUp(long authKeyId, TLBytes q);
@@ -45,7 +45,7 @@ public interface IAuthService
     public ValueTask<TLBytes> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
     public ValueTask<TLBytes> ExportLoginToken(long authKeyId, long sessionId, TLBytes q);
     public Task<LoginTokenDTO> ImportLoginToken(byte[] token);
-    public Task<AppInfoDTO?> AcceptLoginToken(long authKeyId, byte[] token);
+    public Task<TLBytes?> AcceptLoginToken(long authKeyId, byte[] token);
     public Task<bool> CheckRecoveryPassword(string code);
 }
 

@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -34,30 +36,29 @@ public class AppInfoRepository : IAppInfoRepository
             new KeyDefinition("by_hash",
                 new DataColumn { Name = "hash", Type = DataType.Long })));
     }
-    public bool PutAppInfo(AppInfoDTO appInfo)
+    public bool PutAppInfo(TLBytes appInfo)
     {
-        var appInfoBytes = MessagePackSerializer.Serialize(appInfo);
-        _store.Put(appInfoBytes, appInfo.AuthKeyId, appInfo.Hash);
+        var info = (AppInfo)appInfo;
+        _store.Put(appInfo.AsSpan().ToArray(), info.AuthKeyId, info.Hash);
         return true;
     }
 
-    public AppInfoDTO? GetAppInfo(long authKeyId)
+    public TLBytes? GetAppInfo(long authKeyId)
     {
         var appInfoBytes = _store.Get(authKeyId);
-        return appInfoBytes != null ? MessagePackSerializer.Deserialize<AppInfoDTO>(appInfoBytes) : null;
+        return appInfoBytes != null ? new TLBytes(appInfoBytes, 0, appInfoBytes.Length) : null;
     }
 
-    public AppInfoDTO? GetAppInfoByAppHash(long hash)
+    public TLBytes? GetAppInfoByAppHash(long hash)
     {
         var appInfoBytes = _store.GetBySecondaryIndex("by_hash", hash);
-        return appInfoBytes != null ? MessagePackSerializer.Deserialize<AppInfoDTO>(appInfoBytes) : null;
+        return appInfoBytes != null ? new TLBytes(appInfoBytes, 0, appInfoBytes.Length) : null;
     }
 
     public long? GetAuthKeyIdByAppHash(long hash)
     {
         var appInfoBytes = _store.GetBySecondaryIndex("by_hash", hash);
         if (appInfoBytes == null) return null;
-        var info = MessagePackSerializer.Deserialize<AppInfoDTO>(appInfoBytes);
-        return info.AuthKeyId;
+        return ((AppInfo)appInfoBytes.AsSpan()).AuthKeyId;
     }
 }

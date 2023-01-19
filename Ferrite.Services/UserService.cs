@@ -22,6 +22,7 @@ using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Users;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.users;
 using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
@@ -189,14 +190,16 @@ public class UserService : IUsersService
     private DeviceType GetDeviceType(long authKeyId)
     {
         DeviceType deviceType = DeviceType.Other;
-        var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
-        if (info != null)
+        var infoBytes = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
+        if (infoBytes != null)
         {
-            if (info.LangPack.ToLower().Contains("android"))
+            var info = (AppInfo)infoBytes!;
+            var langPack = Encoding.UTF8.GetString(info.LangPack).ToLower();
+            if (langPack.Contains("android"))
             {
                 deviceType = DeviceType.Android;
             }
-            else if (info.LangPack.ToLower().Contains("ios"))
+            else if (langPack.Contains("ios"))
             {
                 deviceType = DeviceType.iOS;
             }
