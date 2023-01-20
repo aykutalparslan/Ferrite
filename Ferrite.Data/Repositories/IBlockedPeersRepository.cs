@@ -16,11 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IBlockedPeersRepository
 {
-    public bool PutBlockedPeer(long userId, long peerId, PeerType peerType);
+    public bool PutBlockedPeer(long userId, long peerId, PeerType peerType, DateTimeOffset date);
     public bool DeleteBlockedPeer(long userId, long peerId, PeerType peerType);
-    public ICollection<PeerBlocked> GetBlockedPeers(long userId);
+    public IReadOnlyList<TLBytes> GetBlockedPeers(long userId);
 }

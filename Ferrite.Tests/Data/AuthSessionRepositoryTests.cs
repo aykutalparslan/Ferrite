@@ -87,7 +87,6 @@ public class AuthSessionRepositoryTests
     public void PutsAndGets_AuthSession()
     {
         string path = "test-" + Random.Shared.Next();
-        var ctx = new RocksDBContext(path);
         var repo = new AuthSessionRepository(new InMemoryStore());
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);
@@ -101,7 +100,6 @@ public class AuthSessionRepositoryTests
     public void PutsAndRemoves_AuthSession()
     {
         string path = "test-" + Random.Shared.Next();
-        var ctx = new RocksDBContext(path);
         var repo = new AuthSessionRepository(new InMemoryStore());
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);

@@ -16,6 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -29,14 +31,17 @@ public class BlockedPeersRepository : IBlockedPeersRepository
         store.SetSchema(new TableDefinition("ferrite", "blocked_peers",
             new KeyDefinition("pk",
                 new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "peer_id", Type = DataType.Long },
                 new DataColumn { Name = "peer_type", Type = DataType.Int })));
     }
-    public bool PutBlockedPeer(long userId, long peerId, PeerType peerType)
+    public bool PutBlockedPeer(long userId, long peerId, PeerType peerType, DateTimeOffset date)
     {
-        PeerBlocked peerBlocked = new PeerBlocked(new PeerDTO(peerType, peerId), 
-            (int)DateTimeOffset.Now.ToUnixTimeSeconds());
-        var peerBlockedBytes = MessagePackSerializer.Serialize(peerBlocked);
-        return _store.Put(peerBlockedBytes, userId, peerId, (int)peerType);
+        var blockedBytes = BlockedPeer.Builder()
+            .PeerType((int)peerType)
+            .PeerId(peerId)
+            .Date((int)date.ToUnixTimeSeconds())
+            .Build().TLBytes!.Value;
+        return _store.Put(blockedBytes.AsSpan().ToArray(), userId, peerId, (int)peerType);
     }
 
     public bool DeleteBlockedPeer(long userId, long peerId, PeerType peerType)
@@ -44,14 +49,13 @@ public class BlockedPeersRepository : IBlockedPeersRepository
         return _store.Delete(userId, peerId, (int)peerType);
     }
 
-    public ICollection<PeerBlocked> GetBlockedPeers(long userId)
+    public IReadOnlyList<TLBytes> GetBlockedPeers(long userId)
     {
-        List<PeerBlocked> blockedPeers = new();
+        List<TLBytes> blockedPeers = new();
         var iter = _store.Iterate(userId);
         foreach (var peerBlockedBytes in iter)
         {
-            var peerBlocked = MessagePackSerializer.Deserialize<PeerBlocked>(peerBlockedBytes);
-            blockedPeers.Add(peerBlocked);
+            blockedPeers.Add(new TLBytes(peerBlockedBytes, 0 , peerBlockedBytes.Length));
         }
 
         return blockedPeers;
