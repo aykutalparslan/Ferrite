@@ -20,16 +20,16 @@ using FASTER.core;
 
 namespace Ferrite.Data;
 
-public class FasterContext<Tkey, TValue> : IAsyncDisposable
+public class FasterContext<TKey, TValue> : IAsyncDisposable
 {
-    public FasterKV<Tkey, TValue> Store { get; }
+    public FasterKV<TKey, TValue> Store { get; }
     private bool _disposed = false;
     private readonly Task? _checkpointHybrid;
     private readonly Task? _checkpointFull;
     
     public FasterContext()
     {
-        Store = new FasterKV<Tkey, TValue>(new FasterKVSettings<Tkey, TValue>(null)
+        Store = new FasterKV<TKey, TValue>(new FasterKVSettings<TKey, TValue>(null)
         {
             TryRecoverLatest = true,
             RemoveOutdatedCheckpoints = true,
@@ -39,7 +39,7 @@ public class FasterContext<Tkey, TValue> : IAsyncDisposable
     }
     public FasterContext(string path)
     {
-        Store = new FasterKV<Tkey, TValue>(new FasterKVSettings<Tkey, TValue>(path, deleteDirOnDispose: false)
+        Store = new FasterKV<TKey, TValue>(new FasterKVSettings<TKey, TValue>(path, deleteDirOnDispose: false)
         {
             TryRecoverLatest = true,
             RemoveOutdatedCheckpoints = true,
@@ -71,5 +71,6 @@ public class FasterContext<Tkey, TValue> : IAsyncDisposable
         _disposed = true;
         await _checkpointHybrid;
         await _checkpointFull;
+        Store.Dispose();
     }
 }

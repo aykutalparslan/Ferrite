@@ -105,5 +105,6 @@ public class FasterCounter : IAtomicCounter
     {
         _disposed = true;
         await _session.WaitForCommitAsync();
+        await _context.DisposeAsync();
     }
 }

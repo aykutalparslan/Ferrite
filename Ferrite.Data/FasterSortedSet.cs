@@ -20,7 +20,7 @@ using FASTER.core;
 
 namespace Ferrite.Data;
 
-public class FasterSortedSet<T> where T: IComparable<T>
+public class FasterSortedSet<T> :IAsyncDisposable where T: IComparable<T>
 {
     private readonly FasterContext<string, SortedSet<T>> _context;
     private readonly string _name;
@@ -114,5 +114,10 @@ public class FasterSortedSet<T> where T: IComparable<T>
         public override bool CopyUpdater(ref Key key, ref Input input, ref Value oldValue, ref Value newValue, ref Value output, ref RMWInfo rmwInfo) { output = newValue = merger(oldValue, input); return true; }
         /// <inheritdoc/>
         public override bool InPlaceUpdater(ref Key key, ref Input input, ref Value value, ref Value output, ref RMWInfo rmwInfo) { output = value = merger(value, input); return true; }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _context.DisposeAsync();
     }
 }

@@ -18,7 +18,7 @@
 
 namespace Ferrite.Data;
 
-public class FasterSecretMessageBox : ISecretMessageBox
+public class FasterSecretMessageBox : ISecretMessageBox, IAsyncDisposable
 {
     private readonly IAtomicCounter _counter;
     private readonly long _authKeyId;
@@ -40,5 +40,10 @@ public class FasterSecretMessageBox : ISecretMessageBox
             qts = (int)await _counter.IncrementAndGet();
         }
         return qts;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _counter.DisposeAsync();
     }
 }

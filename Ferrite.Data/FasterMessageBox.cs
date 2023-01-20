@@ -18,7 +18,7 @@
 
 namespace Ferrite.Data;
 
-public class FasterMessageBox : IMessageBox
+public class FasterMessageBox : IMessageBox, IAsyncDisposable
 {
     private readonly IAtomicCounter _ptsCounter;
     private readonly IAtomicCounter _messageIdCounter;
@@ -114,5 +114,12 @@ public class FasterMessageBox : IMessageBox
             pts = (int)await _ptsCounter.IncrementAndGet();
         }
         return pts;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _unreadContext.DisposeAsync();
+        await _dialogs.DisposeAsync();
+        await _counterContext.DisposeAsync();
     }
 }
