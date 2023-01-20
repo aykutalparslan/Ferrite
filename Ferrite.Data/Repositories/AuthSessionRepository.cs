@@ -34,7 +34,7 @@ public class AuthSessionRepository : IAuthSessionRepository
         return true;
     }
 
-    public byte[] GetAuthKeySession(byte[] nonce)
+    public byte[]? GetAuthKeySession(byte[] nonce)
     {
         return _store.Get(nonce);
     }

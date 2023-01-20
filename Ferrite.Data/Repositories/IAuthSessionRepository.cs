@@ -21,6 +21,6 @@ namespace Ferrite.Data.Repositories;
 public interface IAuthSessionRepository
 {
     public bool PutAuthKeySession(byte[] nonce, byte[] sessionData);
-    public byte[] GetAuthKeySession(byte[] nonce);
+    public byte[]? GetAuthKeySession(byte[] nonce);
     public bool RemoveAuthKeySession(byte[] nonce);
 }
