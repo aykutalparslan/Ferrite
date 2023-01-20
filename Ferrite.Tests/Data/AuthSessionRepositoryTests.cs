@@ -26,7 +26,7 @@ namespace Ferrite.Tests.Data;
 public class AuthSessionRepositoryTests
 {
     [Fact]
-    public void Puts_AuthKeySession()
+    public void Puts_AuthSession()
     {
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);
@@ -40,7 +40,7 @@ public class AuthSessionRepositoryTests
     }
     
     [Fact]
-    public void Removes_AuthKeySession()
+    public void Removes_AuthSession()
     {
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);
@@ -54,7 +54,7 @@ public class AuthSessionRepositoryTests
     }
     
     [Fact]
-    public void Gets_AuthKeySession()
+    public void Gets_AuthSession()
     {
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);
@@ -86,20 +86,17 @@ public class AuthSessionRepositoryTests
     [Fact]
     public void PutsAndGets_AuthSession()
     {
-        string path = "test-" + Random.Shared.Next();
         var repo = new AuthSessionRepository(new InMemoryStore());
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);
         repo.PutAuthKeySession(nonce, sessionData);
         var sess = repo.GetAuthKeySession(nonce);
         Assert.Equal(sessionData, sess);
-        Util.DeleteDirectory(path);
     }
     
     [Fact]
     public void PutsAndRemoves_AuthSession()
     {
-        string path = "test-" + Random.Shared.Next();
         var repo = new AuthSessionRepository(new InMemoryStore());
         var sessionData = RandomNumberGenerator.GetBytes(128);
         var nonce = RandomNumberGenerator.GetBytes(16);
@@ -107,6 +104,5 @@ public class AuthSessionRepositoryTests
         repo.RemoveAuthKeySession(nonce);
         var sess = repo.GetAuthKeySession(nonce);
         Assert.Null(sess);
-        Util.DeleteDirectory(path);
     }
 }
