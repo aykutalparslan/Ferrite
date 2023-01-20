@@ -21,7 +21,7 @@ using DotNext.Collections.Generic;
 
 namespace Ferrite.Data.Repositories;
 
-public class RocksDBKVStore : IKVStore
+public class RocksDBKVStore : IKVStore, IDisposable
 {
     private TableDefinition _table;
     private readonly RocksDBContext _context;
@@ -241,5 +241,10 @@ public class RocksDBKVStore : IKVStore
         {
             yield return _context.Get(primaryKey);
         }
+    }
+
+    public void Dispose()
+    {
+        _context.Dispose();
     }
 }
