@@ -45,8 +45,8 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
         _storeTemp.Put(BitConverter.GetBytes(authKeyId), expiresIn, tempAuthKeyId);
         // each auth key can be bound to a single temp auth key at any given time
         _storeAuth.Put(BitConverter.GetBytes(tempAuthKeyId), expiresIn, authKeyId);
-        // we need to retrieve a list of keys bound to an auth key in the given timeframe
-        _storeBound.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds(),
+        // we need to retrieve a list of keys that was bound to an auth key in the given timeframe
+        _storeBound.ListAdd(DateTimeOffset.Now.ToUnixTimeMilliseconds() + (long)expiresIn.TotalMilliseconds,
             BitConverter.GetBytes(tempAuthKeyId), expiresIn, authKeyId);
         return true;
     }
@@ -93,9 +93,9 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
         return null;
     }
 
-    public IReadOnlyCollection<long> GetTempAuthKeys(long authKeyId)
+    public IReadOnlyList<long> GetTempAuthKeys(long authKeyId)
     {
-        _storeBound.ListDeleteByScore(DateTimeOffset.Now.ToUnixTimeMilliseconds(), authKeyId);
+        //_storeBound.ListDeleteByScore(DateTimeOffset.Now.ToUnixTimeMilliseconds(), authKeyId);
         var queryResult = _storeBound.ListGet(authKeyId);
         List<long> result = new List<long>();
         foreach (var v in queryResult)
