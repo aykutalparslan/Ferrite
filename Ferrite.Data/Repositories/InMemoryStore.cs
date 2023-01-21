@@ -126,15 +126,27 @@ public class InMemoryStore : IVolatileKVStore
     {
         SortedList<long, byte[]>? list;
         var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
+        long expiresAt = 0;
+        if (ttl.HasValue)
+        {
+            expiresAt = DateTimeOffset.Now.ToUnixTimeMilliseconds() + (long)ttl.Value.TotalMilliseconds;
+        }
         bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         if (rem && data != null &&
-            (expiry <= 0 || expiry <= now))
+            (expiry <= 0 || expiry > now))
         {
             try
             {
                 list = MessagePackSerializer.Deserialize<SortedList<long, byte[]>>(data);
+                if (ttl.HasValue)
+                {
+                    foreach (var (s, _) in list)
+                    {
+                        expiresAt = Math.Max(s, expiresAt);
+                    }
+                }
             }
             catch (MessagePackSerializationException e)
             {
@@ -158,6 +170,7 @@ public class InMemoryStore : IVolatileKVStore
         try
         {
             var serialized = MessagePackSerializer.Serialize(list);
+            primaryKey.ExpiresAt = expiresAt;
             _dictionary.TryAdd(primaryKey.ArrayValue, (serialized, primaryKey.ExpiresAt));
             if (ttl.HasValue)
             {
@@ -176,11 +189,11 @@ public class InMemoryStore : IVolatileKVStore
     {
         SortedList<long, byte[]>? list;
         var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
-        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        bool rem = _dictionary.TryGetValue(primaryKey.ArrayValue, out var existing);
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         if (rem && data != null &&
-            (expiry <= 0 || expiry <= now))
+            (expiry <= 0 || expiry > now))
         {
             try
             {
@@ -207,6 +220,10 @@ public class InMemoryStore : IVolatileKVStore
                 return false;
             }
         }
+        else
+        {
+            _dictionary.TryRemove(primaryKey.ArrayValue, out var discard);
+        }
 
         return true;
     }
@@ -215,11 +232,11 @@ public class InMemoryStore : IVolatileKVStore
     {
         SortedList<long, byte[]>? list;
         var primaryKey = MemcomparableKey.Create(_table.FullName, keys);
-        bool rem = _dictionary.TryRemove(primaryKey.ArrayValue, out var existing);
+        bool rem = _dictionary.TryGetValue(primaryKey.ArrayValue, out var existing);
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         if (rem && data != null &&
-            (expiry <= 0 || expiry <= now))
+            (expiry <= 0 || expiry > now))
         {
             try
             {
@@ -249,6 +266,10 @@ public class InMemoryStore : IVolatileKVStore
                 return false;
             }
         }
+        else
+        {
+            _dictionary.TryRemove(primaryKey.ArrayValue, out var discard);
+        }
 
         return true;
     }
@@ -261,7 +282,7 @@ public class InMemoryStore : IVolatileKVStore
         (byte[] data, long expiry) = existing;
         long now = DateTimeOffset.Now.ToUnixTimeMilliseconds();
         if (rem && data != null &&
-            (expiry <= 0 || expiry <= now))
+            (expiry <= 0 || expiry > now))
         {
             try
             {
