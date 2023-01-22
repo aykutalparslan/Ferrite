@@ -30,12 +30,6 @@ public class ChatRepositoryTests
     [Fact]
     public void Puts_Chat()
     {
-        var mock = AutoMock.GetLoose();
-        var store = mock.Mock<IKVStore>();
-        store.Setup(x => x.Put(It.IsAny<byte[]>(), 
-            It.IsAny<long>())).Verifiable();
-
-        var repo = mock.Create<ChatRepository>();
         using var chat = Chat.Builder()
             .Id(123)
             .Title("test"u8)
@@ -44,6 +38,14 @@ public class ChatRepositoryTests
             .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
             .Version(5)
             .Build().TLBytes!.Value;
+        var chatBytes = chat.AsSpan().ToArray();
+        var mock = AutoMock.GetLoose();
+        var store = mock.Mock<IKVStore>();
+        store.Setup(x => x.Put(chatBytes, 
+            (long)123)).Verifiable();
+
+        var repo = mock.Create<ChatRepository>();
+        
         repo.PutChat(chat);
         store.VerifyAll();
     }
