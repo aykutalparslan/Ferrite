@@ -50,7 +50,7 @@ public class LocalUnitOfWork : IUnitOfWork
         ReportReasonRepository = new ReportReasonRepository(new RocksDBKVStore(_rocksdb));
         PrivacyRulesRepository = new PrivacyRulesRepository(new RocksDBKVStore(_rocksdb));
         ChatRepository = new ChatRepository(new RocksDBKVStore(_rocksdb));
-        ContactsRepository = new ContactsRepository(new RocksDBKVStore(_rocksdb));
+        ContactsRepository = new ContactsRepository(new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb));
         BlockedPeersRepository = new BlockedPeersRepository(new RocksDBKVStore(_rocksdb));
         FileInfoRepository = new FileInfoRepository(new RocksDBKVStore(_rocksdb),
             new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb),

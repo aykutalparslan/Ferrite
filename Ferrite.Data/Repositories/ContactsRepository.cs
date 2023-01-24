@@ -16,28 +16,38 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public class ContactsRepository : IContactsRepository
 {
     private readonly IKVStore _store;
-    public ContactsRepository(IKVStore store)
+    private readonly IKVStore _storeMutual;
+    public ContactsRepository(IKVStore store, IKVStore storeMutual)
     {
         _store = store;
         store.SetSchema(new TableDefinition("ferrite", "contacts",
             new KeyDefinition("pk",
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "contact_user_id", Type = DataType.Long })));
+        _storeMutual = storeMutual;
+        _storeMutual.SetSchema(new TableDefinition("ferrite", "contacts_mutual",
+            new KeyDefinition("pk",
+                new DataColumn { Name = "user_id", Type = DataType.Long },
+                new DataColumn { Name = "contact_user_id", Type = DataType.Long })));
     }
-    public ImportedContactDTO? PutContact(long userId, long contactUserId, InputContactDTO contact)
+    public TLBytes PutContact(long userId, long contactUserId, TLBytes contact)
     {
-        var savedContact = new SavedContactDTO(contact.Phone, contact.FirstName, contact.LastName,
-            (int)DateTimeOffset.Now.ToUnixTimeSeconds(), contact.ClientId, contactUserId);
-        var savedContactBytes = MessagePackSerializer.Serialize(savedContact);
-        _store.Put(savedContactBytes, userId, contactUserId);
-        return new ImportedContactDTO(contactUserId, contact.ClientId);
+        _store.Put(contact.AsSpan().ToArray(), userId, contactUserId);
+        _storeMutual.Put(BitConverter.GetBytes(userId), contactUserId, userId);
+        var c = (SavedContact)contact;
+        return ImportedContact.Builder()
+            .ClientId(c.ClientId)
+            .UserId(c.UserId)
+            .Build().TLBytes!.Value;
     }
 
     public bool DeleteContact(long userId, long contactUserId)
@@ -50,28 +60,36 @@ public class ContactsRepository : IContactsRepository
         return _store.Delete(userId);
     }
 
-    public ICollection<SavedContactDTO> GetSavedContacts(long userId)
+    public IReadOnlyList<TLBytes> GetSavedContacts(long userId)
     {
-        List<SavedContactDTO> savedContacts = new();
+        List<TLBytes> savedContacts = new();
         var iter = _store.Iterate(userId);
         foreach (var savedBytes in iter)
         {
-            var savedContact = MessagePackSerializer.Deserialize<SavedContactDTO>(savedBytes);
-            savedContacts.Add(savedContact);
+            savedContacts.Add(new TLBytes(savedBytes, 0, savedBytes.Length));
         }
 
         return savedContacts;
     }
 
-    public ICollection<ContactDTO> GetContacts(long userId)
+    public IReadOnlyList<TLBytes> GetContacts(long userId)
     {
-        List<ContactDTO> contacts = new();
-        var iter = _store.Iterate(userId);
-        foreach (var savedBytes in iter)
+        List<TLBytes> contacts = new();
+        var contactsIterator = _store.Iterate(userId);
+        List<long> mutualContacts = new ();
+        var mutualIterator = _storeMutual.Iterate(userId);
+        foreach (var c in mutualIterator)
         {
-            var savedContact = MessagePackSerializer.Deserialize<SavedContactDTO>(savedBytes);
-            var mutual = _store.Get(savedContact.UserId, userId) != null;
-            contacts.Add(new ContactDTO(savedContact.UserId, mutual));
+            mutualContacts.Add(BitConverter.ToInt64(c));
+        }
+        foreach (var savedBytes in contactsIterator)
+        {
+            var contact = (SavedContact)savedBytes.AsSpan();
+            var mutual = mutualContacts.Contains(contact.UserId);
+            contacts.Add(Contact.Builder()
+                .UserId(contact.UserId)
+                .Mutual(mutual)
+                .Build().TLBytes!.Value);
         }
 
         return contacts;

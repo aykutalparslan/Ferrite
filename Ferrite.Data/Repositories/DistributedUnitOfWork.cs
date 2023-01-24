@@ -53,7 +53,7 @@ public class DistributedUnitOfWork : IUnitOfWork
         ReportReasonRepository = new ReportReasonRepository(new CassandraKVStore(_cassandra));
         PrivacyRulesRepository = new PrivacyRulesRepository(new CassandraKVStore(_cassandra));
         ChatRepository = new ChatRepository(new CassandraKVStore(_cassandra));
-        ContactsRepository = new ContactsRepository(new CassandraKVStore(_cassandra));
+        ContactsRepository = new ContactsRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra));
         BlockedPeersRepository = new BlockedPeersRepository(new CassandraKVStore(_cassandra));
         FileInfoRepository = new FileInfoRepository(new CassandraKVStore(_cassandra),
             new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra),

@@ -16,13 +16,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IContactsRepository
 {
-    public ImportedContactDTO? PutContact(long userId, long contactUserId, InputContactDTO contact);
+    public TLBytes PutContact(long userId, long contactUserId, TLBytes contact);
     public bool DeleteContact(long userId, long contactUserId);
     public bool DeleteContacts(long userId);
-    public ICollection<SavedContactDTO> GetSavedContacts(long userId);
-    public ICollection<ContactDTO> GetContacts(long userId);
+    public IReadOnlyList<TLBytes> GetSavedContacts(long userId);
+    public IReadOnlyList<TLBytes> GetContacts(long userId);
 }

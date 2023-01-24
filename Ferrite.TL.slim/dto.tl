@@ -5,4 +5,5 @@ appInfo#69abdb23 hash:long auth_key_id:long encrypted_requests_disabled:Bool cal
 authInfo#a743531e flags:# auth_key_id:long user_id:long phone:string  api_layer:int future_auth_token:flags.0?bytes logged_in:Bool logged_in_at:int = AuthInfo;
 exportedAuthInfo#b2506b0c auth_key_id:long user_id:long phone:string previous_dc_id:int next_dc_id:int data:bytes = ExportedAuthInfo;
 blockedPeer#33aba711 peer_type:int peer_id:long date:int = BlockedPeer;
+savedContact#9a4d5227 phone:string first_name:string last_name:string client_id:long user_id:long date:int = SavedContact;
 
