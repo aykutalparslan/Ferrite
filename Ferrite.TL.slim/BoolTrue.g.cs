@@ -68,6 +68,17 @@ public readonly ref struct BoolTrue
             return new BoolTrue();
         }
     }
+    
+    public static explicit operator BoolTrue(TLBytes b) => new BoolTrue(b.AsSpan()); 
+    
+    public static explicit operator BoolTrue(Span<byte> b) => new BoolTrue(b);
+    
+    public static implicit operator TLBool(BoolTrue b)
+    {
+        if (b._memory != null) return new TLBool(b._memory, 0, b._buff.Length);
+        var mem = b._buff.ToArray();
+        return new TLBool(mem, 0, mem.Length);
+    } 
 
     public static TLObjectBuilder Builder()
     {

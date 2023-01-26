@@ -32,7 +32,7 @@ public interface IAuthService
     public ValueTask<TLBytes> SignUp(long authKeyId, TLBytes q);
     public ValueTask<TLBytes> SignIn(long authKeyId, TLBytes q);
     public ValueTask<TLBytes> LogOut(long authKeyId);
-    public ValueTask<TLBytes> ResetAuthorizations(long authKeyId);
+    public ValueTask<TLBool> ResetAuthorizations(long authKeyId);
     public ValueTask<TLBytes> ExportAuthorization(long authKeyId, int currentDc, TLBytes q);
     public ValueTask<TLBytes> ImportAuthorization(long authKeyId, TLBytes q);
     public ValueTask<TLBytes> BindTempAuthKey(long sessionId, TLBytes q);

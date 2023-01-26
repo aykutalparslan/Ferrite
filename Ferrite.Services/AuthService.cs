@@ -370,7 +370,7 @@ public class AuthService : IAuthService
     
     private readonly record struct ResendCodeParameters(string PhoneNumber, string PhoneCodeHash);
 
-    public async ValueTask<TLBytes> ResetAuthorizations(long authKeyId)
+    public async ValueTask<TLBool> ResetAuthorizations(long authKeyId)
     {
         var currentAuth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (currentAuth != null)
