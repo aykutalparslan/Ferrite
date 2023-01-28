@@ -531,6 +531,7 @@ public readonly ref struct " + typeName + @"
 using System.Buffers;
 using System.Runtime.InteropServices;
 using Ferrite.Utils;
+using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.TL.slim" + (nameSpace.Length > 0 ? "." + nameSpace : "") + @";
 
@@ -584,6 +585,12 @@ public readonly struct TL" + typeName + @" : IDisposable
             sb.Append(@"
     public " + constructorName + " As" + constructorName + "() => (" + constructorName + ")_tlBytes.AsSpan();");
         }
+
+        if (combinators[0].Identifier != "RpcError")
+        {
+            sb.Append(@"
+    public RpcError GetError() => (RpcError)_tlBytes.AsSpan();");
+        }
     }
 
     private void GenerateConstructorEnum(StringBuilder sb, List<CombinatorDeclarationSyntax> combinators)
@@ -598,6 +605,11 @@ public readonly struct TL" + typeName + @" : IDisposable
             sb.Append(@"
         unchecked((int)0x" + combinators[i].Name + ") => "+typeName+@"Type."+constructorName+",");
         }
+        if (combinators[0].Identifier != "RpcError")
+        {
+            sb.Append(@"
+        unchecked((int)0x2144ca19) => " + typeName + @"Type.RpcError,");
+        }
         sb.Append(@"
         _ => "+typeName+@"Type.InvalidObject
     };");
@@ -609,6 +621,12 @@ public readonly struct TL" + typeName + @" : IDisposable
             string constructorName = combinators[i].Identifier!;
             sb.Append(@"
         " + constructorName + ",");
+        }
+
+        if (combinators[0].Identifier != "RpcError")
+        {
+            sb.Append(@"
+        RpcError,");
         }
         sb.Append(@"
         InvalidObject,");
@@ -639,6 +657,13 @@ public readonly struct TL" + typeName + @" : IDisposable
                 : "";
             sb.Append(and + "_constructor != unchecked((int)0x" + combinators[i].Name + ")");
         }
+
+        if (combinators[0].Identifier != "RpcError")
+        {
+            sb.Append(@" &&
+            _constructor != unchecked((int)0x2144ca19)");
+        }
+
         sb.Append(@")
         {
             throw new InvalidCastException();

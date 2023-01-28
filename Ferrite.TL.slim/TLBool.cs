@@ -18,6 +18,7 @@
 
 using System.Buffers;
 using System.Runtime.InteropServices;
+using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.TL.slim;
 
@@ -50,7 +51,8 @@ public readonly struct TLBool : IDisposable
     private void ThrowIfInvalid()
     {
         if (_constructor != unchecked((int)0x997275b5) &&
-            _constructor != unchecked((int)0xbc799737))
+            _constructor != unchecked((int)0xbc799737) &&
+            _constructor != unchecked((int)0x2144ca19))
         {
             throw new InvalidCastException();
         }
@@ -68,10 +70,14 @@ public readonly struct TLBool : IDisposable
     
     public BoolFalse AsBoolFalse() => (BoolFalse)_tlBytes.AsSpan();
     
+    public RpcError AsRpcError() => (RpcError)_tlBytes.AsSpan();
+    
     public BoolType Type => _constructor switch
     {
         unchecked((int)0x997275b5) => BoolType.True,
-        _ => BoolType.False
+        unchecked((int)0xbc799737) => BoolType.False,
+        unchecked((int)0x2144ca19) => BoolType.RpcError,
+        _ => BoolType.InvalidObject
     };
 
     public Span<byte> AsSpan() => _tlBytes.AsSpan();
@@ -79,7 +85,9 @@ public readonly struct TLBool : IDisposable
     public enum BoolType
     {
         True,
-        False
+        False,
+        RpcError,
+        InvalidObject,
     }
 
     public void Dispose()
