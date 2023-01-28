@@ -193,7 +193,7 @@ public class UserService : IUsersService
         var infoBytes = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         if (infoBytes != null)
         {
-            var info = (AppInfo)infoBytes!;
+            var info = infoBytes.Value.AsAppInfo();
             var langPack = Encoding.UTF8.GetString(info.LangPack).ToLower();
             if (langPack.Contains("android"))
             {

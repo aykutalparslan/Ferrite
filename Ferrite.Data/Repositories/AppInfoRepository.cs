@@ -36,23 +36,23 @@ public class AppInfoRepository : IAppInfoRepository
             new KeyDefinition("by_hash",
                 new DataColumn { Name = "hash", Type = DataType.Long })));
     }
-    public bool PutAppInfo(TLBytes appInfo)
+    public bool PutAppInfo(TLAppInfo appInfo)
     {
-        var info = (AppInfo)appInfo;
+        var info = appInfo.AsAppInfo();
         _store.Put(appInfo.AsSpan().ToArray(), info.AuthKeyId, info.Hash);
         return true;
     }
 
-    public TLBytes? GetAppInfo(long authKeyId)
+    public TLAppInfo? GetAppInfo(long authKeyId)
     {
         var appInfoBytes = _store.Get(authKeyId);
-        return appInfoBytes != null ? new TLBytes(appInfoBytes, 0, appInfoBytes.Length) : null;
+        return appInfoBytes != null ? new TLAppInfo(appInfoBytes, 0, appInfoBytes.Length) : null;
     }
 
-    public TLBytes? GetAppInfoByAppHash(long hash)
+    public TLAppInfo? GetAppInfoByAppHash(long hash)
     {
         var appInfoBytes = _store.GetBySecondaryIndex("by_hash", hash);
-        return appInfoBytes != null ? new TLBytes(appInfoBytes, 0, appInfoBytes.Length) : null;
+        return appInfoBytes != null ? new TLAppInfo(appInfoBytes, 0, appInfoBytes.Length) : null;
     }
 
     public long? GetAuthKeyIdByAppHash(long hash)

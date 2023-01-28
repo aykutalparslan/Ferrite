@@ -29,54 +29,52 @@ public readonly struct TLBool : IDisposable
     public TLBool(IMemoryOwner<byte> memoryOwner, int offset, int length)
     {
         _constructor = MemoryMarshal.Read<int>(memoryOwner.Memory.Span[offset..]);
-        if (_constructor != unchecked((int)0x997275b5) &&
-            _constructor != unchecked((int)0xbc799737))
-        {
-            throw new InvalidCastException();
-        }
+        ThrowIfInvalid();
         _tlBytes = new TLBytes(memoryOwner, offset, length);
     }
-    
+
     public TLBool(Memory<byte> memory, int offset, int length)
     {
         _constructor = MemoryMarshal.Read<int>(memory.Span[offset..]);
-        if (_constructor != unchecked((int)0x997275b5) &&
-            _constructor != unchecked((int)0xbc799737))
-        {
-            throw new InvalidCastException();
-        }
+        ThrowIfInvalid();
         _tlBytes = new TLBytes(memory, offset, length);
     }
 
     private TLBool(TLBytes bytes)
     {
         _constructor = bytes.Constructor;
+        ThrowIfInvalid();
+        _tlBytes = bytes;
+    }
+    
+    private void ThrowIfInvalid()
+    {
         if (_constructor != unchecked((int)0x997275b5) &&
             _constructor != unchecked((int)0xbc799737))
         {
             throw new InvalidCastException();
         }
-
-        _tlBytes = bytes;
     }
 
     public int Constructor => _tlBytes.Constructor;
     
     public TLBytes TLBytes => _tlBytes;
 
+    public static implicit operator TLBool(TLBytes b) => new (b);
+    
+    public static implicit operator TLBytes(TLBool b) => b._tlBytes;
+    
+    public BoolTrue AsBoolTrue() => (BoolTrue)_tlBytes.AsSpan();
+    
+    public BoolFalse AsBoolFalse() => (BoolFalse)_tlBytes.AsSpan();
+    
     public BoolType Type => _constructor switch
     {
         unchecked((int)0x997275b5) => BoolType.True,
         _ => BoolType.False
     };
 
-    public BoolTrue AsBoolTrue() => (BoolTrue)_tlBytes.AsSpan();
-    
-    public BoolFalse AsBoolFalse() => (BoolFalse)_tlBytes.AsSpan();
-    
-    public static implicit operator TLBool(TLBytes b) => new (b);
-    
-    public static implicit operator TLBytes(TLBool b) => b._tlBytes;
+    public Span<byte> AsSpan() => _tlBytes.AsSpan();
 
     public enum BoolType
     {

@@ -856,7 +856,7 @@ public class AccountService : IAccountService
         }
         var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
         if (info == null) return BoolFalse.Builder().Build().TLBytes!.Value;
-        var infoModified = ((AppInfo)info).Clone()
+        var infoModified = info.Value.AsAppInfo().Clone()
             .EncryptedRequestsDisabled(encryptedRequestsDisabled)
             .CallRequestsDisabled(callRequestsDisabled)
             .Build().TLBytes!.Value;

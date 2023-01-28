@@ -336,7 +336,7 @@ auth.logOut#3e72ba19 = auth.LoggedOut;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).ToList();
-        Assert.Equal(14, generated.Count);
+        Assert.Equal(15, generated.Count);
     }
 
     [Fact]
