@@ -307,7 +307,7 @@ public class AccountService : IAccountService
         {
             using var u = _unitOfWork.UserRepository.GetUser(auth.Value.AsAuthInfo().UserId);
             if (u == null) return (TLUser)RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
-            var user = ModifyUser(u.Value, firstName, lastName);
+            using var user = ModifyUser(u.Value, firstName, lastName);
             _unitOfWork.UserRepository.PutUser(user);
             var userInfo = GetUserInfo(user);
             if (about != null) _unitOfWork.UserRepository.PutAbout(userInfo.UserId, about);
@@ -367,7 +367,7 @@ public class AccountService : IAccountService
         return result ? new BoolTrue() : new BoolFalse();
     }
 
-    private readonly record struct ReportPeerParameters(int PeerType, long PeerId, TLBytes Reason): IDisposable
+    private readonly record struct ReportPeerParameters(int PeerType, long PeerId, TLReportReasonWithMessage Reason): IDisposable
     {
         public void Dispose()
         {
@@ -383,7 +383,7 @@ public class AccountService : IAccountService
             .ReportReason(reportPeer.Reason)
             .Message(reportPeer.Message)
             .Build();
-        return new ReportPeerParameters((int)type, id, reportReason.TLBytes!.Value);
+        return new ReportPeerParameters((int)type, id, reportReason);
     }
 
     public ValueTask<TLBool> CheckUsername(string username)
@@ -494,9 +494,15 @@ public class AccountService : IAccountService
         switch (constructor)
         {
             case Constructors.layer150_InputPrivacyValueAllowContacts:
-                return PrivacyValueAllowContacts.Builder().Build().ToReadOnlySpan();
+                using (var allowContacts = PrivacyValueAllowContacts.Builder().Build())
+                {
+                    return allowContacts.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueAllowAll:
-                return PrivacyValueAllowAll.Builder().Build().ToReadOnlySpan();
+                using (var allowAll = PrivacyValueAllowAll.Builder().Build())
+                {
+                    return allowAll.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueAllowUsers:
                 var allowUsers = (InputPrivacyValueAllowUsers)inputPrivacyValue;
                 var userVector = allowUsers.Users;
@@ -506,11 +512,20 @@ public class AccountService : IAccountService
                     var user = userVector.ReadTLObject();
                     userIds.Append(GetUserId(user));
                 }
-                return PrivacyValueAllowUsers.Builder().Users(userIds).Build().ToReadOnlySpan();
+                using (var allowUsers2 = PrivacyValueAllowUsers.Builder().Users(userIds).Build())
+                {
+                    return allowUsers2.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueDisallowContacts:
-                return PrivacyValueDisallowContacts.Builder().Build().ToReadOnlySpan();
+                using (var disallowContacts = PrivacyValueDisallowContacts.Builder().Build())
+                {
+                    return disallowContacts.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueDisallowAll:
-                return PrivacyValueDisallowAll.Builder().Build().ToReadOnlySpan();
+                using (var disallowAll = PrivacyValueDisallowAll.Builder().Build())
+                {
+                    return disallowAll.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueDisallowUsers:
                 var disallowUsers = (InputPrivacyValueDisallowUsers)inputPrivacyValue;
                 var userVector2 = disallowUsers.Users;
@@ -520,13 +535,23 @@ public class AccountService : IAccountService
                     var user = userVector2.ReadTLObject();
                     userIds2.Append(GetUserId(user));
                 }
-                return PrivacyValueDisallowUsers.Builder().Users(userIds2).Build().ToReadOnlySpan();
+
+                using (var disallowUsers2 = PrivacyValueDisallowUsers.Builder().Users(userIds2).Build())
+                {
+                    return disallowUsers2.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueAllowChatParticipants:
                 var chats = ((InputPrivacyValueAllowChatParticipants)inputPrivacyValue).Chats;
-                return PrivacyValueAllowChatParticipants.Builder().Chats(chats).Build().ToReadOnlySpan();
+                using (var allowChatParticipants = PrivacyValueAllowChatParticipants.Builder().Chats(chats).Build())
+                {
+                    return allowChatParticipants.ToReadOnlySpan();
+                }
             case Constructors.layer150_InputPrivacyValueDisallowChatParticipants:
                 var chats2 = ((InputPrivacyValueDisallowChatParticipants)inputPrivacyValue).Chats;
-                return PrivacyValueDisallowChatParticipants.Builder().Chats(chats2).Build().ToReadOnlySpan();
+                using (var disallowChatParticipants = PrivacyValueDisallowChatParticipants.Builder().Chats(chats2).Build())
+                {
+                    return disallowChatParticipants.ToReadOnlySpan();
+                }
             default:
                 throw new ArgumentException();
         }
@@ -746,10 +771,11 @@ public class AccountService : IAccountService
             .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(auth.Value.AsAuthInfo().Phone));
         foreach (var authorization in authorizations)
         {
-            _unitOfWork.AuthorizationRepository.PutAuthorization(authorization.AsAuthInfo()
+            using TLAuthInfo newAuth = authorization.AsAuthInfo()
                 .Clone()
                 .Phone(Encoding.UTF8.GetBytes(phoneNumber))
-                .Build());
+                .Build();
+            _unitOfWork.AuthorizationRepository.PutAuthorization(newAuth);
         }
         _unitOfWork.UserRepository.UpdateUserPhone(auth.Value.AsAuthInfo().UserId, phoneNumber);
         await _unitOfWork.SaveAsync();
@@ -861,10 +887,11 @@ public class AccountService : IAccountService
         }
         var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
         if (info == null) return new BoolFalse();
-        var success = _unitOfWork.AppInfoRepository.PutAppInfo(info.Value.AsAppInfo().Clone()
+        using TLAppInfo newInfo = info.Value.AsAppInfo().Clone()
             .EncryptedRequestsDisabled(encryptedRequestsDisabled)
             .CallRequestsDisabled(callRequestsDisabled)
-            .Build());
+            .Build();
+        var success = _unitOfWork.AppInfoRepository.PutAppInfo(newInfo);
         var result = success && await _unitOfWork.SaveAsync();
         return result ? new BoolTrue() : new BoolFalse();
 
