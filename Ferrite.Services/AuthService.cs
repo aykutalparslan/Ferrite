@@ -147,14 +147,15 @@ public class AuthService : IAuthService
         }
         var data = _random.GetRandomBytes(128);
         var dcId = new ExportAuthorization(q.AsSpan()).DcId;
-        _unitOfWork.AuthorizationRepository.PutExportedAuthorization(ExportedAuthInfo.Builder()
+        using TLExportedAuthInfo exported = ExportedAuthInfo.Builder()
             .Data(data)
             .UserId(auth.Value.AsAuthInfo().UserId)
             .Phone(auth.Value.AsAuthInfo().Phone)
             .AuthKeyId(auth.Value.AsAuthInfo().AuthKeyId)
             .NextDcId(dcId)
             .PreviousDcId(currentDc)
-            .Build());
+            .Build();
+        _unitOfWork.AuthorizationRepository.PutExportedAuthorization(exported);
         await _unitOfWork.SaveAsync();
         return ExportedAuthorization
             .Builder()
@@ -382,26 +383,27 @@ public class AuthService : IAuthService
         var userId = _unitOfWork.UserRepository.GetUserId(phoneNumber);
         if(userId == null)
         {
-            return GenerateSignUpRequired();
+            return AuthorizationSignUpRequired.Builder().Build();
         }
-        var user = _unitOfWork.UserRepository.GetUser(userId.Value);
+        using var user = _unitOfWork.UserRepository.GetUser(userId.Value);
         if(user == null)
         {
-            return GenerateSignUpRequired();
+            return AuthorizationSignUpRequired.Builder().Build();
         }
 
-        user = SetUserAttributes(user.Value);
+        using var userNew = SetUserAttributes(user.Value);
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var apiLayer = authKeyDetails != null ? authKeyDetails.Value.AsAuthInfo().ApiLayer : -1;
-        _unitOfWork.AuthorizationRepository.PutAuthorization(AuthInfo.Builder()
+        using TLAuthInfo info = AuthInfo.Builder()
             .AuthKeyId(authKeyId)
             .Phone(Encoding.UTF8.GetBytes(phoneNumber))
             .UserId(userId.Value)
             .ApiLayer(apiLayer)
             .LoggedIn(true)
-            .Build());
+            .Build();
+        _unitOfWork.AuthorizationRepository.PutAuthorization(info);
         await _unitOfWork.SaveAsync();
-        return GenerateAuthorization(user.Value);
+        return GenerateAuthorization(userNew);
     }
 
     private TLUser SetUserAttributes(TLUser user)
@@ -425,12 +427,6 @@ public class AuthService : IAuthService
     }
 
     private readonly record struct SignInParameters(string PhoneNumber, string PhoneCodeHash, string PhoneCode);
-
-    private TLAuthorization GenerateSignUpRequired()
-    {
-        var signupRequired = AuthorizationSignUpRequired.Builder().Build();
-        return signupRequired;
-    }
 
     public async ValueTask<TLAuthorization> SignUp(long authKeyId, TLBytes q)
     {
@@ -461,13 +457,14 @@ public class AuthService : IAuthService
             signUpParameters.FirstName, signUpParameters.LastName, signUpParameters.PhoneNumber));
         var authKeyDetails = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var apiLayer = authKeyDetails != null ? authKeyDetails.Value.AsAuthInfo().ApiLayer : -1;
-        _unitOfWork.AuthorizationRepository.PutAuthorization(AuthInfo.Builder()
+        using TLAuthInfo info = AuthInfo.Builder()
             .AuthKeyId(authKeyId)
             .Phone(Encoding.UTF8.GetBytes(signUpParameters.PhoneNumber))
             .UserId(userId)
             .ApiLayer(apiLayer)
             .LoggedIn(true)
-            .Build());
+            .Build();
+        _unitOfWork.AuthorizationRepository.PutAuthorization(info);
         await _unitOfWork.SaveAsync();
         return GenerateAuthorization(user);
     }
@@ -495,7 +492,7 @@ public class AuthService : IAuthService
             .User(userModified.ToReadOnlySpan()).Build();
     }
 
-    private TLBytes SaveUser(long userId ,string phoneNumber, string firstName, string lastName)
+    private TLUser SaveUser(long userId ,string phoneNumber, string firstName, string lastName)
     {
         using var photo = UserProfilePhotoEmpty.Builder().Build();
         var user = User.Builder()
@@ -507,7 +504,7 @@ public class AuthService : IAuthService
             .Photo(photo.TLBytes!.Value.AsSpan())
             .Build();
         _unitOfWork.UserRepository.PutUser(user);
-        return user.TLBytes!.Value;
+        return user;
     }
 
     public async ValueTask<bool> SaveAppInfo(TLAppInfo info)
