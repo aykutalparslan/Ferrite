@@ -104,9 +104,9 @@ public class UserService : IUsersService
             userId = auth.Value.AsAuthInfo().UserId;
             self = true;
         }
-        var user = await GetUserInternal(userId);
+        using var user = await GetUserInternal(userId);
         DeviceType deviceType = GetDeviceType(authKeyId);
-        var notifySettings = GetPeerNotifySettings(authKeyId, user, deviceType);
+        using var notifySettings = GetPeerNotifySettings(authKeyId, user, deviceType);
 
         if (user != null)
         {
@@ -126,7 +126,7 @@ public class UserService : IUsersService
         var profilePhoto = photoConstructor == Constructors.layer150_UserProfilePhotoEmpty
             ? PhotoEmpty.Builder().Build().TLBytes
             : _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, photoId);
-        var settings = GeneratePeerSettings(user.Self);
+        using var settings = GeneratePeerSettings(user.Self);
         var about = _unitOfWork.UserRepository.GetAbout(user.Id);
         var userfull = UserFull.Builder()
             .Id(user.Id)
@@ -142,14 +142,15 @@ public class UserService : IUsersService
             userfull = userfull.About(Encoding.UTF8.GetBytes(about));
         }
 
+        using var finalUser = userfull.Build();
         var result = UsersUserFull.Builder()
-            .FullUser(userfull.Build().ToReadOnlySpan())
+            .FullUser(finalUser.ToReadOnlySpan())
             .Users(new Vector())
             .Chats(new Vector());
         return result.Build();
     }
 
-    private static TLBytes GeneratePeerSettings(bool self)
+    private static TLPeerSettings GeneratePeerSettings(bool self)
     {
         var settings = self
             ? PeerSettings.Builder()
@@ -173,7 +174,7 @@ public class UserService : IUsersService
                 .InviteMembers(false)
                 .RequestChatBroadcast(false).Build();
 
-        return settings.TLBytes!.Value;
+        return settings;
     }
 
     private TLPeerNotifySettings GetPeerNotifySettings(long authKeyId, TLBytes? user, DeviceType deviceType)
@@ -192,7 +193,7 @@ public class UserService : IUsersService
     private DeviceType GetDeviceType(long authKeyId)
     {
         DeviceType deviceType = DeviceType.Other;
-        var infoBytes = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
+        using var infoBytes = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         if (infoBytes != null)
         {
             var info = infoBytes.Value.AsAppInfo();
@@ -212,7 +213,7 @@ public class UserService : IUsersService
 
     private async ValueTask<TLUser?> GetUserInternal(long userId)
     {
-        var user = _unitOfWork.UserRepository.GetUser(userId);
+        using var user = _unitOfWork.UserRepository.GetUser(userId);
         if (user == null) return null;
         var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(user.Value.AsUser().Id);
         return user.Value.AsUser().Clone().Status(status.AsSpan()).Build();
