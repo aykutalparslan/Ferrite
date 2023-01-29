@@ -17,10 +17,11 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IReportReasonRepository
 {
-    public bool PutPeerReportReason(long reportedByUser, int peerType, long peerId, TLBytes reason);
+    public bool PutPeerReportReason(long reportedByUser, int peerType, long peerId, TLReportReasonWithMessage reason);
 }

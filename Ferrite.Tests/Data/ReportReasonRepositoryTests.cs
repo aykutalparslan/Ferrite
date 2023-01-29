@@ -40,7 +40,7 @@ public class ReportReasonRepositoryTests
         using var reason = ReportReasonWithMessage.Builder()
             .ReportReason(reportReason.ToReadOnlySpan())
             .Message("test"u8).Build();
-        repo.PutPeerReportReason(1, 1, 2, reason.TLBytes!.Value);
+        repo.PutPeerReportReason(1, 1, 2, reason);
         store.VerifyAll();
     }
 }

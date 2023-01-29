@@ -18,6 +18,7 @@
 
 using System.Runtime.InteropServices;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
@@ -59,16 +60,16 @@ public class PrivacyRulesRepository : IPrivacyRulesRepository
         _ => PrivacyRuleType.AllowAll
     };
 
-    public ValueTask<ICollection<TLBytes>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
+    public ValueTask<ICollection<TLPrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key)
     {
-        List<TLBytes> rules = new();
+        List<TLPrivacyRule> rules = new();
         var iter = _store.Iterate(userId, (int)key);
         foreach (var ruleBytes in iter)
         {
-            rules.Add(new TLBytes(ruleBytes, 0, ruleBytes.Length));
+            rules.Add(new TLPrivacyRule(ruleBytes, 0, ruleBytes.Length));
         }
 
-        return new ValueTask<ICollection<TLBytes>>(rules);
+        return new ValueTask<ICollection<TLPrivacyRule>>(rules);
     }
 
     public bool DeletePrivacyRules(long userId)

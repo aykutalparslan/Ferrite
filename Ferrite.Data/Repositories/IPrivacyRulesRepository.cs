@@ -17,12 +17,13 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IPrivacyRulesRepository
 {
     public bool PutPrivacyRules(long userId, InputPrivacyKey key, Vector rules);
-    public ValueTask<ICollection<TLBytes>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
+    public ValueTask<ICollection<TLPrivacyRule>> GetPrivacyRulesAsync(long userId, InputPrivacyKey key);
     public bool DeletePrivacyRules(long userId);
 }

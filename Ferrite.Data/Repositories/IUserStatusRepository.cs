@@ -17,11 +17,12 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IUserStatusRepository
 {
     public bool PutUserStatus(long userId, bool status);
-    public ValueTask<TLBytes> GetUserStatusAsync(long userId);
+    public ValueTask<TLUserStatus> GetUserStatusAsync(long userId);
 }

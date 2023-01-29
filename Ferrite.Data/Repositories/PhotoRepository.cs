@@ -43,7 +43,7 @@ public class PhotoRepository : IPhotoRepository
     }
     public bool PutProfilePhoto(long userId, long fileId, long accessHash, byte[] referenceBytes, DateTimeOffset date)
     {
-        var photoBytes = Photo.Builder()
+        using var photoBytes = Photo.Builder()
             .Id(fileId)
             .AccessHash(accessHash)
             .FileReference(referenceBytes)

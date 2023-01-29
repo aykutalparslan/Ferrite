@@ -20,6 +20,7 @@ using Ferrite.TL.slim;
 using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using MessagePack;
+using TLUserStatus = Ferrite.TL.slim.layer150.TLUserStatus;
 
 namespace Ferrite.Data.Repositories;
 
@@ -43,37 +44,37 @@ public class UserStatusRepository : IUserStatusRepository
         return _store.Put(statusBytes.AsSpan().ToArray(), userId);
     }
 
-    public async ValueTask<TLBytes> GetUserStatusAsync(long userId)
+    public async ValueTask<TLUserStatus> GetUserStatusAsync(long userId)
     {
         var serialized = await _store.GetAsync(userId);
         if (serialized == null)
         {
-            return UserStatusEmpty.Builder().Build().TLBytes!.Value;
+            return new UserStatusEmpty();
         }
 
-        var userStatus = new TLBytes(serialized, 0, 0);
-        if (!((UserStatusFull)userStatus).Status)
+        var userStatus = new TL.slim.dto.TLUserStatus(serialized, 0, serialized.Length);
+        if (!userStatus.AsUserStatusFull().Status)
         {
-            return userStatus;
+            return new UserStatusOffline();
         }
 
-        int wasOnline = ((UserStatusFull)userStatus).WasOnline;
-        if (wasOnline + ((UserStatusFull)userStatus).Expires < DateTimeOffset.Now.ToUnixTimeSeconds())
+        int wasOnline = userStatus.AsUserStatusFull().WasOnline;
+        if (wasOnline + userStatus.AsUserStatusFull().Expires < DateTimeOffset.Now.ToUnixTimeSeconds())
         {
-            return userStatus;
+            return new UserStatusOnline(userStatus.AsUserStatusFull().Expires);
         }
         if(wasOnline < DateTimeOffset.Now.AddDays(-1).ToUnixTimeSeconds())
         {
-            return UserStatusRecently.Builder().Build().TLBytes!.Value;
+            return new UserStatusRecently();
         }
         if(wasOnline < DateTimeOffset.Now.AddDays(-7).ToUnixTimeSeconds())
         {
-            return UserStatusLastWeek.Builder().Build().TLBytes!.Value;
+            return new UserStatusLastWeek();
         }
         if(wasOnline < DateTimeOffset.Now.AddDays(-30).ToUnixTimeSeconds())
         {
-            return UserStatusLastMonth.Builder().Build().TLBytes!.Value;
+            return new UserStatusLastMonth();
         }
-        return UserStatusOffline.Builder().WasOnline(wasOnline).Build().TLBytes!.Value;
+        return new UserStatusOffline();
     }
 }

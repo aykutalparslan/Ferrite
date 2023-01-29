@@ -17,6 +17,7 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 
 namespace Ferrite.Data.Repositories;
 
@@ -32,7 +33,7 @@ public class ReportReasonRepository : IReportReasonRepository
                 new DataColumn { Name = "peer_type", Type = DataType.Int },
                 new DataColumn { Name = "peer_id", Type = DataType.Long })));
     }
-    public bool PutPeerReportReason(long reportedByUser, int peerType, long peerId, TLBytes reason)
+    public bool PutPeerReportReason(long reportedByUser, int peerType, long peerId, TLReportReasonWithMessage reason)
     {
         return _store.Put(reason.AsSpan().ToArray(), reportedByUser,
             peerType, peerId);

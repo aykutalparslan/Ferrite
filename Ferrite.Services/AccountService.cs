@@ -16,6 +16,7 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -31,6 +32,7 @@ using Ferrite.TL.slim.layer150.account;
 using Ferrite.TL.slim.layer150.auth;
 using xxHash;
 using TLAuthorization = Ferrite.TL.slim.layer150.auth.TLAuthorization;
+using Vector = Ferrite.TL.slim.Vector;
 
 namespace Ferrite.Services;
 
@@ -460,8 +462,14 @@ public class AccountService : IAccountService
             }
         }
 
+        var saved2 = new List<TLBytes>();
+        foreach (var r in savedRules)
+        {
+            saved2.Add(r);
+        }
+
         return PrivacyRules.Builder()
-            .Rules(savedRules.ToVector())
+            .Rules(saved2.ToVector())
             .Users(users.ToVector())
             .Chats(chats.ToVector())
             .Build();
@@ -548,7 +556,7 @@ public class AccountService : IAccountService
         }
     }
     
-    private ICollection<long> GetUserIds(ICollection<TLBytes> rules)
+    private ICollection<long> GetUserIds(ICollection<TLPrivacyRule> rules)
     {
         List<long> users = new();
         foreach (var r in rules)
@@ -556,14 +564,14 @@ public class AccountService : IAccountService
             switch (r.Constructor)
             {
                 case Constructors.layer150_PrivacyValueAllowUsers:
-                    var v = ((PrivacyValueAllowUsers)r).Users;
+                    var v = r.AsPrivacyValueAllowUsers().Users;
                     for (int i = 0; i < v.Count; i++)
                     {
                         users.Add(v[i]);
                     }
                     break;
                 case Constructors.layer150_PrivacyValueDisallowUsers:
-                    var v2 = ((PrivacyValueDisallowUsers)r).Users;
+                    var v2 = r.AsPrivacyValueDisallowUsers().Users;
                     for (int i = 0; i < v2.Count; i++)
                     {
                         users.Add(v2[i]);
@@ -575,7 +583,7 @@ public class AccountService : IAccountService
         return users;
     }
     
-    private ICollection<long> GetChatIds(ICollection<TLBytes> rules)
+    private ICollection<long> GetChatIds(ICollection<TLPrivacyRule> rules)
     {
         List<long> chats = new();
         foreach (var r in rules)
@@ -583,14 +591,14 @@ public class AccountService : IAccountService
             switch (r.Constructor)
             {
                 case Constructors.layer150_PrivacyValueAllowChatParticipants:
-                    var v = ((PrivacyValueAllowChatParticipants)r).Chats;
+                    var v = r.AsPrivacyValueAllowChatParticipants().Chats;
                     for (int i = 0; i < v.Count; i++)
                     {
                         chats.Add(v[i]);
                     }
                     break;
                 case Constructors.layer150_PrivacyValueDisallowChatParticipants:
-                    var v2 = ((PrivacyValueDisallowChatParticipants)r).Chats;
+                    var v2 = r.AsPrivacyValueDisallowChatParticipants().Chats;
                     for (int i = 0; i < v2.Count; i++)
                     {
                         chats.Add(v2[i]);
