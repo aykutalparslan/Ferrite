@@ -6,3 +6,5 @@ authInfo#a743531e flags:# auth_key_id:long user_id:long phone:string  api_layer:
 exportedAuthInfo#b2506b0c auth_key_id:long user_id:long phone:string previous_dc_id:int next_dc_id:int data:bytes = ExportedAuthInfo;
 blockedPeer#33aba711 peer_type:int peer_id:long date:int = BlockedPeer;
 contactInfo#c136f727 phone:string first_name:string last_name:string client_id:long user_id:long date:int = ContactInfo;
+deviceInfo#2d9f9476 flags:# no_muted:flags.0?true token_type:int token:string app_sandbox:Bool secret:bytes other_uids:Vector<long> = DeviceInfo;
+deviceUser#a166c270 user_id:long token:string = DeviceUser;

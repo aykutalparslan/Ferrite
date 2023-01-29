@@ -92,4 +92,16 @@ public ref struct VectorOfInt
         _buff[_offset++] = value;
     }
     public ref readonly int this[int index] => ref _buff[2 + index];
+    
+    public int[] ToArray()
+    {
+        int count = Count;
+        var arr = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            arr[i] = this[i];
+        }
+
+        return arr;
+    }
 }

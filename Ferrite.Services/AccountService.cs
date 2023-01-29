@@ -51,53 +51,44 @@ public class AccountService : IAccountService
     }
     public async ValueTask<TLBool> RegisterDevice(long authKeyId, TLBytes q)
     {
-        var deviceInfo = GetDeviceInfo(authKeyId, q);
-        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
+        using var deviceInfo = GetDeviceInfo(q);
+        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(authKeyId, deviceInfo);
         var result = await _unitOfWork.SaveAsync();
         return result ? new BoolTrue() : new BoolFalse();
     }
 
     public async ValueTask<TLBool> RegisterDeviceL57(long authKeyId, TLBytes q)
     {
-        var deviceInfo = GetDeviceInfoL57(authKeyId, q);
-        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
+        using var deviceInfo = GetDeviceInfoL57(q);
+        _unitOfWork.DeviceInfoRepository.PutDeviceInfo(authKeyId, deviceInfo);
         var result = await _unitOfWork.SaveAsync();
         return result ? new BoolTrue() : new BoolFalse();
     }
     
-    private static DeviceInfoDTO GetDeviceInfoL57(long authKeyId, TLBytes q)
+    private static TLDeviceInfo GetDeviceInfoL57(TLBytes q)
     {
         var registerDevice = new RegisterDeviceL57(q.AsSpan());
-        var token = Encoding.UTF8.GetString(registerDevice.Token);
-        return new DeviceInfoDTO()
-        {
-            AuthKeyId = authKeyId,
-            Token = token,
-            Secret = Array.Empty<byte>(),
-            TokenType = registerDevice.TokenType,
-            OtherUserIds = Array.Empty<long>(),
-        };
+        return DeviceInfo.Builder()
+            .Token(registerDevice.Token)
+            .OtherUids(new VectorOfLong())
+            .Secret(ReadOnlySpan<byte>.Empty)
+            .TokenType(registerDevice.TokenType)
+            .AppSandbox(false)
+            .NoMuted(false)
+            .Build();
     }
 
-    private static DeviceInfoDTO GetDeviceInfo(long authKeyId, TLBytes q)
+    private static TLDeviceInfo GetDeviceInfo(TLBytes q)
     {
         var registerDevice = new RegisterDevice(q.AsSpan());
-        var token = Encoding.UTF8.GetString(registerDevice.Token);
-        var uids = new long[registerDevice.OtherUids.Count];
-        for (int i = 0; i < registerDevice.OtherUids.Count; i++)
-        {
-            uids[i] = registerDevice.OtherUids[i];
-        }
-        return new DeviceInfoDTO()
-        {
-            AuthKeyId = authKeyId,
-            Token = token,
-            Secret = registerDevice.Secret.ToArray(),
-            AppSandbox = registerDevice.AppSandbox,
-            NoMuted = registerDevice.NoMuted,
-            TokenType = registerDevice.TokenType,
-            OtherUserIds = uids,
-        };
+        return DeviceInfo.Builder()
+            .Token(registerDevice.Token)
+            .OtherUids(registerDevice.OtherUids)
+            .Secret(registerDevice.Secret)
+            .TokenType(registerDevice.TokenType)
+            .AppSandbox(registerDevice.AppSandbox)
+            .NoMuted(registerDevice.NoMuted)
+            .Build();
     }
 
     public async ValueTask<TLBool> UnregisterDevice(long authKeyId, TLBytes q)
@@ -667,7 +658,11 @@ public class AccountService : IAccountService
             var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(keyId);
             if (device != null)
             {
-                _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(keyId, device.Token, device.OtherUserIds);
+                var otherUIds = device.Value.AsDeviceInfo().OtherUids.ToArray();
+                _unitOfWork.DeviceInfoRepository
+                    .DeleteDeviceInfo(keyId, 
+                        Encoding.UTF8.GetString(device.Value.AsDeviceInfo().Token), 
+                        otherUIds);
             }
             _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(keyId);
             await _unitOfWork.SaveAsync();

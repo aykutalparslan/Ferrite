@@ -92,4 +92,16 @@ public ref struct VectorOfLong
         _buff[_offset++] = value;
     }
     public ref readonly long this[int index] => ref _buff[1 + index];
+
+    public long[] ToArray()
+    {
+        int count = Count;
+        var arr = new long[count];
+        for (int i = 0; i < count; i++)
+        {
+            arr[i] = this[i];
+        }
+
+        return arr;
+    }
 }

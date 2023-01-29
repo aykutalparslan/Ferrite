@@ -18,6 +18,7 @@
 
 using System.Text;
 using System.Text.Unicode;
+using Ferrite.TL.slim.dto;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -40,27 +41,31 @@ public class DeviceInfoRepository : IDeviceInfoRepository
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "app_token", Type = DataType.String })));
     }
-    public bool PutDeviceInfo(DeviceInfoDTO deviceInfo)
+    public bool PutDeviceInfo(long authKeyId, TLDeviceInfo deviceInfo)
     {
-        var infoBytes = MessagePackSerializer.Serialize(deviceInfo);
-        _store.Put(infoBytes, deviceInfo.AuthKeyId, deviceInfo.Token);
-        foreach (var userId in deviceInfo.OtherUserIds)
+        var infoBytes = deviceInfo.AsSpan().ToArray();
+        var token = Encoding.UTF8.GetString(deviceInfo.AsDeviceInfo().Token);
+        _store.Put(infoBytes, authKeyId, token);
+        var userIds = deviceInfo.AsDeviceInfo().OtherUids;
+        for(int i = 0; i < userIds.Count; i++)
         {
-            var user = new DeviceUserDTO(userId, deviceInfo.Token);
-            var userBytes = MessagePackSerializer.Serialize(user);
-            _storeUsers.Put(userBytes, 
-                deviceInfo.AuthKeyId, userId);
+            var userId = userIds[i];
+            using TLDeviceUser user = DeviceUser.Builder()
+                .UserId(userId)
+                .Token(deviceInfo.AsDeviceInfo().Token)
+                .Build();
+            _storeUsers.Put(user.AsSpan().ToArray(), 
+                authKeyId, userId);
         }
 
         return true;
     }
 
-    public DeviceInfoDTO? GetDeviceInfo(long authKeyId)
+    public TLDeviceInfo? GetDeviceInfo(long authKeyId)
     {
         var infoBytes = _store.Get(authKeyId);
         if (infoBytes == null) return null;
-        var info = MessagePackSerializer.Deserialize<DeviceInfoDTO>(infoBytes);
-        return info;
+        return new TLDeviceInfo(infoBytes, 0 ,infoBytes.Length);
     }
 
     public bool DeleteDeviceInfo(long authKeyId, string token, ICollection<long> otherUserIds)

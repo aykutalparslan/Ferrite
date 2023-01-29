@@ -16,11 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim.dto;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IDeviceInfoRepository
 {
-    public bool PutDeviceInfo(DeviceInfoDTO deviceInfo);
-    public DeviceInfoDTO? GetDeviceInfo(long authKeyId);
+    public bool PutDeviceInfo(long authKeyId, TLDeviceInfo deviceInfo);
+    public TLDeviceInfo? GetDeviceInfo(long authKeyId);
     public bool DeleteDeviceInfo(long authKeyId, string token, ICollection<long> otherUserIds);
 }
