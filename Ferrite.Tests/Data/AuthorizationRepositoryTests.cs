@@ -37,7 +37,7 @@ public class AuthorizationRepositoryTests
             (long)111, "54321")).Verifiable();
 
         var repo = mock.Create<AuthorizationRepository>();
-        repo.PutAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes,0 , infoBytes.Length));
         store.VerifyAll();
     }
     
@@ -48,7 +48,7 @@ public class AuthorizationRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AuthorizationRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes(111, "54321"u8);
-        repo.PutAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes,0 , infoBytes.Length));
 
         var info = repo.GetAuthorization(111);
         Assert.NotNull(info);
@@ -63,7 +63,7 @@ public class AuthorizationRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AuthorizationRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes(111, "54321"u8);
-        repo.PutAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes,0 , infoBytes.Length));
 
         var info = await repo.GetAuthorizationAsync(111);
         Assert.NotNull(info);
@@ -78,9 +78,9 @@ public class AuthorizationRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AuthorizationRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes(111, "54321"u8);
-        repo.PutAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes,0 , infoBytes.Length));
         var infoBytes2 = GenerateInfoBytes(222, "54321"u8);
-        repo.PutAuthorization(new TLBytes(infoBytes2,0 , infoBytes2.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes2,0 , infoBytes2.Length));
 
         var infos = repo.GetAuthorizations("54321");
         Assert.Equal(2, infos.Count);
@@ -96,9 +96,9 @@ public class AuthorizationRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AuthorizationRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes(111, "54321"u8);
-        repo.PutAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes,0 , infoBytes.Length));
         var infoBytes2 = GenerateInfoBytes(222, "54321"u8);
-        repo.PutAuthorization(new TLBytes(infoBytes2,0 , infoBytes2.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes2,0 , infoBytes2.Length));
 
         var infos = await repo.GetAuthorizationsAsync("54321");
         Assert.Equal(2, infos.Count);
@@ -118,7 +118,7 @@ public class AuthorizationRepositoryTests
         store.Setup(x => x.Delete((long)111)).Verifiable();
 
         var repo = mock.Create<AuthorizationRepository>();
-        repo.PutAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAuthorization(new TLAuthInfo(infoBytes,0 , infoBytes.Length));
         repo.DeleteAuthorization(111);
         store.VerifyAll();
     }
@@ -134,7 +134,7 @@ public class AuthorizationRepositoryTests
             (long)123, data)).Verifiable();
 
         var repo = mock.Create<AuthorizationRepository>();
-        repo.PutExportedAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutExportedAuthorization(new TLExportedAuthInfo(infoBytes,0 , infoBytes.Length));
         store.VerifyAll();
     }
     
@@ -146,7 +146,7 @@ public class AuthorizationRepositoryTests
         var repo = new AuthorizationRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         var data = RandomNumberGenerator.GetBytes(16);
         var infoBytes = GenerateExportedInfoBytes(data);
-        repo.PutExportedAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutExportedAuthorization(new TLExportedAuthInfo(infoBytes,0 , infoBytes.Length));
 
         var info = repo.GetExportedAuthorization(123, data);
         Assert.NotNull(info);
@@ -162,7 +162,7 @@ public class AuthorizationRepositoryTests
         var repo = new AuthorizationRepository(new RocksDBKVStore(ctx), new RocksDBKVStore(ctx));
         var data = RandomNumberGenerator.GetBytes(16);
         var infoBytes = GenerateExportedInfoBytes(data);
-        repo.PutExportedAuthorization(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutExportedAuthorization(new TLExportedAuthInfo(infoBytes,0 , infoBytes.Length));
 
         var info = await repo.GetExportedAuthorizationAsync(123, data);
         Assert.NotNull(info);

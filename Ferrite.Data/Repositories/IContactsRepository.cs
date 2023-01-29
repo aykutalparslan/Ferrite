@@ -17,14 +17,16 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IContactsRepository
 {
-    public TLBytes PutContact(long userId, long contactUserId, TLBytes contact);
+    public TLImportedContact PutContact(long userId, long contactUserId, TLContactInfo contact);
     public bool DeleteContact(long userId, long contactUserId);
     public bool DeleteContacts(long userId);
-    public IReadOnlyList<TLBytes> GetSavedContacts(long userId);
-    public IReadOnlyList<TLBytes> GetContacts(long userId);
+    public IReadOnlyList<TLSavedContact> GetSavedContacts(long userId);
+    public IReadOnlyList<TLContact> GetContacts(long userId);
 }

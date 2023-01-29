@@ -50,9 +50,9 @@ public class UserRepository : IUserRepository
                 new DataColumn { Name = "user_id", Type = DataType.Long })));
     }
 
-    public bool PutUser(TLBytes user)
+    public bool PutUser(TLUser user)
     {
-        var u = new User(user.AsSpan());
+        var u = user.AsUser();
         return _store.Put(user.AsSpan().ToArray(),
             u.Id, Encoding.UTF8.GetString(u.Phone),
             u.Username.Length > 0 ? Encoding.UTF8.GetString(u.Username) : "");
@@ -96,23 +96,23 @@ public class UserRepository : IUserRepository
         return false;
     }
 
-    public TLBytes? GetUser(long userId)
+    public TLUser? GetUser(long userId)
     {
         var userBytes = _store.Get(userId);
         if (userBytes != null)
         {
-            return new TLBytes(userBytes, 0, userBytes.Length);
+            return new TLUser(userBytes, 0, userBytes.Length);
         }
 
         return null;
     }
 
-    public TLBytes? GetUser(string phone)
+    public TLUser? GetUser(string phone)
     {
         var userBytes = _store.GetBySecondaryIndex("by_phone", phone);
         if (userBytes != null)
         {
-            return new TLBytes(userBytes, 0, userBytes.Length);
+            return new TLUser(userBytes, 0, userBytes.Length);
         }
 
         return null;
@@ -130,12 +130,12 @@ public class UserRepository : IUserRepository
         return null;
     }
 
-    public TLBytes? GetUserByUsername(string username)
+    public TLUser? GetUserByUsername(string username)
     {
         var userBytes = _store.GetBySecondaryIndex("by_username", username);
         if (userBytes != null)
         {
-            return new TLBytes(userBytes, 0, userBytes.Length);
+            return new TLUser(userBytes, 0, userBytes.Length);
         }
 
         return null;

@@ -17,18 +17,19 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IAuthorizationRepository
 {
-    public bool PutAuthorization(TLBytes info);
-    public TLBytes? GetAuthorization(long authKeyId);
-    public ValueTask<TLBytes?> GetAuthorizationAsync(long authKeyId);
-    public IReadOnlyList<TLBytes> GetAuthorizations(string phone);
-    public ValueTask<IReadOnlyList<TLBytes>> GetAuthorizationsAsync(string phone);
+    public bool PutAuthorization(TLAuthInfo info);
+    public TLAuthInfo? GetAuthorization(long authKeyId);
+    public ValueTask<TLAuthInfo?> GetAuthorizationAsync(long authKeyId);
+    public IReadOnlyList<TLAuthInfo> GetAuthorizations(string phone);
+    public ValueTask<IReadOnlyList<TLAuthInfo>> GetAuthorizationsAsync(string phone);
     public bool DeleteAuthorization(long authKeyId);
-    public bool PutExportedAuthorization(TLBytes exportedInfo);
-    public TLBytes? GetExportedAuthorization(long userId, byte[] data);
-    public ValueTask<TLBytes?> GetExportedAuthorizationAsync(long userId, byte[] data);
+    public bool PutExportedAuthorization(TLExportedAuthInfo exportedInfo);
+    public TLExportedAuthInfo? GetExportedAuthorization(long userId, byte[] data);
+    public ValueTask<TLExportedAuthInfo?> GetExportedAuthorizationAsync(long userId, byte[] data);
 }

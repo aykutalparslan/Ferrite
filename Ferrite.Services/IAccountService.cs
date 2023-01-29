@@ -20,34 +20,37 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.account;
+using Ferrite.TL.slim.layer150.auth;
 
 namespace Ferrite.Services;
 
 public interface IAccountService
 {
-    public ValueTask<TLBytes> RegisterDevice(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> RegisterDeviceL57(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> UnregisterDevice(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> UpdateNotifySettings(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> GetNotifySettings(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> ResetNotifySettings(long authKeyId);
-    public ValueTask<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
-    public ValueTask<TLBytes> UpdateStatus(long authKeyId, bool status);
-    public ValueTask<TLBytes> ReportPeer(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> CheckUsername(string username);
-    public ValueTask<TLBytes> UpdateUsername(long authKeyId, string username);
-    public ValueTask<TLBytes> SetPrivacy(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> GetPrivacy(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> DeleteAccount(long authKeyId);
-    public ValueTask<TLBytes> SetAccountTTL(long authKeyId, int accountDaysTTL);
-    public ValueTask<TLBytes> GetAccountTTL(long authKeyId);
-    public ValueTask<TLBytes> SendChangePhoneCode(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> ChangePhone(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> UpdateDeviceLocked(long authKeyId, int period);
-    public ValueTask<TLBytes> GetAuthorizations(long authKeyId);
-    public ValueTask<TLBytes> ResetAuthorization(long authKeyId, long hash);
-    public ValueTask<TLBytes> SetContactSignUpNotification(long authKeyId, bool silent);
-    public ValueTask<TLBytes> GetContactSignUpNotification(long authKeyId);
-    public ValueTask<TLBytes> ChangeAuthorizationSettings(long authKeyId, long hash, 
+    public ValueTask<TLBool> RegisterDevice(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> RegisterDeviceL57(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> UnregisterDevice(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> UpdateNotifySettings(long authKeyId, TLBytes q);
+    public ValueTask<TLPeerNotifySettings> GetNotifySettings(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> ResetNotifySettings(long authKeyId);
+    public ValueTask<TLUser> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about);
+    public ValueTask<TLBool> UpdateStatus(long authKeyId, bool status);
+    public ValueTask<TLBool> ReportPeer(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> CheckUsername(string username);
+    public ValueTask<TLUser> UpdateUsername(long authKeyId, string username);
+    public ValueTask<TLPrivacyRules> SetPrivacy(long authKeyId, TLBytes q);
+    public ValueTask<TLPrivacyRules> GetPrivacy(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> DeleteAccount(long authKeyId);
+    public ValueTask<TLBool> SetAccountTTL(long authKeyId, int accountDaysTTL);
+    public ValueTask<TLAccountDaysTTL> GetAccountTTL(long authKeyId);
+    public ValueTask<TLSentCode> SendChangePhoneCode(long authKeyId, TLBytes q);
+    public ValueTask<TLUser> ChangePhone(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> UpdateDeviceLocked(long authKeyId, int period);
+    public ValueTask<TLAuthorizations> GetAuthorizations(long authKeyId);
+    public ValueTask<TLBool> ResetAuthorization(long authKeyId, long hash);
+    public ValueTask<TLBool> SetContactSignUpNotification(long authKeyId, bool silent);
+    public ValueTask<TLBool> GetContactSignUpNotification(long authKeyId);
+    public ValueTask<TLBool> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled,bool callRequestsDisabled);
 }

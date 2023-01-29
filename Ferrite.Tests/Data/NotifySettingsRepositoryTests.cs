@@ -36,7 +36,7 @@ public class NotifySettingsRepositoryTests
             .ShowPreviews(true)
             .Build();
         repo.PutNotifySettings(123, 0, 0, 
-            0, 0, notifySettings.TLBytes!.Value);
+            0, 0, notifySettings);
         var settings = repo.GetNotifySettings(123,
             0, 0, 0, 0);
         Assert.Equal(1, settings.Count);
@@ -57,7 +57,7 @@ public class NotifySettingsRepositoryTests
             .ShowPreviews(true)
             .Build();
         repo.PutNotifySettings(123, 0, 0, 
-            0, 0, notifySettings.TLBytes!.Value);
+            0, 0, notifySettings);
         repo.DeleteNotifySettings(123);
         var settings = repo.GetNotifySettings(123,
             0, 0, 0, 0);

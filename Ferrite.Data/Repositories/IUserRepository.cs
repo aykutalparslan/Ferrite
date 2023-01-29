@@ -17,18 +17,19 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IUserRepository
 {
-    public bool PutUser(TLBytes user);
+    public bool PutUser(TLUser user);
     public bool UpdateUsername(long userId, string username);
     public bool UpdateUserPhone(long userId, string phone);
-    public TLBytes? GetUser(long userId);
-    public TLBytes? GetUser(string phone);
+    public TLUser? GetUser(long userId);
+    public TLUser? GetUser(string phone);
     public long? GetUserId(string phone);
-    public TLBytes? GetUserByUsername(string username);
+    public TLUser? GetUserByUsername(string username);
     public bool DeleteUser(long userId);
     public bool UpdateAccountTtl(long userId, int accountDaysTTL);
     public int GetAccountTtl(long userId);

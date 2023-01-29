@@ -39,7 +39,7 @@ public class UserRepositoryTests
             .FirstName("aaa"u8)
             .LastName("bbb"u8)
             .Build();
-        repo.PutUser(user.TLBytes!.Value);
+        repo.PutUser(user);
         var userBytes =  repo.GetUser(123);
         Assert.Equal(user.TLBytes!.Value.AsSpan().ToArray(), 
             userBytes!.Value.AsSpan().ToArray());
@@ -59,7 +59,7 @@ public class UserRepositoryTests
             .FirstName("aaa"u8)
             .LastName("bbb"u8)
             .Build();
-        repo.PutUser(user.TLBytes!.Value);
+        repo.PutUser(user);
         var userBytes = repo.GetUser("+111222");
         Assert.Equal(user.TLBytes!.Value.AsSpan().ToArray(), 
             userBytes!.Value.AsSpan().ToArray());
@@ -79,7 +79,7 @@ public class UserRepositoryTests
             .FirstName("aaa"u8)
             .LastName("bbb"u8)
             .Build();
-        repo.PutUser(user.TLBytes!.Value);
+        repo.PutUser(user);
         var userId = repo.GetUserId("+111222");
         Assert.Equal(user.Id, userId);
         Util.DeleteDirectory(path);
@@ -98,7 +98,7 @@ public class UserRepositoryTests
             .FirstName("aaa"u8)
             .LastName("bbb"u8)
             .Build();
-        repo.PutUser(user.TLBytes!.Value);
+        repo.PutUser(user);
         repo.DeleteUser(123);
         var userBytes =  repo.GetUser(123);
         Assert.Null(userBytes);
@@ -118,7 +118,7 @@ public class UserRepositoryTests
             .FirstName("aaa"u8)
             .LastName("bbb"u8)
             .Build();
-        repo.PutUser(user.TLBytes!.Value);
+        repo.PutUser(user);
         repo.UpdateUsername(123, "newname");
         var userBytes =  repo.GetUser(123);
         Assert.NotNull(userBytes);
@@ -140,7 +140,7 @@ public class UserRepositoryTests
             .FirstName("aaa"u8)
             .LastName("bbb"u8)
             .Build();
-        repo.PutUser(user.TLBytes!.Value);
+        repo.PutUser(user);
         repo.UpdateUserPhone(123, "+333444");
         var userBytes =  repo.GetUser(123);
         Assert.NotNull(userBytes);

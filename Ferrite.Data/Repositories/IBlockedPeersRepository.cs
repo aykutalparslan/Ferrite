@@ -17,6 +17,7 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
 
 namespace Ferrite.Data.Repositories;
 
@@ -24,5 +25,5 @@ public interface IBlockedPeersRepository
 {
     public bool PutBlockedPeer(long userId, long peerId, PeerType peerType, DateTimeOffset date);
     public bool DeleteBlockedPeer(long userId, long peerId, PeerType peerType);
-    public IReadOnlyList<TLBytes> GetBlockedPeers(long userId);
+    public IReadOnlyList<TLBlockedPeer> GetBlockedPeers(long userId);
 }

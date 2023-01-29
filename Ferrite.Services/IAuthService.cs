@@ -20,32 +20,27 @@ using Ferrite.Data.Auth;
 using Ferrite.Data.Account;
 using Ferrite.Data;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.dto;
+using Ferrite.TL.slim.layer150.auth;
 
 namespace Ferrite.Services;
 
 public interface IAuthService
 {
-    public ValueTask<bool> SaveAppInfo(TLBytes info);
-    public ValueTask<TLBytes?> GetAppInfo(long authKeyId);
+    public ValueTask<bool> SaveAppInfo(TLAppInfo info);
+    public ValueTask<TLAppInfo?> GetAppInfo(long authKeyId);
     public ValueTask<bool> IsAuthorized(long authKeyId);
-    public ValueTask<TLBytes> SendCode(TLBytes q);
-    public ValueTask<TLBytes> SignUp(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> SignIn(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> LogOut(long authKeyId);
+    public ValueTask<TLSentCode> SendCode(TLBytes q);
+    public ValueTask<TLAuthorization> SignUp(long authKeyId, TLBytes q);
+    public ValueTask<TLAuthorization> SignIn(long authKeyId, TLBytes q);
+    public ValueTask<TLLoggedOut> LogOut(long authKeyId);
     public ValueTask<TLBool> ResetAuthorizations(long authKeyId);
-    public ValueTask<TLBytes> ExportAuthorization(long authKeyId, int currentDc, TLBytes q);
-    public ValueTask<TLBytes> ImportAuthorization(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> BindTempAuthKey(long sessionId, TLBytes q);
-    public Task<AuthorizationDTO> ImportBotAuthorization(int apiId, string apiHash, string botAuthToken);
-    public Task<AuthorizationDTO> CheckPassword(bool empty, long srpId, byte[] A, byte[] M1);
-    public Task<string> RequestPasswordRecovery();
-    public Task<AuthorizationDTO> RecoverPassword(string code, PasswordInputSettingsDTO newSettings);
-    public ValueTask<TLBytes> ResendCode(TLBytes q);
-    public ValueTask<TLBytes> CancelCode(TLBytes q);
-    public ValueTask<TLBytes> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
-    public ValueTask<TLBytes> ExportLoginToken(long authKeyId, long sessionId, TLBytes q);
-    public Task<LoginTokenDTO> ImportLoginToken(byte[] token);
-    public Task<TLBytes?> AcceptLoginToken(long authKeyId, byte[] token);
-    public Task<bool> CheckRecoveryPassword(string code);
+    public ValueTask<TLExportedAuthorization> ExportAuthorization(long authKeyId, int currentDc, TLBytes q);
+    public ValueTask<TLAuthorization> ImportAuthorization(long authKeyId, TLBytes q);
+    public ValueTask<TLBool> BindTempAuthKey(long sessionId, TLBytes q);
+    public ValueTask<TLSentCode> ResendCode(TLBytes q);
+    public ValueTask<TLBool> CancelCode(TLBytes q);
+    public ValueTask<TLBool> DropTempAuthKeys(long authKeyId, ICollection<long> exceptAuthKeys);
+    public ValueTask<TLLoginToken> ExportLoginToken(long authKeyId, long sessionId, TLBytes q);
 }
 

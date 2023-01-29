@@ -18,11 +18,12 @@
 
 using Ferrite.Data;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150.users;
 
 namespace Ferrite.Services;
 
 public interface IUsersService
 {
     public ValueTask<TLBytes> GetUsers(long authKeyId, TLBytes q);
-    public ValueTask<TLBytes> GetFullUser(long authKeyId, TLBytes q);
+    public ValueTask<TLUserFull> GetFullUser(long authKeyId, TLBytes q);
 }

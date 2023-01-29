@@ -25,6 +25,7 @@ using Ferrite.TL.slim;
 using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.users;
+using TLUserFull = Ferrite.TL.slim.layer150.users.TLUserFull;
 using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
 
 namespace Ferrite.Services;
@@ -92,14 +93,15 @@ public class UserService : IUsersService
         return (userId, constructor);
     }
 
-    public async ValueTask<TLBytes> GetFullUser(long authKeyId, TLBytes q)
+    public async ValueTask<TLUserFull> GetFullUser(long authKeyId, TLBytes q)
     {
         var (userId, constructor) = GetUserId(((GetFullUser)q).Id);
         bool self = false;
         if (constructor == Constructors.layer150_InputUserSelf)
         {
             var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-            userId = ((AuthInfo)auth).UserId;
+            if(auth == null) return (TLUserFull)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+            userId = auth.Value.AsAuthInfo().UserId;
             self = true;
         }
         var user = await GetUserInternal(userId);
@@ -111,12 +113,12 @@ public class UserService : IUsersService
             return CreteFullUser(user.Value, notifySettings);
         }
 
-        return RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
+        return (TLUserFull)RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
     }
 
-    private TLBytes CreteFullUser(TLBytes userBytes, TLBytes notifySettings)
+    private TLUserFull CreteFullUser(TLUser userBytes, TLPeerNotifySettings notifySettings)
     {
-        var user = ((User)userBytes);
+        var user = userBytes.AsUser();
         var photoConstructor = MemoryMarshal.Read<int>(user.Photo);
         long photoId = photoConstructor == Constructors.layer150_UserProfilePhotoEmpty 
             ? 0 
@@ -144,7 +146,7 @@ public class UserService : IUsersService
             .FullUser(userfull.Build().ToReadOnlySpan())
             .Users(new Vector())
             .Chats(new Vector());
-        return result.Build().TLBytes!.Value;
+        return result.Build();
     }
 
     private static TLBytes GeneratePeerSettings(bool self)
@@ -174,15 +176,15 @@ public class UserService : IUsersService
         return settings.TLBytes!.Value;
     }
 
-    private TLBytes GetPeerNotifySettings(long authKeyId, TLBytes? user, DeviceType deviceType)
+    private TLPeerNotifySettings GetPeerNotifySettings(long authKeyId, TLBytes? user, DeviceType deviceType)
     {
-        if (user == null) return PeerNotifySettings.Builder().Build().TLBytes!.Value;
+        if (user == null) return PeerNotifySettings.Builder().Build();
         var settings =
             _unitOfWork.NotifySettingsRepository.GetNotifySettings(authKeyId, (int)InputNotifyPeerType.Peer,
                 (int)InputPeerType.User, ((User)user).Id, (int)deviceType);
 
         var notifySettings = settings.Count == 0
-            ? PeerNotifySettings.Builder().Build().TLBytes!.Value
+            ? PeerNotifySettings.Builder().Build()
             : settings.First();
         return notifySettings;
     }
@@ -208,12 +210,11 @@ public class UserService : IUsersService
         return deviceType;
     }
 
-    private async ValueTask<TLBytes?> GetUserInternal(long userId)
+    private async ValueTask<TLUser?> GetUserInternal(long userId)
     {
         var user = _unitOfWork.UserRepository.GetUser(userId);
         if (user == null) return null;
-        var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(((User)user).Id);
-        var result = ((User)user).Clone().Status(status.AsSpan()).Build().TLBytes!.Value;
-        return result;
+        var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(user.Value.AsUser().Id);
+        return user.Value.AsUser().Clone().Status(status.AsSpan()).Build();
     }
 }

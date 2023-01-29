@@ -62,7 +62,7 @@ public readonly struct TLBool : IDisposable
     
     public TLBytes TLBytes => _tlBytes;
 
-    public static implicit operator TLBool(TLBytes b) => new (b);
+    public static explicit operator TLBool(TLBytes b) => new (b);
     
     public static implicit operator TLBytes(TLBool b) => b._tlBytes;
     

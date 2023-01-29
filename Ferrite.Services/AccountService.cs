@@ -30,6 +30,7 @@ using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.account;
 using Ferrite.TL.slim.layer150.auth;
 using xxHash;
+using TLAuthorization = Ferrite.TL.slim.layer150.auth.TLAuthorization;
 
 namespace Ferrite.Services;
 
@@ -48,22 +49,20 @@ public class AccountService : IAccountService
         _unitOfWork = unitOfWork;
         _verificationGateway = verificationGateway;
     }
-    public async ValueTask<TLBytes> RegisterDevice(long authKeyId, TLBytes q)
+    public async ValueTask<TLBool> RegisterDevice(long authKeyId, TLBytes q)
     {
         var deviceInfo = GetDeviceInfo(authKeyId, q);
         _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> RegisterDeviceL57(long authKeyId, TLBytes q)
+    public async ValueTask<TLBool> RegisterDeviceL57(long authKeyId, TLBytes q)
     {
         var deviceInfo = GetDeviceInfoL57(authKeyId, q);
         _unitOfWork.DeviceInfoRepository.PutDeviceInfo(deviceInfo);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
     
     private static DeviceInfoDTO GetDeviceInfoL57(long authKeyId, TLBytes q)
@@ -101,13 +100,12 @@ public class AccountService : IAccountService
         };
     }
 
-    public async ValueTask<TLBytes> UnregisterDevice(long authKeyId, TLBytes q)
+    public async ValueTask<TLBool> UnregisterDevice(long authKeyId, TLBytes q)
     {
         var unregisterReq = GetUnregisterDeviceParameters(q);
         _unitOfWork.DeviceInfoRepository.DeleteDeviceInfo(authKeyId, unregisterReq.Token, unregisterReq.OtherUserIds);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
     private readonly record struct UnregisterDeviceParameters(int TokenType, string Token, ICollection<long> OtherUserIds);
@@ -125,7 +123,7 @@ public class AccountService : IAccountService
         return new UnregisterDeviceParameters(unregister.TokenType, token, uids);
     }
 
-    public async ValueTask<TLBytes> UpdateNotifySettings(long authKeyId, TLBytes q)
+    public async ValueTask<TLBool> UpdateNotifySettings(long authKeyId, TLBytes q)
     {
         var info = _unitOfWork.AppInfoRepository.GetAppInfo(authKeyId);
         DeviceType deviceType = GetDeviceType(info);
@@ -136,8 +134,7 @@ public class AccountService : IAccountService
             notifySettingsParameters.PeerId,
             (int)deviceType, notifySettingsParameters.PeerNotifySettings);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
     private DeviceType GetDeviceType(TLBytes? info)
@@ -159,7 +156,7 @@ public class AccountService : IAccountService
     }
 
     private readonly record struct UpdateNotifySettingsParameters(int NotifyPeerType, int PeerType, long PeerId,
-        TLBytes PeerNotifySettings) : IDisposable
+        TLPeerNotifySettings PeerNotifySettings) : IDisposable
     {
         public void Dispose()
         {
@@ -195,7 +192,7 @@ public class AccountService : IAccountService
         }
 
         return new UpdateNotifySettingsParameters((int)notifyPeerType, 
-            (int)peerType, peerId, settingsBuilder.Build().TLBytes!.Value);
+            (int)peerType, peerId, settingsBuilder.Build());
     }
 
     private static (long peerId, InputNotifyPeerType notifyPeerType, InputPeerType peerType) GetNotifyPeerInfo(
@@ -279,7 +276,7 @@ public class AccountService : IAccountService
         return (inputPeerType, peerId, accessHash);
     }
 
-    public async ValueTask<TLBytes> GetNotifySettings(long authKeyId, TLBytes q)
+    public async ValueTask<TLPeerNotifySettings> GetNotifySettings(long authKeyId, TLBytes q)
     {
         (var peerId, InputNotifyPeerType notifyPeerType, InputPeerType peerType) = 
             GetNotifyPeerInfo(new GetNotifySettings(q.AsSpan()).Peer);
@@ -291,25 +288,26 @@ public class AccountService : IAccountService
                 (int)notifyPeerType, (int)peerType, peerId, (int)deviceType);
         if (settings.Count == 0)
         {
-            return PeerNotifySettings.Builder().Build().TLBytes!.Value;
+            return PeerNotifySettings.Builder().Build();
         }
-        return settings.First();
+        return (TLPeerNotifySettings)settings.First();
     }
 
-    public async ValueTask<TLBytes> ResetNotifySettings(long authKeyId)
+    public async ValueTask<TLBool> ResetNotifySettings(long authKeyId)
     {
         _unitOfWork.NotifySettingsRepository.DeleteNotifySettings(authKeyId);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
+    public async ValueTask<TLUser> UpdateProfile(long authKeyId, string? firstName, string? lastName, string? about)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth != null && _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId) is { } u )
+        if (auth != null)
         {
-            var user = ModifyUser(u, firstName, lastName);
+            using var u = _unitOfWork.UserRepository.GetUser(auth.Value.AsAuthInfo().UserId);
+            if (u == null) return (TLUser)RpcErrorGenerator.GenerateError(400, "USER_ID_INVALID"u8);
+            var user = ModifyUser(u.Value, firstName, lastName);
             _unitOfWork.UserRepository.PutUser(user);
             var userInfo = GetUserInfo(user);
             if (about != null) _unitOfWork.UserRepository.PutAbout(userInfo.UserId, about);
@@ -319,7 +317,7 @@ public class AccountService : IAccountService
             return user;
         }
 
-        return RpcErrorGenerator.GenerateError(400,"FIRSTNAME_INVALID"u8);
+        return (TLUser)RpcErrorGenerator.GenerateError(400,"FIRSTNAME_INVALID"u8);
     }
 
     private readonly record struct UserInfo(long UserId, string? Username, 
@@ -335,41 +333,38 @@ public class AccountService : IAccountService
         return new UserInfo(user.Id, username, firstname, lastname, phone);
     }
 
-    private static TLBytes ModifyUser(TLBytes u, string? firstName, string? lastName)
+    private static TLUser ModifyUser(TLBytes u, string? firstName, string? lastName)
     {
         var user = new User(u.AsSpan()).Clone();
         if (firstName != null) user = user.FirstName(Encoding.UTF8.GetBytes(firstName));
         if (lastName != null) user = user.LastName(Encoding.UTF8.GetBytes(lastName));
-        var userBytes = user.Build().ToReadOnlySpan().ToArray();
-        return new TLBytes(userBytes, 0, userBytes.Length);
+        return user.Build();
     }
 
-    public async ValueTask<TLBytes> UpdateStatus(long authKeyId, bool status)
+    public async ValueTask<TLBool> UpdateStatus(long authKeyId, bool status)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth != null)
         {
-            var result = _unitOfWork.UserStatusRepository.PutUserStatus(((AuthInfo)auth).UserId, status);
-            return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-                BoolFalse.Builder().Build().TLBytes!.Value;
+            var result = _unitOfWork.UserStatusRepository.PutUserStatus(auth.Value.AsAuthInfo().UserId, status);
+            return result ? new BoolTrue() : new BoolFalse();
         }
 
-        return BoolFalse.Builder().Build().TLBytes!.Value;
+        return new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> ReportPeer(long authKeyId, TLBytes q)
+    public async ValueTask<TLBool> ReportPeer(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+            return (TLBool)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
 
         using var reason = GetReportPeerParameters( q);
-        _unitOfWork.ReportReasonRepository.PutPeerReportReason(((AuthInfo)auth).UserId, reason.PeerType, reason.PeerId, reason.Reason);
+        _unitOfWork.ReportReasonRepository.PutPeerReportReason(auth.Value.AsAuthInfo().UserId, reason.PeerType, reason.PeerId, reason.Reason);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
     private readonly record struct ReportPeerParameters(int PeerType, long PeerId, TLBytes Reason): IDisposable
@@ -391,69 +386,69 @@ public class AccountService : IAccountService
         return new ReportPeerParameters((int)type, id, reportReason.TLBytes!.Value);
     }
 
-    public ValueTask<TLBytes> CheckUsername(string username)
+    public ValueTask<TLBool> CheckUsername(string username)
     {
         if (!UsernameRegex.IsMatch(username))
         {
-            return ValueTask.FromResult(BoolFalse.Builder().Build().TLBytes!.Value);
+            return ValueTask.FromResult((TLBool)new BoolFalse());
         }
 
         var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user != null)
         {
-            return ValueTask.FromResult(BoolFalse.Builder().Build().TLBytes!.Value);
+            return ValueTask.FromResult((TLBool)new BoolFalse());
         }
-
-        return ValueTask.FromResult(BoolTrue.Builder().Build().TLBytes!.Value);
+        
+        return ValueTask.FromResult((TLBool)new BoolTrue());
     }
 
-    public async ValueTask<TLBytes> UpdateUsername(long authKeyId, string username)
+    public async ValueTask<TLUser> UpdateUsername(long authKeyId, string username)
     {
         if (!UsernameRegex.IsMatch(username))
         {
-            return RpcErrorGenerator.GenerateError(400, "USERNAME_INVALID"u8);
+            return (TLUser)RpcErrorGenerator.GenerateError(400, "USERNAME_INVALID"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+            return (TLUser)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
         var user = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (user == null)
         {
-            _unitOfWork.UserRepository.UpdateUsername(((AuthInfo)auth).UserId, username);
+            _unitOfWork.UserRepository.UpdateUsername(auth.Value.AsAuthInfo().UserId, username);
         }
         else
         {
-            return RpcErrorGenerator.GenerateError(400, "USERNAME_OCCUPIED"u8);
+            return (TLUser)RpcErrorGenerator.GenerateError(400, "USERNAME_OCCUPIED"u8);
         }
 
         await _unitOfWork.SaveAsync();
-        user = _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId);
-        if(user == null) return RpcErrorGenerator.GenerateError(400, "USERNAME_NOT_MODIFIED"u8);
+        user = _unitOfWork.UserRepository.GetUser(auth.Value.AsAuthInfo().UserId);
+        if(user == null) return (TLUser)RpcErrorGenerator.GenerateError(400, "USERNAME_NOT_MODIFIED"u8);
         var userInfo = GetUserInfo(user.Value);
         await _search.IndexUser(new Data.Search.UserSearchModel(userInfo.UserId,
             userInfo.Username, userInfo.FirstName, userInfo.LastName, userInfo.Phone));
         return user.Value;
     }
 
-    public async ValueTask<TLBytes> SetPrivacy(long authKeyId, TLBytes q)
+    public async ValueTask<TLPrivacyRules> SetPrivacy(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+            return (TLPrivacyRules)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
         
         int keyConstructor = MemoryMarshal.Read<int>(((SetPrivacy)q).Key);
         var key = GetPrivacyKey(keyConstructor);
-        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(((AuthInfo)auth).UserId, 
+        _unitOfWork.PrivacyRulesRepository.PutPrivacyRules(auth.Value.AsAuthInfo().UserId, 
             key, ToPrivacyRuleVector(((SetPrivacy)q).Rules));
         await _unitOfWork.SaveAsync();
         return await GetPrivacyRulesInternal(auth.Value, key);
     }
 
-    private async Task<TLBytes> GetPrivacyRulesInternal(TLBytes auth, InputPrivacyKey key)
+    private async Task<TLPrivacyRules> GetPrivacyRulesInternal(TLBytes auth, InputPrivacyKey key)
     {
         var savedRules = await _unitOfWork.PrivacyRulesRepository.GetPrivacyRulesAsync(((AuthInfo)auth).UserId, key);
         List<TLBytes> users = new();
@@ -478,7 +473,7 @@ public class AccountService : IAccountService
             .Rules(savedRules.ToVector())
             .Users(users.ToVector())
             .Chats(chats.ToVector())
-            .Build().TLBytes!.Value;
+            .Build();
     }
 
     private Vector ToPrivacyRuleVector(Vector rules)
@@ -617,12 +612,12 @@ public class AccountService : IAccountService
         _ => Data.InputPrivacyKey.AddedByPhone
     };
 
-    public async ValueTask<TLBytes> GetPrivacy(long authKeyId, TLBytes q)
+    public async ValueTask<TLPrivacyRules> GetPrivacy(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+            return (TLPrivacyRules)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
         
         int keyConstructor = MemoryMarshal.Read<int>(((GetPrivacy)q).Key);
@@ -630,18 +625,19 @@ public class AccountService : IAccountService
         return await GetPrivacyRulesInternal(auth.Value, key);
     }
 
-    public async ValueTask<TLBytes> DeleteAccount(long authKeyId)
+    public async ValueTask<TLBool> DeleteAccount(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null) return new BoolFalse();
         var authorizations = await _unitOfWork
             .AuthorizationRepository
-            .GetAuthorizationsAsync(Encoding.UTF8.GetString(((AuthInfo)auth).Phone));
-        var user = _unitOfWork.UserRepository.GetUser(((AuthInfo)auth).UserId);
-        if(user == null) return BoolFalse.Builder().Build().TLBytes!.Value;
+            .GetAuthorizationsAsync(Encoding.UTF8.GetString(auth.Value.AsAuthInfo().Phone));
+        var user = _unitOfWork.UserRepository.GetUser(auth.Value.AsAuthInfo().UserId);
+        if(user == null) return new BoolFalse();
 
         foreach (var a in authorizations)
         {
-            var keyId = ((AuthInfo)a).AuthKeyId;
+            var keyId = a.AsAuthInfo().AuthKeyId;
             _unitOfWork.AuthorizationRepository.DeleteAuthorization(keyId);
             var device = _unitOfWork.DeviceInfoRepository.GetDeviceInfo(keyId);
             if (device != null)
@@ -652,52 +648,52 @@ public class AccountService : IAccountService
             await _unitOfWork.SaveAsync();
         }
 
-        _unitOfWork.PrivacyRulesRepository.DeletePrivacyRules(((User)user).Id);
-        _unitOfWork.UserRepository.DeleteUser(((User)user).Id);
+        _unitOfWork.PrivacyRulesRepository.DeletePrivacyRules(user.Value.AsUser().Id);
+        _unitOfWork.UserRepository.DeleteUser(user.Value.AsUser().Id);
         await _unitOfWork.SaveAsync();
-        await _search.DeleteUser(((User)user).Id);
+        await _search.DeleteUser(user.Value.AsUser().Id);
         
-        return BoolTrue.Builder().Build().TLBytes!.Value;
+        return new BoolTrue();
     }
 
-    public async ValueTask<TLBytes> SetAccountTTL(long authKeyId, int accountDaysTtl)
+    public async ValueTask<TLBool> SetAccountTTL(long authKeyId, int accountDaysTtl)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return BoolFalse.Builder().Build().TLBytes!.Value;
+            return new BoolFalse();
         }
 
-        _unitOfWork.UserRepository.UpdateAccountTtl(((AuthInfo)auth).UserId, accountDaysTtl);
+        _unitOfWork.UserRepository.UpdateAccountTtl(auth.Value.AsAuthInfo().UserId, accountDaysTtl);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> GetAccountTTL(long authKeyId)
+    public async ValueTask<TLAccountDaysTTL> GetAccountTTL(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+            return (TLAccountDaysTTL)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         }
 
-        var ttlDays = _unitOfWork.UserRepository.GetAccountTtl(((AuthInfo)auth).UserId);
-        return AccountDaysTTL.Builder().Days(ttlDays).Build().TLBytes!.Value;
+        var ttlDays = _unitOfWork.UserRepository.GetAccountTtl(auth.Value.AsAuthInfo().UserId);
+        return AccountDaysTTL.Builder().Days(ttlDays).Build();
     }
 
-    public async ValueTask<TLBytes> SendChangePhoneCode(long authKeyId, TLBytes q)
+    public async ValueTask<TLSentCode> SendChangePhoneCode(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (DateTime.Now - DateTimeOffset.FromUnixTimeSeconds(((AuthInfo)auth).LoggedInAt) < new TimeSpan(1, 0, 0))
+        if(auth == null) return (TLSentCode)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+        if (DateTime.Now - DateTimeOffset.FromUnixTimeSeconds(auth.Value.AsAuthInfo().LoggedInAt) < new TimeSpan(1, 0, 0))
         {
-            return RpcErrorGenerator.GenerateError(406, "FRESH_CHANGE_PHONE_FORBIDDEN"u8);
+            return (TLSentCode)RpcErrorGenerator.GenerateError(406, "FRESH_CHANGE_PHONE_FORBIDDEN"u8);
         }
         var phoneNumber = Encoding.UTF8.GetString(((SendChangePhoneCode)q).PhoneNumber);
         var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != null)
         {
-            return RpcErrorGenerator.GenerateError(406, "PHONE_NUMBER_OCCUPIED"u8);
+            return (TLSentCode)RpcErrorGenerator.GenerateError(406, "PHONE_NUMBER_OCCUPIED"u8);
         }
         
         var code = await _verificationGateway.SendSms(phoneNumber);
@@ -707,11 +703,19 @@ public class AccountService : IAccountService
         _unitOfWork.PhoneCodeRepository.PutPhoneCode(phoneNumber, hash, code.ToString(),
             new TimeSpan(0, 0, PhoneCodeTimeout*2));
         await _unitOfWork.SaveAsync();
-        return SentCode.Builder()
-            .Type(SentCodeTypeSms.Builder().Build().ToReadOnlySpan())
+        
+        return GenerateSentCode(hash);
+    }
+
+    private static TLSentCode GenerateSentCode(string hash)
+    {
+        using var codeType = SentCodeTypeSms.Builder().Build();
+        TLSentCode sentCode = SentCode.Builder()
+            .Type(codeType.ToReadOnlySpan())
             .PhoneCodeHash(Encoding.UTF8.GetBytes(hash))
             .Timeout(PhoneCodeTimeout)
-            .Build().TLBytes!.Value;
+            .Build();
+        return sentCode;
     }
     
     private string GeneratePhoneCodeHash(string code)
@@ -720,7 +724,7 @@ public class AccountService : IAccountService
         return codeBytes.GetXxHash64(1071).ToString("x");
     }
 
-    public async ValueTask<TLBytes> ChangePhone(long authKeyId, TLBytes q)
+    public async ValueTask<TLUser> ChangePhone(long authKeyId, TLBytes q)
     {
         var phoneNumber = Encoding.UTF8.GetString(((ChangePhone)q).PhoneNumber);
         var phoneCodeHash = Encoding.UTF8.GetString(((ChangePhone)q).PhoneCodeHash);
@@ -728,62 +732,63 @@ public class AccountService : IAccountService
         var code = _unitOfWork.PhoneCodeRepository.GetPhoneCode(phoneNumber, phoneCodeHash);
         if (phoneCode != code)
         {
-            return RpcErrorGenerator.GenerateError(400, "PHONE_CODE_EXPIRED"u8);
+            return (TLUser)RpcErrorGenerator.GenerateError(400, "PHONE_CODE_EXPIRED"u8);
         }
 
         var user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         if (user != null)
         {
-            return RpcErrorGenerator.GenerateError(400, "PHONE_NUMBER_OCCUPIED"u8);
+            return (TLUser)RpcErrorGenerator.GenerateError(400, "PHONE_NUMBER_OCCUPIED"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if(auth == null) return (TLUser)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         var authorizations = await _unitOfWork
-            .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(((AuthInfo)auth).Phone));
+            .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(auth.Value.AsAuthInfo().Phone));
         foreach (var authorization in authorizations)
         {
-            _unitOfWork.AuthorizationRepository.PutAuthorization(((AuthInfo)authorization)
+            _unitOfWork.AuthorizationRepository.PutAuthorization(authorization.AsAuthInfo()
                 .Clone()
                 .Phone(Encoding.UTF8.GetBytes(phoneNumber))
-                .Build().TLBytes!.Value);
+                .Build());
         }
-        _unitOfWork.UserRepository.UpdateUserPhone(((AuthInfo)auth).UserId, phoneNumber);
+        _unitOfWork.UserRepository.UpdateUserPhone(auth.Value.AsAuthInfo().UserId, phoneNumber);
         await _unitOfWork.SaveAsync();
         user = _unitOfWork.UserRepository.GetUser(phoneNumber);
         await _unitOfWork.SaveAsync();
         return user!.Value;
     }
 
-    public async ValueTask<TLBytes> UpdateDeviceLocked(long authKeyId, int period)
+    public async ValueTask<TLBool> UpdateDeviceLocked(long authKeyId, int period)
     {
          _unitOfWork.DeviceLockedRepository.PutDeviceLocked(authKeyId, TimeSpan.FromSeconds(period));
          var result = await _unitOfWork.SaveAsync();
-         return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-             BoolFalse.Builder().Build().TLBytes!.Value;
+         return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> GetAuthorizations(long authKeyId)
+    public async ValueTask<TLAuthorizations> GetAuthorizations(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if(auth == null) return (TLAuthorizations)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
         var authorizations = await _unitOfWork
-            .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(((AuthInfo)auth).Phone));
-        List<TLBytes> infos = new();
+            .AuthorizationRepository.GetAuthorizationsAsync(Encoding.UTF8.GetString(auth.Value.AsAuthInfo().Phone));
+        List<TLAppInfo> infos = new();
         foreach (var a in authorizations)
         {
-            if(!((AuthInfo)a).LoggedIn) continue;
-            var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(((AuthInfo)a).AuthKeyId);
+            if(!a.AsAuthInfo().LoggedIn) continue;
+            var authorization = _unitOfWork.AppInfoRepository.GetAppInfo(a.AsAuthInfo().AuthKeyId);
             if (authorization != null) infos.Add(authorization.Value);
         }
 
-        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(((AuthInfo)auth).UserId), infos);
+        return GenerateAuthorizations(_unitOfWork.UserRepository.GetAccountTtl(auth.Value.AsAuthInfo().UserId), infos);
     }
 
-    private TLBytes GenerateAuthorizations(int ttl, List<TLBytes> infos)
+    private TLAuthorizations GenerateAuthorizations(int ttl, List<TLAppInfo> infos)
     {
         Vector authVector = new();
         foreach (var info in infos)
         {
-            var a = (AppInfo)info;
-            var auth = Authorization.Builder()
+            var a = info.AsAppInfo();
+            using var auth = Authorization.Builder()
                 .Hash(a.Hash)
                 .DeviceModel(a.DeviceModel)
                 .Platform("Unknown"u8)
@@ -802,68 +807,66 @@ public class AccountService : IAccountService
         return Authorizations.Builder()
             .AuthorizationTtlDays(ttl)
             .AuthorizationsProperty(authVector)
-            .Build().TLBytes!.Value;
+            .Build();
     }
 
-    public async ValueTask<TLBytes> ResetAuthorization(long authKeyId, long hash)
+    public async ValueTask<TLBool> ResetAuthorization(long authKeyId, long hash)
     {
         var sessAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if (sessAuthKeyId == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
+            return (TLBool)RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (DateTime.Now - DateTimeOffset.FromUnixTimeSeconds(((AuthInfo)auth).LoggedInAt) < new TimeSpan(1, 0, 0))
+        if(auth == null) return (TLBool)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+        if (DateTime.Now - DateTimeOffset.FromUnixTimeSeconds(auth.Value.AsAuthInfo().LoggedInAt) < new TimeSpan(1, 0, 0))
         {
-            return RpcErrorGenerator.GenerateError(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN"u8);
+            return (TLBool)RpcErrorGenerator.GenerateError(406, "FRESH_RESET_AUTHORISATION_FORBIDDEN"u8);
         }
         var info = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync((long)sessAuthKeyId);
         if(info == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
+            return (TLBool)RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
 
         _unitOfWork.AuthorizationRepository.DeleteAuthorization(sessAuthKeyId.Value);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> SetContactSignUpNotification(long authKeyId, bool silent)
+    public async ValueTask<TLBool> SetContactSignUpNotification(long authKeyId, bool silent)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(((AuthInfo)auth).UserId, silent);
+        if(auth == null) return (TLBool)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+        _unitOfWork.SignUpNotificationRepository.PutSignUpNotification(auth.Value.AsAuthInfo().UserId, silent);
         var result = await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> GetContactSignUpNotification(long authKeyId)
+    public async ValueTask<TLBool> GetContactSignUpNotification(long authKeyId)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var result = !_unitOfWork.SignUpNotificationRepository.GetSignUpNotification(((AuthInfo)auth).UserId);
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        if(auth == null) return (TLBool)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
+        var result = !_unitOfWork.SignUpNotificationRepository.GetSignUpNotification(auth.Value.AsAuthInfo().UserId);
+        return result ? new BoolTrue() : new BoolFalse();
     }
 
-    public async ValueTask<TLBytes> ChangeAuthorizationSettings(long authKeyId, long hash, 
+    public async ValueTask<TLBool> ChangeAuthorizationSettings(long authKeyId, long hash, 
         bool encryptedRequestsDisabled, bool callRequestsDisabled)
     {
         var appAuthKeyId = _unitOfWork.AppInfoRepository.GetAuthKeyIdByAppHash(hash);
         if(appAuthKeyId == null)
         {
-            return RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
+            return (TLBool)RpcErrorGenerator.GenerateError(400, "HASH_INVALID"u8);
         }
         var info = _unitOfWork.AppInfoRepository.GetAppInfo((long)appAuthKeyId);
-        if (info == null) return BoolFalse.Builder().Build().TLBytes!.Value;
-        var infoModified = info.Value.AsAppInfo().Clone()
+        if (info == null) return new BoolFalse();
+        var success = _unitOfWork.AppInfoRepository.PutAppInfo(info.Value.AsAppInfo().Clone()
             .EncryptedRequestsDisabled(encryptedRequestsDisabled)
             .CallRequestsDisabled(callRequestsDisabled)
-            .Build().TLBytes!.Value;
-        var success = _unitOfWork.AppInfoRepository.PutAppInfo(infoModified);
+            .Build());
         var result = success && await _unitOfWork.SaveAsync();
-        return result ? BoolTrue.Builder().Build().TLBytes!.Value : 
-            BoolFalse.Builder().Build().TLBytes!.Value;
+        return result ? new BoolTrue() : new BoolFalse();
 
     }
 }

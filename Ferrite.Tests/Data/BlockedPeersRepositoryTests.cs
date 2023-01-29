@@ -66,7 +66,8 @@ public class BlockedPeersRepositoryTests
         List<byte[]> peerData = new();
         for (int i = 0; i < 2; i++)
         {
-            peerData.Add(RandomNumberGenerator.GetBytes(32));
+            using var peer = BlockedPeer.Builder().Build().TLBytes!.Value;
+            peerData.Add(peer.AsSpan().ToArray());
         }
         var mock = AutoMock.GetLoose();
         var store = mock.Mock<IKVStore>();

@@ -31,14 +31,14 @@ public class ContactsRepositoryTests
     [Fact]
     public void Puts_Contact()
     {
-        using var savedContact = SavedContact.Builder()
+        using TLContactInfo savedContact = ContactInfo.Builder()
             .UserId(222)
             .ClientId(333)
             .Date(555)
             .Phone("aaa"u8)
             .FirstName("a"u8)
             .LastName("b"u8)
-            .Build().TLBytes!.Value;
+            .Build();
         var savedContactBytes = savedContact.AsSpan().ToArray();
         var mock = AutoMock.GetLoose();
         var store = mock.Mock<IKVStore>();
@@ -78,17 +78,25 @@ public class ContactsRepositoryTests
     public void Gets_SavedContacts()
     {
         List<byte[]> saved = new();
+        List<byte[]> result = new();
         for (int i = 0; i < 2; i++)
         {
-            var savedContact = SavedContact.Builder()
+            using TLContactInfo savedContact = ContactInfo.Builder()
                 .UserId(222+i)
                 .ClientId(333 + i)
                 .Date(555 + i)
                 .Phone("aaa"u8)
                 .FirstName("a"u8)
                 .LastName("b"u8)
-                .Build().TLBytes!.Value;
+                .Build();
             saved.Add(savedContact.AsSpan().ToArray());
+            using TLSavedContact c = SavedPhoneContact.Builder()
+                .Date(555 + i)
+                .Phone("aaa"u8)
+                .FirstName("a"u8)
+                .LastName("b"u8)
+                .Build();
+            result.Add(c.AsSpan().ToArray());
         }
         var mock = AutoMock.GetLoose();
         var store = mock.Mock<IKVStore>();
@@ -98,7 +106,7 @@ public class ContactsRepositoryTests
         var contacts = repo.GetSavedContacts(123);
         for (int i = 0; i < 2; i++)
         {
-            Assert.Equal(saved[i], 
+            Assert.Equal(result[i], 
                 contacts[i].AsSpan().ToArray());
         }
         store.VerifyAll();
@@ -122,14 +130,14 @@ public class ContactsRepositoryTests
         List<byte[]> mutualContacts = new (){BitConverter.GetBytes((long)223)};
         for (int i = 0; i < 2; i++)
         {
-            using var savedContact = SavedContact.Builder()
+            using TLContactInfo savedContact = ContactInfo.Builder()
                 .UserId(222+i)
                 .ClientId(333 + i)
                 .Date(555 + i)
                 .Phone("aaa"u8)
                 .FirstName("a"u8)
                 .LastName("b"u8)
-                .Build().TLBytes!.Value;
+                .Build();
             saved.Add(savedContact.AsSpan().ToArray());
         }
         var mock = AutoMock.GetLoose();

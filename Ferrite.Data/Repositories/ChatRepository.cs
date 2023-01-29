@@ -32,24 +32,24 @@ public class ChatRepository : IChatRepository
             new KeyDefinition("pk",
                 new DataColumn { Name = "chat_id", Type = DataType.Long })));
     }
-    public bool PutChat(TLBytes chat)
+    public bool PutChat(TLChat chat)
     {
-        long chatId = chat.Constructor switch
+        long chatId = chat.Type switch
         {
-            Constructors.layer150_Chat => ((Chat)chat).Id,
-            Constructors.layer150_ChatForbidden => ((ChatForbidden)chat).Id,
-            Constructors.layer150_Channel => ((Channel)chat).Id,
+            TLChat.ChatType.Chat => chat.AsChat().Id,
+            TLChat.ChatType.ChatForbidden => chat.AsChatForbidden().Id,
+            TLChat.ChatType.Channel => chat.AsChannel().Id,
             _ => 0
         };
         return _store.Put(chat.AsSpan().ToArray(), chatId);
     }
 
-    public async ValueTask<TLBytes?> GetChatAsync(long chatId)
+    public async ValueTask<TLChat?> GetChatAsync(long chatId)
     {
         var chatBytes = await _store.GetAsync(chatId);
         if (chatBytes is { Length: > 0 })
         {
-            return new TLBytes(chatBytes, 0, chatBytes.Length);
+            return new TLChat(chatBytes, 0, chatBytes.Length);
         }
 
         return null;

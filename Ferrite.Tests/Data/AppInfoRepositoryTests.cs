@@ -37,7 +37,7 @@ public class AppInfoRepositoryTests
             (long)111, (long)222)).Verifiable();
 
         var repo = mock.Create<AppInfoRepository>();
-        repo.PutAppInfo(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAppInfo(new TLAppInfo(infoBytes,0 , infoBytes.Length));
         store.VerifyAll();
     }
 
@@ -64,7 +64,7 @@ public class AppInfoRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AppInfoRepository(new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes();
-        repo.PutAppInfo(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAppInfo(new TLAppInfo(infoBytes,0 , infoBytes.Length));
 
         var info = repo.GetAppInfo(111);
         Assert.NotNull(info);
@@ -79,7 +79,7 @@ public class AppInfoRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AppInfoRepository(new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes();
-        repo.PutAppInfo(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAppInfo(new TLAppInfo(infoBytes,0 , infoBytes.Length));
 
         var info = repo.GetAppInfoByAppHash(222);
         Assert.NotNull(info);
@@ -94,7 +94,7 @@ public class AppInfoRepositoryTests
         var ctx = new RocksDBContext(path);
         var repo = new AppInfoRepository(new RocksDBKVStore(ctx));
         var infoBytes = GenerateInfoBytes();
-        repo.PutAppInfo(new TLBytes(infoBytes,0 , infoBytes.Length));
+        repo.PutAppInfo(new TLAppInfo(infoBytes,0 , infoBytes.Length));
 
         var authKeyId = repo.GetAuthKeyIdByAppHash(222);
         Assert.NotNull(authKeyId);

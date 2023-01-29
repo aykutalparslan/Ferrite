@@ -56,7 +56,7 @@ public class InitConnectionFunc : ITLFunction
         return query;
     }
 
-    private TLBytes CreateAppInfo(TLBytes q, TLExecutionContext ctx)
+    private TLAppInfo CreateAppInfo(TLBytes q, TLExecutionContext ctx)
     {
         var request = (TL.slim.layer150.InitConnection)q;
         return AppInfo.Builder()
@@ -70,6 +70,6 @@ public class InitConnectionFunc : ITLFunction
             .LangPack(request.LangPack)
             .SystemLangCode(request.LangCode)
             .SystemVersion(request.SystemVersion)
-            .Build().TLBytes!.Value;
+            .Build();
     }
 }

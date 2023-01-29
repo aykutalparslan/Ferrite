@@ -18,6 +18,7 @@
 
 using System.Runtime.InteropServices;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -36,22 +37,22 @@ public class NotifySettingsRepository : INotifySettingsRepository
                 new DataColumn { Name = "peer_id", Type = DataType.Long },
                 new DataColumn { Name = "device_type", Type = DataType.Int })));
     }
-    public bool PutNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType, TLBytes settings)
+    public bool PutNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType, TLPeerNotifySettings settings)
     {
         var settingBytes = settings.AsSpan().ToArray();
 
         return _store.Put(settingBytes, authKeyId, notifyPeerType, peerType, peerId, deviceType);
     }
 
-    public IReadOnlyCollection<TLBytes> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType)
+    public IReadOnlyCollection<TLPeerNotifySettings> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType)
     {
-        List<TLBytes> results = new();
+        List<TLPeerNotifySettings> results = new();
        
         var iter = _store.Iterate(authKeyId,
             notifyPeerType, peerType, peerId, deviceType);
         foreach (var settingBytes in iter)
         {
-            results.Add(new TLBytes(settingBytes.AsMemory(), 0, settingBytes.Length));
+            results.Add(new TLPeerNotifySettings(settingBytes.AsMemory(), 0, settingBytes.Length));
         }
 
         return results;

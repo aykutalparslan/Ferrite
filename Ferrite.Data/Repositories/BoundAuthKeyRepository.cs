@@ -95,7 +95,7 @@ public class BoundAuthKeyRepository : IBoundAuthKeyRepository
 
     public IReadOnlyList<long> GetTempAuthKeys(long authKeyId)
     {
-        //_storeBound.ListDeleteByScore(DateTimeOffset.Now.ToUnixTimeMilliseconds(), authKeyId);
+        _storeBound.ListDeleteByScore(DateTimeOffset.Now.ToUnixTimeMilliseconds(), authKeyId);
         var queryResult = _storeBound.ListGet(authKeyId);
         List<long> result = new List<long>();
         foreach (var v in queryResult)

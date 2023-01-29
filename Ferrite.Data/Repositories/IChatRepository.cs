@@ -17,11 +17,12 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public interface IChatRepository
 {
-    public bool PutChat(TLBytes chat);
-    public ValueTask<TLBytes?> GetChatAsync(long chatId);
+    public bool PutChat(TLChat chat);
+    public ValueTask<TLChat?> GetChatAsync(long chatId);
 }

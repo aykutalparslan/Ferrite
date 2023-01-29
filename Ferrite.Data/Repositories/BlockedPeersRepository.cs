@@ -49,13 +49,13 @@ public class BlockedPeersRepository : IBlockedPeersRepository
         return _store.Delete(userId, peerId, (int)peerType);
     }
 
-    public IReadOnlyList<TLBytes> GetBlockedPeers(long userId)
+    public IReadOnlyList<TLBlockedPeer> GetBlockedPeers(long userId)
     {
-        List<TLBytes> blockedPeers = new();
+        List<TLBlockedPeer> blockedPeers = new();
         var iter = _store.Iterate(userId);
         foreach (var peerBlockedBytes in iter)
         {
-            blockedPeers.Add(new TLBytes(peerBlockedBytes, 0 , peerBlockedBytes.Length));
+            blockedPeers.Add(new TLBlockedPeer(peerBlockedBytes, 0 , peerBlockedBytes.Length));
         }
 
         return blockedPeers;

@@ -39,15 +39,15 @@ public class ContactsRepository : IContactsRepository
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "contact_user_id", Type = DataType.Long })));
     }
-    public TLBytes PutContact(long userId, long contactUserId, TLBytes contact)
+    public TLImportedContact PutContact(long userId, long contactUserId, TLContactInfo contact)
     {
         _store.Put(contact.AsSpan().ToArray(), userId, contactUserId);
         _storeMutual.Put(BitConverter.GetBytes(userId), contactUserId, userId);
-        var c = (SavedContact)contact;
+        var c = contact.AsContactInfo();
         return ImportedContact.Builder()
             .ClientId(c.ClientId)
             .UserId(c.UserId)
-            .Build().TLBytes!.Value;
+            .Build();
     }
 
     public bool DeleteContact(long userId, long contactUserId)
@@ -60,21 +60,28 @@ public class ContactsRepository : IContactsRepository
         return _store.Delete(userId);
     }
 
-    public IReadOnlyList<TLBytes> GetSavedContacts(long userId)
+    public IReadOnlyList<TLSavedContact> GetSavedContacts(long userId)
     {
-        List<TLBytes> savedContacts = new();
+        List<TLSavedContact> savedContacts = new();
         var iter = _store.Iterate(userId);
         foreach (var savedBytes in iter)
         {
-            savedContacts.Add(new TLBytes(savedBytes, 0, savedBytes.Length));
+            var contactInfo = new TLContactInfo(savedBytes, 0, savedBytes.Length)
+                .AsContactInfo();
+            savedContacts.Add(SavedPhoneContact.Builder()
+                .Phone(contactInfo.Phone)
+                .FirstName(contactInfo.FirstName)
+                .LastName(contactInfo.LastName)
+                .Date(contactInfo.Date)
+                .Build());
         }
 
         return savedContacts;
     }
 
-    public IReadOnlyList<TLBytes> GetContacts(long userId)
+    public IReadOnlyList<TLContact> GetContacts(long userId)
     {
-        List<TLBytes> contacts = new();
+        List<TLContact> contacts = new();
         var contactsIterator = _store.Iterate(userId);
         List<long> mutualContacts = new ();
         var mutualIterator = _storeMutual.Iterate(userId);
@@ -84,12 +91,12 @@ public class ContactsRepository : IContactsRepository
         }
         foreach (var savedBytes in contactsIterator)
         {
-            var contact = (SavedContact)savedBytes.AsSpan();
+            var contact = new TLContactInfo(savedBytes, 0, savedBytes.Length).AsContactInfo();
             var mutual = mutualContacts.Contains(contact.UserId);
             contacts.Add(Contact.Builder()
                 .UserId(contact.UserId)
                 .Mutual(mutual)
-                .Build().TLBytes!.Value);
+                .Build());
         }
 
         return contacts;

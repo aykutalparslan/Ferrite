@@ -551,6 +551,7 @@ public readonly struct TL" + typeName + @" : IDisposable
 {
     private readonly TLBytes _tlBytes;
     private readonly int _constructor;
+    public int Constructor => _constructor;
     public TL" + typeName + @"(IMemoryOwner<byte> memoryOwner, int offset, int length)
     {
         _constructor = MemoryMarshal.Read<int>(memoryOwner.Memory.Span[offset..]);

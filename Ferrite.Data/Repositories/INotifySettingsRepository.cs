@@ -17,12 +17,13 @@
 // 
 
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
 
 namespace Ferrite.Data.Repositories;
 
 public interface INotifySettingsRepository
 {
-    public bool PutNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType, TLBytes settings);
-    public IReadOnlyCollection<TLBytes> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType);
+    public bool PutNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType, TLPeerNotifySettings settings);
+    public IReadOnlyCollection<TLPeerNotifySettings> GetNotifySettings(long authKeyId, int notifyPeerType, int peerType, long peerId, int deviceType);
     public bool DeleteNotifySettings(long authKeyId);
 }

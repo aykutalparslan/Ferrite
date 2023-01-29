@@ -30,14 +30,14 @@ public class ChatRepositoryTests
     [Fact]
     public void Puts_Chat()
     {
-        using var chat = Chat.Builder()
+        using TLChat chat = Chat.Builder()
             .Id(123)
             .Title("test"u8)
             .Photo(ChatPhotoEmpty.Builder().Build().ToReadOnlySpan())
             .ParticipantsCount(4)
             .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
             .Version(5)
-            .Build().TLBytes!.Value;
+            .Build();
         var chatBytes = chat.AsSpan().ToArray();
         var mock = AutoMock.GetLoose();
         var store = mock.Mock<IKVStore>();
@@ -56,14 +56,14 @@ public class ChatRepositoryTests
         string path = "test-" + Random.Shared.Next();
         var ctx = new RocksDBContext(path);
         ChatRepository repo = new (new RocksDBKVStore(ctx));
-        using var chat = Chat.Builder()
+        using TLChat chat = Chat.Builder()
             .Id(123)
             .Title("test"u8)
             .Photo(ChatPhotoEmpty.Builder().Build().ToReadOnlySpan())
             .ParticipantsCount(4)
             .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
             .Version(5)
-            .Build().TLBytes!.Value;
+            .Build();
         repo.PutChat(chat);
         var chatFromRepo = await repo.GetChatAsync(123);
         Assert.Equal(chat.AsSpan().ToArray(), chatFromRepo!.Value.AsSpan().ToArray());
