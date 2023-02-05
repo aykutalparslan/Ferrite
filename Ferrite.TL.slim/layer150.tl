@@ -39,6 +39,20 @@
 
 //null#56730bcc = Null;
 
+//DTOs
+dto.savedMessage#5a0ecbfb original_message:Message pts:int = dto.SavedMessage;
+dto.reportReasonWithMessage#ce24cf85 report_reason:bytes message:string = dto.ReportReasonWithMessage;
+dto.userStatusFull#e502cb87 status:Bool expires:int was_online:int = dto.UserStatusFull;
+dto.thumbnail#59f6d0e0 file_id:long thumb_file_id:long photo_size:bytes = dto.Thumbnail;
+dto.appInfo#f0fd49bb hash:long auth_key_id:long encrypted_requests_disabled:Bool call_requests_disabled:Bool api_id:int device_model:string system_version:string app_version:string system_lang_code:string lang_pack:string lang_code:string ip:string = dto.AppInfo;
+dto.authInfo#46def678 flags:# auth_key_id:long user_id:long phone:string  api_layer:int future_auth_token:flags.0?bytes logged_in:Bool logged_in_at:int = dto.AuthInfo;
+dto.exportedAuthInfo#7b96f8dc auth_key_id:long user_id:long phone:string previous_dc_id:int next_dc_id:int data:bytes = dto.ExportedAuthInfo;
+dto.blockedPeer#7265a0aa peer_type:int peer_id:long date:int = dto.BlockedPeer;
+dto.contactInfo#3537bf96 phone:string first_name:string last_name:string client_id:long user_id:long date:int = dto.ContactInfo;
+dto.deviceInfo#b8df38ae flags:# no_muted:flags.0?true token_type:int token:string app_sandbox:Bool secret:bytes other_uids:Vector<long> = dto.DeviceInfo;
+dto.deviceUser#1fc151bf user_id:long token:string = dto.DeviceUser;
+//DTOs
+
 inputPeerEmpty#7f3b18ea = InputPeer;
 inputPeerSelf#7da07ec9 = InputPeer;
 inputPeerChat#35a95cb9 chat_id:long = InputPeer;

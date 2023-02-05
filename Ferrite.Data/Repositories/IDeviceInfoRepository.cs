@@ -16,7 +16,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.TL.slim.dto;
+
+using Ferrite.TL.slim.layer150.dto;
 
 namespace Ferrite.Data.Repositories;
 

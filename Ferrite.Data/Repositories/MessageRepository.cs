@@ -16,7 +16,9 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using MessagePack;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.dto;
 
 namespace Ferrite.Data.Repositories;
 
@@ -39,34 +41,47 @@ public class MessageRepository : IMessageRepository
                 new DataColumn { Name = "user_id", Type = DataType.Long },
                 new DataColumn { Name = "message_id", Type = DataType.Int })));
     }
-    public bool PutMessage(long userId, MessageDTO message, int pts)
+    public bool PutMessage(long userId, TLMessage message, int pts)
     {
-        message.Pts = pts;
-        int peerType = message.Out ? (int)message.PeerId.PeerType : (int)message.FromId.PeerType;
-        long peerId = message.Out ? message.PeerId.PeerId : message.FromId.PeerId;
-        var data = MessagePackSerializer.Serialize(message);
-        _store.Put(data, userId, peerType, peerId,
-            message.Out, message.Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
+        bool outgoing = message.AsMessage().OutProperty;
+        int peerType = outgoing 
+            ? (int)message.AsMessage().Get_PeerId().Type 
+            : (int)message.AsMessage().Get_FromId().Type;
+        long peerId = outgoing 
+            ? GetPeerId(message.AsMessage().Get_PeerId()) 
+            : GetPeerId(message.AsMessage().Get_FromId());
+        
+        using TLSavedMessage savedMessage = SavedMessage.Builder()
+            .Pts(pts)
+            .OriginalMessage(message.AsSpan())
+            .Build();
+        _store.Put(savedMessage.AsSpan().ToArray(), userId, peerType, peerId,
+            outgoing, message.AsMessage().Id, pts, DateTimeOffset.Now.ToUnixTimeSeconds());
         return true;
     }
 
-    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, PeerDTO? peerId = null)
+    private static long GetPeerId(TLPeer peer) => peer.Type switch
+    {
+        TLPeer.PeerType.PeerUser => peer.AsPeerUser().UserId,
+        TLPeer.PeerType.PeerChat => peer.AsPeerChat().ChatId,
+        TLPeer.PeerType.PeerChannel => peer.AsPeerChannel().ChannelId,
+        _ => 0
+    };
+
+    public IReadOnlyCollection<TLSavedMessage> GetMessages(long userId, TLInputPeer? peerId = null)
     { 
-        List<MessageDTO> messages = new List<MessageDTO>();
+        List<TLSavedMessage> messages = new();
         if (peerId != null)
         {
             List<object> parameters = new List<object>();
             parameters.Add(userId);
-            if (peerId != null)
-            {
-                parameters.Add((int)peerId.PeerType);
-                parameters.Add(peerId.PeerId);
-            }
+            parameters.Add((int)peerId.Value.Type);
+            parameters.Add(GetPeerId(peerId.Value));
+            
             var results = _store.Iterate(parameters.ToArray());
             foreach (var val in results)
             {
-                var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-                messages.Add(message);
+                messages.Add(new TLSavedMessage(val, 0 ,val.Length));
             }
         }
         else
@@ -74,31 +89,26 @@ public class MessageRepository : IMessageRepository
             var results = _store.Iterate(userId);
             foreach (var val in results)
             {
-                var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-                messages.Add(message);
+                messages.Add(new TLSavedMessage(val, 0 ,val.Length));
             }
         }
 
         return messages;
     }
 
-    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, PeerDTO? peerId = null)
+    public async ValueTask<IReadOnlyCollection<TLSavedMessage>> GetMessagesAsync(long userId, TLInputPeer? peerId = null)
     {
-        List<MessageDTO> messages = new List<MessageDTO>();
+        List<TLSavedMessage> messages = new();
         if (peerId != null)
         {
             List<object> parameters = new List<object>();
             parameters.Add(userId);
-            if (peerId != null)
-            {
-                parameters.Add((int)peerId.PeerType);
-                parameters.Add(peerId.PeerId);
-            }
+            parameters.Add((int)peerId.Value.Type);
+            parameters.Add(GetPeerId(peerId.Value));
             var results = _store.IterateAsync(parameters.ToArray());
             await foreach (var val in results)
             {
-                var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-                messages.Add(message);
+                messages.Add(new TLSavedMessage(val, 0 ,val.Length));
             }
         }
         else
@@ -108,8 +118,7 @@ public class MessageRepository : IMessageRepository
             {
                 try
                 {
-                    var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-                    messages.Add(message);
+                    messages.Add(new TLSavedMessage(val, 0 ,val.Length));
                 }
                 catch (Exception e)
                 {
@@ -118,18 +127,21 @@ public class MessageRepository : IMessageRepository
                 }
             }
         }
-        messages = messages.OrderByDescending(m => m.Date).ToList();
+        messages = messages.OrderByDescending(m => 
+            m.AsSavedMessage().Get_OriginalMessage().AsMessage().Id).ToList();
         return messages;
     }
 
-    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts, int maxPts, DateTimeOffset date)
+    public IReadOnlyCollection<TLSavedMessage> GetMessages(long userId, int pts, int maxPts, DateTimeOffset date)
     {
-        List<MessageDTO> messages = new List<MessageDTO>();
+        List<TLSavedMessage> messages = new();
         var results = _store.Iterate(userId);
         foreach (var val in results)
         {
-            var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-            if (message.Pts >= pts && message.Pts <= pts && message.Date <= date.ToUnixTimeSeconds())
+            var message = new TLSavedMessage(val, 0, val.Length);
+            var messagePts = message.AsSavedMessage().Pts;
+            if (messagePts >= pts && messagePts <= maxPts &&
+                message.AsSavedMessage().Get_OriginalMessage().AsMessage().Date <= date.ToUnixTimeSeconds())
             {
                 messages.Add(message);
             }
@@ -137,14 +149,16 @@ public class MessageRepository : IMessageRepository
         return messages;
     }
 
-    public async ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts, int maxPts, DateTimeOffset date)
+    public async ValueTask<IReadOnlyCollection<TLSavedMessage>> GetMessagesAsync(long userId, int pts, int maxPts, DateTimeOffset date)
     {
-        List<MessageDTO> messages = new List<MessageDTO>();
+        List<TLSavedMessage> messages = new();
         var results = _store.IterateAsync(userId);
         await foreach (var val in results)
         {
-            var message = MessagePackSerializer.Deserialize<MessageDTO>(val);
-            if (message.Pts >= pts && message.Pts <= maxPts && message.Date <= date.ToUnixTimeSeconds())
+            var message = new TLSavedMessage(val, 0, val.Length);
+            var messagePts = message.AsSavedMessage().Pts;
+            if (messagePts >= pts && messagePts <= maxPts && 
+                message.AsSavedMessage().Get_OriginalMessage().AsMessage().Date<= date.ToUnixTimeSeconds())
             {
                 messages.Add(message);
             }
@@ -152,26 +166,24 @@ public class MessageRepository : IMessageRepository
         return messages;
     }
 
-    public MessageDTO? GetMessage(long userId, int messageId)
+    public TLSavedMessage? GetMessage(long userId, int messageId)
     {
         var data = _store.GetBySecondaryIndex("by_id", userId, messageId);
         if (data == null)
         {
             return null;
         }
-        var message = MessagePackSerializer.Deserialize<MessageDTO>(data);
-        return message;
+        return new TLSavedMessage(data, 0, data.Length);
     }
 
-    public async ValueTask<MessageDTO> GetMessageAsync(long userId, int messageId)
+    public async ValueTask<TLSavedMessage?> GetMessageAsync(long userId, int messageId)
     {
         var data = await _store.GetBySecondaryIndexAsync("by_id", userId, messageId);
         if (data == null)
         {
             return null;
         }
-        var message = MessagePackSerializer.Deserialize<MessageDTO>(data);
-        return message;
+        return new TLSavedMessage(data, 0, data.Length);
     }
 
     public bool DeleteMessage(long userId, int id)
@@ -183,4 +195,14 @@ public class MessageRepository : IMessageRepository
     {
         return await _store.DeleteBySecondaryIndexAsync("by_id", userId, id);
     }
+    
+    private static long GetPeerId(TLInputPeer p) => p.Type switch
+    {
+        TLInputPeer.InputPeerType.InputPeerChat => p.AsInputPeerChat().ChatId,
+        TLInputPeer.InputPeerType.InputPeerUser => p.AsInputPeerUser().UserId,
+        TLInputPeer.InputPeerType.InputPeerChannel => p.AsInputPeerChannel().ChannelId,
+        TLInputPeer.InputPeerType.InputPeerUserFromMessage => p.AsInputPeerUserFromMessage().UserId,
+        TLInputPeer.InputPeerType.InputPeerChannelFromMessage => p.AsInputPeerChannelFromMessage().ChannelId,
+        _ => 0
+    };
 }

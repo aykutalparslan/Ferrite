@@ -18,8 +18,8 @@
 
 using System.Text;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.dto;
 
 namespace Ferrite.Data.Repositories;
 

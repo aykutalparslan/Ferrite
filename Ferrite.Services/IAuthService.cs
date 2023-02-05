@@ -16,12 +16,9 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 using System;
-using Ferrite.Data.Auth;
-using Ferrite.Data.Account;
-using Ferrite.Data;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150.auth;
+using Ferrite.TL.slim.layer150.dto;
 
 namespace Ferrite.Services;
 

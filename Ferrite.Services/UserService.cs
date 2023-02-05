@@ -22,7 +22,6 @@ using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Users;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.users;
 using TLUserFull = Ferrite.TL.slim.layer150.users.TLUserFull;

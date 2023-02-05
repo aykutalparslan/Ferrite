@@ -319,7 +319,7 @@ public class MessagesService : IMessagesService
     private async Task<int> SaveMessage(IUpdatesContext senderCtx, AuthInfoDTO auth, MessageDTO outgoingMessage, PeerDTO from,
         PeerDTO to)
     {
-        int previousPts = await senderCtx.Pts();
+        /*int previousPts = await senderCtx.Pts();
         int pts = await senderCtx.IncrementPts();
         _unitOfWork.MessageRepository.PutMessage(auth.UserId,
             outgoingMessage, pts);
@@ -331,13 +331,14 @@ public class MessagesService : IMessagesService
             null, outgoingMessage.MessageText,
             outgoingMessage.Date);
         await _search.IndexMessage(searchModelOutgoing);
-        return pts;
+        return pts;*/
+        throw new NotImplementedException();
     }
 
     private static MessageDTO GenerateOutgoingMessage(bool silent, string message, int? replyToMsgId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int senderMessageId, PeerDTO from, PeerDTO to)
     {
-        var outgoingMessage = new MessageDTO()
+        /*var outgoingMessage = new MessageDTO()
         {
             Id = senderMessageId,
             Out = true,
@@ -354,11 +355,12 @@ public class MessagesService : IMessagesService
             outgoingMessage.ReplyTo = new MessageReplyHeaderDTO((int)replyToMsgId, null, null);
         }
 
-        return outgoingMessage;
+        return outgoingMessage;*/
+        throw new NotImplementedException();
     }
     private async Task SaveIncomingMessage(PeerDTO to, MessageDTO outgoingMessage, PeerDTO from)
     {
-        var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
+        /*var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, to.PeerId);
         int receiverMessageId = await receiverCtx.NextMessageId();
         var incomingMessage = outgoingMessage with
         {
@@ -376,12 +378,13 @@ public class MessagesService : IMessagesService
             (int)from.PeerType, from.PeerId, incomingMessage.Id,
             null, incomingMessage.MessageText,
             incomingMessage.Date);
-        await _search.IndexMessage(searchModelIncoming);
+        await _search.IndexMessage(searchModelIncoming);*/
+        throw new NotImplementedException();
     }
     private async Task DeletePeerMessagesInternal(int maxId, int? minDate, int? maxDate, PeerDTO peerDto, AuthInfoDTO auth,
         IUpdatesContext userCtx)
     {
-        var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
+        /*var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
         var peerMessages =
             _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
         List<int> peerDeletedIds = new();
@@ -400,7 +403,8 @@ public class MessagesService : IMessagesService
             int peerPts = await userCtx.IncrementPts();
             var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
             _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
-        }
+        }*/
+        throw new NotImplementedException();
     }
 
     private async Task<int> DeleteMessagesInternal(int maxId, int? minDate, int? maxDate, IUpdatesContext userCtx,

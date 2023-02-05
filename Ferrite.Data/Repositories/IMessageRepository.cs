@@ -16,17 +16,20 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.dto;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IMessageRepository
 {
-    public bool PutMessage(long userId, MessageDTO message, int pts);
-    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, PeerDTO? peerId = null);
-    public ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, PeerDTO? peerId = null);
-    public IReadOnlyCollection<MessageDTO> GetMessages(long userId, int pts, int maxPts, DateTimeOffset date);
-    public ValueTask<IReadOnlyCollection<MessageDTO>> GetMessagesAsync(long userId, int pts, int maxPts, DateTimeOffset date);
-    public MessageDTO? GetMessage(long userId, int messageId);
-    public ValueTask<MessageDTO> GetMessageAsync(long userId, int messageId);
+    public bool PutMessage(long userId, TLMessage message, int pts);
+    public IReadOnlyCollection<TLSavedMessage> GetMessages(long userId, TLInputPeer? peerId = null);
+    public ValueTask<IReadOnlyCollection<TLSavedMessage>> GetMessagesAsync(long userId, TLInputPeer? peerId = null);
+    public IReadOnlyCollection<TLSavedMessage> GetMessages(long userId, int pts, int maxPts, DateTimeOffset date);
+    public ValueTask<IReadOnlyCollection<TLSavedMessage>> GetMessagesAsync(long userId, int pts, int maxPts, DateTimeOffset date);
+    public TLSavedMessage? GetMessage(long userId, int messageId);
+    public ValueTask<TLSavedMessage?> GetMessageAsync(long userId, int messageId);
     public bool DeleteMessage(long userId, int id);
     public ValueTask<bool> DeleteMessageAsync(long userId, int id);
 }

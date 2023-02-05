@@ -26,12 +26,11 @@ using Ferrite.Data.Account;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.account;
 using Ferrite.TL.slim.layer150.auth;
+using Ferrite.TL.slim.layer150.dto;
 using xxHash;
-using TLAuthorization = Ferrite.TL.slim.layer150.auth.TLAuthorization;
 using Vector = Ferrite.TL.slim.Vector;
 
 namespace Ferrite.Services;

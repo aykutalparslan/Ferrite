@@ -19,11 +19,10 @@
 using System.Text;
 using DotNext.Buffers;
 using Ferrite.Crypto;
-using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
+using Ferrite.TL.slim.layer150.dto;
 
 namespace Ferrite.Core.Execution.Functions.BaseLayer;
 

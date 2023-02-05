@@ -17,8 +17,8 @@
 // 
 
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.dto;
 using MessagePack;
 using TLUserStatus = Ferrite.TL.slim.layer150.TLUserStatus;
 
@@ -52,7 +52,7 @@ public class UserStatusRepository : IUserStatusRepository
             return new UserStatusEmpty();
         }
 
-        var userStatus = new TL.slim.dto.TLUserStatus(serialized, 0, serialized.Length);
+        var userStatus = new TLUserStatusFull(serialized, 0, serialized.Length);
         if (!userStatus.AsUserStatusFull().Status)
         {
             return new UserStatusOffline();

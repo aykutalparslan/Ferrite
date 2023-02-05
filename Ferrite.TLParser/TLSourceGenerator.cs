@@ -365,7 +365,7 @@ using DotNext.Buffers;
 
 namespace Ferrite.TL.slim" + (nameSpace.Length > 0 ? "." + nameSpace : "") + @";
 
-public readonly ref struct " + typeName + @"
+public ref struct " + typeName + @"
 {
     private readonly Span<byte> _buff;
     private readonly IMemoryOwner<byte>? _memory;");
@@ -412,7 +412,12 @@ public readonly ref struct " + typeName + @"
     }");
         }
 
-        GenerateProperties(sourceBuilder, combinator);
+        GenerateProperties(sourceBuilder, combinator, out var hasObjectProperty);
+        if (hasObjectProperty)
+        {
+            sourceBuilder.Append(@"
+    private Memory<byte>? _mem;");
+        }
         GenerateGetOffset(sourceBuilder, combinator);
         GenerateBuilder(sourceBuilder, combinator);
         var str = @"
@@ -450,7 +455,7 @@ using DotNext.Buffers;
 
 namespace Ferrite.TL.slim" + (nameSpace.Length > 0 ? "." + nameSpace : "") + @";
 
-public readonly ref struct " + typeName + @"
+public ref struct " + typeName + @"
 {
     private readonly Span<byte> _buff;
     private readonly IMemoryOwner<byte>? _memory;");
@@ -497,7 +502,12 @@ public readonly ref struct " + typeName + @"
     }");
         }
 
-        GenerateProperties(sourceBuilder, combinator);
+        GenerateProperties(sourceBuilder, combinator, out var hasObjectProperty);
+        if (hasObjectProperty)
+        {
+            sourceBuilder.Append(@"
+    private Memory<byte>? _mem;");
+        }
         GenerateGetOffset(sourceBuilder, combinator);
         GenerateBuilder(sourceBuilder, combinator);
         if (baseType != "MessageBare")
@@ -1117,8 +1127,9 @@ public readonly struct TL" + typeName + @" : IDisposable
             }
     }
 
-    private static void GenerateProperties(StringBuilder sb, CombinatorDeclarationSyntax combinator)
+    private static void GenerateProperties(StringBuilder sb, CombinatorDeclarationSyntax combinator, out bool hasObjectProperty)
     {
+        hasObjectProperty = false;
         int index = 1;
         if (combinator.Arguments != null)
             foreach (var arg in combinator.Arguments)
@@ -1158,7 +1169,8 @@ public readonly struct TL" + typeName + @" : IDisposable
                 }
                 else
                 {
-                    GenerateObjectProperty(sb, arg, index);
+                    hasObjectProperty = true;
+                    GenerateObjectProperty(sb, arg, index, combinator.ContainingNamespace);
                 }
 
                 if (arg.TypeTerm?.Identifier != "true")
@@ -1230,8 +1242,39 @@ public readonly struct TL" + typeName + @" : IDisposable
     }");
     }
 
-    private static void GenerateObjectProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index)
+    private static void GenerateObjectProperty(StringBuilder sb, SimpleArgumentSyntax arg, int index, string nameSpace)
     {
+        if (arg.TypeTerm?.Identifier != "Object" &&
+            arg.TypeTerm?.Identifier != "X" &&
+            !(arg.TypeTerm?.Identifier == "Message" && nameSpace =="mtproto"))
+        {
+            var ns = arg.TypeTerm.NamespaceIdentifier != null
+                ? "Ferrite.TL.slim." + nameSpace + "." +arg.TypeTerm.NamespaceIdentifier + "."
+                : "";
+            string conditional = arg.ConditionalDefinition != null
+                ? @"
+        if(!" + arg.ConditionalDefinition.Identifier?.ToPascalCase() + "[" +
+                  arg.ConditionalDefinition.ConditionalArgumentBit + @"])
+        {
+            return new "+ns+"TL" + arg.TypeTerm?.Identifier + @"();
+        }"
+                : "";
+            sb.Append(@"
+    public "+ns+"TL"+ arg.TypeTerm?.Identifier + " Get_" + arg.Identifier?.ToPascalCase() + @"()
+    {"+conditional+@"
+        var offset = GetOffset(" + index + @", _buff);
+        var size = ObjectReader.ReadSize(_buff[offset..]);
+        if(_memory != null && _mem == null)
+        {
+            _mem = _memory.Memory;
+        }
+        else if(_mem == null)
+        {
+            _mem = _buff.ToArray();
+        }
+        return new "+ns+"TL"+ arg.TypeTerm?.Identifier + @"(_mem!.Value, offset, size);
+    }");
+        }
         sb.Append(@"
     public Span<byte> " + arg.Identifier?.ToPascalCase() + " => " + (arg.ConditionalDefinition != null
                       ? "!"+arg.ConditionalDefinition.Identifier?.ToPascalCase()+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "] ? new Span<byte>() : "

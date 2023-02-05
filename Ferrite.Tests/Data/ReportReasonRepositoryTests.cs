@@ -18,8 +18,8 @@
 
 using Autofac.Extras.Moq;
 using Ferrite.Data.Repositories;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.dto;
 using Moq;
 using Xunit;
 

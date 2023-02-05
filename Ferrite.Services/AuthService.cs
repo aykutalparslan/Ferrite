@@ -19,14 +19,13 @@
 using System.Text;
 using Ferrite.Crypto;
 using Ferrite.Data;
-using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.dto;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.auth;
+using Ferrite.TL.slim.layer150.dto;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using xxHash;
