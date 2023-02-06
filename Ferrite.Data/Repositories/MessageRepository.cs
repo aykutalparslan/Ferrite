@@ -47,6 +47,7 @@ public class MessageRepository : IMessageRepository
         int peerType = outgoing 
             ? (int)message.AsMessage().Get_PeerId().Type 
             : (int)message.AsMessage().Get_FromId().Type;
+        
         long peerId = outgoing 
             ? GetPeerId(message.AsMessage().Get_PeerId()) 
             : GetPeerId(message.AsMessage().Get_FromId());
@@ -92,7 +93,8 @@ public class MessageRepository : IMessageRepository
                 messages.Add(new TLSavedMessage(val, 0 ,val.Length));
             }
         }
-
+        messages = messages.OrderByDescending(m => 
+            m.AsSavedMessage().Get_OriginalMessage().AsMessage().Id).ToList();
         return messages;
     }
 
@@ -146,6 +148,8 @@ public class MessageRepository : IMessageRepository
                 messages.Add(message);
             }
         }
+        messages = messages.OrderByDescending(m => 
+            m.AsSavedMessage().Get_OriginalMessage().AsMessage().Id).ToList();
         return messages;
     }
 
@@ -163,6 +167,8 @@ public class MessageRepository : IMessageRepository
                 messages.Add(message);
             }
         }
+        messages = messages.OrderByDescending(m => 
+            m.AsSavedMessage().Get_OriginalMessage().AsMessage().Id).ToList();
         return messages;
     }
 
