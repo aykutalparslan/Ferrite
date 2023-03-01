@@ -51,6 +51,9 @@ dto.blockedPeer#7265a0aa peer_type:int peer_id:long date:int = dto.BlockedPeer;
 dto.contactInfo#3537bf96 phone:string first_name:string last_name:string client_id:long user_id:long date:int = dto.ContactInfo;
 dto.deviceInfo#b8df38ae flags:# no_muted:flags.0?true token_type:int token:string app_sandbox:Bool secret:bytes other_uids:Vector<long> = dto.DeviceInfo;
 dto.deviceUser#1fc151bf user_id:long token:string = dto.DeviceUser;
+dto.fileReference#1bad8d0f reference_bytes:bytes file_id:long is_big_file:Bool = dto.FileReference;
+dto.filePart#ea55c402 file_id:long part_num:int part_size:int = dto.FilePart;
+dto.uploadedFileInfo#e3c0c2ca flags:# id:long part_size:int parts:int access_hash:long name:string md5_checksum:flags.0?string saved_on:long is_big_file:Bool file_reference:flags.0?bytes = dto.UploadedFileInfo;
 //DTOs
 
 inputPeerEmpty#7f3b18ea = InputPeer;
