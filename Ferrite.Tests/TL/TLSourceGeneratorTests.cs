@@ -220,7 +220,7 @@ updates.differenceEmpty#5d75a138 date:int seq:int = updates.Difference;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct Updates", generated.SourceText);
+        Assert.Contains("public ref struct Updates", generated.SourceText);
     }
 
     [Fact]
@@ -232,7 +232,7 @@ chatFull#c9d31138 flags:# can_set_username:flags.7?true has_scheduled:flags.8?tr
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct MessagesChatFull", generated.SourceText);
+        Assert.Contains("public ref struct MessagesChatFull", generated.SourceText);
     }
 
     [Fact]
@@ -348,7 +348,7 @@ account.getAllSecureValues#b288bc7d = Vector<SecureValue>;
 ";
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
-        Assert.Contains("public readonly ref struct GetAllSecureValues", generated.SourceText);
+        Assert.Contains("public ref struct GetAllSecureValues", generated.SourceText);
     }
 
     [Fact]
