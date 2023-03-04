@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim.layer150.dto;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;
@@ -47,101 +48,94 @@ public class FileInfoRepository : IFileInfoRepository
             new KeyDefinition("pk",
                 new DataColumn { Name = "file_id", Type = DataType.Long },
                 new DataColumn { Name = "file_part", Type = DataType.Int })));
-        _storeBigFileParts = storeFileParts;
+        _storeBigFileParts = storeBigFileParts;
         _storeBigFileParts.SetSchema(new TableDefinition("ferrite", "big_file_parts",
             new KeyDefinition("pk",
                 new DataColumn { Name = "file_id", Type = DataType.Long },
                 new DataColumn { Name = "file_part", Type = DataType.Int })));
     }
-    public bool SaveFileInfo(UploadedFileInfoDTO uploadedFile)
-    {
-        var infoBytes = MessagePackSerializer.Serialize(uploadedFile);
-        return _storeFiles.Put(infoBytes, uploadedFile.Id);
-    }
 
-    public UploadedFileInfoDTO? GetFileInfo(long fileId)
+    public TLUploadedFileInfo? GetFileInfo(long fileId)
     {
         var infoBytes = _storeFiles.Get(fileId);
         if (infoBytes == null) return null;
-        var info = MessagePackSerializer.Deserialize<UploadedFileInfoDTO>(infoBytes);
-        return info;
+        return new TLUploadedFileInfo(infoBytes, 0, infoBytes.Length);
     }
 
-    public bool PutFileInfo(UploadedFileInfoDTO uploadedFile)
+    public bool PutFileInfo(TLUploadedFileInfo uploadedFile)
     {
-        var infoBytes = MessagePackSerializer.Serialize(uploadedFile);
-        return _storeFiles.Put(infoBytes, uploadedFile.Id);
+        var infoBytes = uploadedFile.AsSpan().ToArray();
+        return _storeFiles.Put(infoBytes, uploadedFile.AsUploadedFileInfo().Id);
     }
 
-    public bool PutBigFileInfo(UploadedFileInfoDTO uploadedFile)
+    public bool PutBigFileInfo(TLUploadedFileInfo uploadedFile)
     {
-        var infoBytes = MessagePackSerializer.Serialize(uploadedFile);
-        return _storeBigFiles.Put(infoBytes, uploadedFile.Id);
+        var infoBytes = uploadedFile.AsSpan().ToArray();
+        return _storeBigFiles.Put(infoBytes, uploadedFile.AsUploadedFileInfo().Id);
     }
 
-    public UploadedFileInfoDTO? GetBigFileInfo(long fileId)
+    public TLUploadedFileInfo? GetBigFileInfo(long fileId)
     {
         var infoBytes = _storeBigFiles.Get(fileId);
         if (infoBytes == null) return null;
-        var info = MessagePackSerializer.Deserialize<UploadedFileInfoDTO>(infoBytes);
-        return info;
+        return new TLUploadedFileInfo(infoBytes, 0, infoBytes.Length);
     }
 
-    public bool PutFilePart(FilePartDTO part)
+    public bool PutFilePart(TLFilePart part)
     {
-        var partBytes = MessagePackSerializer.Serialize(part);
-        return _storeFileParts.Put(partBytes, part.FileId, part.PartNum);
+        var partBytes = part.AsSpan().ToArray();
+        return _storeFileParts.Put(partBytes, part.AsFilePart().FileId, part.AsFilePart().PartNum);
     }
 
-    public bool PutBigFilePart(FilePartDTO part)
+    public bool PutBigFilePart(TLFilePart part)
     {
-        var partBytes = MessagePackSerializer.Serialize(part);
-        return _storeBigFileParts.Put(partBytes, part.FileId, part.PartNum);
+        var partBytes = part.AsSpan().ToArray();
+        return _storeBigFileParts.Put(partBytes, part.AsFilePart().FileId, part.AsFilePart().PartNum);
     }
 
-    public IReadOnlyCollection<FilePartDTO> GetFileParts(long fileId)
+    public IReadOnlyCollection<TLFilePart> GetFileParts(long fileId)
     {
-        List<FilePartDTO> parts = new();
+        List<TLFilePart> parts = new();
         var iter = _storeFileParts.Iterate(fileId);
         foreach (var partBytes in iter)
         {
-            var part = MessagePackSerializer.Deserialize<FilePartDTO>(partBytes);
+            var part = new TLFilePart(partBytes, 0, partBytes.Length);
             parts.Add(part);
         }
 
         return parts;
     }
 
-    public bool SaveBigFilePart(FilePartDTO part)
+    public bool SaveBigFilePart(TLFilePart part)
     {
-        var partBytes = MessagePackSerializer.Serialize(part);
-        return _storeBigFileParts.Put(partBytes, part.FileId, part.PartNum);
+        var partBytes = part.AsSpan().ToArray();
+        return _storeBigFileParts.Put(partBytes, part.AsFilePart().FileId, part.AsFilePart().PartNum);
     }
 
-    public IReadOnlyCollection<FilePartDTO> GetBigFileParts(long fileId)
+    public IReadOnlyCollection<TLFilePart> GetBigFileParts(long fileId)
     {
-        List<FilePartDTO> parts = new();
+        List<TLFilePart> parts = new();
         var iter = _storeBigFileParts.Iterate(fileId);
         foreach (var partBytes in iter)
         {
-            var part = MessagePackSerializer.Deserialize<FilePartDTO>(partBytes);
+            var part = new TLFilePart(partBytes, 0, partBytes.Length);
             parts.Add(part);
         }
 
         return parts;
     }
 
-    public bool PutFileReference(FileReferenceDTO reference)
+    public bool PutFileReference(TLFileReference reference)
     {
-        var referenceBytes = MessagePackSerializer.Serialize(reference);
-        return _storeReferences.Put(referenceBytes, reference.ReferenceBytes);
+        var referenceBytes = reference.AsSpan().ToArray();
+        return _storeReferences.Put(referenceBytes, 
+            reference.AsFileReference().ReferenceBytes.ToArray());
     }
 
-    public FileReferenceDTO? GetFileReference(byte[] referenceBytes)
+    public TLFileReference? GetFileReference(byte[] referenceBytes)
     {
         var reference = _storeReferences.Get(referenceBytes);
         if (reference == null) return null;
-        var info = MessagePackSerializer.Deserialize<FileReferenceDTO>(reference);
-        return info;
+        return new TLFileReference(reference, 0 , reference.Length);
     }
 }

@@ -18,6 +18,7 @@
 
 using Ferrite.Data;
 using Ferrite.Data.Photos;
+using Ferrite.TL.slim.layer150.dto;
 
 namespace Ferrite.Services;
 
@@ -27,7 +28,7 @@ public interface IPhotosService
     Task<ServiceResult<Data.Photos.PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo,
         InputFileDTO? video, double? videoStartTimestamp);
 
-    Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date);
+    Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(TLUploadedFileInfo file, DateTime date);
     Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
     Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit);
     Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto);

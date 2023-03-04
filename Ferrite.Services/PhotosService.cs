@@ -24,6 +24,7 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Photos;
 using Ferrite.Data.Repositories;
+using Ferrite.TL.slim.layer150.dto;
 using PhotoDTO = Ferrite.Data.Photos.PhotoDTO;
 
 namespace Ferrite.Services;
@@ -116,30 +117,30 @@ public class PhotosService : IPhotosService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(UploadedFileInfoDTO file, DateTime date)
+    public async Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(TLUploadedFileInfo file, DateTime date)
     {
         Data.PhotoDTO result = await ProcessPhotoInternal(file, date);
 
         return new ServiceResult<Data.PhotoDTO>(result, true, ErrorMessages.None);
     }
 
-    private async Task<Data.PhotoDTO> ProcessPhotoInternal(UploadedFileInfoDTO? file, DateTime date)
+    private async Task<Data.PhotoDTO> ProcessPhotoInternal(TLUploadedFileInfo file, DateTime date)
     {
         Data.PhotoDTO? result = null;
-        var fileParts = _unitOfWork.FileInfoRepository.GetFileParts(file.Id);
+        var fileParts = _unitOfWork.FileInfoRepository.GetFileParts(file.AsUploadedFileInfo().Id);
         int size = 0;
         foreach (var part in fileParts)
         {
-            size += part.PartSize;
+            size += part.AsFilePart().PartSize;
         }
 
         using var imageData = UnmanagedMemoryAllocator.Allocate<byte>(size);
         int offset = 0;
-        if (!file.IsBigFile)
+        if (!file.AsUploadedFileInfo().IsBigFile)
         {
             foreach (var part in fileParts)
             {
-                var partData = await _objectStore.GetFilePart(part.FileId, part.PartNum);
+                var partData = await _objectStore.GetFilePart(part.AsFilePart().FileId, part.AsFilePart().PartNum);
                 offset = ReadFromStream(partData, imageData, offset);
             }
         }
@@ -147,7 +148,7 @@ public class PhotosService : IPhotosService
         {
             foreach (var part in fileParts)
             {
-                var partData = await _objectStore.GetBigFilePart(part.FileId, part.PartNum);
+                var partData = await _objectStore.GetBigFilePart(part.AsFilePart().FileId, part.AsFilePart().PartNum);
                 offset = ReadFromStream(partData, imageData, offset);
             }
         }
@@ -155,7 +156,7 @@ public class PhotosService : IPhotosService
         (int w, int h) = _photoProcessor.GetImageSize(imageData.Span);
         if (w == 0 || h == 0)
         {
-            result = new Data.PhotoDTO(true, false, file.Id,
+            result = new Data.PhotoDTO(true, false, file.AsUploadedFileInfo().Id,
                 null, null, null,
                 null, null, null);
         }
@@ -170,7 +171,9 @@ public class PhotosService : IPhotosService
                     thumbnail.Width, thumbnail.Height, thumbnail.Size, thumbnail.Bytes, thumbnail.Sizes));
             }
 
-            result = new Data.PhotoDTO(false, false, file.Id, file.AccessHash, file.FileReference,
+            result = new Data.PhotoDTO(false, false, 
+                file.AsUploadedFileInfo().Id, file.AsUploadedFileInfo().AccessHash, 
+                file.AsUploadedFileInfo().FileReference.ToArray(),
                 (int)((DateTimeOffset)date).ToUnixTimeSeconds(), photoSizes, null, 2);
         }
 
@@ -191,7 +194,7 @@ public class PhotosService : IPhotosService
     }
 
     private async Task GenerateThumbnails(int w, int h, IUnmanagedMemoryOwner<byte> imageData, 
-        UploadedFileInfoDTO file, List<ThumbnailDTO> thumbnails)
+        TLUploadedFileInfo file, List<ThumbnailDTO> thumbnails)
     {
         if (w >= 160 && h >= 160)
         {
@@ -238,7 +241,7 @@ public class PhotosService : IPhotosService
     }
 
     private async Task GenerateThumbnail(IUnmanagedMemoryOwner<byte> imageData,
-        UploadedFileInfoDTO file, int w, string type, ImageFilter filter, List<ThumbnailDTO> thumbnails)
+        TLUploadedFileInfo file, int w, string type, ImageFilter filter, List<ThumbnailDTO> thumbnails)
     {
         /*var thumbnail = _photoProcessor.GenerateThumbnail(imageData.Span, w, filter);
         var thumbId = _random.NextLong();

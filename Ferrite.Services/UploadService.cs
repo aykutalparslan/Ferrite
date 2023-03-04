@@ -17,9 +17,11 @@
 // 
 
 using System.IO.Pipelines;
+using System.Text;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
+using Ferrite.TL.slim.layer150.dto;
 using Ferrite.TL.slim.layer150.storage;
 using Ferrite.TL.slim.layer150.upload;
 using Ferrite.TL.slim.mtproto;
@@ -42,50 +44,59 @@ public class UploadService : IUploadService
     public async Task<bool> SaveFilePart(long fileId, int filePart, Stream data)
     { 
         bool saved = await _objectStore.SaveFilePart(fileId, filePart, data);
-        _unitOfWork.FileInfoRepository.PutFilePart(new FilePartDTO(fileId, filePart, (int)data.Length));
+        _unitOfWork.FileInfoRepository.PutFilePart(new FilePart(fileId, filePart, (int)data.Length));
         return saved && await _unitOfWork.SaveAsync();
     }
 
     public async Task<bool> SaveBigFilePart(long fileId, int filePart, int fileTotalParts, Stream data)
     {
         var saved = await _objectStore.SaveBigFilePart(fileId, filePart, fileTotalParts, data);
-        _unitOfWork.FileInfoRepository.PutBigFilePart(new FilePartDTO(fileId, filePart, (int)data.Length));
+        _unitOfWork.FileInfoRepository.PutBigFilePart(new FilePart(fileId, filePart, (int)data.Length));
         return saved && await _unitOfWork.SaveAsync();
     }
 
-    public async Task<ServiceResult<UploadedFileInfoDTO>> SaveFile(InputFileDTO file)
+    public async Task<ServiceResult<TLUploadedFileInfo?>> SaveFile(InputFileDTO file)
     {
-        UploadedFileInfoDTO? info;
+        TLUploadedFileInfo info;
         int size = 0;
-        IReadOnlyCollection<FilePartDTO> fileParts;
+        IReadOnlyCollection<TLFilePart> fileParts;
         if (file != null)
         {
             fileParts = _unitOfWork.FileInfoRepository.GetFileParts(file.Id);
             if (fileParts.Count != file.Parts ||
-                fileParts.First().PartNum != 0 ||
-                fileParts.Last().PartNum != file.Parts - 1)
+                fileParts.First().AsFilePart().PartNum != 0 ||
+                fileParts.Last().AsFilePart().PartNum != file.Parts - 1)
             {
-                return new ServiceResult<UploadedFileInfoDTO>(null, false, ErrorMessages.FilePartsInvalid);
+                return new ServiceResult<TLUploadedFileInfo?>(null, false, ErrorMessages.FilePartsInvalid);
             }
             foreach (var part in fileParts)
             {
-                size += part.PartSize;
+                size += part.AsFilePart().PartSize;
             }
             if (size > 5242880)
             {
-                return new ServiceResult<UploadedFileInfoDTO>(null, false, ErrorMessages.PhotoFileTooBig);
+                return new ServiceResult<TLUploadedFileInfo?>(null, false, ErrorMessages.PhotoFileTooBig);
             }
 
             var accessHash = _random.NextLong();
             byte[] reference = _random.GetRandomBytes(16);
-            info = new UploadedFileInfoDTO(file.Id, fileParts.First().PartSize, file.Parts,
-                accessHash, file.Name, file.MD5Checksum, DateTimeOffset.Now, file.IsBigfile, reference);
+            info = UploadedFileInfo.Builder()
+                .Id(file.Id)
+                .PartSize(fileParts.First().AsFilePart().PartSize)
+                .Parts(file.Parts)
+                .AccessHash(accessHash)
+                .Name(Encoding.UTF8.GetBytes(file.Name))
+                .Md5Checksum(file.MD5Checksum != null ? Encoding.UTF8.GetBytes(file.Name) : ReadOnlySpan<byte>.Empty )
+                .SavedOn(DateTimeOffset.Now.ToUnixTimeMilliseconds())
+                .IsBigFile(file.IsBigfile)
+                .FileReference(reference)
+                .Build();
         } 
         else
         {
-            return new ServiceResult<UploadedFileInfoDTO>(null, false, ErrorMessages.PhotoFileMissing);
+            return new ServiceResult<TLUploadedFileInfo?>(null, false, ErrorMessages.PhotoFileMissing);
         }
-        if (info.IsBigFile)
+        if (info.AsUploadedFileInfo().IsBigFile)
         {
             _unitOfWork.FileInfoRepository.PutBigFileInfo(info);
         }
@@ -94,9 +105,10 @@ public class UploadService : IUploadService
             _unitOfWork.FileInfoRepository.PutFileInfo(info);
         }
         
-        _unitOfWork.FileInfoRepository.PutFileReference(new FileReferenceDTO(info.FileReference, info.Id, info.IsBigFile));
+        _unitOfWork.FileInfoRepository.PutFileReference(new FileReference(info.AsUploadedFileInfo().FileReference, 
+            info.AsUploadedFileInfo().Id, info.AsUploadedFileInfo().IsBigFile));
         await _unitOfWork.SaveAsync();
-        return new ServiceResult<UploadedFileInfoDTO>(info, true, ErrorMessages.None);
+        return new ServiceResult<TLUploadedFileInfo?>(info, true, ErrorMessages.None);
     }
 
     public async Task<ServiceResult<IFileOwner>> GetPhoto(long fileId, long accessHash, byte[] fileReference, 

@@ -16,20 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using Ferrite.TL.slim.layer150.dto;
+
 namespace Ferrite.Data.Repositories;
 
 public interface IFileInfoRepository
 {
-    public bool SaveFileInfo(UploadedFileInfoDTO uploadedFile);
-    public UploadedFileInfoDTO? GetFileInfo(long fileId);
-    public bool PutFileInfo(UploadedFileInfoDTO uploadedFile);
-    public bool PutBigFileInfo(UploadedFileInfoDTO uploadedFile);
-    public UploadedFileInfoDTO? GetBigFileInfo(long fileId);
-    public bool PutFilePart(FilePartDTO part);
-    public bool PutBigFilePart(FilePartDTO part);
-    public IReadOnlyCollection<FilePartDTO> GetFileParts(long fileId);
-    public bool SaveBigFilePart(FilePartDTO part);
-    public IReadOnlyCollection<FilePartDTO> GetBigFileParts(long fileId);
-    public bool PutFileReference(FileReferenceDTO reference);
-    public FileReferenceDTO? GetFileReference(byte[] referenceBytes);
+    public TLUploadedFileInfo? GetFileInfo(long fileId);
+    public bool PutFileInfo(TLUploadedFileInfo uploadedFile);
+    public bool PutBigFileInfo(TLUploadedFileInfo uploadedFile);
+    public TLUploadedFileInfo? GetBigFileInfo(long fileId);
+    public bool PutFilePart(TLFilePart part);
+    public bool PutBigFilePart(TLFilePart part);
+    public IReadOnlyCollection<TLFilePart> GetFileParts(long fileId);
+    public bool SaveBigFilePart(TLFilePart part);
+    public IReadOnlyCollection<TLFilePart> GetBigFileParts(long fileId);
+    public bool PutFileReference(TLFileReference reference);
+    public TLFileReference? GetFileReference(byte[] referenceBytes);
 }
