@@ -70,7 +70,7 @@ public class ResolveUsername : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _contacts.ResolveUsername(ctx.CurrentAuthKeyId, _username);
+        /*var serviceResult = await _contacts.ResolveUsername(ctx.CurrentAuthKeyId, _username);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         if (!serviceResult.Success)
@@ -86,7 +86,8 @@ public class ResolveUsername : ITLObject, ITLMethod
             result.Result = resolved;
         }
 
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

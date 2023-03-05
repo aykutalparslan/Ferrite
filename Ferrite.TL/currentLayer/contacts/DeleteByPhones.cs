@@ -66,12 +66,13 @@ public class DeleteByPhones : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var success =
+        /*var success =
             await _contacts.DeleteByPhones(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, _phones);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = success ? new BoolTrue() : new BoolFalse();
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

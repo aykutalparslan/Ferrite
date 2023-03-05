@@ -68,14 +68,15 @@ public class DeleteContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        List<Data.InputUserDTO> users = new();
+        /*List<Data.InputUserDTO> users = new();
         foreach (var u in _id)
         {
             users.Add(_mapper.MapToDTO<InputUser, InputUserDTO>(u));
         }
 
         await _contacts.DeleteContacts(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId, users);
-        return null;
+        return null;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

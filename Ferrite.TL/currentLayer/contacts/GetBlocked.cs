@@ -81,7 +81,7 @@ public class GetBlocked : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _contacts.GetBlocked(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
+        /*var serviceResult = await _contacts.GetBlocked(ctx.PermAuthKeyId != 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId,
             _offset, _limit);
         var blockedList = factory.Resolve<Vector<PeerBlocked>>();
         var usersList = factory.Resolve<Vector<User>>();
@@ -122,7 +122,8 @@ public class GetBlocked : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = blocked;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

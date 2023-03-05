@@ -54,7 +54,7 @@ public class GetStatuses : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var statuses = await _contacts.GetStatuses(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
+        /*var statuses = await _contacts.GetStatuses(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         RpcResult result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var queryResult = factory.Resolve<Vector<ContactStatus>>();
@@ -94,7 +94,8 @@ public class GetStatuses : ITLObject, ITLMethod
         }
 
         result.Result = queryResult;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

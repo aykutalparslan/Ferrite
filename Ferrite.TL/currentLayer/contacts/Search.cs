@@ -83,7 +83,7 @@ public class Search : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _contacts.Search(ctx.CurrentAuthKeyId,
+        /*var serviceResult = await _contacts.Search(ctx.CurrentAuthKeyId,
             _q, _limit);
         
         var found = factory.Resolve<FoundImpl>();
@@ -110,7 +110,8 @@ public class Search : ITLObject, ITLMethod
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         result.Result = found;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

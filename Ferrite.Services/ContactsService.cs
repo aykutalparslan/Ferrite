@@ -19,6 +19,9 @@
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
 using Ferrite.Data.Repositories;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.contacts;
 using Org.BouncyCastle.Utilities;
 
 namespace Ferrite.Services;
@@ -36,12 +39,12 @@ public class ContactsService : IContactsService
         _users = users;
     }
 
-    public async Task<ICollection<long>> GetContactIds(long authKeyId, long hash)
+    public async Task<ICollection<long>> GetContactIds(long authKeyId, TLBytes q)
     {
         return new List<long>();
     }
 
-    public async Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId)
+    public async Task<ICollection<TLContactStatus>> GetStatuses(long authKeyId)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
@@ -56,7 +59,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<ContactsDTO> GetContacts(long authKeyId, long hash)
+    public async Task<TLContacts> GetContacts(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
@@ -71,7 +74,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<ImportedContactsDTO> ImportContacts(long authKeyId, ICollection<InputContactDTO> contacts)
+    public async Task<TLImportedContacts> ImportContacts(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         List<ImportedContactDTO> importedContacts = new();
@@ -93,7 +96,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUserDTO> id)
+    public async Task<TLUpdates> DeleteContacts(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var c in id)
@@ -106,7 +109,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> DeleteByPhones(long authKeyId, ICollection<string> phones)
+    public async Task<TLBool> DeleteByPhones(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         foreach (var p in phones)
@@ -123,12 +126,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> Block(long authKeyId, InputUserDTO id)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> Block(long authKeyId, InputPeerDTO id)
+    public async Task<TLBool> Block(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
@@ -148,7 +146,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> Unblock(long authKeyId, InputPeerDTO id)
+    public async Task<TLBool> Unblock(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
@@ -168,7 +166,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<BlockedDTO> GetBlocked(long authKeyId, int offset, int limit)
+    public async Task<TLBlocked> GetBlocked(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var blockedPeers = _unitOfWork.BlockedPeersRepository.GetBlockedPeers(auth.UserId);
@@ -185,7 +183,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<FoundDTO> Search(long authKeyId, string q, int limit)
+    public async Task<TLFound> Search(long authKeyId, TLBytes q)
     {
         /*var searchResults = await _search.SearchUser(q, limit);
         List<PeerDTO> peers = new();
@@ -205,7 +203,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username)
+    public async Task<TLResolvedPeer> ResolveUsername(long authKeyId, TLBytes q)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
@@ -225,18 +223,17 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<TopPeersDTO> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline, bool phoneCalls, bool forwardUsers,
-        bool forwardChats, bool groups, bool channels, int offset, int limit, long hash)
+    public async Task<TLTopPeers> GetTopPeers(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<bool>> ResetTopPeerRating(long authKeyId, TopPeerCategory category, PeerDTO peer)
+    public async Task<TLBool> ResetTopPeerRating(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<bool> ResetSaved(long authKeyId)
+    public async Task<TLBool> ResetSaved(long authKeyId)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         _unitOfWork.ContactsRepository.DeleteContacts(auth.UserId);
@@ -244,7 +241,7 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<ICollection<SavedContactDTO>>> GetSaved(long authKeyId)
+    public async Task<ServiceResult<ICollection<TLSavedContact>>> GetSaved(long authKeyId)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         return new ServiceResult<ICollection<SavedContactDTO>>(_unitOfWork.ContactsRepository.GetSavedContacts(auth.UserId),
@@ -252,33 +249,32 @@ public class ContactsService : IContactsService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> ToggleTopPeers(long authKeyId, bool enabled)
+    public async Task<TLBool> ToggleTopPeers(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<UpdatesBase>> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUserDTO id, string firstname, string lastname,
-        string phone)
+    public async Task<TLUpdates> AddContact(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<UpdatesBase>> AcceptContact(long authKeyId, InputUserDTO id)
+    public async Task<TLUpdates> AcceptContact(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<UpdatesBase>> GetLocated(long authKeyId, bool background, InputGeoPointDTO geoPoint, int? selfExpires)
+    public async Task<TLUpdates> GetLocated(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<UpdatesBase?> BlockFromReplies(long authKeyId, bool deleteMessage, bool deleteHistory, bool reportSpam, int messageId)
+    public async Task<TLUpdates> BlockFromReplies(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<ResolvedPeerDTO>> ResolvePhone(long authKeyId, string phone)
+    public async Task<TLResolvedPeer> ResolvePhone(long authKeyId, TLBytes q)
     {
         throw new NotImplementedException();
     }

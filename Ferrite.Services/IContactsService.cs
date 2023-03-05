@@ -18,34 +18,33 @@
 
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.contacts;
 
 namespace Ferrite.Services;
 
 public interface IContactsService
 {
-    Task<ICollection<long>> GetContactIds(long authKeyId, long hash);
-    Task<ICollection<ContactStatusDTO>> GetStatuses(long authKeyId);
-    Task<Data.Contacts.ContactsDTO> GetContacts(long authKeyId, long hash);
-    Task<Data.Contacts.ImportedContactsDTO> ImportContacts(long authKeyId, ICollection<InputContactDTO> contacts);
-    Task<UpdatesBase?> DeleteContacts(long authKeyId, ICollection<InputUserDTO> id);
-    Task<bool> DeleteByPhones(long authKeyId, ICollection<string> phones);
-    Task<bool> Block(long authKeyId, InputPeerDTO id);
-    Task<bool> Unblock(long authKeyId, InputPeerDTO id);
-    Task<Data.Contacts.BlockedDTO> GetBlocked(long authKeyId, int offset, int limit);
-    Task<Data.Contacts.FoundDTO> Search(long authKeyId, string q, int limit);
-    Task<ServiceResult<ResolvedPeerDTO>> ResolveUsername(long authKeyId, string username);
-    Task<Data.Contacts.TopPeersDTO> GetTopPeers(long authKeyId, bool correspondents, bool botsPm, bool botsInline,
-        bool phoneCalls, bool forwardUsers, bool forwardChats, bool groups, bool channels, 
-        int offset, int limit, long hash);
-
-    Task<ServiceResult<bool>> ResetTopPeerRating(long authKeyId, TopPeerCategory category, PeerDTO peer);
-    Task<bool> ResetSaved(long authKeyId);
-    Task<ServiceResult<ICollection<SavedContactDTO>>> GetSaved(long authKeyId);
-    Task<bool> ToggleTopPeers(long authKeyId, bool enabled);
-    Task<ServiceResult<UpdatesBase>> AddContact(long authKeyId, bool AddPhonePrivacyException, InputUserDTO id,
-        string firstname, string lastname, string phone);
-    Task<ServiceResult<UpdatesBase>> AcceptContact(long authKeyId, InputUserDTO id);
-    Task<ServiceResult<UpdatesBase>> GetLocated(long authKeyId, bool background, InputGeoPointDTO geoPoint, int? selfExpires);
-    Task<UpdatesBase?> BlockFromReplies(long authKeyId, bool deleteMessage, bool deleteHistory, bool reportSpam, int messageId);
-    Task<ServiceResult<ResolvedPeerDTO>> ResolvePhone(long authKeyId, string phone);
+    Task<ICollection<long>> GetContactIds(long authKeyId, TLBytes q);
+    Task<ICollection<TLContactStatus>> GetStatuses(long authKeyId);
+    Task<TLContacts> GetContacts(long authKeyId, TLBytes q);
+    Task<TLImportedContacts> ImportContacts(long authKeyId, TLBytes q);
+    Task<TLUpdates> DeleteContacts(long authKeyId, TLBytes q);
+    Task<TLBool> DeleteByPhones(long authKeyId, TLBytes q);
+    Task<TLBool> Block(long authKeyId, TLBytes q);
+    Task<TLBool> Unblock(long authKeyId, TLBytes q);
+    Task<TLBlocked> GetBlocked(long authKeyId, TLBytes q);
+    Task<TLFound> Search(long authKeyId, TLBytes q);
+    Task<TLResolvedPeer> ResolveUsername(long authKeyId, TLBytes q);
+    Task<TLTopPeers> GetTopPeers(long authKeyId, TLBytes q);
+    Task<TLBool> ResetTopPeerRating(long authKeyId, TLBytes q);
+    Task<TLBool> ResetSaved(long authKeyId);
+    Task<ServiceResult<ICollection<TLSavedContact>>> GetSaved(long authKeyId);
+    Task<TLBool> ToggleTopPeers(long authKeyId, TLBytes q);
+    Task<TLUpdates> AddContact(long authKeyId, TLBytes q);
+    Task<TLUpdates> AcceptContact(long authKeyId, TLBytes q);
+    Task<TLUpdates> GetLocated(long authKeyId, TLBytes q);
+    Task<TLUpdates> BlockFromReplies(long authKeyId, TLBytes q);
+    Task<TLResolvedPeer> ResolvePhone(long authKeyId, TLBytes q);
 }

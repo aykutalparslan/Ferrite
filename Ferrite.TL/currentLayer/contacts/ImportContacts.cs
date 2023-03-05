@@ -69,7 +69,7 @@ public class ImportContacts : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        List<Data.InputContactDTO> contacts = new();
+        /*List<Data.InputContactDTO> contacts = new();
         foreach (var c in _contacts)
         {
             if (c is InputPhoneContactImpl phoneContact)
@@ -116,7 +116,8 @@ public class ImportContacts : ITLObject, ITLMethod
         imported.RetryContacts = retry;
         imported.PopularInvites = popularList;
         result.Result = imported;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

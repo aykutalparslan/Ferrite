@@ -53,7 +53,7 @@ public class GetSaved : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _contacts.GetSaved(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
+        /*var serviceResult = await _contacts.GetSaved(ctx.PermAuthKeyId!= 0 ? ctx.PermAuthKeyId : ctx.AuthKeyId);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         if (!serviceResult.Success)
@@ -78,7 +78,8 @@ public class GetSaved : ITLObject, ITLMethod
 
             result.Result = saved;
         }
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)
