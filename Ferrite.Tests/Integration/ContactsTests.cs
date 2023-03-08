@@ -70,4 +70,15 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Assert.IsType<int[]>(result);
         Assert.NotNull(result);
     }
+    
+    [Fact]
+    public async Task GetStatuses_Returns_VectorOfContactStatus()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555615");
+        var result = await client.Contacts_GetStatuses();
+        Assert.IsType<ContactStatus[]>(result);
+        Assert.NotNull(result);
+    }
 }
