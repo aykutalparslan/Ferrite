@@ -121,4 +121,33 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Assert.Equal(10, result.imported.Length);
         Assert.Equal(10, result.users.Count);
     }
+    
+    [Fact]
+    public async Task DeleteContacts_Returns_Updates()
+    {
+        using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555618");
+        List<InputContact> inputContacts = new();
+        List<InputUserBase> inputUsers = new();
+        for (int i = 0; i < 10; i++)
+        {
+            string phoneNumber = "+90555555556" + i;
+            var a = await Helpers.SignUp(clientContacts, phoneNumber);
+            inputUsers.Add(((Auth_Authorization)a).user);
+            clientContacts.Reset();
+            InputPhoneContact c = new()
+            {
+                first_name = "bbb" + i,
+                last_name = "bbb" + i,
+                phone = phoneNumber,
+                client_id = i + 1
+            };
+            inputContacts.Add(c);
+        }
+        var result = await client.Contacts_DeleteContacts(inputUsers.ToArray());
+        Assert.IsType<Updates>(result);
+        Assert.NotNull(result);
+    }
 }
