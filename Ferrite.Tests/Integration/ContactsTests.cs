@@ -146,6 +146,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteContacts(inputUsers.ToArray());
         Assert.IsType<Updates>(result);
         Assert.NotNull(result);
@@ -175,6 +176,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteByPhones(phoneNumbers.ToArray());
         Assert.True(result);
     }
@@ -203,6 +205,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Block(inputUsers[0]);
         Assert.True(result);
     }
@@ -231,6 +234,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Unblock(inputUsers[0]);
         Assert.True(result);
     }
@@ -259,10 +263,42 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Block(inputUsers[0]);
         Assert.True(result);
         var resulBlocked = await client.Contacts_GetBlocked();
         Assert.Single(resulBlocked.blocked);
         Assert.Single(resulBlocked.users);
+    }
+    
+    [Fact]
+    public async Task Search_Returns_Found()
+    {
+        using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555623");
+        List<InputContact> inputContacts = new();
+        List<InputUser> inputUsers = new();
+        for (int i = 0; i < 10; i++)
+        {
+            string phoneNumber = "+90555555561" + i;
+            var a = await Helpers.SignUp(clientContacts, phoneNumber);
+            inputUsers.Add(((Auth_Authorization)a).user);
+            clientContacts.Reset();
+            InputPhoneContact c = new()
+            {
+                first_name = "bbb" + i,
+                last_name = "bbb" + i,
+                phone = phoneNumber,
+                client_id = i + 1
+            };
+            inputContacts.Add(c);
+        }
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        var results = await client.Contacts_Search("bbb-1");
+        Assert.NotNull(results);
+        Assert.Single(results.results);
+        Assert.Single(results.users);
     }
 }
