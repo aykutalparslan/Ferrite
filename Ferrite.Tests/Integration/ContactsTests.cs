@@ -146,7 +146,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteContacts(inputUsers.ToArray());
         Assert.IsType<Updates>(result);
         Assert.NotNull(result);
@@ -176,7 +176,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteByPhones(phoneNumbers.ToArray());
         Assert.True(result);
     }
@@ -205,7 +205,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Block(inputUsers[0]);
         Assert.True(result);
     }
@@ -234,7 +234,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Unblock(inputUsers[0]);
         Assert.True(result);
     }
@@ -263,7 +263,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Block(inputUsers[0]);
         Assert.True(result);
         var resulBlocked = await client.Contacts_GetBlocked();
@@ -295,10 +295,26 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await client.Contacts_ImportContacts(inputContacts.ToArray());
+        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var results = await client.Contacts_Search("bbb-1");
         Assert.NotNull(results);
         Assert.Single(results.results);
         Assert.Single(results.users);
+    }
+    
+    [Fact]
+    public async Task ResolveUsername_Returns_Resolved()
+    {
+        using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555624");
+        string phoneNumber = "+905555555622";
+        var a = await Helpers.SignUp(clientContacts, phoneNumber);
+        await clientContacts.Account_UpdateUsername("test1234");
+        var result = await client.Contacts_ResolveUsername("test1234");
+        Assert.NotNull(result);
+        Assert.Single(result.users);
+        Assert.Equal(((Auth_Authorization)a).user.ID,result.peer.ID);
     }
 }
