@@ -46,17 +46,22 @@ public class ContactsService : IContactsService
 
     public async Task<ICollection<TLContactStatus>> GetStatuses(long authKeyId)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
-        var result =  new List<ContactStatusDTO>();
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var result =  new List<TLContactStatus>();
+        if (auth == null) return result;
+        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.Value.AsAuthInfo().UserId);
+        
         foreach (var c in contactList)
         {
-            var status = _unitOfWork.UserStatusRepository.GetUserStatus(c.UserId);
-            var contactStatus = new ContactStatusDTO(c.UserId, status);
+            var userId = c.AsContact().UserId;
+            var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(userId);
+            TLContactStatus contactStatus = ContactStatus.Builder()
+                .UserId(userId)
+                .Status(status.AsSpan())
+                .Build();
             result.Add(contactStatus);
         }
-        return result;*/
-        throw new NotImplementedException();
+        return result;
     }
 
     public async Task<TLContacts> GetContacts(long authKeyId, TLBytes q)
