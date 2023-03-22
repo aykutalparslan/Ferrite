@@ -30,13 +30,10 @@ public class ContactsService : IContactsService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISearchEngine _search;
-    private readonly IUsersService _users;
-    public ContactsService(IUnitOfWork unitOfWork, ISearchEngine search,
-        IUsersService users)
+    public ContactsService(IUnitOfWork unitOfWork, ISearchEngine search)
     {
         _unitOfWork = unitOfWork;
         _search = search;
-        _users = users;
     }
 
     public async Task<ICollection<long>> GetContactIds(long authKeyId, TLBytes q)
@@ -66,17 +63,52 @@ public class ContactsService : IContactsService
 
     public async Task<TLContacts> GetContacts(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.UserId);
-        List<UserDTO> userList = new List<UserDTO>();
-        foreach (var c in contactList)
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
         {
-            var user = _users.GetUser(c.UserId);
-            if(user != null) userList.Add(user);
+            return Contacts.Builder()
+                .ContactsProperty(new Vector())
+                .Users(new Vector())
+                .SavedCount(0)
+                .Build();
         }
 
-        return new ContactsDTO(contactList, contactList.Count, userList);*/
-        throw new NotImplementedException();
+        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.Value.AsAuthInfo().UserId);
+        
+        List<TLUser> userList = new ();
+        foreach (var c in contactList)
+        {
+            var user = _unitOfWork.UserRepository.GetUser(c.AsContact().UserId);
+            if(user != null) userList.Add(user.Value);
+        }
+
+        return Contacts.Builder()
+            .ContactsProperty(ToContactVector(contactList.ToList()))
+            .Users(ToUserVector(userList))
+            .SavedCount(contactList.Count)
+            .Build();
+    }
+    
+    private static Vector ToUserVector(ICollection<TLUser> users)
+    {
+        Vector v = new Vector();
+        foreach (var s in users)
+        {
+            v.AppendTLObject(s.AsSpan());
+        }
+
+        return v;
+    }
+    
+    private static Vector ToContactVector(ICollection<TLContact> users)
+    {
+        Vector v = new Vector();
+        foreach (var s in users)
+        {
+            v.AppendTLObject(s.AsSpan());
+        }
+
+        return v;
     }
 
     public async Task<TLImportedContacts> ImportContacts(long authKeyId, TLBytes q)

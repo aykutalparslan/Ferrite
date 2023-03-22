@@ -152,6 +152,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_GetStatuses))
             .SingleInstance();
+        builder.RegisterType<GetContactsFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_GetContacts))
+            .SingleInstance();
     }
 
     private static void RegisterUsersMethods(ContainerBuilder builder)
