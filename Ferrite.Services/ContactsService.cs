@@ -16,12 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Text;
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
 using Ferrite.Data.Repositories;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.contacts;
+using Ferrite.TL.slim.layer150.dto;
 using Org.BouncyCastle.Utilities;
 
 namespace Ferrite.Services;
@@ -113,24 +115,59 @@ public class ContactsService : IContactsService
 
     public async Task<TLImportedContacts> ImportContacts(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        List<ImportedContactDTO> importedContacts = new();
-        List<UserDTO> users = new();
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        List<TLImportedContact> importedContacts = new();
+        List<TLUser> users = new();
+        var contacts = ToInputContactList(new ImportContacts(q.AsSpan()).Contacts);
         foreach (var c in contacts)
         {
-            var user = _unitOfWork.UserRepository.GetUser(c.Phone);
+            var user = _unitOfWork.UserRepository.GetUser(Encoding.UTF8.GetString(c.AsInputPhoneContact().Phone));
             if (user == null || auth == null) continue;
-            var imported = _unitOfWork.ContactsRepository.PutContact(auth.UserId, user.Id, c);
-            if(imported == null) continue;
-            var contactUser = _unitOfWork.UserRepository.GetUser(imported.UserId);
+            TLContactInfo contactInfo = ContactInfo.Builder()
+                .UserId(user.Value.AsUser().Id)
+                .Phone(c.AsInputPhoneContact().Phone)
+                .ClientId(c.AsInputPhoneContact().ClientId)
+                .FirstName(c.AsInputPhoneContact().FirstName)
+                .LastName(c.AsInputPhoneContact().LastName)
+                .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+                .Build();
+            var imported = _unitOfWork.ContactsRepository.PutContact(auth.Value.AsAuthInfo().UserId, 
+                user.Value.AsUser().Id, contactInfo);
+            var contactUser = _unitOfWork.UserRepository.GetUser(imported.AsImportedContact().UserId);
             if(contactUser == null) continue;
-            users.Add(contactUser);
+            users.Add(contactUser.Value);
             importedContacts.Add(imported);
         }
 
-        return new ImportedContactsDTO(importedContacts, new List<PopularContactDTO>(), 
-            new List<long>(), users);*/
-        throw new NotImplementedException();
+        return ImportedContacts.Builder()
+            .Users(ToUserVector(users))
+            .Imported(ToImportedContactVector(importedContacts))
+            .PopularInvites(new Vector())
+            .RetryContacts(new VectorOfLong())
+            .Build();
+    }
+    
+    private static Vector ToImportedContactVector(ICollection<TLImportedContact> contacts)
+    {
+        Vector v = new Vector();
+        foreach (var c in contacts)
+        {
+            v.AppendTLObject(c.AsSpan());
+        }
+
+        return v;
+    }
+
+    private static List<TLInputContact> ToInputContactList(Vector inputContacts)
+    {
+        List<TLInputContact> result = new();
+        for (int i = 0; i < inputContacts.Count; i++)
+        {
+            var inputContactBytes = inputContacts.ReadTLObject().ToArray();
+            result.Add(new TLInputContact(inputContactBytes, 0, inputContactBytes.Length));
+        }
+
+        return result;
     }
 
     public async Task<TLUpdates> DeleteContacts(long authKeyId, TLBytes q)

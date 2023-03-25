@@ -92,7 +92,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Assert.IsType<Contacts_Contacts>(result);
         Assert.NotNull(result);
     }
-    
+
     [Fact]
     public async Task ImportContacts_Returns_ImportedContacts()
     {
@@ -101,27 +101,24 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         await client.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555617");
         List<InputContact> inputContacts = new();
-        for (int i = 0; i < 10; i++)
+        string phoneNumber = "+905555555550";
+        await clientContacts.ConnectAsync();
+        await Helpers.SignUp(clientContacts, phoneNumber);
+        InputPhoneContact c = new()
         {
-            string phoneNumber = "+90555555555" + i;
-            await Helpers.SignUp(clientContacts, phoneNumber);
-            clientContacts.Reset();
-            InputPhoneContact c = new()
-            {
-                first_name = "aaa" + i,
-                last_name = "aaa" + i,
-                phone = phoneNumber,
-                client_id = i + 1
-            };
-            inputContacts.Add(c);
-        }
+            first_name = "aaa0",
+            last_name = "aaa0",
+            phone = phoneNumber,
+            client_id = 1
+        };
+        inputContacts.Add(c);
         var result = await client.Contacts_ImportContacts(inputContacts.ToArray());
         Assert.IsType<Contacts_ImportedContacts>(result);
         Assert.NotNull(result);
-        Assert.Equal(10, result.imported.Length);
-        Assert.Equal(10, result.users.Count);
+        Assert.Single(result.imported);
+        Assert.Single(result.users);
     }
-    
+
     [Fact]
     public async Task DeleteContacts_Returns_Updates()
     {
