@@ -1530,20 +1530,6 @@ public readonly struct TL" + typeName + @" : IDisposable
         bool hasFlags = false;
         if (combinator.Arguments != null)
         {
-            foreach (var arg in combinator.Arguments)
-            {
-                if (arg.ConditionalDefinition != null)
-                {
-                    hasFlags = true;
-                }
-            }
-
-            if (hasFlags)
-            {
-                sb.Append(@"
-        Flags f = new Flags(MemoryMarshal.Read<int>(buffer[offset..]));");
-            }
-
             int index = 2;
             foreach (var arg in combinator.Arguments)
             {
@@ -1552,7 +1538,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += 4;");
                 }
                 else if (arg.TypeTerm?.Identifier == "Bool")
@@ -1560,15 +1546,17 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += 4;");
                 }
                 else if (arg.TypeTerm?.Identifier == "#")
                 {
                     sb.Append(@"
+        Flags " + arg.Identifier + " = new Flags(MemoryMarshal.Read<int>(buffer[offset..]));");
+                    sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += 4;");
                 }
                 else if (arg.TypeTerm?.Identifier == "true")
@@ -1579,7 +1567,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += 8;");
                 }
                 else if (arg.TypeTerm?.Identifier == "int128")
@@ -1587,7 +1575,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += 16;");
                 }
                 else if (arg.TypeTerm?.Identifier == "int256")
@@ -1595,7 +1583,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += 32;");
                 }
                 else if (arg.TypeTerm?.Identifier is "bytes" or "string")
@@ -1603,7 +1591,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += BufferUtils.GetTLBytesLength(buffer, offset);");
                 }
                 else if (arg.TypeTerm?.Identifier is "Vector" or "VectorBare" or "vector")
@@ -1611,7 +1599,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += " + arg.TypeTerm.GetFullyQualifiedIdentifier() +
                               ".ReadSize(buffer, offset);");
                 }
@@ -1620,7 +1608,7 @@ public readonly struct TL" + typeName + @" : IDisposable
                     sb.Append(@"
         if(index >= " + index +
                               (arg.ConditionalDefinition != null
-                                  ? " && f[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
+                                  ? " && "+arg.ConditionalDefinition.Identifier+"[" + arg.ConditionalDefinition.ConditionalArgumentBit + "]"
                                   : "") + @") offset += ObjectReader.ReadSize(buffer[offset..]);");
                 }
 

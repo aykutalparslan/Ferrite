@@ -16,6 +16,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
+using System.Collections;
 using System.Text;
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
@@ -32,10 +33,13 @@ public class ContactsService : IContactsService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ISearchEngine _search;
-    public ContactsService(IUnitOfWork unitOfWork, ISearchEngine search)
+    private readonly IUpdatesContextFactory _updatesContextFactory;
+    public ContactsService(IUnitOfWork unitOfWork, ISearchEngine search,
+        IUpdatesContextFactory updatesContextFactory)
     {
         _unitOfWork = unitOfWork;
         _search = search;
+        _updatesContextFactory = updatesContextFactory;
     }
 
     public async Task<ICollection<long>> GetContactIds(long authKeyId, TLBytes q)
@@ -97,6 +101,7 @@ public class ContactsService : IContactsService
         foreach (var s in users)
         {
             v.AppendTLObject(s.AsSpan());
+            s.Dispose();
         }
 
         return v;
@@ -108,6 +113,7 @@ public class ContactsService : IContactsService
         foreach (var s in users)
         {
             v.AppendTLObject(s.AsSpan());
+            s.Dispose();
         }
 
         return v;
@@ -153,6 +159,7 @@ public class ContactsService : IContactsService
         foreach (var c in contacts)
         {
             v.AppendTLObject(c.AsSpan());
+            c.Dispose();
         }
 
         return v;
@@ -172,15 +179,74 @@ public class ContactsService : IContactsService
 
     public async Task<TLUpdates> DeleteContacts(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var userId = auth.Value.AsAuthInfo().UserId;
+        var id = ToInputUserList(new DeleteContacts(q.AsSpan()).Id);
+        List<TLBytes> userList = new();
+        List<TLUpdate> updateList = new();
         foreach (var c in id)
         {
-            _unitOfWork.ContactsRepository.DeleteContact(auth.UserId, c.UserId);
+            var contactUserId = c.AsInputUser().UserId;
+            var contactUser = await GetUserInternal(contactUserId);
+            if (contactUser != null) userList.Add(contactUser.Value);
+            _unitOfWork.ContactsRepository.DeleteContact(userId, contactUserId);
+            using TLPeer peer = new PeerUser(contactUserId);
+            using TLPeerSettings settings = PeerSettings.Builder()
+                .AddContact(true)
+                .Build();
+            TLUpdate update = UpdatePeerSettings.Builder()
+                .Peer(peer.AsSpan())
+                .Settings(settings.AsSpan())
+                .Build();
+            updateList.Add(update);
+            c.Dispose();
         }
 
         await _unitOfWork.SaveAsync();
-        return null;*/
-        throw new NotImplementedException();
+
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, userId);
+        var seq = await updatesCtx.IncrementSeq();
+
+        TLUpdates res = Updates.Builder()
+            .Users(userList.ToVector())
+            .UpdatesProperty(ToUpdateVector(updateList))
+            .Chats(new Vector())
+            .Seq(seq)
+            .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
+            .Build();
+        return res;
+    }
+    
+    private async ValueTask<TLUser?> GetUserInternal(long userId)
+    {
+        using var user = _unitOfWork.UserRepository.GetUser(userId);
+        if (user == null) return null;
+        var status = await _unitOfWork.UserStatusRepository.GetUserStatusAsync(user.Value.AsUser().Id);
+        return user.Value.AsUser().Clone().Status(status.AsSpan()).Build();
+    }
+    
+    private static List<TLInputUser> ToInputUserList(Vector inputUsers)
+    {
+        List<TLInputUser> result = new();
+        for (int i = 0; i < inputUsers.Count; i++)
+        {
+            var inputUserBytes = inputUsers.ReadTLObject().ToArray();
+            result.Add(new TLInputUser(inputUserBytes, 0, inputUserBytes.Length));
+        }
+
+        return result;
+    }
+    
+    private static Vector ToUpdateVector(ICollection<TLUpdate> updates)
+    {
+        Vector v = new Vector();
+        foreach (var s in updates)
+        {
+            v.AppendTLObject(s.AsSpan());
+            s.Dispose();
+        }
+
+        return v;
     }
 
     public async Task<TLBool> DeleteByPhones(long authKeyId, TLBytes q)

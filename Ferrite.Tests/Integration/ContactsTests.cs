@@ -127,26 +127,25 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         await client.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555618");
         List<InputContact> inputContacts = new();
-        List<InputUserBase> inputUsers = new();
-        for (int i = 0; i < 10; i++)
+        System.Collections.Generic.List<InputUserBase> inputUsers = new();
+        string phoneNumber = "+905555555551";
+        await clientContacts.ConnectAsync();
+        var authContact = (Auth_Authorization)await Helpers.SignUp(clientContacts, phoneNumber);
+        InputPhoneContact c = new()
         {
-            string phoneNumber = "+90555555556" + i;
-            var a = await Helpers.SignUp(clientContacts, phoneNumber);
-            inputUsers.Add(((Auth_Authorization)a).user);
-            clientContacts.Reset();
-            InputPhoneContact c = new()
-            {
-                first_name = "bbb" + i,
-                last_name = "bbb" + i,
-                phone = phoneNumber,
-                client_id = i + 1
-            };
-            inputContacts.Add(c);
-        }
+            first_name = "aaa1",
+            last_name = "aaa1",
+            phone = phoneNumber,
+            client_id = 1
+        };
+        inputContacts.Add(c);
+        inputUsers.Add(authContact.user);
         await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteContacts(inputUsers.ToArray());
         Assert.IsType<Updates>(result);
         Assert.NotNull(result);
+        Assert.Single(((Updates)result).Users);
+        Assert.Single(((Updates)result).UpdateList);
     }
     
     [Fact]
