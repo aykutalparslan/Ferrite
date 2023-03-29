@@ -152,7 +152,7 @@ public class AllocationFreeSerializationTests
             vecTmp.Add(RandomNumberGenerator.GetBytes(16));
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = new Ferrite.TL.slim.Vector();
+        var vec = new Ferrite.TL.slim.VectorOfString();
         foreach (var tmp in vecTmp)
         {
             vec.AppendTLBytes(tmp);

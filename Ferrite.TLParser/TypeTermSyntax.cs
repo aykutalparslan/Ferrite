@@ -53,6 +53,10 @@ public class TypeTermSyntax
         {
             return "VectorOfDouble";
         }
+        if (Identifier == "Vector" && (OptionalType?.Identifier == "string" || OptionalType?.Identifier == "bytes"))
+        {
+            return "VectorOfString";
+        }
         
         if (Identifier == "vector")
         {
@@ -60,7 +64,7 @@ public class TypeTermSyntax
         }
         else if (Identifier is "bytes" or "string")
         {
-            sb.Append("TLString");
+            sb.Append("TLBytes");
         }
         else if (Identifier is "#")
         {

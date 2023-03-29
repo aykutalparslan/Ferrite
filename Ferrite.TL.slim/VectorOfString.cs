@@ -25,12 +25,12 @@ using Ferrite.Utils;
 
 namespace Ferrite.TL.slim;
 
-public ref struct Vector
+public ref struct VectorOfString
 {
     private Span<byte> _buff;
     private int _position;
     private int _offset;
-    public Vector()
+    public VectorOfString()
     {
         _buff = new byte[512];
         SetConstructor(unchecked((int)0x1cb5c415));
@@ -38,7 +38,7 @@ public ref struct Vector
         _position = 8;
         _offset = 8;
     }
-    public Vector(Span<byte> buffer)
+    public VectorOfString(Span<byte> buffer)
     {
         if (MemoryMarshal.Read<int>(buffer) != unchecked((int)0x1cb5c415))
         {
@@ -71,9 +71,7 @@ public ref struct Vector
         int len = 8;
         for (int i = 0; i < count; i++)
         {
-            var sizeReader = ObjectReader.GetObjectSizeReader(
-                MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
-            if (sizeReader != null) len += sizeReader.Invoke(data, len);
+            len += BufferUtils.GetTLBytesLength(data, offset + len);
         }
         return data.Slice(offset, len);
     }
@@ -88,40 +86,35 @@ public ref struct Vector
         int len = 8;
         for (int i = 0; i < count; i++)
         {
-            var sizeReader = ObjectReader.GetObjectSizeReader(
-                MemoryMarshal.Read<int>(data.Slice(offset + len, 4)));
-            if (sizeReader != null) len += sizeReader.Invoke(data, offset + len);
+            len += BufferUtils.GetTLBytesLength(data, offset + len);
         }
         return len;
     }
     
-    public void AppendTLObject(ReadOnlySpan<byte> value)
+    public void AppendTLBytes(ReadOnlySpan<byte> value)
     {
-        if (value.Length + _offset > _buff.Length)
+        int len = BufferUtils.CalculateTLBytesLength(value.Length);
+        if (value.Length + len + _offset > _buff.Length)
         {
             var tmp = new byte[_buff.Length * 2];
             _buff.CopyTo(tmp);
             _buff = tmp;
         }
-        value.CopyTo(_buff[_offset..]);
+        int lenBytes = BufferUtils.WriteLenBytes(_buff, value, _offset);
+        value.CopyTo(_buff[(lenBytes + _offset)..]);
         MemoryMarshal.Cast<byte, int>(_buff)[1]++;
-        _offset += value.Length;
+        _offset += len;
     }
-    public Span<byte> ReadTLObject()
+
+    public Span<byte> ReadTLBytes()
     {
         if (_position == _offset)
         {
             throw new EndOfStreamException();
         }
-        ObjectReaderDelegate? reader = ObjectReader.GetObjectReader(
-            MemoryMarshal.Read<int>(_buff.Slice(_position, 4)));
-        if (reader == null)
-        {
-            throw new NotSupportedException();
-        }
-
-        var result = reader.Invoke(_buff, _position);
-        _position += result.Length;
+        int bytesLength = BufferUtils.GetTLBytesLength(_buff, _position);
+        var result = BufferUtils.GetTLBytes(_buff, _position);
+        _position += bytesLength;
         return result;
     }
     public void Reset()

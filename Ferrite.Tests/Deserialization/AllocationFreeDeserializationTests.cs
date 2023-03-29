@@ -38,6 +38,7 @@ using ReqDhParams = Ferrite.TL.mtproto.ReqDhParams;
 using VectorOfDouble = Ferrite.TL.VectorOfDouble;
 using VectorOfInt = Ferrite.TL.VectorOfInt;
 using VectorOfLong = Ferrite.TL.VectorOfLong;
+using VectorOfString = Ferrite.TL.VectorOfString;
 
 namespace Ferrite.Tests.Deserialization;
 
@@ -141,7 +142,7 @@ public class AllocationFreeDeserializationTests
             vecTmp.Add(sb.ToString()+i);
         }
         byte[] data = vecTmp.TLBytes.ToArray();
-        var vec = new Ferrite.TL.slim.Vector(data);
+        var vec = new Ferrite.TL.slim.VectorOfString(data);
         for (int i = 0; i < vec.Count; i++)
         {
             var expected = vecTmp[i];
