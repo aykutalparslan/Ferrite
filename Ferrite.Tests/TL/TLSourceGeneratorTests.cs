@@ -79,7 +79,7 @@ help.getConfig#c4f9186b = Config;
         TLSourceGenerator generator = new();
         var generated = generator.Generate("layer146", source).First();
         Assert.Contains(
-            "public InputMediaPoll(Flags flags, ReadOnlySpan<byte> poll, Vector correctAnswers, ReadOnlySpan<byte> solution, Vector solutionEntities)",
+            "public InputMediaPoll(Flags flags, ReadOnlySpan<byte> poll, VectorOfString correctAnswers, ReadOnlySpan<byte> solution, Vector solutionEntities)",
             generated.SourceText);
         Assert.Contains("SetFlags(flags);", generated.SourceText);
         Assert.Contains(@"if(flags[1])
@@ -98,7 +98,7 @@ help.getConfig#c4f9186b = Config;
         return 4 + 4 + lenPoll + lenCorrectAnswers + (hasSolution?BufferUtils.CalculateTLBytesLength(lenSolution):0) + lenSolutionEntities;
     }", generated.SourceText);
         Assert.Contains(
-            "public Vector CorrectAnswers => !Flags[0] ? new Vector() : new Vector(_buff.Slice(GetOffset(3, _buff)));",
+            "public VectorOfString CorrectAnswers => !Flags[0] ? new VectorOfString() : new VectorOfString(_buff.Slice(GetOffset(3, _buff)));",
             generated.SourceText);
         Assert.Contains(
             "public ReadOnlySpan<byte> Solution => !Flags[1] ? new ReadOnlySpan<byte>() :  BufferUtils.GetTLBytes(_buff, GetOffset(4, _buff));",

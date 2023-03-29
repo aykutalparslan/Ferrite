@@ -29,7 +29,7 @@ public class TypeTermSyntaxTests
     [InlineData("test#aabbccdd arg:flags.0?Vector<InputTestType> = Test;\n",0,"Vector")]
     [InlineData("test#aabbccdd arg:vector<testns.TestType> = Test;\n",0,"VectorBare")]
     [InlineData("testns.test#aabbccdd arg:Vector<testns.TestType> = testns.Test;\n",0,"Vector")]
-    [InlineData("test#aabbccdd arg:Vector<bytes> = Test;\n",0,"Vector")]
+    [InlineData("test#aabbccdd arg:Vector<bytes> = Test;\n",0,"VectorOfString")]
     [InlineData("future_salts#ae500895 req_msg_id:long now:int salts:Vector<future_salt> = FutureSalts;\n",2,"Vector")]
     public void TypeTermSyntax_Should_ReturnFullyQualifiedName(string tl, int argOffset, string name)
     {
