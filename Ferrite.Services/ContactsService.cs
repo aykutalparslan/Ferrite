@@ -251,19 +251,30 @@ public class ContactsService : IContactsService
 
     public async Task<TLBool> DeleteByPhones(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var phones = ToStringList(new DeleteByPhones(q.AsSpan()).Phones);
         foreach (var p in phones)
         {
             var userId = _unitOfWork.UserRepository.GetUserId(p);
             if (userId != null)
             {
-                _unitOfWork.ContactsRepository.DeleteContact(auth.UserId, (long)userId);
-                await _unitOfWork.SaveAsync();
+                _unitOfWork.ContactsRepository.DeleteContact(auth.Value.AsAuthInfo().UserId, (long)userId);
             }
         }
+        await _unitOfWork.SaveAsync();
 
-        return true;*/
-        throw new NotImplementedException();
+        return new BoolTrue();
+    }
+    
+    private static List<string> ToStringList(VectorOfString v)
+    {
+        List<string> result = new();
+        for (int i = 0; i < v.Count; i++)
+        {
+            var s = Encoding.UTF8.GetString(v.ReadTLBytes());
+        }
+
+        return result;
     }
 
     public async Task<TLBool> Block(long authKeyId, TLBytes q)

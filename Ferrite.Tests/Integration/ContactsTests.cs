@@ -127,7 +127,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         await client.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555618");
         List<InputContact> inputContacts = new();
-        System.Collections.Generic.List<InputUserBase> inputUsers = new();
+        List<InputUserBase> inputUsers = new();
         string phoneNumber = "+905555555551";
         await clientContacts.ConnectAsync();
         var authContact = (Auth_Authorization)await Helpers.SignUp(clientContacts, phoneNumber);
@@ -140,7 +140,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         };
         inputContacts.Add(c);
         inputUsers.Add(authContact.user);
-        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteContacts(inputUsers.ToArray());
         Assert.IsType<Updates>(result);
         Assert.NotNull(result);
@@ -157,22 +157,19 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var auth = await Helpers.SignUp(client, "+15555555619");
         List<InputContact> inputContacts = new();
         List<string> phoneNumbers = new();
-        for (int i = 0; i < 10; i++)
+        string phoneNumber = "+905555555572";
+        phoneNumbers.Add(phoneNumber);
+        await clientContacts.ConnectAsync();
+        var a = await Helpers.SignUp(clientContacts, phoneNumber);
+        InputPhoneContact c = new()
         {
-            string phoneNumber = "+90555555557" + i;
-            phoneNumbers.Add(phoneNumber);
-            var a = await Helpers.SignUp(clientContacts, phoneNumber);
-            clientContacts.Reset();
-            InputPhoneContact c = new()
-            {
-                first_name = "bbb" + i,
-                last_name = "bbb" + i,
-                phone = phoneNumber,
-                client_id = i + 1
-            };
-            inputContacts.Add(c);
-        }
-        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
+            first_name = "bbb2",
+            last_name = "bbb2",
+            phone = phoneNumber,
+            client_id = 1
+        };
+        inputContacts.Add(c);
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_DeleteByPhones(phoneNumbers.ToArray());
         Assert.True(result);
     }

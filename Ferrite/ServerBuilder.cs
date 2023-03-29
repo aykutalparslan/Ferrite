@@ -164,6 +164,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_DeleteContacts))
             .SingleInstance();
+        builder.RegisterType<DeleteByPhonesFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_DeleteByPhones))
+            .SingleInstance();
     }
 
     private static void RegisterUsersMethods(ContainerBuilder builder)
