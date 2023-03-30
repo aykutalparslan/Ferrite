@@ -168,6 +168,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_DeleteByPhones))
             .SingleInstance();
+        builder.RegisterType<BlockFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_Block))
+            .SingleInstance();
     }
 
     private static void RegisterUsersMethods(ContainerBuilder builder)

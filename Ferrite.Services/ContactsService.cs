@@ -279,22 +279,41 @@ public class ContactsService : IContactsService
 
     public async Task<TLBool> Block(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var peerBytes = new Block(q.AsSpan()).Id.ToArray();
+        TLInputPeer id = new TLInputPeer(peerBytes, 0, peerBytes.Length);
+        switch (id.Constructor)
         {
-            _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.ChannelId, PeerType.Channel);
-        }
-        if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
-        {
-            _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.UserId, PeerType.User);
-        }
-        else
-        {
-            _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.UserId, id.ChatId, PeerType.Chat);
+            case Constructors.layer150_InputPeerUser:
+                _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerUser().UserId, PeerType.User,
+                    DateTimeOffset.Now);
+                    break;
+            case Constructors.layer150_InputPeerUserFromMessage:
+                _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerUserFromMessage().UserId, PeerType.User,
+                    DateTimeOffset.Now);
+                break;
+            case Constructors.layer150_InputPeerChat:
+                _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerChat().ChatId, PeerType.Chat,
+                    DateTimeOffset.Now);
+                break;
+            case Constructors.layer150_InputPeerChannel:
+                _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerChannel().ChannelId, PeerType.Channel,
+                    DateTimeOffset.Now);
+                break;
+            case Constructors.layer150_InputPeerChannelFromMessage:
+                _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerChannelFromMessage().ChannelId, PeerType.Channel,
+                    DateTimeOffset.Now);
+                break;
+            
         }
 
-        return await _unitOfWork.SaveAsync();*/
-        throw new NotImplementedException();
+        var result = await _unitOfWork.SaveAsync();
+        return result ? new BoolTrue(): new BoolFalse();
     }
 
     public async Task<TLBool> Unblock(long authKeyId, TLBytes q)

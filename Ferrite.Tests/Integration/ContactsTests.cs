@@ -183,21 +183,19 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var auth = await Helpers.SignUp(client, "+15555555620");
         List<InputContact> inputContacts = new();
         List<InputUser> inputUsers = new();
-        for (int i = 0; i < 10; i++)
+        string phoneNumber = "+905555555581";
+        await clientContacts.ConnectAsync();
+        var a = await Helpers.SignUp(clientContacts, phoneNumber);
+        inputUsers.Add(((Auth_Authorization)a).user);
+        InputPhoneContact c = new()
         {
-            string phoneNumber = "+90555555558" + i;
-            var a = await Helpers.SignUp(clientContacts, phoneNumber);
-            inputUsers.Add(((Auth_Authorization)a).user);
-            clientContacts.Reset();
-            InputPhoneContact c = new()
-            {
-                first_name = "bbb" + i,
-                last_name = "bbb" + i,
-                phone = phoneNumber,
-                client_id = i + 1
-            };
-            inputContacts.Add(c);
-        }
+            first_name = "bbb1",
+            last_name = "bbb1",
+            phone = phoneNumber,
+            client_id = 1
+        };
+        inputContacts.Add(c);
+
         await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Block(inputUsers[0]);
         Assert.True(result);
