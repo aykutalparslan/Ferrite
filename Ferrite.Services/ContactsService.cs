@@ -16,16 +16,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System.Collections;
 using System.Text;
 using Ferrite.Data;
-using Ferrite.Data.Contacts;
 using Ferrite.Data.Repositories;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.contacts;
 using Ferrite.TL.slim.layer150.dto;
-using Org.BouncyCastle.Utilities;
 
 namespace Ferrite.Services;
 
@@ -318,22 +315,36 @@ public class ContactsService : IContactsService
 
     public async Task<TLBool> Unblock(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (id.InputPeerType is InputPeerType.Channel or InputPeerType.ChannelFromMessage)
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var peerBytes = new Unblock(q.AsSpan()).Id.ToArray();
+        TLInputPeer id = new TLInputPeer(peerBytes, 0, peerBytes.Length);
+        switch (id.Constructor)
         {
-            _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.ChannelId, PeerType.Channel);
-        }
-        if (id.InputPeerType is InputPeerType.User or InputPeerType.UserFromMessage)
-        {
-            _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.UserId, PeerType.User);
-        }
-        else
-        {
-            _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.UserId, id.ChatId, PeerType.Chat);
+            case Constructors.layer150_InputPeerUser:
+                _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerUser().UserId, PeerType.User);
+                break;
+            case Constructors.layer150_InputPeerUserFromMessage:
+                _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerUserFromMessage().UserId, PeerType.User);
+                break;
+            case Constructors.layer150_InputPeerChat:
+                _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerChat().ChatId, PeerType.Chat);
+                break;
+            case Constructors.layer150_InputPeerChannel:
+                _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerChannel().ChannelId, PeerType.Channel);
+                break;
+            case Constructors.layer150_InputPeerChannelFromMessage:
+                _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
+                    id.AsInputPeerChannelFromMessage().ChannelId, PeerType.Channel);
+                break;
+            
         }
 
-        return await _unitOfWork.SaveAsync();*/
-        throw new NotImplementedException();
+        var result = await _unitOfWork.SaveAsync();
+        return result ? new BoolTrue(): new BoolFalse();
     }
 
     public async Task<TLBlocked> GetBlocked(long authKeyId, TLBytes q)

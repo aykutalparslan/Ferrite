@@ -207,24 +207,21 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
+        await clientContacts.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555621");
         List<InputContact> inputContacts = new();
         List<InputUser> inputUsers = new();
-        for (int i = 0; i < 10; i++)
+        string phoneNumber = "+905555555595";
+        var a = await Helpers.SignUp(clientContacts, phoneNumber);
+        inputUsers.Add(((Auth_Authorization)a).user);
+        InputPhoneContact c = new()
         {
-            string phoneNumber = "+90555555559" + i;
-            var a = await Helpers.SignUp(clientContacts, phoneNumber);
-            inputUsers.Add(((Auth_Authorization)a).user);
-            clientContacts.Reset();
-            InputPhoneContact c = new()
-            {
-                first_name = "bbb" + i,
-                last_name = "bbb" + i,
-                phone = phoneNumber,
-                client_id = i + 1
-            };
-            inputContacts.Add(c);
-        }
+            first_name = "bbb55",
+            last_name = "bbb55",
+            phone = phoneNumber,
+            client_id = 1
+        };
+        inputContacts.Add(c);
         await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Unblock(inputUsers[0]);
         Assert.True(result);
