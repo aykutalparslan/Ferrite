@@ -266,24 +266,21 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555623");
+        await clientContacts.ConnectAsync();
         List<InputContact> inputContacts = new();
         List<InputUser> inputUsers = new();
-        for (int i = 0; i < 10; i++)
+        string phoneNumber = "+905555555611";
+        var a = await Helpers.SignUp(clientContacts, phoneNumber, "bbb-1", "bbb-1");
+        inputUsers.Add(((Auth_Authorization)a).user);
+        InputPhoneContact c = new()
         {
-            string phoneNumber = "+90555555561" + i;
-            var a = await Helpers.SignUp(clientContacts, phoneNumber);
-            inputUsers.Add(((Auth_Authorization)a).user);
-            clientContacts.Reset();
-            InputPhoneContact c = new()
-            {
-                first_name = "bbb" + i,
-                last_name = "bbb" + i,
-                phone = phoneNumber,
-                client_id = i + 1
-            };
-            inputContacts.Add(c);
-        }
-        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
+            first_name = "bbb-1",
+            last_name = "bbb-1",
+            phone = phoneNumber,
+            client_id = 1
+        };
+        inputContacts.Add(c);
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var results = await client.Contacts_Search("bbb-1");
         Assert.NotNull(results);
         Assert.Single(results.results);

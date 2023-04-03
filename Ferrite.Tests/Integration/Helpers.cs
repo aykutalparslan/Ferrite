@@ -25,7 +25,7 @@ namespace Ferrite.Tests.Integration;
 
 internal class Helpers
 {
-    internal static async Task<Auth_AuthorizationBase?> SignUp(Client client, string phoneNumber)
+    internal static async Task<Auth_AuthorizationBase?> SignUp(Client client, string phoneNumber, string firstName = "aaa", string lastName = "bbb")
     {
         var code = await client.Invoke(new Auth_SendCode()
         {
@@ -46,8 +46,8 @@ internal class Helpers
         {
             phone_number = phoneNumber,
             phone_code_hash = code.phone_code_hash,
-            first_name = "aaa",
-            last_name = "bbb",
+            first_name = firstName,
+            last_name = lastName,
         });
         return result;
     }

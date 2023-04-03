@@ -366,22 +366,37 @@ public class ContactsService : IContactsService
 
     public async Task<TLFound> Search(long authKeyId, TLBytes q)
     {
-        /*var searchResults = await _search.SearchUser(q, limit);
-        List<PeerDTO> peers = new();
-        List<UserDTO> users = new();
+        var query = Encoding.UTF8.GetString(new ContactsSearch(q.AsSpan()).Q);
+        var limit = new ContactsSearch(q.AsSpan()).Limit;
+        var searchResults = await _search.SearchUser(query, limit);
+        List<TLPeer> peers = new();
+        List<TLUser> users = new();
         foreach (var u in searchResults)
         {
-            var user = _users.GetUser(u.Id);
+            var user = _unitOfWork.UserRepository.GetUser(u.Id);
             if (user != null)
             {
-                peers.Add(new PeerDTO(PeerType.User, u.Id));
-                users.Add(user);
+                peers.Add(new PeerUser(u.Id));
+                users.Add(user.Value);
             }
         }
 
-        return new FoundDTO(Array.Empty<PeerDTO>(), peers,
-            Array.Empty<ChatDTO>(), users);*/
-        throw new NotImplementedException();
+        return new Found(new Vector(),
+            ToUserVector(users),
+            new Vector(),
+            ToPeerVector(peers));
+    }
+    
+    private static Vector ToPeerVector(ICollection<TLPeer> peers)
+    {
+        Vector v = new Vector();
+        foreach (var s in peers)
+        {
+            v.AppendTLObject(s.AsSpan());
+            s.Dispose();
+        }
+
+        return v;
     }
 
     public async Task<TLResolvedPeer> ResolveUsername(long authKeyId, TLBytes q)
