@@ -293,6 +293,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
+        await clientContacts.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555624");
         string phoneNumber = "+905555555622";
         var a = await Helpers.SignUp(clientContacts, phoneNumber);

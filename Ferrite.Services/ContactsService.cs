@@ -17,6 +17,7 @@
 // 
 
 using System.Text;
+using DotNext.Collections.Generic;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.TL.slim;
@@ -401,22 +402,27 @@ public class ContactsService : IContactsService
 
     public async Task<TLResolvedPeer> ResolveUsername(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
         {
-            return new ServiceResult<ResolvedPeerDTO>(null, false, ErrorMessages.InvalidAuthKey);
+            return (TLResolvedPeer)RpcErrorGenerator.GenerateError(400, "INVALID_AUTH_KEY"u8);
         }
+
+        var username = Encoding.UTF8.GetString(new ResolveUsername(q.AsSpan()).Username);
         var peerUser = _unitOfWork.UserRepository.GetUserByUsername(username);
         if (peerUser == null)
         {
-            return new ServiceResult<ResolvedPeerDTO>(null, false, ErrorMessages.UsernameInvalid);
+            return (TLResolvedPeer)RpcErrorGenerator.GenerateError(400, "USERNAME_INVALID"u8);
         }
 
-        var peer = new PeerDTO(PeerType.User, peerUser.Id);
-        var resolved = new ResolvedPeerDTO(peer, Array.Empty<ChatDTO>(), 
-            new List<UserDTO>() { peerUser });
-        return new ServiceResult<ResolvedPeerDTO>(resolved, true, ErrorMessages.None);*/
-        throw new NotImplementedException();
+        List<TLUser> users = new() { peerUser.Value };
+        using TLPeer peer = new PeerUser(peerUser.Value.AsUser().Id);
+        TLResolvedPeer resolved = ResolvedPeer.Builder()
+            .Peer(peer.AsSpan())
+            .Users(ToUserVector(users))
+            .Chats(new Vector())
+            .Build();
+        return resolved;
     }
 
     public async Task<TLTopPeers> GetTopPeers(long authKeyId, TLBytes q)
