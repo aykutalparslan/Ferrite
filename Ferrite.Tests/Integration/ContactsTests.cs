@@ -230,18 +230,19 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     [Fact]
     public async Task GetBlocked_Returns_Blocked()
     {
-        using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555622");
         List<InputContact> inputContacts = new();
         List<InputUser> inputUsers = new();
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 3; i++)
         {
+            using var clientContacts = new WTelegram.Client(ConfigPfs, new MemoryStream());
+            await clientContacts.ConnectAsync();
             string phoneNumber = "+90555555560" + i;
             var a = await Helpers.SignUp(clientContacts, phoneNumber);
             inputUsers.Add(((Auth_Authorization)a).user);
-            clientContacts.Reset();
             InputPhoneContact c = new()
             {
                 first_name = "bbb" + i,
@@ -251,7 +252,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             };
             inputContacts.Add(c);
         }
-        await clientContacts.Contacts_ImportContacts(inputContacts.ToArray());
+        await client.Contacts_ImportContacts(inputContacts.ToArray());
         var result = await client.Contacts_Block(inputUsers[0]);
         Assert.True(result);
         var resulBlocked = await client.Contacts_GetBlocked();

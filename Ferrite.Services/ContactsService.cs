@@ -24,6 +24,7 @@ using Ferrite.TL.slim;
 using Ferrite.TL.slim.layer150;
 using Ferrite.TL.slim.layer150.contacts;
 using Ferrite.TL.slim.layer150.dto;
+using PeerBlocked = Ferrite.TL.slim.layer150.PeerBlocked;
 
 namespace Ferrite.Services;
 
@@ -363,20 +364,46 @@ public class ContactsService : IContactsService
 
     public async Task<TLBlocked> GetBlocked(long authKeyId, TLBytes q)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var blockedPeers = _unitOfWork.BlockedPeersRepository.GetBlockedPeers(auth.UserId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var blockedPeers = _unitOfWork.BlockedPeersRepository.GetBlockedPeers(auth.Value.AsAuthInfo().UserId);
         List<UserDTO> users= new();
-        foreach (var p in blockedPeers)
+        List<TLUser> userList = new ();
+        foreach (var c in blockedPeers)
         {
-            if (p.PeerId.PeerType == PeerType.User)
+            if (c.AsBlockedPeer().PeerType == (int)PeerType.User)
             {
-                users.Add(_unitOfWork.UserRepository.GetUser(p.PeerId.PeerId));
+                var user = _unitOfWork.UserRepository.GetUser(c.AsBlockedPeer().PeerId);
+                if(user != null) userList.Add(user.Value);
             }
         }
         //TODO: also fetch the chats from the db
-        return new BlockedDTO(blockedPeers.Count, blockedPeers,new List<ChatDTO>(), users);*/
-        throw new NotImplementedException();
+        return Blocked.Builder()
+            .Users(ToUserVector(userList))
+            .Chats(new Vector())
+            .BlockedProperty(ToPeerBlockedVector(blockedPeers))
+            .Build();
     }
+
+    private Vector ToPeerBlockedVector(IReadOnlyList<TLBlockedPeer> blockedPeers)
+    {
+        Vector v = new Vector();
+        foreach (var b in blockedPeers)
+        {
+            using var peerId = CreatePeer((PeerType)b.AsBlockedPeer().PeerType, b.AsBlockedPeer().PeerId);
+            using var pb = new PeerBlocked(peerId.AsSpan(), b.AsBlockedPeer().Date);
+            v.AppendTLObject(pb.ToReadOnlySpan());
+            b.Dispose();
+        }
+
+        return v;
+    }
+
+    private TLPeer CreatePeer(PeerType peerType, long peerId) => peerType switch
+    {
+        PeerType.Channel => new PeerChannel(peerId),
+        PeerType.Chat => new PeerChat(peerId),
+        _ => new PeerUser(peerId)
+    };
 
     public async Task<TLFound> Search(long authKeyId, TLBytes q)
     {

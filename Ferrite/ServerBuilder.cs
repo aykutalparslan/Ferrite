@@ -188,6 +188,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.layer150_GetContactIDs))
             .SingleInstance();
+        builder.RegisterType<GetBlockedFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_GetBlocked))
+            .SingleInstance();
     }
 
     private static void RegisterUsersMethods(ContainerBuilder builder)
