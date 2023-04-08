@@ -42,7 +42,20 @@ public class ContactsService : IContactsService
 
     public async Task<ICollection<long>> GetContactIds(long authKeyId, TLBytes q)
     {
-        return new List<long>();
+        var result = new List<long>();
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        if (auth == null)
+        {
+            return result;
+        }
+
+        var contactList = _unitOfWork.ContactsRepository.GetContacts(auth.Value.AsAuthInfo().UserId);
+        foreach (var c in contactList)
+        {
+            result.Add(c.AsContact().UserId);
+        }
+
+        return result;
     }
 
     public async Task<ICollection<TLContactStatus>> GetStatuses(long authKeyId)
