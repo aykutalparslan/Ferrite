@@ -423,9 +423,9 @@ public class ContactsService : IContactsService
         }
 
         return new Found(new Vector(),
-            ToUserVector(users),
+            ToPeerVector(peers),
             new Vector(),
-            ToPeerVector(peers));
+            ToUserVector(users));
     }
     
     private static Vector ToPeerVector(ICollection<TLPeer> peers)

@@ -271,18 +271,18 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         List<InputContact> inputContacts = new();
         List<InputUser> inputUsers = new();
         string phoneNumber = "+905555555611";
-        var a = await Helpers.SignUp(clientContacts, phoneNumber, "bbb-1", "bbb-1");
+        var a = await Helpers.SignUp(clientContacts, phoneNumber, "bbb1", "bbb1");
         inputUsers.Add(((Auth_Authorization)a).user);
         InputPhoneContact c = new()
         {
-            first_name = "bbb-1",
-            last_name = "bbb-1",
+            first_name = "bbb1",
+            last_name = "bbb1",
             phone = phoneNumber,
             client_id = 1
         };
         inputContacts.Add(c);
         await client.Contacts_ImportContacts(inputContacts.ToArray());
-        var results = await client.Contacts_Search("bbb-1");
+        var results = await client.Contacts_Search("bbb1");
         Assert.NotNull(results);
         Assert.Single(results.results);
         Assert.Single(results.users);
