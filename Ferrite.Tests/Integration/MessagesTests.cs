@@ -1,5 +1,7 @@
 using System.Net;
+using TL;
 using WTelegram;
+using Xunit;
 
 namespace Ferrite.Tests.Integration;
 
@@ -37,5 +39,16 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
             case "pfs_enabled": return "yes";
             default: return null;
         }
+    }
+    
+    [Fact]
+    public async Task ResolveUsername_Returns_Resolved()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555625");
+        var result = await client.Messages_GetMessages(Array.Empty<InputMessage>());
+        Assert.NotNull(result);
+        Assert.IsType<Messages_Messages>(result);
     }
 }
