@@ -91,7 +91,18 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
         var auth = await Helpers.SignUp(client, "+15555555629");
-        var result = await client.Messages_Search(new InputPeerSelf(), "xxx");
+        var result = await client.Messages_ReadHistory(new InputPeerSelf());
+        Assert.NotNull(result);
+        Assert.IsType<Messages_AffectedMessages>(result);
+    }
+    
+    [Fact]
+    public async Task DeleteHistory_Returns_AffectedMessages()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555630");
+        var result = await client.Messages_DeleteHistory(new InputPeerSelf());
         Assert.NotNull(result);
         Assert.IsType<Messages_AffectedMessages>(result);
     }
