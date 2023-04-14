@@ -68,8 +68,19 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     {
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
-        var auth = await Helpers.SignUp(client, "+15555555626");
+        var auth = await Helpers.SignUp(client, "+15555555627");
         var result = await client.Messages_GetHistory(new InputPeerSelf());
+        Assert.NotNull(result);
+        Assert.IsType<Messages_Messages>(result);
+    }
+    
+    [Fact]
+    public async Task Search_Returns_Messages()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555628");
+        var result = await client.Messages_Search(new InputPeerSelf(), "xxx");
         Assert.NotNull(result);
         Assert.IsType<Messages_Messages>(result);
     }
