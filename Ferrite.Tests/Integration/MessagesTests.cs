@@ -42,7 +42,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     }
     
     [Fact]
-    public async Task ResolveUsername_Returns_Resolved()
+    public async Task GetMessages_Returns_Resolved()
     {
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
@@ -50,5 +50,16 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var result = await client.Messages_GetMessages(Array.Empty<InputMessage>());
         Assert.NotNull(result);
         Assert.IsType<Messages_Messages>(result);
+    }
+    
+    [Fact]
+    public async Task GetDialogs_Returns_Resolved()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555626");
+        var result = await client.Messages_GetDialogs();
+        Assert.NotNull(result);
+        Assert.IsType<Messages_Dialogs>(result);
     }
 }
