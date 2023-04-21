@@ -2,6 +2,7 @@ using System.Net;
 using TL;
 using WTelegram;
 using Xunit;
+using ReceivedNotifyMessage = TL.ReceivedNotifyMessage;
 
 namespace Ferrite.Tests.Integration;
 
@@ -105,5 +106,16 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var result = await client.Messages_DeleteHistory(new InputPeerSelf());
         Assert.NotNull(result);
         Assert.IsType<Messages_AffectedMessages>(result);
+    }
+    
+    [Fact]
+    public async Task ReceivedMessages_Returns_Vector()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555632");
+        var result = await client.Messages_ReceivedMessages(999);
+        Assert.NotNull(result);
+        Assert.IsType<ReceivedNotifyMessage[]>(result);
     }
 }
