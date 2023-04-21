@@ -106,4 +106,15 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         Assert.NotNull(result);
         Assert.IsType<Messages_AffectedMessages>(result);
     }
+    
+    [Fact]
+    public async Task DeleteMessages_Returns_AffectedMessages()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555630");
+        var result = await client.Messages_DeleteMessages(new int[]{13});
+        Assert.NotNull(result);
+        Assert.IsType<Messages_AffectedMessages>(result);
+    }
 }
