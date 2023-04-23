@@ -109,7 +109,7 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
     }
     
     [Fact]
-    public async Task ReceivedMessages_Returns_Vector()
+    public async Task ReceivedMessages_Returns_ReceivedNotifyMessageArray()
     {
         using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await client.ConnectAsync();
@@ -117,5 +117,17 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var result = await client.Messages_ReceivedMessages(999);
         Assert.NotNull(result);
         Assert.IsType<ReceivedNotifyMessage[]>(result);
+    }
+    [Fact]
+    public async Task SetTyping_Returns_True()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555633");
+        using var clientPeer = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await clientPeer.ConnectAsync();
+        var authPeer = await Helpers.SignUp(clientPeer, "+15555555634");
+        var result = await client.Messages_SetTyping(((Auth_Authorization)authPeer).user, new SendMessageTypingAction());
+        Assert.True(result);
     }
 }
