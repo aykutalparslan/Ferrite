@@ -130,4 +130,17 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var result = await client.Messages_SetTyping(((Auth_Authorization)authPeer).user, new SendMessageTypingAction());
         Assert.True(result);
     }
+    [Fact]
+    public async Task SendMessage_Returns_UpdateShortSentMessage()
+    {
+        using var client = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await client.ConnectAsync();
+        var auth = await Helpers.SignUp(client, "+15555555635");
+        using var clientPeer = new WTelegram.Client(ConfigPfs, new MemoryStream());
+        await clientPeer.ConnectAsync();
+        var authPeer = await Helpers.SignUp(clientPeer, "+15555555636");
+        var result = await client.Messages_SendMessage(((Auth_Authorization)authPeer).user,
+            "Test message 123", 1234);
+        Assert.IsType<UpdateShortSentMessage>(result);
+    }
 }
