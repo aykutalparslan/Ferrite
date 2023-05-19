@@ -20,6 +20,7 @@ using System.Collections.ObjectModel;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Updates;
+using Ferrite.TL.slim.layer150;
 using Ferrite.Utils;
 using MessagePack;
 
@@ -101,7 +102,7 @@ public class UpdatesService : IUpdatesService
         throw new NotImplementedException();
     }
 
-    public async Task<bool> EnqueueUpdate(long userId, UpdateBase update)
+    public async Task<bool> EnqueueUpdate(long userId, TLUpdate update)
     {
         /*var user = _unitOfWork.UserRepository.GetUser(userId);
         var authorizations = await _unitOfWork.AuthorizationRepository.GetAuthorizationsAsync(user.Phone);

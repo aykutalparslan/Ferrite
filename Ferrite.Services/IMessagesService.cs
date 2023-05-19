@@ -18,6 +18,7 @@
 
 using Ferrite.Data;
 using Ferrite.Data.Messages;
+using Ferrite.TL.slim;
 
 namespace Ferrite.Services;
 
@@ -46,6 +47,5 @@ public interface IMessagesService
         int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, int offsetId, int addOffset, 
         int limit, long maxId, long minId, long hash);
 
-    Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer,
-        SendMessageActionDTO action, int? topMessageId = null);
+    ValueTask<TLBool> SetTyping(long authKeyId, TLBytes q);
 }

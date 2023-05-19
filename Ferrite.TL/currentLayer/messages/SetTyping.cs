@@ -111,7 +111,7 @@ public class SetTyping : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var serviceResult = await _messages.SetTyping(ctx.CurrentAuthKeyId,
+        /*var serviceResult = await _messages.SetTyping(ctx.CurrentAuthKeyId,
             _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer),
             _mapper.MapToDTO<SendMessageAction, SendMessageActionDTO>(_action), _flags[0] ? _topMsgId : null);
         var rpcResult = factory.Resolve<RpcResult>();
@@ -128,7 +128,8 @@ public class SetTyping : ITLObject, ITLMethod
             rpcResult.Result = serviceResult.Result ? new BoolTrue() : new BoolFalse();
         }
         
-        return rpcResult;
+        return rpcResult;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

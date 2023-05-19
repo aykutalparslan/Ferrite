@@ -20,6 +20,9 @@ using Ferrite.Data;
 using Ferrite.Data.Messages;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Search;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.layer150.messages;
 using Ferrite.Utils;
 using PeerSettingsDTO = Ferrite.Data.Messages.PeerSettingsDTO;
 
@@ -410,7 +413,7 @@ public class MessagesService : IMessagesService
     private async Task<int> DeleteMessagesInternal(int maxId, int? minDate, int? maxDate, IUpdatesContext userCtx,
         IReadOnlyCollection<MessageDTO> messages, AuthInfoDTO auth)
     {
-        List<int> deletedIds = new();
+        /*List<int> deletedIds = new();
         int pts = await userCtx.Pts();
         if (messages != null)
         {
@@ -430,7 +433,8 @@ public class MessagesService : IMessagesService
             _updates.EnqueueUpdate(auth.UserId, deleteMessages);
         }
 
-        return pts;
+        return pts;*/
+        throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
@@ -662,16 +666,19 @@ public class MessagesService : IMessagesService
         throw new NotImplementedException();
     }
 
-    public async Task<ServiceResult<bool>> SetTyping(long authKeyId, InputPeerDTO peer, SendMessageActionDTO action, int? topMessageId = null)
+    public async ValueTask<TLBool> SetTyping(long authKeyId, TLBytes q)
     {
-        /*var peerDTO = PeerFromInputPeer(peer);
+        using var peer = ((SetTyping)q).Get_Peer();
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (peerDTO.PeerType == PeerType.User)
+        if (peer.Type == TLInputPeer.InputPeerType.InputPeerUser)
         {
-            var update = new UpdateUserTypingDTO(auth.UserId, action);
-            _updates.EnqueueUpdate(peerDTO.PeerId, update);
-            return new ServiceResult<bool>(true, true, ErrorMessages.None);
-        }*/
+            using TLUpdate update = UpdateUserTyping.Builder()
+                .UserId(auth.Value.AsAuthInfo().UserId)
+                .Action(((SetTyping)q).Action).
+                Build();
+            _updates.EnqueueUpdate(peer.AsInputPeerUser().UserId, update);
+            return new BoolTrue();
+        }
         throw new NotImplementedException();
     }
 

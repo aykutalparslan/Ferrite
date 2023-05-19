@@ -29,6 +29,7 @@ using Ferrite.Core.Execution.Functions.BaseLayer.Account;
 using Ferrite.Core.Execution.Functions.BaseLayer.Auth;
 using Ferrite.Core.Execution.Functions.BaseLayer.Contacts;
 using Ferrite.Core.Execution.Functions.BaseLayer.Help;
+using Ferrite.Core.Execution.Functions.BaseLayer.Messages;
 using Ferrite.Core.Execution.Functions.BaseLayer.Users;
 using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
@@ -144,6 +145,15 @@ public class ServerBuilder
         RegisterAccountMethods(builder);
         RegisterUsersMethods(builder);
         RegisterContactsMethods(builder);
+        RegisterMessagesMethods(builder);
+    }
+
+    private static void RegisterMessagesMethods(ContainerBuilder builder)
+    {
+        builder.RegisterType<SetTypingFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.layer150_SetTyping))
+            .SingleInstance();
     }
 
     private static void RegisterContactsMethods(ContainerBuilder builder)
