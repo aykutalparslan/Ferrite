@@ -23,13 +23,13 @@ using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.auth;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.auth;
+using Ferrite.TL.slim.baseLayer.dto;
 using Ferrite.TL.slim.mtproto;
 using Ferrite.Utils;
 using xxHash;
-using TLAuthorization = Ferrite.TL.slim.layer150.auth.TLAuthorization;
+using TLAuthorization = Ferrite.TL.slim.baseLayer.auth.TLAuthorization;
 
 namespace Ferrite.Services;
 

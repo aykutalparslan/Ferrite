@@ -21,8 +21,8 @@ using Ferrite.Data.Messages;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Search;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.messages;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.messages;
 using Ferrite.Utils;
 using PeerSettingsDTO = Ferrite.Data.Messages.PeerSettingsDTO;
 

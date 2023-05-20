@@ -21,8 +21,8 @@ using Ferrite.Data.Repositories;
 using Ferrite.Services;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.auth;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.auth;
 using Moq;
 using Xunit;
 
@@ -43,7 +43,7 @@ public class AuthServiceTests
         var authService = mocker.Create<AuthService>();
         using var sendCode = GenerateSendCode();
         using var sentCode = await authService.SendCode(sendCode);
-        Assert.Equal(Constructors.layer150_SentCode, 
+        Assert.Equal(Constructors.baseLayer_SentCode, 
             sentCode.Constructor);
         verificationGateway.Verify(v=>v.SendSms(It.IsAny<string>()), Times.Once);
         phoneCodeRepository.Verify(p=>p.PutPhoneCode(
@@ -89,7 +89,7 @@ public class AuthServiceTests
         using var sentCode = await authService.SendCode(sendCode);
         using var resendCode = GenerateResendCode();
         using var sentCode2 = await authService.ResendCode(resendCode);
-        Assert.Equal(Constructors.layer150_SentCode, 
+        Assert.Equal(Constructors.baseLayer_SentCode, 
             sentCode2.Constructor);
         verificationGateway.Verify(v=>v.SendSms(It.IsAny<string>()), Times.Once);
         verificationGateway.Verify(v=>v.Resend(It.IsAny<string>(), 

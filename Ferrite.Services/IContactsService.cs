@@ -19,8 +19,8 @@
 using Ferrite.Data;
 using Ferrite.Data.Contacts;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.contacts;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.contacts;
 
 namespace Ferrite.Services;
 

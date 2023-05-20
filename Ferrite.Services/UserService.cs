@@ -22,9 +22,9 @@ using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Users;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.users;
-using TLUserFull = Ferrite.TL.slim.layer150.users.TLUserFull;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.users;
+using TLUserFull = Ferrite.TL.slim.baseLayer.users.TLUserFull;
 using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
 
 namespace Ferrite.Services;
@@ -79,11 +79,11 @@ public class UserService : IUsersService
         long userId = 0;
         switch (constructor)
         {
-            case Constructors.layer150_InputUser:
+            case Constructors.baseLayer_InputUser:
                 var inputUser = (InputUser)user;
                 userId = inputUser.UserId;
                 break;
-            case Constructors.layer150_InputPeerUserFromMessage:
+            case Constructors.baseLayer_InputPeerUserFromMessage:
                 var inputUserFromMessage = (InputPeerUserFromMessage)user;
                 userId = inputUserFromMessage.UserId;
                 break;
@@ -96,7 +96,7 @@ public class UserService : IUsersService
     {
         var (userId, constructor) = GetUserId(((GetFullUser)q).Id);
         bool self = false;
-        if (constructor == Constructors.layer150_InputUserSelf)
+        if (constructor == Constructors.baseLayer_InputUserSelf)
         {
             var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
             if(auth == null) return (TLUserFull)RpcErrorGenerator.GenerateError(400, "AUTH_KEY_INVALID"u8);
@@ -119,10 +119,10 @@ public class UserService : IUsersService
     {
         var user = userBytes.AsUser();
         var photoConstructor = MemoryMarshal.Read<int>(user.Photo);
-        long photoId = photoConstructor == Constructors.layer150_UserProfilePhotoEmpty 
+        long photoId = photoConstructor == Constructors.baseLayer_UserProfilePhotoEmpty 
             ? 0 
             : ((UserProfilePhoto)user.Photo).PhotoId;
-        var profilePhoto = photoConstructor == Constructors.layer150_UserProfilePhotoEmpty
+        var profilePhoto = photoConstructor == Constructors.baseLayer_UserProfilePhotoEmpty
             ? PhotoEmpty.Builder().Build().TLBytes
             : _unitOfWork.PhotoRepository.GetProfilePhoto(user.Id, photoId);
         using var settings = GeneratePeerSettings(user.Self);

@@ -18,7 +18,7 @@
 
 using Ferrite.Data;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150.users;
+using Ferrite.TL.slim.baseLayer.users;
 
 namespace Ferrite.Services;
 

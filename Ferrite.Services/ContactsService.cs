@@ -21,10 +21,10 @@ using DotNext.Collections.Generic;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.contacts;
-using Ferrite.TL.slim.layer150.dto;
-using PeerBlocked = Ferrite.TL.slim.layer150.PeerBlocked;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.contacts;
+using Ferrite.TL.slim.baseLayer.dto;
+using PeerBlocked = Ferrite.TL.slim.baseLayer.PeerBlocked;
 
 namespace Ferrite.Services;
 
@@ -296,27 +296,27 @@ public class ContactsService : IContactsService
         TLInputPeer id = new TLInputPeer(peerBytes, 0, peerBytes.Length);
         switch (id.Constructor)
         {
-            case Constructors.layer150_InputPeerUser:
+            case Constructors.baseLayer_InputPeerUser:
                 _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerUser().UserId, PeerType.User,
                     DateTimeOffset.Now);
                     break;
-            case Constructors.layer150_InputPeerUserFromMessage:
+            case Constructors.baseLayer_InputPeerUserFromMessage:
                 _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerUserFromMessage().UserId, PeerType.User,
                     DateTimeOffset.Now);
                 break;
-            case Constructors.layer150_InputPeerChat:
+            case Constructors.baseLayer_InputPeerChat:
                 _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerChat().ChatId, PeerType.Chat,
                     DateTimeOffset.Now);
                 break;
-            case Constructors.layer150_InputPeerChannel:
+            case Constructors.baseLayer_InputPeerChannel:
                 _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerChannel().ChannelId, PeerType.Channel,
                     DateTimeOffset.Now);
                 break;
-            case Constructors.layer150_InputPeerChannelFromMessage:
+            case Constructors.baseLayer_InputPeerChannelFromMessage:
                 _unitOfWork.BlockedPeersRepository.PutBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerChannelFromMessage().ChannelId, PeerType.Channel,
                     DateTimeOffset.Now);
@@ -335,23 +335,23 @@ public class ContactsService : IContactsService
         TLInputPeer id = new TLInputPeer(peerBytes, 0, peerBytes.Length);
         switch (id.Constructor)
         {
-            case Constructors.layer150_InputPeerUser:
+            case Constructors.baseLayer_InputPeerUser:
                 _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerUser().UserId, PeerType.User);
                 break;
-            case Constructors.layer150_InputPeerUserFromMessage:
+            case Constructors.baseLayer_InputPeerUserFromMessage:
                 _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerUserFromMessage().UserId, PeerType.User);
                 break;
-            case Constructors.layer150_InputPeerChat:
+            case Constructors.baseLayer_InputPeerChat:
                 _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerChat().ChatId, PeerType.Chat);
                 break;
-            case Constructors.layer150_InputPeerChannel:
+            case Constructors.baseLayer_InputPeerChannel:
                 _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerChannel().ChannelId, PeerType.Channel);
                 break;
-            case Constructors.layer150_InputPeerChannelFromMessage:
+            case Constructors.baseLayer_InputPeerChannelFromMessage:
                 _unitOfWork.BlockedPeersRepository.DeleteBlockedPeer(auth.Value.AsAuthInfo().UserId,
                     id.AsInputPeerChannelFromMessage().ChannelId, PeerType.Channel);
                 break;

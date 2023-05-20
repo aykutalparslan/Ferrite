@@ -17,8 +17,8 @@
 // 
 
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.dto;
 
 namespace Ferrite.Data.Repositories;
 

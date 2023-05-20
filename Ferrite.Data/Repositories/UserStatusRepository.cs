@@ -17,10 +17,10 @@
 // 
 
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.dto;
 using MessagePack;
-using TLUserStatus = Ferrite.TL.slim.layer150.TLUserStatus;
+using TLUserStatus = Ferrite.TL.slim.baseLayer.TLUserStatus;
 
 namespace Ferrite.Data.Repositories;
 

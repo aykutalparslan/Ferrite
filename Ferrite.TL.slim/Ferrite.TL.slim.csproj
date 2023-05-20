@@ -12,10 +12,11 @@
       </AdditionalFiles>
       <None Remove="layer148.tl" />
       <None Remove="layer150.tl" />
-      <AdditionalFiles Include="layer150.tl">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </AdditionalFiles>
       <None Remove="dto.tl" />
+      <None Remove="baseLayer.tl" />
+      <AdditionalFiles Include="baseLayer.tl">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </AdditionalFiles>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Ferrite.TLParser\Ferrite.TLParser.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

@@ -21,9 +21,9 @@ using System.Text;
 using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
-using Ferrite.TL.slim.layer150.dto;
-using Ferrite.TL.slim.layer150.storage;
-using Ferrite.TL.slim.layer150.upload;
+using Ferrite.TL.slim.baseLayer.dto;
+using Ferrite.TL.slim.baseLayer.storage;
+using Ferrite.TL.slim.baseLayer.upload;
 using Ferrite.TL.slim.mtproto;
 
 namespace Ferrite.Services;

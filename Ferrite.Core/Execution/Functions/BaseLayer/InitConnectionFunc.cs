@@ -22,7 +22,7 @@ using Ferrite.Crypto;
 using Ferrite.Services;
 using Ferrite.TL;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer.dto;
 
 namespace Ferrite.Core.Execution.Functions.BaseLayer;
 
@@ -48,7 +48,7 @@ public class InitConnectionFunc : ITLFunction
 
     private static TLBytes GetQuery(TLBytes q)
     {
-        TL.slim.layer150.InitConnection request = new(q.AsSpan());
+        TL.slim.baseLayer.InitConnection request = new(q.AsSpan());
         var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.Query.Length);
         request.Query.CopyTo(queryMemory.Memory.Span);
         TLBytes query = new(queryMemory, 0, request.Query.Length);
@@ -57,7 +57,7 @@ public class InitConnectionFunc : ITLFunction
 
     private TLAppInfo CreateAppInfo(TLBytes q, TLExecutionContext ctx)
     {
-        var request = (TL.slim.layer150.InitConnection)q;
+        var request = (TL.slim.baseLayer.InitConnection)q;
         return AppInfo.Builder()
             .Hash(_random.NextLong())
             .ApiId(request.ApiId)

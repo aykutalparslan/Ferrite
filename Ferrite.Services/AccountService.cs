@@ -26,10 +26,10 @@ using Ferrite.Data.Account;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.account;
-using Ferrite.TL.slim.layer150.auth;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.account;
+using Ferrite.TL.slim.baseLayer.auth;
+using Ferrite.TL.slim.baseLayer.dto;
 using xxHash;
 using Vector = Ferrite.TL.slim.Vector;
 
@@ -197,16 +197,16 @@ public class AccountService : IAccountService
         InputPeerType peerType = InputPeerType.Empty;
         switch (peerConstructor)
         {
-            case Constructors.layer150_InputNotifyUsers:
+            case Constructors.baseLayer_InputNotifyUsers:
                 notifyPeerType = InputNotifyPeerType.Users;
                 break;
-            case Constructors.layer150_InputNotifyChats:
+            case Constructors.baseLayer_InputNotifyChats:
                 notifyPeerType = InputNotifyPeerType.Chats;
                 break;
-            case Constructors.layer150_InputNotifyBroadcasts:
+            case Constructors.baseLayer_InputNotifyBroadcasts:
                 notifyPeerType = InputNotifyPeerType.Broadcasts;
                 break;
-            case Constructors.layer150_InputNotifyPeer:
+            case Constructors.baseLayer_InputNotifyPeer:
                 notifyPeerType = InputNotifyPeerType.Peer;
                 var notifyPeer = new InputNotifyPeer(peer);
                 var (inputPeerType, id, accessHash) = GetPeerTypeAndId(notifyPeer.Peer);
@@ -226,41 +226,41 @@ public class AccountService : IAccountService
         long accessHash = 0;
         switch (peerConstructor)
         {
-            case Constructors.layer150_InputPeerSelf:
+            case Constructors.baseLayer_InputPeerSelf:
                 inputPeerType = InputPeerType.Self;
                 break;
-            case Constructors.layer150_InputPeerChat:
+            case Constructors.baseLayer_InputPeerChat:
                 inputPeerType = InputPeerType.Chat;
                 var chat = new InputPeerChat(bytes);
                 peerId = chat.ChatId;
                 break;
-            case Constructors.layer150_InputPeerUser:
+            case Constructors.baseLayer_InputPeerUser:
                 inputPeerType = InputPeerType.User;
                 var user = new InputPeerUser(bytes);
                 peerId = user.UserId;
                 accessHash = user.AccessHash;
                 break;
-            case Constructors.layer150_InputPeerChannel:
+            case Constructors.baseLayer_InputPeerChannel:
                 inputPeerType = InputPeerType.Channel;
                 var channel = new InputPeerChannel(bytes);
                 peerId = channel.ChannelId;
                 accessHash = channel.AccessHash;
                 break;
-            case Constructors.layer150_InputPeerUserFromMessage:
+            case Constructors.baseLayer_InputPeerUserFromMessage:
                 inputPeerType = InputPeerType.User;
                 var userFromMessage = new InputPeerUserFromMessage(bytes);
                 var peer = new InputPeerUser(userFromMessage.Peer);
                 peerId = peer.UserId;
                 accessHash = peer.AccessHash;
                 break;
-            case Constructors.layer150_InputPeerChannelFromMessage:
+            case Constructors.baseLayer_InputPeerChannelFromMessage:
                 inputPeerType = InputPeerType.User;
                 var channelFromMessage = new InputPeerUserFromMessage(bytes);
                 var peerChannel = new InputPeerChannel(channelFromMessage.Peer);
                 peerId = peerChannel.ChannelId;
                 accessHash = peerChannel.AccessHash;
                 break;
-            case Constructors.layer150_InputPeerEmpty:
+            case Constructors.baseLayer_InputPeerEmpty:
                 inputPeerType = InputPeerType.Empty;
                 break;
         }
@@ -491,17 +491,17 @@ public class AccountService : IAccountService
         int constructor = MemoryMarshal.Read<int>(inputPrivacyValue);
         switch (constructor)
         {
-            case Constructors.layer150_InputPrivacyValueAllowContacts:
+            case Constructors.baseLayer_InputPrivacyValueAllowContacts:
                 using (var allowContacts = PrivacyValueAllowContacts.Builder().Build())
                 {
                     return allowContacts.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueAllowAll:
+            case Constructors.baseLayer_InputPrivacyValueAllowAll:
                 using (var allowAll = PrivacyValueAllowAll.Builder().Build())
                 {
                     return allowAll.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueAllowUsers:
+            case Constructors.baseLayer_InputPrivacyValueAllowUsers:
                 var allowUsers = (InputPrivacyValueAllowUsers)inputPrivacyValue;
                 var userVector = allowUsers.Users;
                 VectorOfLong userIds = new();
@@ -514,17 +514,17 @@ public class AccountService : IAccountService
                 {
                     return allowUsers2.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueDisallowContacts:
+            case Constructors.baseLayer_InputPrivacyValueDisallowContacts:
                 using (var disallowContacts = PrivacyValueDisallowContacts.Builder().Build())
                 {
                     return disallowContacts.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueDisallowAll:
+            case Constructors.baseLayer_InputPrivacyValueDisallowAll:
                 using (var disallowAll = PrivacyValueDisallowAll.Builder().Build())
                 {
                     return disallowAll.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueDisallowUsers:
+            case Constructors.baseLayer_InputPrivacyValueDisallowUsers:
                 var disallowUsers = (InputPrivacyValueDisallowUsers)inputPrivacyValue;
                 var userVector2 = disallowUsers.Users;
                 VectorOfLong userIds2 = new();
@@ -538,13 +538,13 @@ public class AccountService : IAccountService
                 {
                     return disallowUsers2.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueAllowChatParticipants:
+            case Constructors.baseLayer_InputPrivacyValueAllowChatParticipants:
                 var chats = ((InputPrivacyValueAllowChatParticipants)inputPrivacyValue).Chats;
                 using (var allowChatParticipants = PrivacyValueAllowChatParticipants.Builder().Chats(chats).Build())
                 {
                     return allowChatParticipants.ToReadOnlySpan();
                 }
-            case Constructors.layer150_InputPrivacyValueDisallowChatParticipants:
+            case Constructors.baseLayer_InputPrivacyValueDisallowChatParticipants:
                 var chats2 = ((InputPrivacyValueDisallowChatParticipants)inputPrivacyValue).Chats;
                 using (var disallowChatParticipants = PrivacyValueDisallowChatParticipants.Builder().Chats(chats2).Build())
                 {
@@ -562,14 +562,14 @@ public class AccountService : IAccountService
         {
             switch (r.Constructor)
             {
-                case Constructors.layer150_PrivacyValueAllowUsers:
+                case Constructors.baseLayer_PrivacyValueAllowUsers:
                     var v = r.AsPrivacyValueAllowUsers().Users;
                     for (int i = 0; i < v.Count; i++)
                     {
                         users.Add(v[i]);
                     }
                     break;
-                case Constructors.layer150_PrivacyValueDisallowUsers:
+                case Constructors.baseLayer_PrivacyValueDisallowUsers:
                     var v2 = r.AsPrivacyValueDisallowUsers().Users;
                     for (int i = 0; i < v2.Count; i++)
                     {
@@ -589,14 +589,14 @@ public class AccountService : IAccountService
         {
             switch (r.Constructor)
             {
-                case Constructors.layer150_PrivacyValueAllowChatParticipants:
+                case Constructors.baseLayer_PrivacyValueAllowChatParticipants:
                     var v = r.AsPrivacyValueAllowChatParticipants().Chats;
                     for (int i = 0; i < v.Count; i++)
                     {
                         chats.Add(v[i]);
                     }
                     break;
-                case Constructors.layer150_PrivacyValueDisallowChatParticipants:
+                case Constructors.baseLayer_PrivacyValueDisallowChatParticipants:
                     var v2 = r.AsPrivacyValueDisallowChatParticipants().Chats;
                     for (int i = 0; i < v2.Count; i++)
                     {
@@ -614,9 +614,9 @@ public class AccountService : IAccountService
         int constructor = MemoryMarshal.Read<int>(inputUser);
         switch (constructor)
         {
-            case Constructors.layer150_InputUser:
+            case Constructors.baseLayer_InputUser:
                 return ((InputUser)inputUser).UserId;
-            case Constructors.layer150_InputPeerUserFromMessage:
+            case Constructors.baseLayer_InputPeerUserFromMessage:
                 return ((InputPeerUserFromMessage)inputUser).UserId;
             default:
                 return 0;
@@ -625,13 +625,13 @@ public class AccountService : IAccountService
 
     private InputPrivacyKey GetPrivacyKey(int constructor) => constructor switch
     {
-        Constructors.layer150_InputPrivacyKeyStatusTimestamp => Data.InputPrivacyKey.StatusTimestamp,
-        Constructors.layer150_InputPrivacyKeyChatInvite => Data.InputPrivacyKey.ChatInvite,
-        Constructors.layer150_InputPrivacyKeyPhoneCall => Data.InputPrivacyKey.PhoneCall,
-        Constructors.layer150_InputPrivacyKeyPhoneP2P => Data.InputPrivacyKey.PhoneP2P,
-        Constructors.layer150_InputPrivacyKeyForwards => Data.InputPrivacyKey.Forwards,
-        Constructors.layer150_InputPrivacyKeyProfilePhoto => Data.InputPrivacyKey.ProfilePhoto,
-        Constructors.layer150_InputPrivacyKeyPhoneNumber => Data.InputPrivacyKey.PhoneNumber,
+        Constructors.baseLayer_InputPrivacyKeyStatusTimestamp => Data.InputPrivacyKey.StatusTimestamp,
+        Constructors.baseLayer_InputPrivacyKeyChatInvite => Data.InputPrivacyKey.ChatInvite,
+        Constructors.baseLayer_InputPrivacyKeyPhoneCall => Data.InputPrivacyKey.PhoneCall,
+        Constructors.baseLayer_InputPrivacyKeyPhoneP2P => Data.InputPrivacyKey.PhoneP2P,
+        Constructors.baseLayer_InputPrivacyKeyForwards => Data.InputPrivacyKey.Forwards,
+        Constructors.baseLayer_InputPrivacyKeyProfilePhoto => Data.InputPrivacyKey.ProfilePhoto,
+        Constructors.baseLayer_InputPrivacyKeyPhoneNumber => Data.InputPrivacyKey.PhoneNumber,
         _ => Data.InputPrivacyKey.AddedByPhone
     };
 

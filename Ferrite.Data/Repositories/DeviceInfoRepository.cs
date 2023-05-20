@@ -18,7 +18,7 @@
 
 using System.Text;
 using System.Text.Unicode;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer.dto;
 using MessagePack;
 
 namespace Ferrite.Data.Repositories;

@@ -17,8 +17,8 @@
 //
 using System;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150.auth;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer.auth;
+using Ferrite.TL.slim.baseLayer.dto;
 
 namespace Ferrite.Services;
 

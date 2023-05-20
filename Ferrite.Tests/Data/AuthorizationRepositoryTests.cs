@@ -19,7 +19,7 @@
 using System.Security.Cryptography;
 using Autofac.Extras.Moq;
 using Ferrite.Data.Repositories;
-using Ferrite.TL.slim.layer150.dto;
+using Ferrite.TL.slim.baseLayer.dto;
 using Xunit;
 
 namespace Ferrite.Tests.Data;

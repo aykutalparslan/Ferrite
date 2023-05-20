@@ -18,7 +18,7 @@
 
 using System.Runtime.InteropServices;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
+using Ferrite.TL.slim.baseLayer;
 
 namespace Ferrite.Data.Repositories;
 
@@ -50,13 +50,13 @@ public class PrivacyRulesRepository : IPrivacyRulesRepository
     
     private PrivacyRuleType GetPrivacyValueType(int constructor) => constructor switch
     {
-        Constructors.layer150_PrivacyValueAllowContacts => PrivacyRuleType.AllowContacts,
-        Constructors.layer150_PrivacyValueAllowUsers => PrivacyRuleType.AllowUsers,
-        Constructors.layer150_PrivacyValueDisallowContacts => PrivacyRuleType.DisallowContacts,
-        Constructors.layer150_PrivacyValueDisallowAll => PrivacyRuleType.DisallowAll,
-        Constructors.layer150_PrivacyValueDisallowUsers => PrivacyRuleType.DisallowUsers,
-        Constructors.layer150_PrivacyValueAllowChatParticipants => PrivacyRuleType.AllowChatParticipants,
-        Constructors.layer150_PrivacyValueDisallowChatParticipants => PrivacyRuleType.DisallowChatParticipants,
+        Constructors.baseLayer_PrivacyValueAllowContacts => PrivacyRuleType.AllowContacts,
+        Constructors.baseLayer_PrivacyValueAllowUsers => PrivacyRuleType.AllowUsers,
+        Constructors.baseLayer_PrivacyValueDisallowContacts => PrivacyRuleType.DisallowContacts,
+        Constructors.baseLayer_PrivacyValueDisallowAll => PrivacyRuleType.DisallowAll,
+        Constructors.baseLayer_PrivacyValueDisallowUsers => PrivacyRuleType.DisallowUsers,
+        Constructors.baseLayer_PrivacyValueAllowChatParticipants => PrivacyRuleType.AllowChatParticipants,
+        Constructors.baseLayer_PrivacyValueDisallowChatParticipants => PrivacyRuleType.DisallowChatParticipants,
         _ => PrivacyRuleType.AllowAll
     };
 

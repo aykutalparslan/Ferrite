@@ -33,7 +33,7 @@ public class InvokeWithLayerFunc : ITLFunction
     }
     private static ValueTuple<TLBytes, int> GetQuery(TLBytes q)
     {
-        TL.slim.layer150.InvokeWithLayer request = new(q.AsSpan());
+        TL.slim.baseLayer.InvokeWithLayer request = new(q.AsSpan());
         var queryMemory = UnmanagedMemoryPool<byte>.Shared.Rent(request.Query.Length);
         request.Query.CopyTo(queryMemory.Memory.Span);
         TLBytes query = new(queryMemory, 0, request.Query.Length);

@@ -20,9 +20,9 @@ using Ferrite.Data;
 using Ferrite.Data.Account;
 using Ferrite.Data.Auth;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.layer150;
-using Ferrite.TL.slim.layer150.account;
-using Ferrite.TL.slim.layer150.auth;
+using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.account;
+using Ferrite.TL.slim.baseLayer.auth;
 
 namespace Ferrite.Services;
 

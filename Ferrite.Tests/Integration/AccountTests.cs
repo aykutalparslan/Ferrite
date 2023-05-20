@@ -21,7 +21,7 @@ using System.Security.Cryptography;
 using TL;
 using WTelegram;
 using Xunit;
-using Authorization = Ferrite.TL.slim.layer150.Authorization;
+using Authorization = Ferrite.TL.slim.baseLayer.Authorization;
 
 namespace Ferrite.Tests.Integration;
 
