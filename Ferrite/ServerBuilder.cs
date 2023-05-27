@@ -154,6 +154,10 @@ public class ServerBuilder
             .Keyed<ITLFunction>(
                 new FunctionKey(DefaultLayer, Constructors.baseLayer_SetTyping))
             .SingleInstance();
+        builder.RegisterType<SendMessageFunc>()
+            .Keyed<ITLFunction>(
+                new FunctionKey(DefaultLayer, Constructors.baseLayer_SendMessage))
+            .SingleInstance();
     }
 
     private static void RegisterContactsMethods(ContainerBuilder builder)

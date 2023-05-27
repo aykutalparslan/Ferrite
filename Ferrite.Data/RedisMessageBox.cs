@@ -39,12 +39,12 @@ public class RedisMessageBox : IMessageBox
         return (int)await _ptsCounter.Get();
     }
 
-    public async ValueTask<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
+    public async ValueTask<int> IncrementPtsForMessage(int peerType, long peerId, int messageId)
     {
         IDatabase db = _redis.GetDatabase();
-        RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        RedisKey key = $"msg:unread:{_userId}-{peerType}-{peerId}";
         RedisKey dialogsKey = $"msg:dialogs:{_userId}";
-        db.SortedSetAdd(dialogsKey, $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}", 0);
+        db.SortedSetAdd(dialogsKey, $"msg:unread:{_userId}-{peerType}-{peerId}", 0);
         db.SortedSetAdd(key, messageId, messageId);
         return (int)await _ptsCounter.IncrementAndGet();
     }
@@ -59,13 +59,13 @@ public class RedisMessageBox : IMessageBox
         return messageId;
     }
 
-    public async ValueTask<int> ReadMessages(PeerDTO peer, int maxId)
+    public async ValueTask<int> ReadMessages(int peerType, long peerId, int maxId)
     {
         IDatabase db = _redis.GetDatabase();
-        RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        RedisKey key = $"msg:unread:{_userId}-{peerType}-{peerId}";
         await db.SortedSetRemoveRangeByScoreAsync(key, 0, maxId);
         GetUnread(db, out var unread);
-        RedisKey keyRead = $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        RedisKey keyRead = $"msg:max-read:{_userId}-{peerType}-{peerId}";
         //TODO: Use a LUA script for this
         bool success = false;
         while (!success)
@@ -95,10 +95,10 @@ public class RedisMessageBox : IMessageBox
         }
     }
 
-    public async ValueTask<int> ReadMessagesMaxId(PeerDTO peer)
+    public async ValueTask<int> ReadMessagesMaxId(int peerType, long peerId)
     {
         IDatabase db = _redis.GetDatabase();
-        RedisKey keyRead = $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        RedisKey keyRead = $"msg:max-read:{_userId}-{peerType}-{peerId}";
         return (int)await db.StringGetAsync(keyRead);
     }
 
@@ -110,10 +110,10 @@ public class RedisMessageBox : IMessageBox
         return unread;
     }
 
-    public async ValueTask<int> UnreadMessages(PeerDTO peer)
+    public async ValueTask<int> UnreadMessages(int peerType, long peerId)
     {
         IDatabase db = _redis.GetDatabase();
-        RedisKey key = $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}";
+        RedisKey key = $"msg:unread:{_userId}-{peerType}-{peerId}";
         return (int)await db.SortedSetLengthAsync(key);
     }
 

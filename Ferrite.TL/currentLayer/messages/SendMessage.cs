@@ -239,7 +239,7 @@ public class SendMessage : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var peer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
+        /*var peer = _mapper.MapToDTO<InputPeer, InputPeerDTO>(_peer);
         var entities = new List<MessageEntityDTO>();
         if (_entities != null)
         {
@@ -273,7 +273,8 @@ public class SendMessage : ITLObject, ITLMethod
             updates.Date = serviceResult.Result.Date;
             rpcResult.Result = updates;
         }
-        return rpcResult;
+        return rpcResult;*/
+        throw new NotImplementedException();
     }
     
     public void Parse(ref SequenceReader buff)

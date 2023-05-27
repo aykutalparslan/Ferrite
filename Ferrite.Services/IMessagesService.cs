@@ -19,6 +19,7 @@
 using Ferrite.Data;
 using Ferrite.Data.Messages;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.baseLayer;
 
 namespace Ferrite.Services;
 
@@ -26,10 +27,7 @@ public interface IMessagesService
 {
     Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id);
     Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer);
-    Task<ServiceResult<UpdateShortSentMessageDTO>> SendMessage(long authKeyId, bool noWebpage, bool silent,
-        bool background, bool clearDraft, bool noForwards, InputPeerDTO peer, string message, long randomId,
-        int? replyToMsgId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO> ? entities,
-        int? scheduleDate, InputPeerDTO? sendAs);
+    Task<TLUpdates> SendMessage(long authKeyId, TLBytes q);
     Task<ServiceResult<UpdateShortSentMessageDTO>> SendMedia(long authKeyId, bool silent, bool background, 
         bool clearDraft, bool noForwards, InputPeerDTO peer, int? replyToMsgId, InputMediaDTO media, 
         string message, long randomId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO>? entities,

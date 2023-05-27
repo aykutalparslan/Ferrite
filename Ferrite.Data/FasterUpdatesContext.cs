@@ -41,9 +41,9 @@ public class FasterUpdatesContext : IUpdatesContext
         return await _commonMessageBox.Pts();
     }
 
-    public async ValueTask<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
+    public async ValueTask<int> IncrementPtsForMessage(int peerType, long peerId, int messageId)
     {
-        return await _commonMessageBox.IncrementPtsForMessage(peer, messageId);
+        return await _commonMessageBox.IncrementPtsForMessage(peerType, peerId, messageId);
     }
 
     public async ValueTask<int> NextMessageId()
@@ -51,14 +51,14 @@ public class FasterUpdatesContext : IUpdatesContext
         return await _commonMessageBox.NextMessageId();
     }
 
-    public async ValueTask<int> ReadMessages(PeerDTO peer, int maxId)
+    public async ValueTask<int> ReadMessages(int peerType, long peerId, int maxId)
     {
-        return await _commonMessageBox.ReadMessages(peer, maxId);
+        return await _commonMessageBox.ReadMessages(peerType, peerId, maxId);
     }
 
-    public async ValueTask<int> ReadMessagesMaxId(PeerDTO peer)
+    public async ValueTask<int> ReadMessagesMaxId(int peerType, long peerId)
     {
-        return await _commonMessageBox.ReadMessagesMaxId(peer);
+        return await _commonMessageBox.ReadMessagesMaxId(peerType, peerId);
     }
 
     public async ValueTask<int> UnreadMessages()
@@ -66,9 +66,9 @@ public class FasterUpdatesContext : IUpdatesContext
         return await _commonMessageBox.UnreadMessages();
     }
 
-    public async ValueTask<int> UnreadMessages(PeerDTO peer)
+    public async ValueTask<int> UnreadMessages(int peerType, long peerId)
     {
-        return await _commonMessageBox.UnreadMessages(peer);
+        return await _commonMessageBox.UnreadMessages(peerType, peerId);
     }
 
     public async ValueTask<int> IncrementPts()

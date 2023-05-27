@@ -45,11 +45,11 @@ public class FasterMessageBox : IMessageBox, IAsyncDisposable
         return (int)await _ptsCounter.Get();
     }
 
-    public async ValueTask<int> IncrementPtsForMessage(PeerDTO peer, int messageId)
+    public async ValueTask<int> IncrementPtsForMessage(int peerType, long peerId, int messageId)
     {
         FasterSortedSet<long> unreadForPeer = new FasterSortedSet<long>(_unreadContext,
-            $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
-        _dialogs.Add($"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            $"msg:unread:{_userId}-{peerType}-{peerId}");
+        _dialogs.Add($"msg:unread:{_userId}-{peerType}-{peerId}");
         unreadForPeer.Add(messageId);
         return (int)await _ptsCounter.IncrementAndGet();
     }
@@ -64,24 +64,24 @@ public class FasterMessageBox : IMessageBox, IAsyncDisposable
         return messageId;
     }
 
-    public async ValueTask<int> ReadMessages(PeerDTO peer, int maxId)
+    public async ValueTask<int> ReadMessages(int peerType, long peerId, int maxId)
     {
         FasterSortedSet<long> unreadForPeer = new FasterSortedSet<long>(_unreadContext,
-            $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            $"msg:unread:{_userId}-{peerType}-{peerId}");
         await unreadForPeer.RemoveEqualOrLess(maxId);
         if (unreadForPeer.Get().Count == 0)
         {
-            await _dialogs.Remove($"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            await _dialogs.Remove($"msg:unread:{_userId}-{peerType}-{peerId}");
         }
         var peerMaxReadCounter = new FasterCounter(_counterContext , 
-            $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            $"msg:max-read:{_userId}-{peerType}-{peerId}");
         return (int)await peerMaxReadCounter.IncrementTo(maxId);
     }
 
-    public async ValueTask<int> ReadMessagesMaxId(PeerDTO peer)
+    public async ValueTask<int> ReadMessagesMaxId(int peerType, long peerId)
     {
         var peerMaxReadCounter = new FasterCounter(_counterContext , 
-            $"msg:max-read:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            $"msg:max-read:{_userId}-{peerType}-{peerId}");
         return (int)await peerMaxReadCounter.Get();
     }
 
@@ -99,10 +99,10 @@ public class FasterMessageBox : IMessageBox, IAsyncDisposable
         return ValueTask.FromResult(unread);
     }
 
-    public ValueTask<int> UnreadMessages(PeerDTO peer)
+    public ValueTask<int> UnreadMessages(int peerType, long peerId)
     {
         FasterSortedSet<long> unreadForPeer = new FasterSortedSet<long>(_unreadContext, 
-            $"msg:unread:{_userId}-{(int)peer.PeerType}-{peer.PeerId}");
+            $"msg:unread:{_userId}-{peerType}-{peerId}");
         return ValueTask.FromResult(unreadForPeer.Get().Count);
     }
 
