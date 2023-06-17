@@ -55,7 +55,7 @@ public class GetState : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var state = await _updates.GetState(ctx.CurrentAuthKeyId);
+        /*var state = await _updates.GetState(ctx.CurrentAuthKeyId);
         var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var resp = factory.Resolve<StateImpl>();
@@ -65,7 +65,8 @@ public class GetState : ITLObject, ITLMethod
         resp.Seq = state.Seq;
         resp.UnreadCount = state.UnreadCount;
         result.Result = resp;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

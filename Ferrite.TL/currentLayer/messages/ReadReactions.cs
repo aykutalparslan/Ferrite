@@ -65,7 +65,7 @@ public class ReadReactions : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var rpcResult = factory.Resolve<RpcResult>();
+        /*var rpcResult = factory.Resolve<RpcResult>();
         rpcResult.ReqMsgId = ctx.MessageId;
         var state = await _updates.GetState(ctx.CurrentAuthKeyId);
         var affected = factory.Resolve<AffectedHistoryImpl>();
@@ -73,7 +73,8 @@ public class ReadReactions : ITLObject, ITLMethod
         affected.PtsCount = 0;
         affected.Offset = -1;
         rpcResult.Result = affected;
-        return rpcResult;
+        return rpcResult;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

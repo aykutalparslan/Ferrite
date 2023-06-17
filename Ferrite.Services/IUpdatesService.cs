@@ -19,12 +19,13 @@ using System;
 using Ferrite.Data;
 using Ferrite.Data.Updates;
 using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.updates;
 
 namespace Ferrite.Services;
 
 public interface IUpdatesService
 {
-    public Task<StateDTO> GetState(long authKeyId);
+    public Task<TLState> GetState(long authKeyId);
     public Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date,
         int qts, int? ptsTotalLimit = null);
     public Task<bool> EnqueueUpdate(long userId, TLUpdate update);

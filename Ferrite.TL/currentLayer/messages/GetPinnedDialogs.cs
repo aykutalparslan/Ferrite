@@ -66,7 +66,7 @@ public class GetPinnedDialogs : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        var result = factory.Resolve<RpcResult>();
+        /*var result = factory.Resolve<RpcResult>();
         result.ReqMsgId = ctx.MessageId;
         var resp = factory.Resolve<PeerDialogsImpl>();
         resp.Chats = new Vector<Chat>(factory);
@@ -82,7 +82,8 @@ public class GetPinnedDialogs : ITLObject, ITLMethod
         currentState.UnreadCount = state.UnreadCount;
         resp.State = currentState;
         result.Result = resp;
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

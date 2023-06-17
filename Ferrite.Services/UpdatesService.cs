@@ -21,6 +21,7 @@ using Ferrite.Data;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Updates;
 using Ferrite.TL.slim.baseLayer;
+using Ferrite.TL.slim.baseLayer.updates;
 using Ferrite.Utils;
 using MessagePack;
 
@@ -47,27 +48,29 @@ public class UpdatesService : IUpdatesService
         _log = log;
     }
 
-    public async Task<StateDTO> GetState(long authKeyId)
+    public async Task<TLState> GetState(long authKeyId)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
-        StateDTO state = await GetStateInternal(updatesCtx);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.Value.AsAuthInfo().UserId);
+        var state = await GetStateInternal(updatesCtx);
         _log.Debug($"/// State is {state} ///");
-        return state;*/
-        throw new NotImplementedException();
+        return state;
     }
 
-    private async Task<StateDTO> GetStateInternal(IUpdatesContext updatesCtx)
+    private async Task<TLState> GetStateInternal(IUpdatesContext updatesCtx)
     {
-        var state = new StateDTO()
-        {
-            Date = (int)_time.GetUnixTimeInSeconds(),
-            Pts = await updatesCtx.Pts(),
-            Seq = await updatesCtx.Seq(),
-            Qts = await updatesCtx.Qts(),
-            UnreadCount = await updatesCtx.UnreadMessages(),
-        };
-        return state;
+        var date = (int)_time.GetUnixTimeInSeconds();
+        var pts = await updatesCtx.Pts();
+        var seq = await updatesCtx.Seq();
+        var qts = await updatesCtx.Qts();
+        var unreadCount = await updatesCtx.UnreadMessages();
+        return State.Builder()
+            .Date(date)
+            .Pts(pts)
+            .Seq(seq)
+            .Qts(qts)
+            .UnreadCount(unreadCount)
+            .Build();
     }
 
     public async Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date, 
