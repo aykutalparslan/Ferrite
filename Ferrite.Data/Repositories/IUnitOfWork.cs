@@ -31,7 +31,6 @@ public interface IUnitOfWork
     IAuthSessionRepository AuthSessionRepository { get; }
     IPhoneCodeRepository PhoneCodeRepository { get; }
     ISignInRepository SignInRepository { get; }
-    ILoginTokenRepository LoginTokenRepository { get; }
     IDeviceLockedRepository DeviceLockedRepository { get; }
     IUserRepository UserRepository { get; }
     IAppInfoRepository AppInfoRepository { get; }

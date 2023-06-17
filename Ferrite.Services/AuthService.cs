@@ -19,7 +19,6 @@
 using System.Text;
 using Ferrite.Crypto;
 using Ferrite.Data;
-using Ferrite.Data.Auth;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;
@@ -179,7 +178,8 @@ public class AuthService : IAuthService
         }
         var token = _random.GetRandomBytes(16);
         var tokenParameters = GetExportLoginTokenParameters(q);
-        LoginViaQRDTO login = new LoginViaQRDTO()
+        //TODO: actually implement this
+        /*LoginViaQRDTO login = new LoginViaQRDTO()
         {
             Token = token,
             AuthKeyId = authKeyId,
@@ -187,7 +187,7 @@ public class AuthService : IAuthService
             Status = false,
             ExceptUserIds = tokenParameters.ExceptIds
         };
-        _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 30));
+        _unitOfWork.LoginTokenRepository.PutLoginToken(login, new TimeSpan(0, 0, 30));*/
         await _unitOfWork.SaveAsync();
         return LoginToken
             .Builder()

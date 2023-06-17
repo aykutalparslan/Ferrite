@@ -16,18 +16,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using System;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Pipelines;
 using System.Net;
 using System.Numerics;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Threading.Channels;
-using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extras.Moq;
 using DotNext.Buffers;
@@ -39,10 +35,8 @@ using Ferrite.Core.Framing;
 using Ferrite.Core.RequestChain;
 using Ferrite.Crypto;
 using Ferrite.Data;
-using Ferrite.Data.Repositories;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.ObjectMapper;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
@@ -432,7 +426,6 @@ public class StreamingRequestTests
         builder.Register(_ => new Int256());
         builder.RegisterType<MTProtoConnection>();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
-        builder.RegisterType<DefaultMapper>().As<IMapperContext>();
         builder.RegisterType<MTProtoTransportDetector>().As<ITransportDetector>();
         builder.RegisterType<SocketConnectionListener>().As<IConnectionListener>();
         builder.RegisterType<ExecutionEngine>().As<IExecutionEngine>();

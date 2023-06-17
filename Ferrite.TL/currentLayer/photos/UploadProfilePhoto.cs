@@ -20,11 +20,8 @@ using System;
 using System.Buffers;
 using DotNext.Buffers;
 using DotNext.IO;
-using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL.mtproto;
-using Ferrite.TL.ObjectMapper;
-using Ferrite.Utils;
 
 namespace Ferrite.TL.currentLayer.photos;
 public class UploadProfilePhoto : ITLObject, ITLMethod
@@ -32,14 +29,11 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
     private readonly SparseBufferWriter<byte> writer = new SparseBufferWriter<byte>(UnmanagedMemoryPool<byte>.Shared);
     private readonly ITLObjectFactory factory;
     private readonly IPhotosService _photos;
-    private readonly IMapperContext _mapper;
     private bool serialized = false;
-    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos, 
-        IMapperContext mapper)
+    public UploadProfilePhoto(ITLObjectFactory objectFactory, IPhotosService photos)
     {
         factory = objectFactory;
         _photos = photos;
-        _mapper = mapper;
     }
 
     public int Constructor => -1980559511;
@@ -121,7 +115,7 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
 
     public async Task<ITLObject> ExecuteAsync(TLExecutionContext ctx)
     {
-        Data.InputFileDTO? photo = null;
+        /*Data.InputFileDTO? photo = null;
         Data.InputFileDTO? video = null;
         if (_file is InputFileImpl file)
         {
@@ -169,7 +163,8 @@ public class UploadProfilePhoto : ITLObject, ITLMethod
             result.Result = photoResult;
         }
 
-        return result;
+        return result;*/
+        throw new NotImplementedException();
     }
 
     public void Parse(ref SequenceReader buff)

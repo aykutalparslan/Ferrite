@@ -18,7 +18,6 @@
 
 using System.Text;
 using Ferrite.Data;
-using Ferrite.Data.Messages;
 using Ferrite.Data.Repositories;
 using Ferrite.Data.Search;
 using Ferrite.TL.slim;
@@ -26,7 +25,6 @@ using Ferrite.TL.slim.baseLayer;
 using Ferrite.TL.slim.baseLayer.dto;
 using Ferrite.TL.slim.baseLayer.messages;
 using Ferrite.Utils;
-using PeerSettingsDTO = Ferrite.Data.Messages.PeerSettingsDTO;
 
 namespace Ferrite.Services;
 
@@ -52,10 +50,10 @@ public class MessagesService : IMessagesService
         _upload = upload;
         _photos = photos;
     }
-
+/*
     public async Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         if (auth == null)
             return new ServiceResult<MessagesDTO>(null, false, ErrorMessages.InvalidAuthKey);
         List<MessageDTO> messages = new List<MessageDTO>();
@@ -80,13 +78,13 @@ public class MessagesService : IMessagesService
         }
 
         return new ServiceResult<MessagesDTO>(new MessagesDTO(MessagesType.Messages, messages, 
-            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);*/
+            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
         throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer)
     {
-        /*if (peer.InputPeerType == InputPeerType.Self)
+        if (peer.InputPeerType == InputPeerType.Self)
         {
             var settings = new Data.PeerSettingsDTO(false, false, false, 
                 false, false, false, 
@@ -107,10 +105,10 @@ public class MessagesService : IMessagesService
             return new ServiceResult<PeerSettingsDTO>(new PeerSettingsDTO(settings, new List<ChatDTO>(), users)
                 , true, ErrorMessages.None);
         }
-        return new ServiceResult<PeerSettingsDTO>(null, false, ErrorMessages.PeerIdInvalid);*/
+        return new ServiceResult<PeerSettingsDTO>(null, false, ErrorMessages.PeerIdInvalid);
         throw new NotImplementedException();
     }
-
+*/
     public async Task<TLUpdates> SendMessage(long authKeyId, TLBytes q)
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
@@ -138,13 +136,84 @@ public class MessagesService : IMessagesService
             .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds())
             .Build();
     }
+    private static TLMessage GenerateOutgoingMessage(in TLBytes sendMessage, int senderMessageId, 
+        in TLPeer from, in TLPeer to)
+    {
+        var builder = Message.Builder()
+            .Id(senderMessageId)
+            .OutProperty(true)
+            .Silent(((SendMessage)sendMessage).Silent)
+            .FromId(from.AsSpan())
+            .PeerId(to.AsSpan())
+            .MessageProperty(((SendMessage)sendMessage).Message)
+            .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds());
 
+        var sendMessageFlags = ((SendMessage)sendMessage).Flags;
+        
+        if (!sendMessageFlags[0]) return builder.Build();
+        using var replyToHeader = MessageReplyHeader.Builder()
+            .ReplyToMsgId(((SendMessage)sendMessage).ReplyToMsgId).Build();
+        builder = builder.ReplyTo(replyToHeader.ToReadOnlySpan());
+        
+        if (!sendMessageFlags[2]) return builder.Build();
+        builder = builder.ReplyMarkup(((SendMessage)sendMessage).ReplyMarkup);
+        
+        if (!sendMessageFlags[3]) return builder.Build();
+        builder = builder.Entities(((SendMessage)sendMessage).Entities);
+
+        return builder.Build();
+    }
+    private async Task SaveIncomingMessage(TLPeer to, TLMessage outgoingMessage, TLPeer from)
+    {
+        var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, GetPeerId(to));
+        int receiverMessageId = await receiverCtx.NextMessageId();
+        using TLMessage incomingMessage = outgoingMessage.AsMessage().Clone()
+            .Id(receiverMessageId)
+            .OutProperty(false)
+            .PeerId(from.AsSpan())
+            .Build();
+        
+        int ptsPeer = await receiverCtx.IncrementPtsForMessage((int)from.Type, GetPeerId(from), receiverMessageId);
+        _unitOfWork.MessageRepository.PutMessage(GetPeerId(to), incomingMessage, ptsPeer);
+        TLUpdate updateNewMessage = UpdateNewMessage.Builder()
+            .Message(incomingMessage.AsSpan())
+            .Pts(ptsPeer)
+            .PtsCount(1)
+            .Build();
+        
+        await _updates.EnqueueUpdate(GetPeerId(to), updateNewMessage);
+        var searchModelIncoming = new MessageSearchModel(
+            GetPeerId(to) + "_" + incomingMessage.AsMessage().Id,
+            GetPeerId(to), (int)to.Type, GetPeerId(to),
+            (int)from.Type, GetPeerId(from), incomingMessage.AsMessage().Id,
+            null,  Encoding.UTF8.GetString(incomingMessage.AsMessage().MessageProperty),
+            incomingMessage.AsMessage().Date);
+        await _search.IndexMessage(searchModelIncoming);
+    }
+    private async Task<int> SaveMessage(IUpdatesContext senderCtx, 
+        TLAuthInfo auth, TLMessage outgoingMessage, TLPeer from, TLPeer to)
+    {
+        int previousPts = await senderCtx.Pts();
+        int pts = await senderCtx.IncrementPts();
+        _unitOfWork.MessageRepository.PutMessage(auth.AsAuthInfo().UserId,
+            outgoingMessage, pts);
+        _log.Debug($"💬 Message was sent Sender: {auth.AsAuthInfo().UserId} Previous PTS: {previousPts} PTS: {pts}");
+        var searchModelOutgoing = new MessageSearchModel(
+            GetPeerId(from) + "_" + outgoingMessage.AsMessage().Id,
+            GetPeerId(from), (int)from.Type, GetPeerId(from),
+            (int)to.Type, GetPeerId(to), outgoingMessage.AsMessage().Id,
+            null, Encoding.UTF8.GetString(outgoingMessage.AsMessage().MessageProperty),
+            outgoingMessage.AsMessage().Date);
+        await _search.IndexMessage(searchModelOutgoing);
+        return pts;
+    }
+/*
     public async Task<ServiceResult<UpdateShortSentMessageDTO>> SendMedia(long authKeyId, bool silent, 
         bool background, bool clearDraft, bool noForwards, InputPeerDTO peer,
         int? replyToMsgId, InputMediaDTO media, string message, long randomId, ReplyMarkupDTO? replyMarkup,
         IReadOnlyCollection<MessageEntityDTO>? entities, int? scheduleDate, InputPeerDTO? sendAs)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var senderCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         int senderMessageId = (int)await senderCtx.NextMessageId();
         var from = new PeerDTO(PeerType.User, auth.UserId);
@@ -252,7 +321,7 @@ public class MessagesService : IMessagesService
 
         return new ServiceResult<UpdateShortSentMessageDTO>(new UpdateShortSentMessageDTO(true, senderMessageId,
                 pts, 1, (int)DateTimeOffset.Now.ToUnixTimeSeconds(), null, null, null), 
-            true, ErrorMessages.None);*/
+            true, ErrorMessages.None);
         throw new NotImplementedException();
     }
 
@@ -269,7 +338,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<AffectedMessagesDTO>> ReadHistory(long authKeyId, InputPeerDTO peer, int maxId)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
@@ -293,7 +362,7 @@ public class MessagesService : IMessagesService
                     , ptsCount), true, ErrorMessages.None);
         }
 
-        throw new NotSupportedException();*/
+        throw new NotSupportedException();
         throw new NotImplementedException();
     }
 
@@ -301,7 +370,7 @@ public class MessagesService : IMessagesService
         int maxId, int? minDate = null, int? maxDate = null,
         bool justClear = false, bool revoke = false)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var peerDto = PeerFromInputPeer(peer);
         if (peerDto.PeerType == PeerType.User)
@@ -319,85 +388,16 @@ public class MessagesService : IMessagesService
                 ErrorMessages.None);
         }
 
-        throw new NotSupportedException();*/
+        throw new NotSupportedException();
         throw new NotImplementedException();
     }
-    private async Task<int> SaveMessage(IUpdatesContext senderCtx, 
-        TLAuthInfo auth, TLMessage outgoingMessage, TLPeer from, TLPeer to)
-    {
-        int previousPts = await senderCtx.Pts();
-        int pts = await senderCtx.IncrementPts();
-        _unitOfWork.MessageRepository.PutMessage(auth.AsAuthInfo().UserId,
-            outgoingMessage, pts);
-        _log.Debug($"💬 Message was sent Sender: {auth.AsAuthInfo().UserId} Previous PTS: {previousPts} PTS: {pts}");
-        var searchModelOutgoing = new MessageSearchModel(
-            GetPeerId(from) + "_" + outgoingMessage.AsMessage().Id,
-            GetPeerId(from), (int)from.Type, GetPeerId(from),
-            (int)to.Type, GetPeerId(to), outgoingMessage.AsMessage().Id,
-            null, Encoding.UTF8.GetString(outgoingMessage.AsMessage().MessageProperty),
-            outgoingMessage.AsMessage().Date);
-        await _search.IndexMessage(searchModelOutgoing);
-        return pts;
-    }
+    
 
-    private static TLMessage GenerateOutgoingMessage(in TLBytes sendMessage, int senderMessageId, 
-        in TLPeer from, in TLPeer to)
-    {
-        var builder = Message.Builder()
-            .Id(senderMessageId)
-            .OutProperty(true)
-            .Silent(((SendMessage)sendMessage).Silent)
-            .FromId(from.AsSpan())
-            .PeerId(to.AsSpan())
-            .MessageProperty(((SendMessage)sendMessage).Message)
-            .Date((int)DateTimeOffset.Now.ToUnixTimeSeconds());
-
-        var sendMessageFlags = ((SendMessage)sendMessage).Flags;
-        
-        if (!sendMessageFlags[0]) return builder.Build();
-        using var replyToHeader = MessageReplyHeader.Builder()
-            .ReplyToMsgId(((SendMessage)sendMessage).ReplyToMsgId).Build();
-        builder = builder.ReplyTo(replyToHeader.ToReadOnlySpan());
-        
-        if (!sendMessageFlags[2]) return builder.Build();
-        builder = builder.ReplyMarkup(((SendMessage)sendMessage).ReplyMarkup);
-        
-        if (!sendMessageFlags[3]) return builder.Build();
-        builder = builder.Entities(((SendMessage)sendMessage).Entities);
-
-        return builder.Build();
-    }
-    private async Task SaveIncomingMessage(TLPeer to, TLMessage outgoingMessage, TLPeer from)
-    {
-        var receiverCtx = _updatesContextFactory.GetUpdatesContext(null, GetPeerId(to));
-        int receiverMessageId = await receiverCtx.NextMessageId();
-        using TLMessage incomingMessage = outgoingMessage.AsMessage().Clone()
-            .Id(receiverMessageId)
-            .OutProperty(false)
-            .PeerId(from.AsSpan())
-            .Build();
-        
-        int ptsPeer = await receiverCtx.IncrementPtsForMessage((int)from.Type, GetPeerId(from), receiverMessageId);
-        _unitOfWork.MessageRepository.PutMessage(GetPeerId(to), incomingMessage, ptsPeer);
-        TLUpdate updateNewMessage = UpdateNewMessage.Builder()
-            .Message(incomingMessage.AsSpan())
-            .Pts(ptsPeer)
-            .PtsCount(1)
-            .Build();
-        
-        await _updates.EnqueueUpdate(GetPeerId(to), updateNewMessage);
-        var searchModelIncoming = new MessageSearchModel(
-            GetPeerId(to) + "_" + incomingMessage.AsMessage().Id,
-            GetPeerId(to), (int)to.Type, GetPeerId(to),
-            (int)from.Type, GetPeerId(from), incomingMessage.AsMessage().Id,
-            null,  Encoding.UTF8.GetString(incomingMessage.AsMessage().MessageProperty),
-            incomingMessage.AsMessage().Date);
-        await _search.IndexMessage(searchModelIncoming);
-    }
+    
     private async Task DeletePeerMessagesInternal(int maxId, int? minDate, int? maxDate, PeerDTO peerDto, AuthInfoDTO auth,
         IUpdatesContext userCtx)
     {
-        /*var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
+        var peerCtx = _updatesContextFactory.GetUpdatesContext(null, peerDto.PeerId);
         var peerMessages =
             _unitOfWork.MessageRepository.GetMessages(peerDto.PeerId, new PeerDTO(PeerType.User, auth.UserId));
         List<int> peerDeletedIds = new();
@@ -416,14 +416,14 @@ public class MessagesService : IMessagesService
             int peerPts = await userCtx.IncrementPts();
             var peerDeleteMessages = new UpdateDeleteMessagesDTO(peerDeletedIds, peerPts, 1);
             _updates.EnqueueUpdate(peerDto.PeerId, peerDeleteMessages);
-        }*/
+        }
         throw new NotImplementedException();
     }
 
     private async Task<int> DeleteMessagesInternal(int maxId, int? minDate, int? maxDate, IUpdatesContext userCtx,
         IReadOnlyCollection<MessageDTO> messages, AuthInfoDTO auth)
     {
-        /*List<int> deletedIds = new();
+        List<int> deletedIds = new();
         int pts = await userCtx.Pts();
         if (messages != null)
         {
@@ -443,13 +443,13 @@ public class MessagesService : IMessagesService
             _updates.EnqueueUpdate(auth.UserId, deleteMessages);
         }
 
-        return pts;*/
+        return pts;
         throw new NotImplementedException();
     }
 
     public async Task<ServiceResult<AffectedMessagesDTO>> DeleteMessages(long authKeyId, ICollection<int> id, bool revoke = false)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         foreach (var m in id)
         {
@@ -462,7 +462,7 @@ public class MessagesService : IMessagesService
         //TODO: add support for revoke
         
         return new ServiceResult<AffectedMessagesDTO>(new AffectedMessagesDTO(pts, 1), true,
-            ErrorMessages.None);*/
+            ErrorMessages.None);
         throw new NotImplementedException();
     }
 
@@ -470,7 +470,7 @@ public class MessagesService : IMessagesService
         InputPeerDTO offsetPeer, int limit, long hash, bool? excludePinned = null,
         int? folderId = null)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId);
         List<DialogDTO> userDialogs = new();
@@ -483,14 +483,14 @@ public class MessagesService : IMessagesService
         var dialogs = new DialogsDTO(DialogsType.Dialogs, userDialogs, 
             messages, Array.Empty<ChatDTO>(),
             userList.Values, null);
-        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);*/
+        return new ServiceResult<DialogsDTO>(dialogs, true, ErrorMessages.None);
         throw new NotImplementedException();
     }
 
     private async Task GenerateDialogs(long authKeyId, Dictionary<long, PeerDTO> peerList, IUpdatesContext userCtx, AuthInfoDTO auth,
         Dictionary<long, int> topMessages, List<DialogDTO> userDialogs)
     {
-        /*foreach (var p in peerList.Values)
+        foreach (var p in peerList.Values)
         {
             if (p.PeerType == PeerType.User)
             {
@@ -516,7 +516,7 @@ public class MessagesService : IMessagesService
                 };
                 userDialogs.Add(dialog);
             }
-        }*/
+        }
         throw new NotImplementedException();
     }
 
@@ -548,7 +548,7 @@ public class MessagesService : IMessagesService
 
     public async Task<ServiceResult<PeerDialogsDTO>> GetPeerDialogs(long authKeyId, IEnumerable<InputDialogPeerDTO> peers)
     {
-        /*var auth = _unitOfWork.AuthorizationRepository.GetAuthorization(authKeyId);
+        var auth = _unitOfWork.AuthorizationRepository.GetAuthorization(authKeyId);
         if (auth == null) return new ServiceResult<PeerDialogsDTO>(null, 
             false, ErrorMessages.InvalidAuthKey);
         var userCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
@@ -589,14 +589,14 @@ public class MessagesService : IMessagesService
         var dialogs = new PeerDialogsDTO(userDialogs, 
             messageList, Array.Empty<ChatDTO>(),
             userList.Values, await _updates.GetState(authKeyId));
-        return new ServiceResult<PeerDialogsDTO>(dialogs, true, ErrorMessages.None);*/
+        return new ServiceResult<PeerDialogsDTO>(dialogs, true, ErrorMessages.None);
         throw new NotImplementedException();
     }
 
     private async Task PopulateLists(Dictionary<long, UserDTO> userList, long userId, MessageDTO m, Dictionary<long, PeerDTO> peerList,
         Dictionary<long, int> topMessages)
     {
-        /*if (!userList.ContainsKey(userId))
+        if (!userList.ContainsKey(userId))
         {
             userList.Add(userId, _unitOfWork.UserRepository.GetUser(m.PeerId.PeerId));
         }
@@ -613,7 +613,7 @@ public class MessagesService : IMessagesService
         else if (topMessages[userId] < m.Id)
         {
             topMessages[userId] = m.Id;
-        }*/
+        }
         throw new NotImplementedException();
     }
 
@@ -621,7 +621,7 @@ public class MessagesService : IMessagesService
         int offsetDate, int addOffset, int limit, long maxId,
         long minId, long hash)
     {
-        /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
+        var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId, 
             PeerFromInputPeer(peer, peer.InputPeerType == InputPeerType.Self ? auth.UserId : 0));
         List<MessageDTO> messagesList = new();
@@ -643,7 +643,7 @@ public class MessagesService : IMessagesService
 
         var messagesResult = new MessagesDTO(MessagesType.Messages,
             messagesList, Array.Empty<ChatDTO>(), userList.Values);
-        return new ServiceResult<MessagesDTO>(messagesResult, true, ErrorMessages.None);*/
+        return new ServiceResult<MessagesDTO>(messagesResult, true, ErrorMessages.None);
         throw new NotImplementedException();
     }
 
@@ -651,7 +651,7 @@ public class MessagesService : IMessagesService
         InputPeerDTO? fromId, int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, 
         int offsetId, int addOffset, int limit, long maxId, long minId, long hash)
     {
-        /*
+        
         //TODO: debug and fix this
         var searchResults =  await _search.SearchMessages(q);
         //TODO: implement a proper search with pagination
@@ -672,10 +672,10 @@ public class MessagesService : IMessagesService
         }
 
         return new ServiceResult<MessagesDTO>(new MessagesDTO(MessagesType.Messages, messages, 
-            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);*/
+            Array.Empty<ChatDTO>(), users), true, ErrorMessages.None);
         throw new NotImplementedException();
     }
-
+*/
     public async ValueTask<TLBool> SetTyping(long authKeyId, TLBytes q)
     {
         using var peer = ((SetTyping)q).Get_Peer();

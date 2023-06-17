@@ -16,9 +16,6 @@
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
 
-using Ferrite.Data;
-using Ferrite.Data.Account;
-using Ferrite.Data.Auth;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.baseLayer;
 using Ferrite.TL.slim.baseLayer.account;

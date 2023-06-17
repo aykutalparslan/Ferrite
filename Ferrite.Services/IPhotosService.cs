@@ -16,20 +16,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
-using Ferrite.Data.Photos;
 using Ferrite.TL.slim.baseLayer.dto;
 
 namespace Ferrite.Services;
 
 public interface IPhotosService
 {
-    Task<ServiceResult<Data.Photos.PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id);
+    /*Task<ServiceResult<Data.Photos.PhotoDTO>> UpdateProfilePhoto(long authKeyId, InputPhotoDTO id);
     Task<ServiceResult<Data.Photos.PhotoDTO>> UploadProfilePhoto(long authKeyId, InputFileDTO? photo,
         InputFileDTO? video, double? videoStartTimestamp);
 
     Task<ServiceResult<Data.PhotoDTO>> ProcessPhoto(TLUploadedFileInfo file, DateTime date);
     Task<IReadOnlyCollection<long>> DeletePhotos(long authKeyId, IReadOnlyCollection<InputPhotoDTO> photos);
     Task<PhotosDTO> GetUserPhotos(long authKeyId, int offset, long maxId, int limit);
-    Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto);
+    Task<Data.PhotoDTO> GetPhoto(long authKeyId, InputPhotoDTO inputPhoto);*/
 }

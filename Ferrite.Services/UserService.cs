@@ -20,12 +20,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
-using Ferrite.Data.Users;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.baseLayer;
 using Ferrite.TL.slim.baseLayer.users;
 using TLUserFull = Ferrite.TL.slim.baseLayer.users.TLUserFull;
-using UserFullDTO = Ferrite.Data.Users.UserFullDTO;
 
 namespace Ferrite.Services;
 

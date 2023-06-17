@@ -39,9 +39,7 @@ using Ferrite.Data.Repositories;
 using Ferrite.Services;
 using Ferrite.Services.Gateway;
 using Ferrite.TL;
-using Ferrite.TL.ObjectMapper;
 using Ferrite.TL.slim;
-using Ferrite.TL.slim.baseLayer.account;
 using Ferrite.Transport;
 using Ferrite.Utils;
 
@@ -438,7 +436,6 @@ public class ServerBuilder
             .AsSelf();
         builder.Register(_ => new Ferrite.TL.Int128());
         builder.Register(_ => new Int256());
-        builder.RegisterType<DefaultMapper>().As<IMapperContext>().SingleInstance();
         builder.RegisterType<TLObjectFactory>().As<ITLObjectFactory>();
     }
 

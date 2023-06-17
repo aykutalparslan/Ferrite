@@ -42,7 +42,6 @@ public class DistributedUnitOfWork : IUnitOfWork
         SignInRepository = new SignInRepository(new RedisDataStore(redisConfig));
         ServerSaltRepository =
             new ServerSaltRepository(new RedisDataStore(redisConfig), new RedisDataStore(redisConfig));
-        LoginTokenRepository = new LoginTokenRepository(new RedisDataStore(redisConfig));
         DeviceLockedRepository = new DeviceLockedRepository(new RedisDataStore(redisConfig));
         UserRepository = new UserRepository(new CassandraKVStore(_cassandra), new CassandraKVStore(_cassandra),new CassandraKVStore(_cassandra));
         AppInfoRepository = new AppInfoRepository(new CassandraKVStore(_cassandra));
@@ -73,7 +72,6 @@ public class DistributedUnitOfWork : IUnitOfWork
     public IAuthSessionRepository AuthSessionRepository { get; }
     public IPhoneCodeRepository PhoneCodeRepository { get; }
     public ISignInRepository SignInRepository { get; }
-    public ILoginTokenRepository LoginTokenRepository { get; }
     public IDeviceLockedRepository DeviceLockedRepository { get; }
     public IUserRepository UserRepository { get; }
     public IAppInfoRepository AppInfoRepository { get; }

@@ -22,7 +22,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Ferrite.Crypto;
 using Ferrite.Data;
-using Ferrite.Data.Account;
 using Ferrite.Data.Repositories;
 using Ferrite.Services.Gateway;
 using Ferrite.TL.slim;

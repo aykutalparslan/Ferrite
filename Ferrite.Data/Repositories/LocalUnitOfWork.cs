@@ -39,7 +39,6 @@ public class LocalUnitOfWork : IUnitOfWork
         SignInRepository = new SignInRepository(new InMemoryStore());
         ServerSaltRepository =
             new ServerSaltRepository(new InMemoryStore(), new InMemoryStore());
-        LoginTokenRepository = new LoginTokenRepository(new InMemoryStore());
         DeviceLockedRepository = new DeviceLockedRepository(new InMemoryStore());
         UserRepository = new UserRepository(new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb), new RocksDBKVStore(_rocksdb));
         AppInfoRepository = new AppInfoRepository(new RocksDBKVStore(_rocksdb));
@@ -70,7 +69,6 @@ public class LocalUnitOfWork : IUnitOfWork
     public IAuthSessionRepository AuthSessionRepository { get; }
     public IPhoneCodeRepository PhoneCodeRepository { get; }
     public ISignInRepository SignInRepository { get; }
-    public ILoginTokenRepository LoginTokenRepository { get; }
     public IDeviceLockedRepository DeviceLockedRepository { get; }
     public IUserRepository UserRepository { get; }
     public IAppInfoRepository AppInfoRepository { get; }

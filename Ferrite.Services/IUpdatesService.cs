@@ -15,9 +15,7 @@
 //  You should have received a copy of the GNU Affero General Public License
 //  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //
-using System;
-using Ferrite.Data;
-using Ferrite.Data.Updates;
+
 using Ferrite.TL.slim.baseLayer;
 using Ferrite.TL.slim.baseLayer.updates;
 
@@ -26,7 +24,7 @@ namespace Ferrite.Services;
 public interface IUpdatesService
 {
     public Task<TLState> GetState(long authKeyId);
-    public Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date,
+    public Task<TLDifference> GetDifference(long authKeyId, int pts, int date,
         int qts, int? ptsTotalLimit = null);
     public Task<bool> EnqueueUpdate(long userId, TLUpdate update);
     public Task<int> IncrementUpdatesSequence(long authKeyId);

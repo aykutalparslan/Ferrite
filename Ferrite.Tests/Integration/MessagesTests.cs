@@ -126,9 +126,14 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var auth = await Helpers.SignUp(client, "+15555555633");
         using var clientPeer = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await clientPeer.ConnectAsync();
+        clientPeer.OnUpdate += delegate(IObject o)
+        {
+            return null;
+        };
         var authPeer = await Helpers.SignUp(clientPeer, "+15555555634");
         var result = await client.Messages_SetTyping(((Auth_Authorization)authPeer).user, new SendMessageTypingAction());
         Assert.True(result);
+        
     }
     [Fact]
     public async Task SendMessage_Returns_UpdateShortSentMessage()

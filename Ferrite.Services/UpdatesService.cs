@@ -19,7 +19,6 @@ using System;
 using System.Collections.ObjectModel;
 using Ferrite.Data;
 using Ferrite.Data.Repositories;
-using Ferrite.Data.Updates;
 using Ferrite.TL.slim.baseLayer;
 using Ferrite.TL.slim.baseLayer.updates;
 using Ferrite.Utils;
@@ -73,20 +72,21 @@ public class UpdatesService : IUpdatesService
             .Build();
     }
 
-    public async Task<ServiceResult<DifferenceDTO>> GetDifference(long authKeyId, int pts, int date, 
+    public async Task<TLDifference> GetDifference(long authKeyId, int pts, int date, 
         int qts, int? ptsTotalLimit = null)
     {
         /*var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
-        if (auth == null) return new ServiceResult<DifferenceDTO>(null, false, ErrorMessages.InvalidAuthKey);
-        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.UserId);
+        if (auth == null) return (TLDifference)RpcErrorGenerator.GenerateError(400, "INVALID_AUTH_KEY"u8);
+        var updatesCtx = _updatesContextFactory.GetUpdatesContext(authKeyId, auth.Value.AsAuthInfo().UserId);
         int currentPts = await updatesCtx.Pts();
-        StateDTO state = await GetStateInternal(updatesCtx);
-        var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.UserId,
+        var state = await GetStateInternal(updatesCtx);
+        var messages = await _unitOfWork.MessageRepository.GetMessagesAsync(auth.Value.AsAuthInfo().UserId,
             pts, currentPts, DateTimeOffset.FromUnixTimeSeconds(date));
         List<UserDTO> users = new List<UserDTO>();
         foreach (var message in messages)
         {
-            if (message.Out && message.PeerId.PeerType == PeerType.User)
+            if (message.AsSavedMessage().Get_OriginalMessage().AsMessage().OutProperty && 
+                message.AsSavedMessage().Get_OriginalMessage().AsMessage().Get_PeerId().Type == TLPeer.PeerType.PeerUser)
             {
                 var user = _unitOfWork.UserRepository.GetUser(message.PeerId.PeerId);
                 if(user != null) users.Add(user);

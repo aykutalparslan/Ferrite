@@ -366,7 +366,6 @@ public class ContactsService : IContactsService
     {
         var auth = await _unitOfWork.AuthorizationRepository.GetAuthorizationAsync(authKeyId);
         var blockedPeers = _unitOfWork.BlockedPeersRepository.GetBlockedPeers(auth.Value.AsAuthInfo().UserId);
-        List<UserDTO> users= new();
         List<TLUser> userList = new ();
         foreach (var c in blockedPeers)
         {

@@ -32,9 +32,12 @@ using Ferrite.TL.currentLayer;
 using Ferrite.TL.currentLayer.upload;
 using Ferrite.TL.mtproto;
 using Ferrite.TL.slim;
+using Ferrite.TL.slim.baseLayer;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
+using Channel = System.Threading.Channels.Channel;
+using Updates = Ferrite.TL.currentLayer.Updates;
 
 namespace Ferrite.Core.Connection;
 
@@ -154,18 +157,8 @@ public sealed class MTProtoConnection : IMTProtoConnection
                 await _sendSemaphore.WaitAsync();
                 if (msg.MessageType == MTProtoMessageType.Updates)
                 {
-                    var updates = MessagePackSerializer.Typeless.Deserialize(msg.Data) as UpdatesBase;
-                    if (updates != null)
-                    {
-                        var tlObj = _serialization.MapToTLObject<Updates, UpdatesBase>(updates);
-                        msg.Data = tlObj.TLBytes.ToArray();
-                        if (tlObj is UpdatesImpl update)
-                        {
-                            _log.Debug($"==> Sending Updates with Seq: {update.Seq} ==<");
-                        }
-                        var outgoingMessage = _protoHandler.EncryptMessage(msg);
-                        WriteFrame(outgoingMessage);
-                    }
+                    var outgoingMessage = _protoHandler.EncryptMessage(msg);
+                    WriteFrame(outgoingMessage);
                 }
                 else if (msg.MessageType == MTProtoMessageType.QuickAck)
                 {

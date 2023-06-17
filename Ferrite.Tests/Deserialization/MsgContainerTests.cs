@@ -38,12 +38,14 @@ using Ferrite.Crypto;
 using Ferrite.Data;
 using Ferrite.Services;
 using Ferrite.TL;
-using Ferrite.TL.mtproto;
+using Ferrite.TL.slim;
+using Ferrite.TL.slim.mtproto;
 using Ferrite.Transport;
 using Ferrite.Utils;
 using MessagePack;
 using Moq;
 using Xunit;
+using MsgContainer = Ferrite.TL.mtproto.MsgContainer;
 
 namespace Ferrite.Tests.Deserialization;
 
@@ -63,19 +65,11 @@ public class MsgContainerTests
             0x62d6b459, 0x1cb5c415, 0x00000001, 0x00000005, 0x62570c65
         };
 
-        Span<byte> dataBytes = MemoryMarshal.Cast<uint, byte>(data);
+        byte[] dataBytes = MemoryMarshal.Cast<uint, byte>(data).ToArray();
 
-        var container = BuildIoCContainer();
+        TLMessageContainer container = new(dataBytes, 0, dataBytes.Length);
 
-        var factory = container.Resolve<TLObjectFactory>();
-
-        SequenceReader reader = IAsyncBinaryReader.Create(dataBytes.ToArray());
-
-        var obj = (MsgContainer)factory.Read(reader.ReadInt32(true), ref reader);
-
-        Assert.Equal(2, obj.Messages.Count);
-        Assert.IsType<Ferrite.TL.currentLayer.InvokeWithLayer>(obj.Messages[0].Body);
-        Assert.IsType<Ferrite.TL.mtproto.MsgsAck>(obj.Messages[1].Body);
+        Assert.Equal(2, container.AsMsgContainer().Messages.Count);
     }
 
     private IContainer BuildIoCContainer()

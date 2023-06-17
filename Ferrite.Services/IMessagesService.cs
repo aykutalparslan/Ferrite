@@ -16,8 +16,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-using Ferrite.Data;
-using Ferrite.Data.Messages;
 using Ferrite.TL.slim;
 using Ferrite.TL.slim.baseLayer;
 
@@ -25,9 +23,8 @@ namespace Ferrite.Services;
 
 public interface IMessagesService
 {
-    Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id);
+    /*Task<ServiceResult<MessagesDTO>> GetMessagesAsync(long authKeyId, IReadOnlyCollection<InputMessageDTO> id);
     Task<ServiceResult<Data.Messages.PeerSettingsDTO>> GetPeerSettings(long authKeyId, InputPeerDTO peer);
-    Task<TLUpdates> SendMessage(long authKeyId, TLBytes q);
     Task<ServiceResult<UpdateShortSentMessageDTO>> SendMedia(long authKeyId, bool silent, bool background, 
         bool clearDraft, bool noForwards, InputPeerDTO peer, int? replyToMsgId, InputMediaDTO media, 
         string message, long randomId, ReplyMarkupDTO? replyMarkup, IReadOnlyCollection<MessageEntityDTO>? entities,
@@ -44,6 +41,7 @@ public interface IMessagesService
     Task<ServiceResult<MessagesDTO>> Search(long authKeyId, InputPeerDTO peer, string q, InputPeerDTO? fromId,
         int? topMessageId, MessagesFilterType filter, int minDate, int maxDate, int offsetId, int addOffset, 
         int limit, long maxId, long minId, long hash);
-
+*/
+    Task<TLUpdates> SendMessage(long authKeyId, TLBytes q);
     ValueTask<TLBool> SetTyping(long authKeyId, TLBytes q);
 }

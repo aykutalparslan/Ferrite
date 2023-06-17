@@ -18,18 +18,15 @@
 
 using DotNext.IO;
 using Ferrite.TL;
-using Ferrite.TL.ObjectMapper;
 
 namespace Ferrite.Core.Connection;
 
-public class SerializationFeature : ITLObjectFactory, IMapperContext
+public class SerializationFeature : ITLObjectFactory
 {
     private readonly ITLObjectFactory _factory;
-    private readonly IMapperContext _mapper;
-    public SerializationFeature(ITLObjectFactory factory, IMapperContext mapper)
+    public SerializationFeature(ITLObjectFactory factory)
     {
         _factory = factory;
-        _mapper = mapper;
     }
     public ITLObject Read(int constructor, ref SequenceReader buff)
     {
@@ -44,15 +41,5 @@ public class SerializationFeature : ITLObjectFactory, IMapperContext
     public T Resolve<T>() where T : ITLObject
     {
         return _factory.Resolve<T>();
-    }
-
-    public DTOType MapToDTO<TLType, DTOType>(TLType obj) where TLType : ITLObject
-    {
-        return _mapper.MapToDTO<TLType, DTOType>(obj);
-    }
-
-    public TLType MapToTLObject<TLType, DTOType>(DTOType obj) where TLType : ITLObject
-    {
-        return _mapper.MapToTLObject<TLType, DTOType>(obj);
     }
 }
