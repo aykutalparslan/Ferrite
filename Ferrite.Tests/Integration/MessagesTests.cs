@@ -156,10 +156,17 @@ fzwQPynnEsA0EyTsqtYHle+KowMhnQYpcvK/iv290NXwRjB4jWtH7tNT/PgB5tud
         var auth = await Helpers.SignUp(client, "+15555555637");
         using var clientPeer = new WTelegram.Client(ConfigPfs, new MemoryStream());
         await clientPeer.ConnectAsync();
+        var updateReceived = new ManualResetEvent(false);
+        clientPeer.OnUpdate += delegate(IObject o)
+        {
+            updateReceived.Set();
+            return Task.CompletedTask;
+        };
         var authPeer = await Helpers.SignUp(clientPeer, "+15555555638");
         var result = await client.Messages_SendMedia(((Auth_Authorization)authPeer).user,
              new InputMediaPhotoExternal(){ url = "https://upload.wikimedia.org/wikipedia/commons/9/94/Rhynchocyon_chrysopygus-J_Smit_white_background.jpg"},
              "Test media caption", 1234);
+        updateReceived.WaitOne();
         Assert.IsType<UpdateShortSentMessage>(result);
     }
 }
