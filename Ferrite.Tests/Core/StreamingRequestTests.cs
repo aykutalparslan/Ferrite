@@ -137,6 +137,13 @@ public class StreamingRequestTests
         var objectStore = new Mock<IUploadService>();
         builder.RegisterMock(objectStore).SingleInstance();
         var processorManager = new Mock<ITLHandler>();
+        int calledTimes = 0;
+        var finished = new ManualResetEventSlim();
+        processorManager.Setup(x => x.Process(It.IsAny<object?>(),
+            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>())).Callback(() =>
+        {
+            if(Interlocked.Increment(ref calledTimes) == ops.Count) finished.Set();
+        });
         builder.RegisterMock(processorManager);
         var container = builder.Build();
         byte[] concat = new byte[ops[0].Length * ops.Count + 1];
@@ -153,9 +160,9 @@ public class StreamingRequestTests
         MTProtoConnection mtProtoConnection =
             container.Resolve<MTProtoConnection>(new NamedParameter("connection", connection));
         mtProtoConnection.Start();
-        await Task.Delay(200);
+        finished.Wait();
         processorManager.Verify(x => x.Process(It.IsAny<object?>(),
-            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>()), Times.AtLeast(3));
+            It.IsAny<ITLObject>(), It.IsAny<TLExecutionContext>()), Times.Exactly(ops.Count));
     }
 
     [Theory]
