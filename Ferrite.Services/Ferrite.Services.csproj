@@ -29,7 +29,7 @@
     <PackageReference Include="DotNext.IO" Version="4.7.4" />
     <PackageReference Include="DotNext.Unsafe" Version="4.7.4" />
     <PackageReference Include="Microsoft.Toolkit.HighPerformance" Version="7.1.2" />
-    <PackageReference Include="SkiaSharp" Version="2.88.2" />
+    <PackageReference Include="SkiaSharp" Version="2.88.6" />
     <PackageReference Include="SkiaSharp.NativeAssets.macOS" Version="2.88.2" />
   </ItemGroup>
   <ProjectExtensions>
